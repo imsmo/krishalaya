@@ -25,7 +25,8 @@ export function chromeOf(raw: unknown): AccountChrome {
   return s && s !== 'platform' && SLUG.test(s) ? { kind: 'tenant', slug: s } : PLATFORM_CHROME;
 }
 // PC-56 STORE-4c · C1: + 'preferences' (W302 — /account/preferences under both chromes; /notifications/preferences is a door to it).
-export type AccountPage = '' | 'addresses' | 'addresses/new' | 'data' | 'delete' | 'preferences' | { edit: string } | { download: string };
+// PC-56 STORE-5a · C4: + 'accessibility' (W324 — /account/accessibility under both chromes; a reserved slug since 0204).
+export type AccountPage = '' | 'addresses' | 'addresses/new' | 'data' | 'delete' | 'preferences' | 'accessibility' | { edit: string } | { download: string };
 /** The account's paths under a chrome, with a bounded query of plain words (never a value the buyer typed). */
 export function accountHref(c: AccountChrome, page: AccountPage = '', q: Record<string, string | null | undefined> = {}): string {
   const base = c.kind === 'tenant' ? `/${encodeURIComponent(c.slug)}/account` : '/account';

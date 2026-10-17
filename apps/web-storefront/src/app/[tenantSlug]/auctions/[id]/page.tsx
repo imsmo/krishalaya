@@ -138,7 +138,7 @@ export default async function TenantAuctionPage({ params, searchParams }: { para
           <input type="hidden" name="idempotencyKey" value={bidKey} />
           <label htmlFor="bid-amount" className="kv-field__label">{t.t('store2c.auction.bidLabel', { unit })}</label>
           <input id="bid-amount" name="amount" type="text" inputMode="decimal" className="kv-field__input kv-actions__qty" required />
-          <SubmitButton idle={t.t('auctions.placeBid')} busy={t.t('store2c.auction.placing')} />
+          <SubmitButton idle={t.t('auctions.placeBid')} busy={t.t('store2c.auction.placing')} className="kv-btn kv-btn--money" />
           <p className="kv-field__hint">{emd ? t.t(emd.kind === 'flat' ? 'store2c.auction.emdRuleFlat' : 'store2c.auction.emdRulePct', emd.kind === 'flat' ? { amount: money(emd.minor) } : { pct: emd.pct }) : t.t('store2c.auction.emdNone')}</p>
           <p className="kv-field__hint">{t.t('store2c.auction.commitment')}</p>
           {v.kind === 'sealed' && <p className="kv-field__hint" data-kv-sealed-raise="">{t.t('store3c.sealed.raiseOnly')}</p>}

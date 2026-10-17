@@ -26,6 +26,8 @@ INSERT INTO notification_events (code,default_name,priority,default_channels,use
  ('requirement.matched','A listing matches your requirement','informational','["push","inapp"]',true,true),
  ('requirement.reminder','Your requirement is still open','informational','["push","inapp"]',true,true),
  ('review.prompt','Rate your recent purchase','informational','["push","inapp"]',true,true),
+ -- PC-56 STORE-5a · D3 ("one invite, one reminder"): the ONE reminder, a week after the invite (migration 0218 inserts this row where missing)
+ ('review.reminder','Reminder: rate your recent purchase','informational','["push","inapp"]',true,true),
  -- P1-7 auction watch/follow: notify watchers when an auction they follow closes
  ('auction.ended','An auction you watched has ended','informational','["push","inapp"]',true,true),
  -- API-W10 tenant broadcast: an admin blast (not a transactional alert) → push + in-app, opt-out-able. Free text
@@ -1024,6 +1026,25 @@ INSERT INTO notification_templates (event_code, channel, language_code, tenant_i
  ('order.delivered','inapp','en',NULL,'Delivered','Your order was marked delivered. Open My orders to see it.',NULL,true),
  ('order.delivered','inapp','hi',NULL,'डिलीवर हो गया','आपका ऑर्डर डिलीवर हुआ दर्ज किया गया है। देखने के लिए मेरे ऑर्डर खोलें।',NULL,true),
  ('order.delivered','inapp','gu',NULL,'ડિલિવર થયો','તમારો ઓર્ડર ડિલિવર થયેલો નોંધાયો છે. જોવા માટે મારા ઓર્ડર ખોલો.',NULL,true)
+ON CONFLICT DO NOTHING;
+
+-- PC-56 STORE-5a · B3 (founder D3, survey F-22 / B8) — **THE INVITE IN EVERY LANGUAGE, AND THE ONE REMINDER.** `review.prompt` had English
+-- templates only (lines above) — a Hindi or Gujarati buyer's invite resolved to nothing in their language. The review-prompts clock is now
+-- registered (core/jobs/clock-cadence.ts `review-prompts`) and sends ONE `review.reminder` a week after the invite (`reviews.reminder_after_days`)
+-- if no review exists for the order and its window is still open; the catalogue row is migration 0218's (and this file's events block's). NO VARIABLES: the
+-- prompt and reminder payloads carry the order id only — no copy names an order number, a person, a figure or a number of days (the windows
+-- are platform settings and may change). The copy lives HERE, above the version backfill below (the NOTE's reason).
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('review.prompt','push','hi',NULL,'अपना अनुभव बताएँ','आपका हाल का ऑर्डर कैसा रहा? एक समीक्षा लिखें।',NULL,true),
+ ('review.prompt','push','gu',NULL,'તમારો અનુભવ જણાવો','તમારો તાજેતરનો ઓર્ડર કેવો રહ્યો? એક સમીક્ષા લખો.',NULL,true),
+ ('review.prompt','inapp','hi',NULL,'अपना अनुभव बताएँ','आपका हाल का ऑर्डर कैसा रहा? एक समीक्षा लिखें।',NULL,true),
+ ('review.prompt','inapp','gu',NULL,'તમારો અનુભવ જણાવો','તમારો તાજેતરનો ઓર્ડર કેવો રહ્યો? એક સમીક્ષા લખો.',NULL,true),
+ ('review.reminder','push','en',NULL,'There is still time to review your order','You can still review your recent order. Reviews stay open for a limited time after an order completes; this is the only reminder.',NULL,true),
+ ('review.reminder','push','hi',NULL,'अपने ऑर्डर की समीक्षा का अभी समय है','आप अभी भी अपने हाल के ऑर्डर की समीक्षा कर सकते हैं। ऑर्डर पूरा होने के बाद समीक्षा कुछ समय तक ही खुली रहती है; यह एकमात्र याद-दिहानी है।',NULL,true),
+ ('review.reminder','push','gu',NULL,'તમારા ઓર્ડરની સમીક્ષાનો હજી સમય છે','તમે હજી પણ તમારા તાજેતરના ઓર્ડરની સમીક્ષા કરી શકો છો. ઓર્ડર પૂર્ણ થયા પછી સમીક્ષા થોડા સમય સુધી જ ખુલ્લી રહે છે; આ એકમાત્ર યાદ અપાવતો સંદેશ છે.',NULL,true),
+ ('review.reminder','inapp','en',NULL,'There is still time to review your order','You can still review your recent order. Reviews stay open for a limited time after an order completes; this is the only reminder.',NULL,true),
+ ('review.reminder','inapp','hi',NULL,'अपने ऑर्डर की समीक्षा का अभी समय है','आप अभी भी अपने हाल के ऑर्डर की समीक्षा कर सकते हैं। ऑर्डर पूरा होने के बाद समीक्षा कुछ समय तक ही खुली रहती है; यह एकमात्र याद-दिहानी है।',NULL,true),
+ ('review.reminder','inapp','gu',NULL,'તમારા ઓર્ડરની સમીક્ષાનો હજી સમય છે','તમે હજી પણ તમારા તાજેતરના ઓર્ડરની સમીક્ષા કરી શકો છો. ઓર્ડર પૂર્ણ થયા પછી સમીક્ષા થોડા સમય સુધી જ ખુલ્લી રહે છે; આ એકમાત્ર યાદ અપાવતો સંદેશ છે.',NULL,true)
 ON CONFLICT DO NOTHING;
 
 -- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END

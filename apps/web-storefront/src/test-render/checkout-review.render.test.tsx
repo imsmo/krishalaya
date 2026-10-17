@@ -74,7 +74,8 @@ describe('STORE-2c · W285 review & place', () => {
   it('the Place button LOCKS while it runs; its key is minted at render; placement sends only the key — the choices come from the server-held state', async () => {
     C.pending = true;
     const html = await page();
-    expect(html).toMatch(/<button type="submit" class="kv-btn" disabled="" aria-busy="true">Placing your order…<\/button>/);
+    // PC-56 STORE-5a · D4: a money action is 56px in every mode — the Place button carries kv-btn--money
+    expect(html).toMatch(/<button type="submit" class="kv-btn kv-btn--money" disabled="" aria-busy="true">Placing your order…<\/button>/);
     expect(html).toMatch(/name="idempotencyKey" value="[0-9a-f-]{36}"/);
     expect(html).not.toContain('name="deliveryAddressId"');
     C.created = { orders: [{ id: O.a, orderNo: 'KV-A', totalMinor: '6172875', status: 'payment_pending', paymentState: 'pending' }], checkoutGroupId: null };

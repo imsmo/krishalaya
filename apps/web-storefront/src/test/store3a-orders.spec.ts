@@ -15,7 +15,7 @@ import { gu } from '../i18n/gu';
 import { ORDER_STATUS_LIST, orderStatusKey, orderStatusTone } from '../features/store3a/order-status';
 import {
   STORE_ORDER_GROUPS, readGroup, ordersHref, orderHref, cancelHref, orderTabs, countForm, showsPayLink, showsReceivedAct,
-  codDeliveredLine, canCancel, showsDeadline, showsDepositRows, moreItems, reasonOptions, checkCancelForm, cancelOutcomeKey, readCancelOutcome,
+  receivedConfirmKey, canCancel, showsDeadline, showsDepositRows, moreItems, reasonOptions, checkCancelForm, cancelOutcomeKey, readCancelOutcome,
   completeOutcomeKey, refundView, whatComesBack, auctionCancelWarning, cancelledBy, readOk, CANCEL_OUTCOMES,
 } from '../features/store3a/orders';
 import { STORE3A_REFUSALS, STORE3A_DELTAS, STORE3A_CHAIN_PAGES, store3aRefusalKeys } from '../features/store3a/refusals';
@@ -72,11 +72,15 @@ describe('STORE-3a · E9 every order status labelled ×3 (parity with the API\'s
 });
 
 describe('STORE-3a · which acts an order shows', () => {
-  it('"I received it" is FAIL-CLOSED: only delivered AND paid into escrow (a COD delivered order gets the honest line instead)', () => {
-    expect(showsReceivedAct({ status: 'delivered', paymentState: 'paid' })).toBe(true);
-    for (const o of [{ status: 'delivered', paymentState: 'none' }, { status: 'delivered', paymentState: 'pending' }, { status: 'delivered' }, { status: 'delivered', paymentState: 'PAID' },
-      { status: 'completed', paymentState: 'paid' }, { status: 'confirmed', paymentState: 'paid' }]) expect([o, showsReceivedAct(o)]).toEqual([o, false]);
-    expect([codDeliveredLine({ status: 'delivered', paymentState: 'none' }), codDeliveredLine({ status: 'delivered', paymentState: 'paid' })]).toEqual([true, false]);
+  // PC-56 STORE-5a · D1 (HOTFIX-7 Q1): "I received it" shows for EVERY delivered order (the API completes a COD order since HOTFIX-7; settlement
+  // fails closed). The confirm sentence differs by funding — only a PAID order is told a payment is released. `codDeliveredLine` is removed.
+  it('"I received it": every DELIVERED order (escrow or pay-on-delivery); never before or after delivery; the confirm sentence by funding', () => {
+    for (const o of [{ status: 'delivered', paymentState: 'paid' }, { status: 'delivered', paymentState: 'none' }, { status: 'delivered', paymentState: 'pending' }, { status: 'delivered' }])
+      expect([o, showsReceivedAct(o)]).toEqual([o, true]);
+    for (const o of [{ status: 'completed', paymentState: 'paid' }, { status: 'confirmed', paymentState: 'paid' }, { status: 'out_for_delivery', paymentState: 'none' }])
+      expect([o, showsReceivedAct(o)]).toEqual([o, false]);
+    expect(receivedConfirmKey({ status: 'delivered', paymentState: 'paid' })).toBe('store3a.received.confirm');
+    for (const ps of ['none', 'pending', 'PAID', undefined]) expect([ps, receivedConfirmKey({ status: 'delivered', paymentState: ps })]).toEqual([ps, 'store3a.received.confirmCod']);
   });
   it('the Pay link: awaiting payment — an AUCTION order too since STORE-3c (founder D2: the pay step charges the balance due)', () => {
     expect(showsPayLink({ paymentState: 'pending', source: 'direct' })).toBe(true);

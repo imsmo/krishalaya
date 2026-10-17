@@ -187,6 +187,8 @@ export async function PreferencesScreen({ chrome, searchParams }: { chrome: Acco
           <button type="submit" className="kv-btn kv-btn--ghost" data-kv-act="senior">{t.t(senior ? 'store4c.senior.turnOff' : 'store4c.senior.turnOn')}</button>
         </form>
         <p className="kv-detail__muted">{t.t('store4c.senior.deviceOnly')}</p>
+        {/* PC-56 STORE-5a · C4: the toggle stays; every mode (senior, high contrast, calm motion) lives on the accessibility page */}
+        <p><Link href={accountHref(chrome, 'accessibility')} className="kv-link" data-kv-link="accessibility">{t.t('store5a.a11y.prefsLink')}</Link></p>
       </div>
 
       <form action={reviewPreferencesAction} className="kv-form kv-prefs__form" data-kv-form="preferences">

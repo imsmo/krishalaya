@@ -8,7 +8,7 @@ import type { Metadata } from 'next';
 import '../styles/globals.css';
 import { env } from '../lib/env';
 import { getLanguageDef, getTranslator } from '../lib/i18n';
-import { getThemeHtmlAttrs, getSeniorMode } from '../lib/mechanism';
+import { getThemeHtmlAttrs, getSeniorMode, getContrastMode, getCalmMotion } from '../lib/mechanism';
 import { PLATFORM_BRAND } from '../features/branding/brand-theme';
 
 export function generateMetadata(): Metadata {
@@ -39,8 +39,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   // applied here — see lib/mechanism.ts's own header comment (storefront is not an ops/B2B console realm).
   const themeAttrs = getThemeHtmlAttrs();
   const senior = getSeniorMode();
+  // PC-56 STORE-5a · D4: High contrast and Calm motion per device — one attribute each, so the modes STACK (senior + contrast + motion)
+  const contrast = getContrastMode();
+  const calm = getCalmMotion();
   return (
-    <html lang={lang.code} dir={lang.dir} data-theme={themeAttrs['data-theme']} className={themeAttrs.className} data-senior={senior ? 'true' : undefined}>
+    <html lang={lang.code} dir={lang.dir} data-theme={themeAttrs['data-theme']} className={themeAttrs.className} data-senior={senior ? 'true' : undefined}
+      data-contrast={contrast ? 'true' : undefined} data-motion={calm ? 'calm' : undefined}>
       <body>
         <a href="#main" className="kv-skip">{t.t('common.skipToContent')}</a>
         {children}

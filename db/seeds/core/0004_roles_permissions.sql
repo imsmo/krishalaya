@@ -39,6 +39,9 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  ('requirement.post','Post a requirement (demand)','M12'),('requirement.quote','Quote on a requirement','M12'),
  ('logistics.manage','Manage shipments / dispatch','M07'),
  ('review.create','Write a verified-purchase review','M03'),('review.moderate','Moderate reviews','M03'),
+ -- [PC-56 STORE-5a · D2 (Q8)] the ORGANISATION flags a buyer's review for the platform desk; it never hides or removes it (migration 0218 inserts
+ -- this row for an existing database — this list is ON CONFLICT DO NOTHING).
+ ('review.flag','Flag a review for platform review','M03'),
  ('dispute.raise','Raise an order dispute',NULL),
  ('promotion.manage','Manage promotions + coupons','M03'),
  ('membership.manage','Manage membership tiers','M13'),
@@ -205,7 +208,11 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code IN ('farmer','pharma_store','organic_store','vyapari') AND p.code IN ('product.manage','order.manage'))
    OR (r.code IN ('farmer','vyapari','pharma_store','organic_store') AND p.code IN ('requirement.quote'))
    OR (r.code IN ('farmer','vyapari','customer','pharma_store','organic_store') AND p.code IN ('review.create'))
-   OR (r.code IN ('tenant_admin','support_agent','ai_ops') AND p.code IN ('review.moderate'))
+   -- [PC-56 STORE-5a · D2 (Q8)] `review.moderate` (hide / remove / restore) REMOVED from tenant_admin and ai_ops: the selling organisation
+   -- responds to and FLAGS its buyers' reviews (`review.flag`), it never hides or removes them (survey STORE-5 F-6). `support_agent` — the
+   -- platform support desk — keeps it. Migration 0218 deletes the two rows for an existing database (this list is ON CONFLICT DO NOTHING).
+   OR (r.code IN ('support_agent') AND p.code IN ('review.moderate'))
+   OR (r.code IN ('tenant_admin','support_agent') AND p.code IN ('review.flag'))
    OR (r.code IN ('farmer','vyapari','customer','pharma_store','organic_store') AND p.code IN ('dispute.raise'))
    OR (r.code='customer' AND p.code IN ('order.create','offer.create','requirement.post'))
    OR (r.code IN ('farmer','pashupalak','dairy_farmer') AND p.code IN ('animal.manage','vet.book'))

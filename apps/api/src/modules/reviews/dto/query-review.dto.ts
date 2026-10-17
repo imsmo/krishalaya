@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { ReviewTargetType } from '../domain/reviews.events';
 
 // Public list of a target's reviews; or the caller's own authored reviews (box=mine).
-export const REVIEW_BOXES = ['target', 'mine'] as const;
+// PC-56 STORE-5a · D2: + `organisation` — the organisation's own reviews for its staff (members and the desk only; respond / flag).
+export const REVIEW_BOXES = ['target', 'mine', 'organisation'] as const;
 export type ReviewBox = (typeof REVIEW_BOXES)[number];
 
 export const QueryReviewsSchema = z.object({
@@ -35,3 +36,7 @@ export const PublicReviewsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
 }).strict();
 export type PublicReviewsQueryDto = z.infer<typeof PublicReviewsQuerySchema>;
+
+// PC-56 STORE-5a · B2: the caller's own review of ONE order (`GET reviews/mine?orderId=`) and their eligibility for it (`GET reviews/eligibility`).
+export const ReviewOrderQuerySchema = z.object({ orderId: z.string().uuid() }).strict();
+export type ReviewOrderQueryDto = z.infer<typeof ReviewOrderQuerySchema>;

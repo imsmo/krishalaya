@@ -54,7 +54,8 @@ export const STORE3A_REFUSALS: readonly Store3aRefusal[] = Object.freeze([
 export const STORE3A_DELTAS: readonly { id: string; canon: string; built: string }[] = Object.freeze([
   { id: 'orders_route', canon: 'W288 / W289 / W291 `(marketplace)/orders…` under the platform header', built: '`/<slug>/orders`, `/<slug>/orders/[id]`, `/<slug>/orders/[id]/cancel` under the organisation\'s chrome (founder D3); the platform\'s /orders and /orders/[id] are doors (lib/store-door.ts)' },
   { id: 'keyset_pages', canon: 'W288 "Showing 1–5 of 23 · ‹ Prev / Next ›"', built: 'keyset Next only + the bounded tab counts (Law 11)' },
-  { id: 'review_route', canon: 'W290 review `(marketplace)/orders/[id]/review`', built: 'stays at the platform\'s /orders/[id]/review (STORE-5 owns W290); the organisation\'s order page links to it — owed to STORE-5' },
+  // PC-56 STORE-5a · C1 (founder Q13): the owed DELTA is closed — W290 is built under the organisation; the platform route is a door.
+  { id: 'review_route', canon: 'W290 review `(marketplace)/orders/[id]/review`', built: 'BUILT by STORE-5a at /<slug>/orders/[id]/review (+ /review/edit), the organisation\'s chrome; the order page links there when the store\'s `reviews` flag is ON; the platform /orders/[id]/review is a door' },
   { id: 'retry_reload', canon: 'W3058 "Confirm this action" before Retry on W288 / W289 (+ "Confirming writes an audit-trail entry")', built: 'Retry is a reload (a read): no confirm, no audit entry — W3058–W3060 are DECOR' },
   { id: 'chain_back_links', canon: 'W3059 / W3060 / W3084 "Back" → W316', built: 'Back returns to the order list (or the order) itself — W316 is the error canon (survey F-25)' },
   { id: 'cancel_confirm_page', canon: 'W291 the rules page + a confirm dialog (W3083)', built: 'one page: the rules as the code has them, then the confirm form on the same page (no client dialog — no JS needed)' },

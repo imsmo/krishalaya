@@ -354,3 +354,47 @@ button[data-kv-signal="held"] { opacity: 0.6; cursor: not-allowed; }
 .kv-asof--stale { color: var(--kv-neutral-900); }
 .kv-asof__stale { color: #b71c1c; }
 .kv-money__stale { font-size: 12px; color: #b71c1c; }
+
+/* ---- PC-56 STORE-5a · D4 (founder Q17) — accessibility: the floor in EVERY mode, High contrast, Calm motion (per device; modes stack) ----
+   The floor W324 prints as "Always true" is ONLY what this file proves (test/store5a-reviews.spec.ts reads these rules):
+     • 44px tap targets — .kv-btn / .kv-btn--link / .kv-field__input / .kv-card (min-height 44px, above);
+     • money actions 56px — `.kv-btn--money` (place the order, pay, bid, "I received it", cancel with a refund, the Pay link), OUTSIDE senior mode
+       too (senior mode already lifts every control to 56px);
+     • a visible focus ring on everything a keyboard reaches (:focus-visible).
+   HIGH CONTRAST: packages/tokens has NO high-contrast palette (contrast.ts is the contrast LAW — a ratio calculator — not a palette), so the
+   override set is defined HERE: ink to black, hairlines to black and thicker, the page paper-white, the brand greens deepened (button text stays
+   white). `prefers-contrast: more` (the phone's own setting) applies the same set without the cookie; the cookie makes it explicit.
+   CALM MOTION: no animation, no transition, no smooth scroll — under `html[data-motion="calm"]` AND under the phone's `prefers-reduced-motion`. */
+.kv-btn--money { min-height: 56px; }
+:focus-visible { outline: 3px solid var(--kv-brand-700); outline-offset: 2px; }
+html[data-contrast="true"] {
+  --kv-neutral-0: #ffffff; --kv-neutral-100: #000000; --kv-neutral-600: #1f1f1f; --kv-neutral-900: #000000;
+  --kv-brand-500: #1b5e20; --kv-brand-700: #0d3311; --kv-success: #0d3311;
+}
+html[data-contrast="true"][data-theme="dark"] {
+  --kv-neutral-0: #000000; --kv-neutral-100: #ffffff; --kv-neutral-600: #e6e6e6; --kv-neutral-900: #ffffff;
+}
+html[data-contrast="true"] .kv-card, html[data-contrast="true"] .kv-field__input, html[data-contrast="true"] .kv-locale__btn,
+html[data-contrast="true"] .kv-header, html[data-contrast="true"] .kv-footer { border-width: 2px; }
+html[data-contrast="true"] .kv-detail__muted, html[data-contrast="true"] .kv-field__hint { color: var(--kv-neutral-900); }
+@media (prefers-contrast: more) {
+  :root:not([data-theme="dark"]) {
+    --kv-neutral-0: #ffffff; --kv-neutral-100: #000000; --kv-neutral-600: #1f1f1f; --kv-neutral-900: #000000;
+    --kv-brand-500: #1b5e20; --kv-brand-700: #0d3311; --kv-success: #0d3311;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+html[data-motion="calm"] *, html[data-motion="calm"] *::before, html[data-motion="calm"] *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+
+/* PC-56 STORE-5a · the review pages (W290, the edit and submit chains) and the accessibility page (W324) */
+.kv-review__dims { display: grid; gap: 12px; }
+.kv-review__dim { border: 1px solid var(--kv-neutral-100); border-radius: var(--kv-radius); padding: 8px 12px; }
+.kv-review__diff { width: 100%; border-collapse: collapse; }
+.kv-review__diff th, .kv-review__diff td { padding: 8px; border-bottom: 1px solid var(--kv-neutral-100); text-align: start; }
+.kv-review__diff tr[data-kv-changed="true"] td { font-weight: 700; }
+.kv-a11y__mode { border: 1px solid var(--kv-neutral-100); border-radius: var(--kv-radius); padding: var(--kv-space); margin: 12px 0; }
+.kv-a11y__floor { padding-inline-start: 20px; }
+/* the star inputs are tap targets too: at least 44px each (the floor) */
+.kv-stars__star { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }

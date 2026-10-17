@@ -86,6 +86,8 @@ describe('STORE-4c · W302 the page', () => {
   it('senior mode: the toggle posts the DEVICE cookie (/api/mechanism) and says "on this device"', async () => {
     let h = await page();
     expect(h).toMatch(/<form action="\/api\/mechanism" method="post"[^>]*data-kv-form="senior"><input type="hidden" name="senior" value="on"\/>/);
+    // PC-56 STORE-5a · C4: the toggle stays; every device mode lives on the accessibility page (under the same chrome)
+    expect(h).toMatch(/data-kv-link="accessibility"[^>]*href="\/account\/accessibility"|href="\/account\/accessibility"[^>]*data-kv-link="accessibility"/);
     expect(text(h)).toContain(en['store4c.senior.off']); expect(text(h)).toContain(en['store4c.senior.deviceOnly']);
     C.cookies.set('kvs_senior', 'on');
     h = await page();

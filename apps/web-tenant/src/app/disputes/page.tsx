@@ -24,7 +24,8 @@ import { getTranslator, getLang } from '../../lib/i18n';
 import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
 import { DISPUTE_TABS, DisputeTab, isDisputeTab, disputeTabHref, slaCell, disputedValue, medianText } from '../../features/disputes/console';
 import type { DisputeKpis, DisputeQueueRow, ReviewSummary, ReviewItem, UserProfile } from '@krishalaya/sdk-js';
-import { respondToReviewAction } from './actions';
+import { respondToReviewAction, flagReviewAction } from './actions';
+import { canFlagReview } from '../../features/reviews/respond';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,7 +66,8 @@ export default async function DisputesPage({ searchParams }: { searchParams: { v
       // PC-56 HOTFIX-7 · B5: the public aggregate is keyed by the ORGANISATION now (a person's uuid is refused by name) — this console's rating is
       // the organisation's
       tenantClient().reviews.summary({ targetType: 'organisation' }),
-      tenantClient().reviews.list({ box: 'target', targetType: 'seller', targetId: me.id, limit: 20 }),
+      // PC-56 STORE-5a · D2: the ORGANISATION's reviews (any organisation role reads them, replies as the organisation and flags) — not one person's
+      tenantClient().reviews.list({ box: 'organisation', limit: 20 }),
     ]);
     if (sumRes.status === 'fulfilled') summary = sumRes.value;
     if (revRes.status === 'fulfilled') myReviews = revRes.value.items;
@@ -73,6 +75,10 @@ export default async function DisputesPage({ searchParams }: { searchParams: { v
   const okQ = searchParams.ok; const errQ = searchParams.error;
   const reviewNotice =
     okQ === 'review' ? { kind: 'ok', msg: t.t('disputes.reviewResponded') } :
+    okQ === 'review_flag' ? { kind: 'ok', msg: t.t('disputes.reviewFlagged') } :
+    errQ === 'review_flag_forbidden' ? { kind: 'err', msg: t.t('disputes.reviewFlagForbidden') } :
+    errQ === 'review_flag_illegal' ? { kind: 'err', msg: t.t('disputes.reviewFlagIllegal') } :
+    errQ === 'review_flag' ? { kind: 'err', msg: t.t('disputes.reviewFlagError') } :
     errQ === 'review_illegal' ? { kind: 'err', msg: t.t('disputes.reviewIllegal') } :
     errQ === 'review_empty' ? { kind: 'err', msg: t.t('disputes.reviewEmpty') } :
     errQ === 'review_too_long' ? { kind: 'err', msg: t.t('disputes.reviewTooLong') } :
@@ -209,6 +215,8 @@ export default async function DisputesPage({ searchParams }: { searchParams: { v
           <p className="kv-muted">{t.t('disputes.ratingNone')}</p>
         )}
       </div>
+      {/* PC-56 STORE-5a · D2: the organisation replies and flags; hiding and removing are the platform desk's — no such button here */}
+      <p className="kv-field__hint" data-kv-review-rule="organisation">{t.t('disputes.reviewOrgRule')}</p>
       {reviewNotice && <p className={reviewNotice.kind === 'ok' ? 'kv-notice' : 'kv-error'} role="status">{reviewNotice.msg}</p>}
       {myReviews.length === 0 ? (
         <p className="kv-muted">{t.t('disputes.reviewsNone')}</p>
@@ -220,6 +228,7 @@ export default async function DisputesPage({ searchParams }: { searchParams: { v
                 <span aria-label={t.t('disputes.reviewStarsLabel', { stars: rv.stars.toString() })}>{'★'.repeat(rv.stars)}{'☆'.repeat(Math.max(0, 5 - rv.stars))}</span>
                 {rv.isVerifiedPurchase && <span className="kv-badge">{t.t('disputes.reviewVerified')}</span>}
                 <span className="kv-muted">{rv.createdAt ? formatDate(rv.createdAt, lang) : t.t('common.dash')}</span>
+                {rv.status === 'under_moderation' && <span className="kv-badge" data-kv-review-status="with_desk">{t.t('disputes.reviewWithDesk')}</span>}
               </p>
               {rv.body && <p className="kv-review__body">{rv.body}</p>}
               {rv.sellerResponse ? (
@@ -233,6 +242,12 @@ export default async function DisputesPage({ searchParams }: { searchParams: { v
                   <label className="kv-label" htmlFor={`resp-${rv.id}`}>{t.t('disputes.reviewRespondLabel')}</label>
                   <textarea id={`resp-${rv.id}`} name="response" className="kv-input" rows={2} maxLength={4000} required />
                   <button type="submit" className="kv-btn">{t.t('disputes.reviewRespondCta')}</button>
+                </form>
+              )}
+              {canFlagReview(rv.status) && (
+                <form action={flagReviewAction} className="kv-review__form" data-kv-form="review-flag">
+                  <input type="hidden" name="reviewId" value={rv.id} />
+                  <button type="submit" className="kv-btn kv-btn--secondary" data-kv-act="flag">{t.t('disputes.reviewFlagCta')}</button>
                 </form>
               )}
             </li>

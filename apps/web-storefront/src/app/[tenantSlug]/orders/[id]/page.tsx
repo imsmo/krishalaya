@@ -5,9 +5,12 @@
 //   • the money: paid into escrow (the payment read's figure) / awaiting your payment + the Pay link ONLY for an order awaiting the buyer's
 //     payment that is NOT an auction order (its balance payment is STORE-3c — refused by name) / pay on delivery; the bill rows (the API's,
 //     they sum); "Deposit applied · Balance due" ONLY when the API says a deposit was applied (server figures, no client arithmetic);
-//   • "I received it" (lead's D6, Law 9) ONLY for a delivered order PAID INTO ESCROW, with an inline confirm ("this releases the payment to the
-//     organisation") and the key minted here; a delivered pay-on-delivery order says the organisation completes it (honest — the API refuses
-//     the buyer's completion of an unfunded escrow); the quality-window sentence from the API's `qualityWindowEnds`, for paid orders only;
+//   • "I received it" — PC-56 STORE-5a · D1 (HOTFIX-7 Q1): for EVERY delivered order, with an inline confirm whose sentence differs by funding
+//     (escrow: "this releases the payment to the organisation"; pay on delivery: "you paid in cash; nothing is released — this closes the
+//     order") and the key minted here; the old "the organisation completes it" line is removed (false since 0217); the quality-window sentence
+//     from the API's `qualityWindowEnds`, for paid orders only;
+//   • PC-56 STORE-5a · C1 (F-11): the W290 review door on a completed order reads THIS store's `reviews` flag — ON: "Write a review" →
+//     /<slug>/orders/[id]/review (the organisation's chrome); OFF: the honest sentence; `?status=reviewed` (W3146) says where it published;
 //   • "Need to cancel?" → the cancel page while the API's `isCancellable` holds (through `ready`); a cancelled order says WHO ended it (from the
 //     events) and what happened to the money (the refund read: nothing was paid / starting / requested / refunded with its reference);
 //   • the dispute door only when the store's `disputes` flag is ON (founder D2) — else "not available in this store"; the returns form is gone;
@@ -34,7 +37,7 @@ import { DISPUTE_REASONS } from '../../../../features/orders/buyer-actions';
 import { payHref, confirmHref } from '../../../../features/store2c/checkout';
 import { orderStatusKey, orderStatusTone } from '../../../../features/store3a/order-status';
 import {
-  ordersHref, orderHref, cancelHref, showsPayLink, showsReceivedAct, codDeliveredLine, canCancel, showsDeadline,
+  ordersHref, orderHref, cancelHref, showsPayLink, showsReceivedAct, receivedConfirmKey, canCancel, showsDeadline,
   showsDepositRows, refundView, refundKey, cancelledBy, readOk, readCompleteOutcome, readDisputeError, canDispute, actKey, cancelReasonKey,
 } from '../../../../features/store3a/orders';
 import { poweredByVisible, PLATFORM_BRAND } from '../../../../features/branding/brand-theme';
@@ -46,6 +49,7 @@ import { showsMessageOrg } from '../../../../features/store4b/messages';
 import { SubmitButton } from '../../../../components/SubmitButton';
 import { PoweredByMark } from '../../../../components/PoweredByMark';
 import { completeOrderAction, raiseDisputeAction } from './actions';
+import { reviewHref } from '../../../../features/store5a/review';
 
 export const dynamic = 'force-dynamic';
 type SP = Record<string, string | string[] | undefined>;
@@ -101,6 +105,7 @@ export default async function TenantOrderPage({ params, searchParams }: { params
   const by = order.status === 'cancelled' ? cancelledBy(events) : null;
   const paidAmount = attempts?.latest && ['success', 'refund_initiated', 'refunded', 'partially_refunded'].includes(String(attempts.latest.status)) ? attempts.latest.amountMinor : null;
   const disputesOn = flags?.disputes === true;
+  const reviewed = searchParams.status === 'reviewed';   // STORE-5a · W3146
   /** A reason's label: the catalogue's (`order.cancelReason.<code>`), else the code itself (an organisation's own value has no catalogue entry). */
   const reasonLabel = (code: string) => { const k = cancelReasonKey(code); const v = t.t(k); return v === k ? code : v; };
 
@@ -125,6 +130,7 @@ export default async function TenantOrderPage({ params, searchParams }: { params
       )}
 
       {ok && <p className="kv-form__notice" role="status" data-kv-ok={ok}>{t.t(`store3a.ok.${ok}`)}</p>}
+      {reviewed && <p className="kv-form__notice" role="status" data-kv-ok="reviewed">{t.t('store5a.published', { org: order.organisation?.name ?? t.t('store5a.theOrganisation') })}</p>}
       {received && <p className="kv-form__error" role="alert" data-kv-received-error={received}>{t.t(`store3a.received.err.${received}`)}</p>}
       {disputeError && <p className="kv-form__error" role="alert">{t.t(`order.error.${disputeError}`)}</p>}
 
@@ -154,7 +160,7 @@ export default async function TenantOrderPage({ params, searchParams }: { params
         <h2 id="money-h">{t.t('store3a.detail.money')}</h2>
         {paid && <p data-kv-paid="escrow">{paidAmount ? t.t('store3a.pay.paid', { amount: money(paidAmount, attempts?.latest?.currencyCode ?? cur) }) : t.t('store3a.pay.paidNoAmount')}</p>}
         {order.paymentState === 'pending' && <p className="kv-form__error" data-kv-awaiting="payment">{t.t('store3a.row.awaitingPayment')}</p>}
-        {showsPayLink(order) && <p><Link href={payHref(slug, order.id, order.checkoutGroupId ?? null)} className="kv-btn" data-kv-pay={order.id}>{t.t('checkout.payThis')}</Link></p>}
+        {showsPayLink(order) && <p><Link href={payHref(slug, order.id, order.checkoutGroupId ?? null)} className="kv-btn kv-btn--money" data-kv-pay={order.id}>{t.t('checkout.payThis')}</Link></p>}
         {order.paymentState === 'none' && order.status !== 'cancelled' && <p className="kv-detail__muted" data-kv-pay="on-delivery">{t.t('store3a.pay.onDelivery')}</p>}
         {showsDeadline(order) && <p className="kv-detail__muted" data-kv-deadline={order.id}>{t.t('store3a.row.deadline', { date: when(String(order.acceptanceDeadline), lang) })}</p>}
         <ul className="kv-confirm__items">
@@ -186,14 +192,14 @@ export default async function TenantOrderPage({ params, searchParams }: { params
       {showsReceivedAct(order) && (
         <section className="kv-order__section" aria-labelledby="received-h" data-kv-act="received">
           <h2 id="received-h">{t.t('store3a.received.title')}</h2>
-          {order.qualityWindowEnds && <p className="kv-detail__muted" data-kv-window="quality">{t.t('store3a.received.window', { date: when(order.qualityWindowEnds, lang) })}</p>}
+          {paid && order.qualityWindowEnds && <p className="kv-detail__muted" data-kv-window="quality">{t.t('store3a.received.window', { date: when(order.qualityWindowEnds, lang) })}</p>}
           {confirming ? (
-            <form action={completeOrderAction} className="kv-form" data-kv-confirm="received">
+            <form action={completeOrderAction} className="kv-form" data-kv-confirm="received" data-kv-funding={paid ? 'escrow' : 'cash'}>
               <input type="hidden" name="slug" value={slug} />
               <input type="hidden" name="id" value={order.id} />
               <input type="hidden" name="key" value={actKey('complete', order.id, randomUUID())} />
-              <p><strong>{t.t('store3a.received.confirm')}</strong></p>
-              <SubmitButton idle={t.t('store3a.received.yes')} busy={t.t('store3a.received.busy')} />{' '}
+              <p><strong>{t.t(receivedConfirmKey(order))}</strong></p>
+              <SubmitButton idle={t.t('store3a.received.yes')} busy={t.t('store3a.received.busy')} className="kv-btn kv-btn--money" />{' '}
               <Link href={orderHref(slug, order.id)} className="kv-btn--link">{t.t('store3a.received.notYet')}</Link>
             </form>
           ) : (
@@ -201,10 +207,10 @@ export default async function TenantOrderPage({ params, searchParams }: { params
           )}
         </section>
       )}
-      {codDeliveredLine(order) && <p className="kv-detail__muted" data-kv-cod-delivered="organisation">{t.t('store3a.received.codLine')}</p>}
 
       <div className="kv-cart__actions">
-        {order.status === 'completed' && <Link href={`/orders/${encodeURIComponent(order.id)}/review`} className="kv-btn" data-kv-review="w290">{t.t('review.writeCta')}</Link>}
+        {order.status === 'completed' && flags?.reviews === true && <Link href={reviewHref(slug, order.id)} className="kv-btn" data-kv-review="w290">{t.t('review.writeCta')}</Link>}
+        {order.status === 'completed' && flags !== null && flags.reviews !== true && <span className="kv-detail__muted" data-kv-review="off">{t.t('store5a.ctaOff')}</span>}
         {canCancel(order.status) && <Link href={cancelHref(slug, order.id)} className="kv-btn kv-btn--muted" data-kv-cancel-door={order.id}>{t.t('store3a.detail.needCancel')}</Link>}
         {showsMessageOrg(true, flags) && <MessageOrgButton slug={slug} contextType="order" contextId={order.id} labelKey="store4b.entry.order" />}
         <Link href={ordersHref(slug)} className="kv-btn--link">{t.t('order.backToList')}</Link>

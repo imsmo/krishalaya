@@ -39,10 +39,13 @@ describe('reviews tenant isolation (SQL contract)', () => {
   it('eligibility insert binds tenant_id + ON CONFLICT(order_id)', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 }) };
     await repo().insertEligibility(tx as any, 'tenantA', 'o1', 'b1', 's1');
-    const [sql, params] = tx.query.mock.calls[0];
+    // PC-56 STORE-5a · B3: the first statement reads the window settings on the SAME (relay) transaction; the insert stamps expires_at from them
+    expect(tx.query.mock.calls[0][0]).toMatch(/kv_platform_setting\('reviews\.invite_window_days'\)/);
+    const [sql, params] = tx.query.mock.calls[1];
     expect(sql).toMatch(/INSERT INTO review_eligibility/);
     expect(sql).toMatch(/ON CONFLICT \(order_id\) DO NOTHING/);
-    expect(params).toEqual(['tenantA', 'o1', 'b1', 's1']);
+    expect(sql).toMatch(/expires_at\)\s+VALUES \(\$1,\$2,\$3,\$4, now\(\) \+ make_interval\(days => \$5::int\)\)/);
+    expect(params).toEqual(['tenantA', 'o1', 'b1', 's1', 30]);   // the setting is absent in this fake → the named fallback (30)
   });
 
   it('public listForTarget binds tenant_id, filters to published, keyset (no OFFSET)', async () => {

@@ -426,7 +426,7 @@ function ReviewStep({ slug, org, state, preview, previewRefusal, onlinePayments,
       <form action={placeOrderAction} className="kv-checkout__form" data-kv-form="place">
         <input type="hidden" name="slug" value={slug} />
         <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
-        {preview && !lineRefusal && !previewMoneyRefusal && <SubmitButton idle={t.t('checkout.placeOrder')} busy={t.t('checkout.placing')} />}
+        {preview && !lineRefusal && !previewMoneyRefusal && <SubmitButton idle={t.t('checkout.placeOrder')} busy={t.t('checkout.placing')} className="kv-btn kv-btn--money" />}
         <p className="kv-field__hint">{t.t('store2c.review.lockNote')}</p>
         <Link href={cartHref(slug)} className="kv-btn--link">{t.t('checkout.backToCart')}</Link>
       </form>

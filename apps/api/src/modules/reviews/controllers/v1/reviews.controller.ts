@@ -2,6 +2,11 @@
 // delegate). Submit needs review.create + Idempotency-Key (verified-purchase enforced in the service);
 // edit is author-only; respond is the reviewed party; moderate needs review.moderate. Public target
 // lists/summary read only published reviews. Gated by the `reviews` feature flag.
+// PC-56 STORE-5a: + `GET reviews/mine?orderId=` (the author's review of one order + its lock), `GET reviews/eligibility?orderId=` (may I review
+// this order, until when, did I already), `POST reviews/preview` (W3145's confirm — the server's review, no write); `PATCH :id` takes an
+// optional Idempotency-Key and is audited; `respond` is the ORGANISATION's reply (any organisation role); `moderate` is no longer behind
+// `review.moderate` at the route — `flag` needs `review.flag` OR `review.moderate`, hide / remove / restore `review.moderate` (the service
+// decides, by name). The sub-rating vocabulary is the existing `GET /v1/lookups/values?type=review_dimension` (locale-resolved).
 import { Controller, Get, Headers, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
@@ -17,8 +22,8 @@ import { decodeKeyset, UUID_RE } from '../../../../shared/pagination/us-keyset';
 import { ReviewService } from '../../services/review.service';
 import { CreateReviewSchema, CreateReviewDto } from '../../dto/create-review.dto';
 import { EditReviewSchema, EditReviewDto, SellerResponseSchema, SellerResponseDto, ModerateReviewSchema, ModerateReviewDto } from '../../dto/update-review.dto';
-import { QueryReviewsSchema, QueryReviewsDto, ReviewSummaryQuerySchema, ReviewSummaryQueryDto, PublicReviewsQuerySchema, PublicReviewsQueryDto } from '../../dto/query-review.dto';
-import { ReviewPermissions, canModerateReview } from '../../policies/reviews.policies';
+import { QueryReviewsSchema, QueryReviewsDto, ReviewSummaryQuerySchema, ReviewSummaryQueryDto, PublicReviewsQuerySchema, PublicReviewsQueryDto, ReviewOrderQuerySchema, ReviewOrderQueryDto } from '../../dto/query-review.dto';
+import { ReviewPermissions, canModerateReview, canFlagReview } from '../../policies/reviews.policies';
 
 // PC-56 HOTFIX-7 (carried rule): request audits record the client's address through the one helper (core/http/client-ip.ts)
 const ipOf = (r: Request) => clientIpOf(r);
@@ -30,7 +35,7 @@ const decodeCursor = (c?: string) => { const k = decodeKeyset(c, UUID_RE); retur
 @FeatureFlag('reviews')
 export class ReviewsController {
   constructor(private readonly reviews: ReviewService) {}
-  private actor(ctx: RequestContext) { return { userId: ctx.userId, canModerate: canModerateReview(ctx) }; }
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canModerate: canModerateReview(ctx), canFlag: canFlagReview(ctx) }; }
 
   @Post() @RequirePermissions(ReviewPermissions.Create)
   submit(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @ZodBody(CreateReviewSchema) dto: CreateReviewDto) {
@@ -59,20 +64,39 @@ export class ReviewsController {
       .then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
 
+  // PC-56 STORE-5a · B2: the author's own review of one order (the author's shape + `editLocksAt` + `editable`), or 404
+  @Get('mine')
+  mine(@CurrentContext() ctx: RequestContext, @ZodQuery(ReviewOrderQuerySchema) q: ReviewOrderQueryDto) {
+    return this.reviews.mine(ctx.tenantId, ctx.userId, q.orderId).then((data) => ({ data }));
+  }
+
+  // PC-56 STORE-5a · B2: { eligible, expiresAt, windowOpen, reviewed, reviewId? } for the caller — never a counterparty id
+  @Get('eligibility')
+  eligibility(@CurrentContext() ctx: RequestContext, @ZodQuery(ReviewOrderQuerySchema) q: ReviewOrderQueryDto) {
+    return this.reviews.eligibility(ctx.tenantId, ctx.userId, q.orderId).then((data) => ({ data }));
+  }
+
+  // PC-56 STORE-5a · B2: W3145's confirm — the server's review as it will publish (the organisation, the dimension labels, "Verified buyer",
+  // the lock and the window); the same refusals as a submit; writes nothing
+  @Post('preview') @RequirePermissions(ReviewPermissions.Create)
+  preview(@CurrentContext() ctx: RequestContext, @ZodBody(CreateReviewSchema) dto: CreateReviewDto) {
+    return this.reviews.preview(ctx.tenantId, ctx.userId, ctx.lang, dto).then((data) => ({ data }));
+  }
+
   @Get(':id')
   get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.reviews.getById(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
 
   @Patch(':id')
-  edit(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(EditReviewSchema) dto: EditReviewDto) {
-    return this.reviews.edit(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data }));
+  edit(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string | undefined, @Param('id') id: string, @ZodBody(EditReviewSchema) dto: EditReviewDto) {
+    return this.reviews.edit(ctx.tenantId, this.actor(ctx), id, dto, ipOf(r), key || undefined).then((data) => ({ data }));
   }
 
   @Post(':id/respond')
-  respond(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(SellerResponseSchema) dto: SellerResponseDto) {
-    return this.reviews.respond(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data }));
+  respond(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(SellerResponseSchema) dto: SellerResponseDto) {
+    return this.reviews.respond(ctx.tenantId, this.actor(ctx), id, dto, ipOf(r)).then((data) => ({ data }));
   }
 
-  @Post(':id/moderate') @RequirePermissions(ReviewPermissions.Moderate)
+  @Post(':id/moderate')
   moderate(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(ModerateReviewSchema) dto: ModerateReviewDto) {
     return this.reviews.moderate(ctx.tenantId, this.actor(ctx), id, dto, ipOf(r)).then((data) => ({ data }));
   }

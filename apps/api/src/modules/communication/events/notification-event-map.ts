@@ -104,6 +104,10 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   { outboxType: 'requirements.requirement_matched',  eventCode: 'requirement.matched',  recipientKeys: ['buyerUserId'] },
   { outboxType: 'requirements.requirement_reminder', eventCode: 'requirement.reminder', recipientKeys: ['buyerUserId'] },
   { outboxType: 'reviews.review_prompt',        eventCode: 'review.prompt',        recipientKeys: ['recipientUserIds'] },
+  // PC-56 STORE-5a · B3 (founder D3 "one invite, one reminder"): the review-prompts clock (now registered — core/jobs/clock-cadence.ts) sends ONE
+  // reminder a week after the invite while the window is open and nobody has reviewed the order (catalogue 0218, copy ×3 in seed core/0007).
+  // A map row registers ONE more `DomainEventFanoutHandler` instance (the relay gate's class-wide case covers it).
+  { outboxType: 'reviews.review_reminder',      eventCode: 'review.reminder',      recipientKeys: ['recipientUserIds'] },
   { outboxType: 'memberships.payment_confirmed', eventCode: 'payment.success',     recipientKeys: ['userId'] },
   // PC-55 A6 · ops alerting rides the SAME spine as everything else — no private channel for urgency.
   { outboxType: 'ops.alert_fired',              eventCode: 'ops.alert_fired',      recipientKeys: ['recipientUserIds'] },

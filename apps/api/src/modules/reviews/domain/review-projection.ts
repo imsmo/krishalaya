@@ -11,7 +11,13 @@
 //                 buyer (`reviewerUserId`) and the order (the organisation sees its buyer — the HOTFIX-6 / STORE-4b rule);
 //   • party     — a BUYER who is the target of a seller's review: their own order (`orderId`), the review — never the reviewer's person id;
 //   • public    — everyone else: the public projection (no person, no order, no target) — exactly the anonymous `GET reviews/public` row.
+//
+// PC-56 STORE-5a · D2 / D5: every shape serves the reply as the ORGANISATION's (`respondedBy: 'organisation'` — never the responder's name or
+// id; no column holds one) and the public label "Verified buyer" (`label: 'verified_buyer'`, from `isVerifiedPurchase` only — no masked name,
+// no city). The author's own shape (and the organisation's / the desk's) carries `editLocksAt` — the server's lock instant, so the storefront
+// never decides a window with its own clock.
 import type { ReviewProps } from './review.entity';
+import { organisationReply, reviewerLabel } from './review-rules';
 
 export type ReviewViewer = 'moderator' | 'author' | 'staff' | 'party' | 'public';
 
@@ -26,25 +32,32 @@ export function reviewViewerOf(p: Pick<ReviewProps, 'reviewerUserId' | 'targetId
 /** The anonymous-safe row (no reviewer, no order, no target, no review uuid — the public list is keyed by the organisation, its cursor is
  *  opaque). */
 export function publicReview(p: ReviewProps) {
-  return { stars: p.stars, subRatings: p.subRatings, body: p.body, tags: p.tags, isVerifiedPurchase: p.isVerifiedPurchase,
-    sellerResponse: p.sellerResponse, sellerRespondedAt: p.sellerRespondedAt, helpfulCount: p.helpfulCount, createdAt: p.createdAt };
+  return { stars: p.stars, subRatings: p.subRatings, body: p.body, tags: p.tags, isVerifiedPurchase: p.isVerifiedPurchase, label: reviewerLabel(p.isVerifiedPurchase),
+    ...organisationReply(p.sellerResponse, p.sellerRespondedAt), helpfulCount: p.helpfulCount, createdAt: p.createdAt };
 }
 
 /** One review as a signed-in viewer reads it — the person / order fields present only for the viewers that may hold them. */
 export interface ReviewView {
   id: string; targetType?: string; stars: number; subRatings: Record<string, number>; body: string | null; tags: string[]; isVerifiedPurchase: boolean;
+  /** STORE-5a · D5: "Verified buyer" — the only thing ever said about the reviewer */
+  label: 'verified_buyer' | null;
+  /** STORE-5a · D2: who replied — the organisation (never a person); null when there is no reply */
+  respondedBy: string | null;
   sellerResponse: string | null; sellerRespondedAt: Date | null; helpfulCount: number; createdAt: Date;
   orderId?: string | null; reviewerUserId?: string; targetId?: string; status?: string;
+  /** STORE-5a · D3: the server's lock instant (the author's, the organisation's and the desk's shapes) */
+  editLocksAt?: Date | null;
 }
 
 export function projectReview(p: ReviewProps, viewer: ReviewViewer): ReviewView {
   const base = { id: p.id, targetType: p.targetType, stars: p.stars, subRatings: p.subRatings, body: p.body, tags: p.tags, isVerifiedPurchase: p.isVerifiedPurchase,
-    sellerResponse: p.sellerResponse, sellerRespondedAt: p.sellerRespondedAt, helpfulCount: p.helpfulCount, createdAt: p.createdAt };
+    label: reviewerLabel(p.isVerifiedPurchase), ...organisationReply(p.sellerResponse, p.sellerRespondedAt), helpfulCount: p.helpfulCount, createdAt: p.createdAt };
   switch (viewer) {
     case 'moderator':
     case 'staff':
-      return { ...base, orderId: p.orderId, reviewerUserId: p.reviewerUserId, targetId: p.targetId, status: p.status };
+      return { ...base, orderId: p.orderId, reviewerUserId: p.reviewerUserId, targetId: p.targetId, status: p.status, editLocksAt: p.editLocksAt ?? null };
     case 'author':
+      return { ...base, orderId: p.orderId, status: p.status, editLocksAt: p.editLocksAt ?? null };
     case 'party':
       return { ...base, orderId: p.orderId, status: p.status };
     default:

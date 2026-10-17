@@ -4,6 +4,7 @@
 // own `RtlSmoke.test.tsx` precedent (grep-based CSS assertions + pure function calls, no rendering needed).
 import { parseThemePreference, resolveThemeHtmlAttrs, THEME_PREFERENCES } from '../mechanisms/theme';
 import { isSeniorOn, seniorConsoleStyles } from '../mechanisms/seniorMode';
+import { isContrastOn, isCalmMotionOn, ACCESSIBILITY_COOKIE_VALUES } from '../mechanisms/accessibilityModes';
 import { densityStyles } from '../mechanisms/density';
 
 describe('theme mechanism — parseThemePreference (fail-closed cookie parse)', () => {
@@ -85,5 +86,20 @@ describe('density mechanism — densityStyles (DELTA-001 residual: real pointer/
     // exactly one 36px assignment in the whole fragment (the intentional desktop-only one).
     const occurrences = (densityStyles.match(/36px/g) ?? []).length;
     expect(occurrences).toBe(1);
+  });
+});
+
+// PC-56 STORE-5a · D4 (founder Q17): High contrast and Calm motion per device — the same fail-closed shape as senior mode.
+describe('accessibility modes — isContrastOn / isCalmMotionOn (fail-closed cookie parse)', () => {
+  it('only the literal "on" enables High contrast; only "calm" enables Calm motion', () => {
+    expect(isContrastOn('on')).toBe(true);
+    expect(isCalmMotionOn('calm')).toBe(true);
+  });
+  it('everything else fails closed to OFF', () => {
+    for (const v of [undefined, null, '', 'off', 'true', 'ON', 'calm']) expect(isContrastOn(v as string | undefined | null)).toBe(false);
+    for (const v of [undefined, null, '', 'off', 'on', 'CALM', 'true']) expect(isCalmMotionOn(v as string | undefined | null)).toBe(false);
+  });
+  it('each mode names its own two values (the route refuses any other)', () => {
+    expect(ACCESSIBILITY_COOKIE_VALUES).toEqual({ senior: ['on', 'off'], contrast: ['on', 'off'], motion: ['calm', 'off'] });
   });
 });

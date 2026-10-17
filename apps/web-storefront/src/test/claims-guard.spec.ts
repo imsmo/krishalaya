@@ -370,3 +370,37 @@ describe('STORE-4b · claims guard (the messages list, the thread, the report ch
     for (const cat of Object.values(CATS)) for (const k of ['store3a.refusal.getHelp', 'store3b.refusal.messageSeller']) expect([k, k in cat]).toEqual([k, false]);
   });
 });
+
+// PC-56 STORE-5a · brief §E (founders D1 / D2 / D4 / D5 / D7) — the review pages' and the accessibility page's refused canon claims appear ONLY
+// inside a refusal (`*.refusal.*`, which say no, by name): no masked name or city, no "tonight", no grading desk / cold-chain check, no "Speak
+// instead", no "Add photos", no speaking buttons, no "everywhere else / elsewhere on next open", no Voice-first; the short code `*123#` and the
+// removed "the organisation completes it" appear NOWHERE (not even in a refusal). No STORE-5a value carries a digit (outside a placeholder), a
+// currency sign or a person placeholder — the organisation is {org}, every figure and date is interpolated.
+describe('STORE-5a · claims guard (the review pages, the accessibility page)', () => {
+  const REFUSED = [
+    /N••• S|Ahmedabad|masked name/i, /\btonight\b/i, /grading desk|cold-chain check/i, /Speak instead/i, /Add photos/i,
+    /speaks? when touched|every button speaks/i, /everywhere else|elsewhere on next open/i, /Voice-first/i, /set by a helper/i,
+  ];
+  it.each(Object.entries(CATS))('%s: the refused claims appear only inside a refusal; *123# and "the organisation completes it" nowhere', (_l, cat) => {
+    for (const [k, v] of Object.entries(cat)) {
+      expect([k, /\*123#|organisation completes it/i.test(v)]).toEqual([k, false]);
+      if (/\.refusal\./.test(k) || k.startsWith('signup.refused.') || k.startsWith('auth.refused.')) continue;
+      for (const re of REFUSED) expect([k, re.test(v)]).toEqual([k, false]);
+    }
+  });
+  it.each(Object.entries(CATS))('%s: no digit, no currency sign, no person placeholder in a STORE-5a value', (_l, cat) => {
+    const keys = Object.keys(cat).filter((k) => k.startsWith('store5a.') || k === 'store3a.received.confirmCod');
+    expect(keys.length).toBe(114);
+    for (const k of keys) {
+      const v = (cat as Record<string, string>)[k];
+      expect([k, /[0-9०-९૦-૯]/.test(v.replace(/\{[a-z]+\}/gi, ''))]).toEqual([k, false]);
+      expect([k, /[₹$€£¥]/.test(v)]).toEqual([k, false]);
+      expect([k, /\{(name|seller|sellerName|farmer|farmerName|member|fullName|owner|buyer|reviewer|responder)\}/i.test(v)]).toEqual([k, false]);
+    }
+  });
+  it('every English STORE-5a refusal says no / not / never / cannot (17 keys)', () => {
+    const r = Object.entries(en).filter(([k]) => k.startsWith('store5a.refusal.'));
+    expect(r.length).toBe(17);
+    for (const [k, v] of r) expect([k, /\bnot\b|\bno\b|\bnever\b|\bcannot\b|\bnothing\b/i.test(v)]).toEqual([k, true]);
+  });
+});

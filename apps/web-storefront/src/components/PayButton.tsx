@@ -106,7 +106,7 @@ export function PayButton(
   return (
     <div className="kv-pay" data-kv-attempt={attempt}>
       {error && <p className="kv-form__error" role="alert">{error}</p>}
-      <button type="button" className="kv-btn" onClick={onPay} disabled={busy}>
+      <button type="button" className="kv-btn kv-btn--money" onClick={onPay} disabled={busy}>
         {busy ? labels.processing : labels.pay}
       </button>
     </div>

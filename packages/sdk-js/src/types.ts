@@ -639,6 +639,10 @@ export interface PublicReview {
   id?: string; stars: number; subRatings: Record<string, number>; body: string | null; tags: string[];
   isVerifiedPurchase: boolean; sellerResponse: string | null; sellerRespondedAt: string | null;
   helpfulCount: number; createdAt: string;
+  /** PC-56 STORE-5a · D5 — the ONLY thing said about the reviewer: "Verified buyer" (from `isVerifiedPurchase`, which is kept). No name, no city. */
+  label?: 'verified_buyer' | null;
+  /** PC-56 STORE-5a · D2 — who replied: the ORGANISATION (never a person's name or id); null when there is no reply. */
+  respondedBy?: 'organisation' | null;
 }
 /** A review as seen by a party (the reviewed seller/buyer or its author) — includes ids for management. */
 /** PC-56 HOTFIX-7 · B5 — the API projects each read by the VIEWER: the author gets `orderId` + `status` (never `targetId` / `reviewerUserId`); the
@@ -647,7 +651,22 @@ export interface PublicReview {
 export interface ReviewItem extends PublicReview {
   id: string; targetType?: string;
   orderId?: string | null; reviewerUserId?: string; targetId?: string; status?: string;
+  /** PC-56 STORE-5a · D3 — the server's lock instant (the author's, the organisation's and the desk's shapes); after it the edit is refused. */
+  editLocksAt?: string | null;
 }
+/** PC-56 STORE-5a · B2 — the author's own review of one order (`reviews.mine`): + whether it is still editable (the SERVER's decision). */
+export interface ReviewMine extends ReviewItem { editable: boolean; }
+/** PC-56 STORE-5a · B2 — the caller's eligibility for one order: may they review it, until when, is the window open (the server's decision),
+ *  did they already (their own review's id). Never the counterparty's id. */
+export interface ReviewEligibility { eligible: boolean; expiresAt: string | null; windowOpen: boolean; reviewed: boolean; reviewId?: string; }
+/** PC-56 STORE-5a · B2 — W3145's confirm: the SERVER's review as it will publish (nothing is written). */
+export interface ReviewPreview {
+  orderId: string; organisation: { name: string | null }; stars: number;
+  subRatings: Array<{ code: string; label: string; stars: number }>; body: string | null;
+  label: 'verified_buyer'; editLocksAt: string | null; expiresAt: string | null;
+}
+/** The review input (submit and preview). */
+export interface ReviewInput { orderId: string; stars: number; subRatings?: Record<string, number>; body?: string; tags?: string[]; }
 /** PC-56 HOTFIX-7 · B5 — the PUBLIC review reads' key: the ORGANISATION (the tenant in context). `seller` / `buyer` (a person's uuid) are
  *  refused by the API (422 REVIEW_PUBLIC_SELLER_REFUSED / REVIEW_PUBLIC_BUYER_REFUSED). */
 export type PublicReviewTarget = 'organisation' | 'seller' | 'buyer';

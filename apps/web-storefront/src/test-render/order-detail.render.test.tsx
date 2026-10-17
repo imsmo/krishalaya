@@ -97,13 +97,17 @@ describe('STORE-3a · W289 "I received it" (lead\'s D6 — fail-closed)', () => 
     expect(text(c)).toContain(en['store3a.received.confirm']);
     expect(c).toMatch(new RegExp(`name="key" value="complete:${OID.paid}:[0-9a-f-]{36}"`));
   });
-  it('a delivered PAY-ON-DELIVERY order: NO act — the honest line (the organisation completes it); no quality-window promise', async () => {
+  // PC-56 STORE-5a · D1 (HOTFIX-7 Q1): the COD button OPENS — the act shows for a delivered pay-on-delivery order with the CASH sentence; the
+  // old line "the organisation completes it" is gone (false since 0217). The full COD proof lives in order-cod-received.render.test.tsx.
+  it('a delivered PAY-ON-DELIVERY order: the act with the cash sentence (nothing is released); no quality-window promise; no "organisation completes it" line', async () => {
     C.orders[OID.cod] = DETAIL(OID.cod, { status: 'delivered', paymentState: 'none', qualityWindowEnds: '2026-10-16T12:00:00.000Z' });
     const h = await page(OID.cod, { confirm: 'received' });
-    expect(h).not.toContain('data-kv-act="received"');
-    expect(h).not.toContain('data-kv-confirm="received"');
+    expect(h).toContain('data-kv-act="received"');
+    expect(h).toContain('data-kv-confirm="received" data-kv-funding="cash"');
+    expect(text(h)).toContain(en['store3a.received.confirmCod']);
+    expect(text(h)).not.toContain(en['store3a.received.confirm']);
     expect(h).not.toContain('data-kv-window="quality"');
-    expect(h).toContain('data-kv-cod-delivered="organisation"');
+    expect(h).not.toContain('data-kv-cod-delivered');
   });
   it('the action: complete under the page\'s key → ?ok=received; a refused unfunded escrow → named', async () => {
     const k = `complete:${OID.paid}:0210aaaa-0000-7000-8000-000000000001`;

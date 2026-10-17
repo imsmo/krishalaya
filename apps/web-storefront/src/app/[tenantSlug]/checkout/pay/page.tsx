@@ -124,7 +124,7 @@ export default async function TenantPayPage({ params, searchParams }: { params: 
           <input type="hidden" name="orderId" value={orderId} />
           {groupId && <input type="hidden" name="groupId" value={groupId} />}
           <p>{t.t('store2c.pay.wallet', { balance: moneyText(balance!.availableMinor, balance!.currencyCode, lang) ?? t.t('money.unavailable') })}</p>
-          <SubmitButton idle={t.t('store2c.pay.walletNow', { amount })} busy={t.t('checkout.processing')} />
+          <SubmitButton idle={t.t('store2c.pay.walletNow', { amount })} busy={t.t('checkout.processing')} className="kv-btn kv-btn--money" />
           <p className="kv-field__hint"><a href={payHref(slug, orderId, groupId)} className="kv-btn--link">{t.t('store2c.pay.useOnlineInstead')}</a></p>
         </form>
       ) : (

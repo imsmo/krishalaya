@@ -12,7 +12,7 @@ import { revalidatePath } from 'next/cache';
 import { tenantClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
 import { buildResolve, buildDisputeMessage, moderationErrorKey } from '../../features/disputes/manage';
-import { validateReviewResponse } from '../../features/reviews/respond';
+import { validateReviewResponse, flagErrorKey } from '../../features/reviews/respond';
 import { SdkError } from '@krishalaya/sdk-js';
 
 function back(id: string, qs: string): never { redirect(`/disputes/${encodeURIComponent(id)}?${qs}`); }
@@ -51,6 +51,22 @@ export async function respondToReviewAction(formData: FormData): Promise<void> {
   }
   revalidatePath('/disputes');
   redirect('/disputes?ok=review');
+}
+
+// PC-56 STORE-5a · D2 (founder Q8): the organisation FLAGS a buyer's review for the platform desk (→ under moderation, out of public view until
+// the desk decides). It never hides or removes one — those acts are the desk's (`review.moderate`) and this console offers none. The API
+// re-checks `review.flag`; its refusal is named.
+export async function flagReviewAction(formData: FormData): Promise<void> {
+  await requireSession('/disputes');
+  const id = String(formData.get('reviewId') ?? '').trim();
+  if (!id) redirect('/disputes?error=review_flag');
+  try {
+    await tenantClient().reviews.flag(id);
+  } catch (e) {
+    redirect(`/disputes?error=${flagErrorKey(e instanceof SdkError ? e.code : null, e instanceof SdkError ? e.status : null)}`);
+  }
+  revalidatePath('/disputes');
+  redirect('/disputes?ok=review_flag');
 }
 
 export async function resolveDisputeAction(formData: FormData): Promise<void> {

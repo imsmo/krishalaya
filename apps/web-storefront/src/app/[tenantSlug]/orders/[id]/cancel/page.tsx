@@ -160,7 +160,7 @@ export default async function TenantCancelPage({ params, searchParams }: { param
             <label htmlFor="c-note" className="kv-form__label">{t.t('store3a.cancel.note')}</label>
             <textarea id="c-note" name="note" className="kv-field__input" rows={3} maxLength={CANCEL_NOTE_MAX} defaultValue={keptNote} data-kv-note="other" />
             <p className="kv-detail__muted">{t.t('store3a.cancel.noteHint', { max: formatNumber(CANCEL_NOTE_MAX, lang) })}</p>
-            <SubmitButton idle={t.t('store3a.cancel.submit')} busy={t.t('store3a.cancel.busy')} />{' '}
+            <SubmitButton idle={t.t('store3a.cancel.submit')} busy={t.t('store3a.cancel.busy')} className="kv-btn kv-btn--money" />{' '}
             <Link href={orderHref(slug, order.id)} className="kv-btn--link" data-kv-keep="order">{t.t('store3a.cancel.keep')}</Link>
           </form>
         )}

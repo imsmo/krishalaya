@@ -6,7 +6,9 @@ import { Review } from '../domain/review.entity';
 import { ReviewEventType } from '../domain/reviews.events';
 import { InvalidReviewError, ReviewRemovedError } from '../domain/reviews.errors';
 
-const mk = (over: any = {}) => Review.submit({ id: 'rv1', tenantId: 't1', orderId: 'o1', reviewerUserId: 'buyer1', targetType: 'seller', targetId: 'seller1', stars: 5, ...over });
+// PC-56 STORE-5a · B1: a review carries its lock instant (stamped at submit by the service) — here a week ahead, so the edit cases are inside it
+const mk = (over: any = {}) => Review.submit({ id: 'rv1', tenantId: 't1', orderId: 'o1', reviewerUserId: 'buyer1', targetType: 'seller', targetId: 'seller1', stars: 5,
+  editLocksAt: new Date(Date.now() + 7 * 86_400_000), ...over });
 
 describe('review.state machine', () => {
   it('allows documented transitions, forbids illegal ones', () => {

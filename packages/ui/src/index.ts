@@ -103,6 +103,9 @@ export {
 export type { ThemePreference, ThemeHtmlAttrs } from './mechanisms/theme';
 
 export { isSeniorOn, seniorConsoleStyles } from './mechanisms/seniorMode';
+// PC-56 STORE-5a · D4: High contrast + Calm motion — per device, fail-closed parsers next to isSeniorOn
+export { isContrastOn, isCalmMotionOn, ACCESSIBILITY_COOKIE_VALUES } from './mechanisms/accessibilityModes';
+export type { AccessibilityMode } from './mechanisms/accessibilityModes';
 export { densityStyles } from './mechanisms/density';
 
 // --- PC-56 TENANT-13d · white-label: the contrast law and the brand-surface rule, re-exported from @krishalaya/tokens (one implementation) ---

@@ -71,3 +71,22 @@ cross-tenant RLS denial.
 - **`ReviewPromptsJob`** (worker) — nudges both parties of a recently-completed order/booking to rate the
   counterparty via `reviews.review_prompt` (recipientUserIds fan-out). Gated by `review_eligibility.prompted_at`
   (migration 0044) so a re-run never re-nudges; cross-tenant, SKIP LOCKED, bounded.
+
+## PC-56 STORE-5a (migration 0218) — what changed, and which lines above are no longer true
+- **The organisation responds and flags; it never hides or removes** (founder D2). `review.moderate` (hide / remove / restore) is the
+  platform desk's — `support_agent` only after 0218 (tenant_admin and ai_ops lost it); `review.flag` (→ `under_moderation`) is granted to
+  tenant_admin and support_agent; `listing.moderate` no longer admits review moderation (`policies/reviews.policies.ts`). `respond` is the
+  ORGANISATION's reply: any active organisation role here, a review OF the organisation's seller only, audited `review.responded`, served
+  `respondedBy: 'organisation'` on every read — never a person ("the reviewed party responds" above is superseded).
+- **The rules the canon states** (`domain/review-rules.ts`, founder D3): sub-rating keys must be ACTIVE `review_dimension` codes (422
+  REVIEW_DIMENSION_UNKNOWN); the author edits for `reviews.edit_window_hours` (168) — then 409 REVIEW_LOCKED (the entity's rule, the clock
+  passed in), every edit audited `review.edited { before, after }`; a review needs the eligibility's window open — `reviews.invite_window_days`
+  (30) from completion, else 409 REVIEW_WINDOW_CLOSED. The public label is "Verified buyer" (`label: 'verified_buyer'`) only (founder D5).
+- **New reads**: `GET /v1/reviews/mine?orderId=` (the author's review + `editLocksAt` + `editable`), `GET /v1/reviews/eligibility?orderId=`
+  (`{ eligible, expiresAt, windowOpen, reviewed, reviewId? }` — never a counterparty id), `POST /v1/reviews/preview` (the W3145 confirm: the
+  server's review as it will publish — writes nothing), `GET /v1/reviews?box=organisation` (the organisation's own reviews, members only). The
+  vocabulary is read through the existing `GET /v1/lookups/values?type=review_dimension`.
+- **The review-prompts clock is REGISTERED** (`jobs/review-prompts.job.ts` `ReviewPromptsClock`, `core/jobs/clock-cadence.ts` row
+  `review-prompts`, every 60 min — the "(worker)" and "need the notifications module" lines above are superseded): ONE `review.prompt` per open
+  eligibility and ONE `review.reminder` `reviews.reminder_after_days` (7) after the invite while the window is open and nobody has reviewed the
+  order (`reminded_at`, stamped in the same transaction). Templates en / hi / gu in seed core/0007.

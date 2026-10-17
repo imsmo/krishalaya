@@ -92,7 +92,8 @@ describe('STORE-3a · W291 the rules and W3083 the confirm', () => {
   it('the pending lock: while the act is in flight the button is disabled and says so', async () => {
     C.pending = true;
     const h = await page(OID.cod);
-    expect(h).toMatch(/<button type="submit" class="kv-btn" disabled="" aria-busy="true">Cancelling…<\/button>/);
+    // PC-56 STORE-5a · D4: a money action (the cancel refunds) is 56px in every mode — kv-btn--money
+    expect(h).toMatch(/<button type="submit" class="kv-btn kv-btn--money" disabled="" aria-busy="true">Cancelling…<\/button>/);
   });
   it('the vocabulary unreadable → no form (a cancel without a reason would be refused) — said, with a Retry', async () => {
     C.reasons = new Error('down');

@@ -3,7 +3,8 @@
 //
 //   • the buyer's five tabs (founder D4) and their hrefs under the ORGANISATION's chrome (`/<slug>/orders`, founder D3);
 //   • which acts an order shows — the Pay link (awaiting the buyer's payment, NEVER an auction order: its pay step still sends the total — 3c),
-//     the "I received it" act (delivered AND paid into escrow only — lead's D6, FAIL-CLOSED like the API), the cancel door (the API's
+//     the "I received it" act (PC-56 STORE-5a · D1: EVERY delivered order — escrow-funded or pay-on-delivery; the confirm sentence differs by
+//     funding), the cancel door (the API's
 //     `isCancellable`: through `ready`), the acceptance-deadline sentence (not for an auction order — the clock does not run for it);
 //   • the cancel form's codec (a reason from the vocabulary; `other` needs a note ≤ 280) and every named outcome of the cancel and complete acts;
 //   • the refund view of a cancelled order, from the payment read (`refund` — 0210 — and the newest attempt): nothing was paid / starting /
@@ -65,14 +66,21 @@ interface OrderFacts { status?: unknown; paymentState?: unknown; source?: unknow
 export function showsPayLink(o: OrderFacts): boolean {
   return o.paymentState === 'pending';
 }
-/** "I received it" (lead's D6, Law 9): ONLY a delivered order that was PAID INTO ESCROW. FAIL-CLOSED: any other state, an unknown payment state
+/** PC-56 STORE-5a · D1 (HOTFIX-7 Q1, founder 2026-10-17): "I received it" shows for EVERY delivered order. The API has let the buyer complete
+ *  a pay-on-delivery order since HOTFIX-7 (completion is always allowed; SETTLEMENT is what fails closed: an unfunded escrow releases nothing —
+ *  `order.settlement_skipped`). What differs is the confirm sentence (`receivedConfirmKey`): an escrow-funded order releases the payment to the
+ *  organisation; a pay-on-delivery order releases nothing — it closes the order. The old pay-on-delivery line ("the organisation completes it",
+ *  `codDeliveredLine`) is REMOVED: since 0217 the organisation cannot complete it, so the sentence was false.
+ *  (was:) "I received it" (lead's D6, Law 9): ONLY a delivered order that was PAID INTO ESCROW. FAIL-CLOSED: any other state, an unknown payment state
  *  or a pay-on-delivery order (`none`) → false (the API refuses the act too: ORDER_COMPLETE_REQUIRES_ESCROW). */
 export function showsReceivedAct(o: OrderFacts): boolean {
-  return o.status === 'delivered' && o.paymentState === 'paid';
+  return o.status === 'delivered';
 }
-/** A delivered pay-on-delivery order: the organisation completes it — said honestly instead of offering an act that would be refused. */
-export function codDeliveredLine(o: OrderFacts): boolean {
-  return o.status === 'delivered' && o.paymentState === 'none';
+/** The inline confirm's sentence (STORE-5a · D1): paid into escrow → "this releases the payment to the organisation"; anything else (pay on
+ *  delivery) → "you paid in cash; nothing is released — this closes the order". FAIL-CLOSED toward the cash sentence: only a PAID order is
+ *  told a payment is released. */
+export function receivedConfirmKey(o: OrderFacts): 'store3a.received.confirm' | 'store3a.received.confirmCod' {
+  return o.paymentState === 'paid' ? 'store3a.received.confirm' : 'store3a.received.confirmCod';
 }
 /** The API's `isCancellable` (apps/api orders/domain/order.state.ts): free cancel with a full refund to source through `ready` (founder D1). */
 export const CANCELLABLE_STATUSES = ['created', 'payment_pending', 'confirmed', 'packed', 'ready'] as const;

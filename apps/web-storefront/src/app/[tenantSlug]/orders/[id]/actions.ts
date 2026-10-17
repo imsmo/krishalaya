@@ -2,9 +2,10 @@
 // apps/web-storefront/src/app/[tenantSlug]/orders/[id]/actions.ts · PC-56 STORE-3a · C2 — the order page's acts. AUTHENTICATED (requireSession +
 // the authed serverClient); the API re-checks ownership, the legal transition and the money rule on every call (reflect, never grant):
 //   • completeOrderAction — the buyer's "I received it" (lead's D6, Law 9): `orders.complete(id, key)` under the key MINTED WHEN THE PAGE
-//     RENDERED (a double tap / a retried post is the same request — the API is idempotent on it). The act RELEASES the payment to the
-//     organisation; the page offers it only for a delivered order paid into escrow, and the API refuses any other buyer completion by name
-//     (ORDER_COMPLETE_REQUIRES_ESCROW). Named outcomes, never a generic failure for a cause the server named;
+//     RENDERED (a double tap / a retried post is the same request — the API is idempotent on it). PC-56 STORE-5a · D1: offered for EVERY
+//     delivered order — an escrow-funded completion releases the payment to the organisation; a pay-on-delivery completion releases NOTHING
+//     (HOTFIX-7: settlement fails closed, `order.settlement_skipped`) and closes the order (the eligibility for a review is born either way).
+//     ORDER_COMPLETE_REQUIRES_ESCROW was retired for the buyer by HOTFIX-7 (still mapped by name). Named outcomes, never a generic failure;
 //   • raiseDisputeAction — `disputes.raise` (the dispute door is shown only when the store's `disputes` flag is ON — founder D2).
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
