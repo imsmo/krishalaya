@@ -97,6 +97,19 @@ describe('STORE-1a · brand guard', () => {
     for (const f of files) expect([f, /krishalaya\.in/i.test(readFileSync(f, 'utf8'))]).toEqual([f, false]);
   });
 
+  // PC-56 STORE-6a · D6 / D7 (founders Q6 / Q10): the offline page, the queued-actions list and the install page live under the organisation's chrome
+  // on its store — none of their sentences names the platform; the manifest's description names the organisation alone ({tenant}, no {platform})
+  it.each(Object.entries(CATS))('%s: no store6 value carries the platform\'s name; the tenant manifest description has no {platform}', (_l, cat) => {
+    const keys = Object.keys(cat).filter((k) => k.startsWith('store6.'));
+    expect(keys.length).toBeGreaterThan(150);
+    for (const k of keys) {
+      const v = (cat as Record<string, string>)[k];
+      for (const lit of PLATFORM_LITERALS) expect([k, v.includes(lit)]).toEqual([k, false]);
+      expect([k, v.includes('{platform}')]).toEqual([k, false]);
+    }
+    expect((cat as Record<string, string>)['store6.manifest.description']).toContain('{tenant}');
+  });
+
   it('the one brand entry: the token name in English, the decided vernacular spellings in hi / gu', () => {
     expect(en['brand.platform']).toBe(PLATFORM_BRAND.name);
     expect(hi['brand.platform']).toBe('कृषालय');

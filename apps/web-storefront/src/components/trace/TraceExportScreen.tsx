@@ -51,7 +51,7 @@ export async function TraceExportScreen({ chrome, qrToken, searchParams }: { chr
     </>
   );
   const requestForm = (label: string) => (
-    <form action={requestTraceExportAction} className="kv-inline-form" data-kv-form="trace-export">
+    <form action={requestTraceExportAction} data-kv-act-class="countdown" data-kv-needs-signal-reason="exportLink" className="kv-inline-form" data-kv-form="trace-export">
       <input type="hidden" name="chrome" value={chromeField(chrome)} />
       <input type="hidden" name="qrToken" value={qrToken} />
       <input type="hidden" name="key" value={key} />
@@ -111,7 +111,7 @@ export async function TraceExportScreen({ chrome, qrToken, searchParams }: { chr
           </table>
           <p className="kv-detail__muted">{t.t('store5b.export.csv')}</p>
           {v.phase === 'ready' && v.downloadable && (
-            <form action={mintTraceDownloadAction} className="kv-inline-form" data-kv-form="trace-download">
+            <form action={mintTraceDownloadAction} data-kv-act-class="countdown" data-kv-needs-signal-reason="exportLink" className="kv-inline-form" data-kv-form="trace-download">
               <input type="hidden" name="chrome" value={chromeField(chrome)} />
               <input type="hidden" name="qrToken" value={qrToken} />
               <input type="hidden" name="id" value={v.jobId} />

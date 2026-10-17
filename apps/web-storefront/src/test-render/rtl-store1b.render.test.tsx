@@ -8,6 +8,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 const mock = { lang: 'en' };
 jest.mock('next/navigation', () => ({ ...jest.requireActual('next/navigation'), notFound: () => { throw new Error('NEXT_NOT_FOUND'); }, redirect: (to: string) => { throw new Error(`REDIRECT ${to}`); } }));
+// PC-56 STORE-6a: the chrome layouts read the middleware's request headers (x-kv-cacheable / x-kv-shell / x-kv-tenant-slug) — none here
+jest.mock('next/headers', () => ({ headers: () => new Headers(), cookies: () => ({ get: () => undefined, has: () => false }) }));
 jest.mock('../lib/env', () => ({ env: { publicApiUrl: 'https://api.test', serverApiUrl: 'https://api.test', appName: 'Krishalaya', siteUrl: '', platformTenantSlug: null, tenantAppUrl: null, razorpayKeyId: null } }));
 jest.mock('../lib/i18n', () => {
   const { Translator: T } = jest.requireActual('@krishalaya/i18n');

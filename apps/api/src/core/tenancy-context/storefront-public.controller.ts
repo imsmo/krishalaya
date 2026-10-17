@@ -13,6 +13,8 @@
 //                                     carries ONLY the platform-scoped keys; a tenant-scoped key (`group_lots`) is answered only for a tenant.
 //                                     PC-56 STORE-2a (founder D4) adds `storefront_browse` — platform-scoped, fail-open (see FAIL_OPEN_FLAGS).
 //                                     PC-56 STORE-2b (founder D2) adds `storefront_cart` — platform-scoped, fail-open, buying's kill-switch.
+//                                     PC-56 STORE-6a (founder D4/D2) adds `storefront_pwa` — platform-scoped, fail-open, the worker's kill-switch —
+//                                     and `storefront_offline_reads` — tenant-scoped, fail-closed (15 keys).
 //   GET /v1/storefront/plans?country=XX  STORE-1c · D2 — the PUBLIC plan catalogue of a country (a platform table, no RLS — read model header)
 //
 // No money moves, nothing is written: each is a SELECT through a 0204 SECURITY DEFINER function (storefront-public.read-model.ts), or — for
@@ -39,15 +41,21 @@ import { StorefrontPublicReadModel, countryParam } from './storefront-public.rea
 // has not published farm-to-fork traces" (the scan's TRACE_NOT_PUBLISHED) instead of a broken page.
 // PC-56 STORE-5b · B5 (founder D1): + `certificates_public` (13 keys) — TENANT-scoped and fail-closed like `traceability`: the trace page links a
 // certificate only when its organisation publishes certificates, and the certificate page's lookup form says "not published" otherwise.
-export const STOREFRONT_PUBLIC_FLAGS = Object.freeze(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse', 'storefront_cart', 'disputes', 'communication', 'traceability', 'certificates_public'] as const);
+// PC-56 STORE-6a (founder D4 + D2, migration 0221): + `storefront_pwa` (15 keys with the next) — the service worker's kill-switch: PLATFORM-scoped
+// (one worker per origin serves every path store, so it is answered with no tenant, the org_self_signup precedent) and FAIL-OPEN (a flag-store
+// outage must never make `/sw.js` serve the self-unregistering worker to every phone — the storefront_browse precedent); + `storefront_offline_reads`
+// — TENANT-scoped and fail-closed like `traceability`: the HOST's organisation decides whether its public pages may be kept on a phone.
+export const STOREFRONT_PUBLIC_FLAGS = Object.freeze(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse', 'storefront_cart', 'disputes', 'communication', 'traceability', 'certificates_public', 'storefront_pwa', 'storefront_offline_reads'] as const);
 export type StorefrontPublicFlag = (typeof STOREFRONT_PUBLIC_FLAGS)[number];
 /** STORE-1c: which allow-listed flags are PLATFORM switches (evaluated with no tenant, answered even when no tenant is in context).
  *  PC-56 STORE-2a · B4 (founder D4, 0207): + `storefront_browse`, the public catalogue's kill-switch — a platform switch like org_self_signup. */
 // PC-56 STORE-2b · B5 (founder D2, 0208): + `storefront_cart`, buying's kill-switch (cart + checkout) — platform-scoped, fail-open like browse.
-export const PLATFORM_SCOPED_FLAGS: ReadonlySet<StorefrontPublicFlag> = new Set<StorefrontPublicFlag>(['org_self_signup', 'storefront_browse', 'storefront_cart']);
+// PC-56 STORE-6a · B (founder D4): + `storefront_pwa`, the service worker's kill-switch — the FOURTH platform-scoped key.
+export const PLATFORM_SCOPED_FLAGS: ReadonlySet<StorefrontPublicFlag> = new Set<StorefrontPublicFlag>(['org_self_signup', 'storefront_browse', 'storefront_cart', 'storefront_pwa']);
 /** STORE-2a: the allow-listed flags whose flag-store FAILURE reads ON (fail open) — the same answer the API's own gate gives
  *  (modules/listings/storefront-browse.guard.ts): a read-only kill-switch for humans; a dead flag store must not dark every store. */
-export const FAIL_OPEN_FLAGS: ReadonlySet<StorefrontPublicFlag> = new Set<StorefrontPublicFlag>(['storefront_browse', 'storefront_cart']);
+// PC-56 STORE-6a · B (founder D4): + `storefront_pwa` — a dead flag store must not unregister every phone's worker (it reads ON, as seeded).
+export const FAIL_OPEN_FLAGS: ReadonlySet<StorefrontPublicFlag> = new Set<StorefrontPublicFlag>(['storefront_browse', 'storefront_cart', 'storefront_pwa']);
 
 const notFound = () => new DomainError('TENANT_NOT_FOUND', 'No organisation is served here', 404);
 const one = (v: unknown): string | undefined => (typeof v === 'string' && v.length > 0 ? v : undefined);

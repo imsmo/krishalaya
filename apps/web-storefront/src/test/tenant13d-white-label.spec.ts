@@ -6,7 +6,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import type { PublishedBrand, TenantBranding } from '@krishalaya/sdk-js';
 import {
-  brandCss, brandNoteDecision, brandSeenCookie, brandingForMark, hostRewritePath, logoSrc, platformManifest, poweredByVisible, tenantManifest, PLATFORM_BRAND,
+  brandCss, brandNoteDecision, brandSeenCookie, brandingForMark, hostRewritePath, logoSrc, platformManifest, poweredByVisible, tenantManifest, PLATFORM_BRAND, PLATFORM_ICONS,
 } from '../features/branding/brand-theme';
 import { isOwnHost } from '../lib/host-routing';
 
@@ -29,14 +29,29 @@ describe('PC-56 TENANT-13d · manifest and metadata are tenant-aware', () => {
     const m = tenantManifest(branding(null), 'anand-fpo', '/anand-fpo', 'https://api.example', 'desc');
     expect(m.name).toBe('Anand FPO'); expect(m.name).not.toBe(PLATFORM_BRAND.platformStoreName); expect(m.theme_color).toBe('#1e6f3f');
   });
+  // PC-56 STORE-6a · D6 (founder Q6): a tenant manifest NEVER carries a platform icon — with a logo (SVG or PNG) or without (the monogram)
+  it('STORE-6a: no platform icon in a tenant manifest — logo, PNG logo, or the monogram before a logo is published; id / lang / dir', () => {
+    const srcs = PLATFORM_ICONS.map((i) => i.src);
+    for (const b of [branding(brand()), branding(brand({ logoMime: 'image/png' })), branding(null), branding(brand({ logoPath: null, logoMime: null } as never))]) {
+      const m = tenantManifest(b, 'anand-fpo', '/anand-fpo', 'https://api.example', 'desc', { lang: 'hi', dir: 'ltr' });
+      for (const i of m.icons) expect(srcs).not.toContain(i.src);
+      expect(m.icons.length).toBeGreaterThan(0);
+      expect([m.id, m.lang, m.dir]).toEqual(['/anand-fpo', 'hi', 'ltr']);
+    }
+    expect(tenantManifest(branding(null), 'anand-fpo', '/anand-fpo', 'https://api.example', 'desc').icons[0].src).toBe('/anand-fpo/app-icon.svg');
+    expect(platformManifest('d').icons).toEqual(PLATFORM_ICONS);
+  });
   it('only the platform\'s own pages get the platform manifest (from the one brand-mark list)', () => {
     expect(platformManifest('d')).toMatchObject({ name: PLATFORM_BRAND.platformStoreName, short_name: PLATFORM_BRAND.name });
   });
   it('the [tenantSlug] layout sets title, manifest and theme colour from the brand; the root manifest reads the Host-routed tenant', () => {
     const layout = readFileSync(join(SRC, 'app', '[tenantSlug]', 'layout.tsx'), 'utf8');
-    expect(layout).toMatch(/manifest: `\/\$\{params\.tenantSlug\}\/manifest\.webmanifest`/);
+    // PC-56 STORE-6a · D6: ONE manifest per store — the host-root one on the store's own host, its own path on a path store
+    expect(layout).toMatch(/manifest: hostRouted\(params\.tenantSlug\) \? '\/manifest\.webmanifest' : `\/\$\{params\.tenantSlug\}\/manifest\.webmanifest`/);
     expect(layout).toMatch(/title: \{ default: name/); expect(layout).toMatch(/themeColor: brandColours\(b\?\.brand\)\?\.primary/);
-    expect(readFileSync(join(SRC, 'app', 'manifest.ts'), 'utf8')).toMatch(/TENANT_SLUG_HEADER/);
+    // PC-56 STORE-6a · D6: the host-root manifest is a ROUTE (it was the `app/manifest.ts` file convention, which overrode every layout's link)
+    expect(readFileSync(join(SRC, 'app', '(platform)', 'manifest.webmanifest', 'route.ts'), 'utf8')).toMatch(/TENANT_SLUG_HEADER/);
+    expect(readFileSync(join(SRC, 'app', 'layout.tsx'), 'utf8')).toMatch(/manifest: '\/manifest\.webmanifest'/);
   });
   // PC-56 STORE-1b · founder decision D2 (2026-10-13): the platform store is "Krishalaya Bazaar" (it was "Krishalaya Store"). Neither the old
   // nor the new name is a literal in any storefront source — both come from packages/tokens' one brand-mark list.
@@ -92,6 +107,11 @@ describe('PC-56 TENANT-13d · Host routing (storefront)', () => {
     expect(hostRewritePath('anand', '/trace/KVTR9J4K2M/verify')).toBe('/anand/trace/KVTR9J4K2M/verify');
     expect(hostRewritePath('anand', '/certificates')).toBe('/anand/certificates');
     expect(hostRewritePath('anand', '/trace')).toBeNull();   // the code-entry page is the platform's
+    // PC-56 STORE-6a · C3: the offline page (the worker's fallback on a store host), the queued-actions list and the install page are the store's
+    expect(hostRewritePath('anand', '/offline')).toBe('/anand/offline');
+    expect(hostRewritePath('anand', '/queued')).toBe('/anand/queued');
+    expect(hostRewritePath('anand', '/app')).toBe('/anand/app');
+    expect(hostRewritePath('anand', '/offline/x')).toBeNull();
   });
   it('the storefront\'s own hosts are never sent to the API', () => {
     expect(isOwnHost('localhost:3001', '')).toBe(true); expect(isOwnHost('127.0.0.1', '')).toBe(true);

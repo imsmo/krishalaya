@@ -194,7 +194,7 @@ export default async function TenantOrderPage({ params, searchParams }: { params
           <h2 id="received-h">{t.t('store3a.received.title')}</h2>
           {paid && order.qualityWindowEnds && <p className="kv-detail__muted" data-kv-window="quality">{t.t('store3a.received.window', { date: when(order.qualityWindowEnds, lang) })}</p>}
           {confirming ? (
-            <form action={completeOrderAction} className="kv-form" data-kv-confirm="received" data-kv-funding={paid ? 'escrow' : 'cash'}>
+            <form action={completeOrderAction} data-kv-act-class="money" data-kv-needs-signal-reason="received" className="kv-form" data-kv-confirm="received" data-kv-funding={paid ? 'escrow' : 'cash'}>
               <input type="hidden" name="slug" value={slug} />
               <input type="hidden" name="id" value={order.id} />
               <input type="hidden" name="key" value={actKey('complete', order.id, randomUUID())} />
@@ -221,7 +221,7 @@ export default async function TenantOrderPage({ params, searchParams }: { params
         {!disputesOn ? (
           <p className="kv-detail__muted">{t.t('store3a.dispute.off')}</p>
         ) : canDispute(order.status) ? (
-          <form action={raiseDisputeAction} className="kv-form">
+          <form action={raiseDisputeAction} data-kv-act-class="money" data-kv-needs-signal-reason="raiseDispute" className="kv-form">
             <input type="hidden" name="slug" value={slug} />
             <input type="hidden" name="id" value={order.id} />
             <input type="hidden" name="key" value={`dispute:${order.id}:${randomUUID()}`} />

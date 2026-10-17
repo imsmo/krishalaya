@@ -53,7 +53,7 @@ export function BuyerActions({ listing, tenantSlug, offers = false, keptQty = nu
       )}
 
       {offerable && (
-        <form action={makeOfferAction} className="kv-actions__form" id="offer" data-kv-offer="form" data-kv-prefill={offerPrefill?.qty || offerPrefill?.price ? 'offer-again' : undefined}>
+        <form action={makeOfferAction} data-kv-act-class="money" data-kv-needs-signal-reason="makeOffer" className="kv-actions__form" id="offer" data-kv-offer="form" data-kv-prefill={offerPrefill?.qty || offerPrefill?.price ? 'offer-again' : undefined}>
           <input type="hidden" name="tenantSlug" value={tenantSlug} />
           <input type="hidden" name="listingId" value={listing.id} />
           <input type="hidden" name="available" value={String(listing.quantityAvailable)} />

@@ -334,6 +334,12 @@ export interface StorefrontFlags {
   /** PC-56 STORE-5b · B5 (founder D1) — tenant-scoped, fail-closed: does this organisation publish its certificates (seed: OFF)? OFF = the
    *  certificate page says "not published" (CERTIFICATE_NOT_PUBLISHED), never "not found". */
   certificates_public?: boolean;
+  /** PC-56 STORE-6a (founder D4, 0221) — the PLATFORM kill-switch for the storefront's service worker; always answered (a flag-store failure
+   *  reads ON). OFF = `/sw.js` serves a self-unregistering worker. Seeded ON (a named Law 10 exception: live since PC-24c). */
+  storefront_pwa?: boolean;
+  /** PC-56 STORE-6a (founder D2, 0221) — tenant-scoped, fail-closed: may the public pages a person opened on this organisation's store be kept on
+   *  their phone (20 pages / 7 days, never signed in, no photos) and shown offline with an "as of" band (seed: OFF)? Absent with no tenant. */
+  storefront_offline_reads?: boolean;
 }
 /** PC-56 STORE-1c · D2 — one PUBLIC plan of a country. Money = bigint minor-unit STRINGS + the currency and its exponent (from the DB). */
 export interface StorefrontPlan {

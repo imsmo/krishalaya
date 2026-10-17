@@ -97,7 +97,7 @@ export async function DeleteScreen({ chrome, searchParams }: { chrome: AccountCh
             : t.t('store4a.delete.keptNoYears', { n: formatNumber(v.invoiceCount, lang) })}</p>
           <p data-kv-cooling-days={v.coolingDays}>{t.t('store4a.delete.erased', { days: formatNumber(v.coolingDays, lang) })}</p>
           <p className="kv-detail__muted" data-kv-recorded>{t.t('store4a.delete.recorded')}</p>
-          <form action={requestDeletionAction} className="kv-inline-form">
+          <form action={requestDeletionAction} data-kv-act-class="money" data-kv-needs-signal-reason="requestDeletion" className="kv-inline-form">
             <input type="hidden" name="chrome" value={chromeField(chrome)} />
             <input type="hidden" name="key" value={key} />
             <button type="submit" className="kv-btn" data-kv-submit="delete">{t.t(failure ? 'store4a.mutate.retry' : 'store4a.delete.confirm')}</button>

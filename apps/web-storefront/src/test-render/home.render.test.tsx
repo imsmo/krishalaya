@@ -11,6 +11,8 @@ import * as React from 'react';
 const mock: { stats: unknown; feed: unknown; cats: unknown; lang: string } = { stats: null, feed: null, cats: [], lang: 'en' };
 const fail = (status: number) => { throw Object.assign(new Error('api'), { status }); };
 
+// PC-56 STORE-6a: the chrome layouts read the middleware's request headers (x-kv-cacheable / x-kv-shell / x-kv-tenant-slug) — none here
+jest.mock('next/headers', () => ({ headers: () => new Headers(), cookies: () => ({ get: () => undefined, has: () => false }) }));
 jest.mock('../lib/env', () => ({ env: { publicApiUrl: 'https://api.test', serverApiUrl: 'https://api.test', appName: 'Krishalaya', siteUrl: '', platformTenantSlug: null, tenantAppUrl: null, razorpayKeyId: null } }));
 jest.mock('../lib/i18n', () => {
   const { Translator: T } = jest.requireActual('@krishalaya/i18n');

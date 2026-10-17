@@ -119,7 +119,7 @@ export default async function TenantPayPage({ params, searchParams }: { params: 
       {!payOn ? (
         <p className="kv-form__notice" role="status" data-kv-pay="off">{t.t('checkout.payOff')}</p>
       ) : viaWallet && walletOk ? (
-        <form action={payFromWalletAction} className="kv-checkout__form" data-kv-form="wallet-pay">
+        <form action={payFromWalletAction} data-kv-act-class="money" data-kv-needs-signal-reason="payFromWallet" className="kv-checkout__form" data-kv-form="wallet-pay">
           <input type="hidden" name="slug" value={slug} />
           <input type="hidden" name="orderId" value={orderId} />
           {groupId && <input type="hidden" name="groupId" value={groupId} />}

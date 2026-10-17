@@ -50,7 +50,7 @@ export async function DataRightsScreen({ chrome, searchParams }: { chrome: Accou
     </>
   );
   const requestForm = (
-    <form action={requestExportAction} className="kv-inline-form" data-kv-form="export-request">
+    <form action={requestExportAction} data-kv-act-class="countdown" data-kv-needs-signal-reason="exportLink" className="kv-inline-form" data-kv-form="export-request">
       <input type="hidden" name="chrome" value={chromeField(chrome)} />
       <input type="hidden" name="key" value={key} />
       <button type="submit" className="kv-btn" data-kv-cta="request-export">{t.t(v.phase === 'none' ? 'store4a.data.request' : 'store4a.data.requestAgain')}</button>
@@ -109,7 +109,7 @@ export async function DataRightsScreen({ chrome, searchParams }: { chrome: Accou
           </table>
           <p className="kv-detail__muted">{t.t('store4a.data.contents')}</p>
           {v.phase === 'ready' && v.downloadable && v.jobId && (
-            <form action={mintDownloadAction} className="kv-inline-form" data-kv-form="download">
+            <form action={mintDownloadAction} data-kv-act-class="countdown" data-kv-needs-signal-reason="exportLink" className="kv-inline-form" data-kv-form="download">
               <input type="hidden" name="chrome" value={chromeField(chrome)} />
               <input type="hidden" name="id" value={v.jobId} />
               <button type="submit" className="kv-btn" data-kv-cta="download">{v.linkTtlSec ? t.t('store4a.data.download', { n: formatNumber(Math.round(v.linkTtlSec / 60), lang) }) : t.t('store4a.data.downloadPlain')}</button>

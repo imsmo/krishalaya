@@ -25,7 +25,6 @@ import { maskForDisplay } from '../features/chain/mask';
 import { requestCodeAction, verifyCodeAction, verifyTwoFactorAction, resendCodeAction, resetLoginAction } from '../app/(platform)/login/actions';
 import { SubmitButton } from './SubmitButton';
 import { ResendButton } from './ResendButton';
-import { OnlineGuard } from './OnlineGuard';
 
 type T = ReturnType<typeof getTranslator>;
 const ERR_ID = 'kv-login-error';
@@ -55,10 +54,8 @@ export interface LoginScreenProps { routeSlug: string | null; searchParams: Reco
 export async function LoginScreen({ routeSlug, searchParams }: LoginScreenProps) {
   const t = getTranslator();
   const p = readLoginParams(searchParams);
-  const signalLabels = {
-    banner: t.t('auth.offline.banner'), detail: t.t('auth.offline.detail'), needsSignal: t.t('auth.offline.needsSignal'),
-    policy: t.t('auth.offline.policy'), policyHref: '/offline',
-  };
+  // PC-56 STORE-6a · D1: the signal guard is the CHROME's now (mounted once in each layout — its "Why?" opens THIS store's offline page); the
+  // code forms below carry `data-kv-needs-signal-reason="signInCode"`, so offline their buttons say why: a code has a clock.
 
   const tenant = await resolveStorefrontTenant(routeSlug);
   if (!tenant.ok) {
@@ -118,11 +115,10 @@ export async function LoginScreen({ routeSlug, searchParams }: LoginScreenProps)
     const bad = err !== null && TWO_FA_ERRORS.includes(err);
     return (
       <section className="kv-auth" aria-labelledby="kv-auth-h">
-        <OnlineGuard labels={signalLabels} />
         <h1 id="kv-auth-h">{t.t('auth.2fa.heading')}</h1>
         <p className="kv-prose__lead">{t.t('auth.2fa.lead')}</p>
         {alert}
-        <form action={verifyTwoFactorAction} className="kv-form">
+        <form action={verifyTwoFactorAction} data-kv-act-class="countdown" data-kv-needs-signal-reason="signInCode" className="kv-form">
           {hidden}
           <div className="kv-field">
             <label htmlFor="kv-totp" className="kv-field__label">{t.t('auth.2fa.codeLabel')}</label>
@@ -150,7 +146,6 @@ export async function LoginScreen({ routeSlug, searchParams }: LoginScreenProps)
     const masked = maskForDisplay(pending.phone);
     return (
       <section className="kv-auth" aria-labelledby="kv-auth-h">
-        <OnlineGuard labels={signalLabels} />
         <h1 id="kv-auth-h">{t.t('auth.code.heading')}</h1>
         <p className="kv-prose__lead">
           {t.t('auth.code.sentTo', { phone: masked })}
@@ -159,7 +154,7 @@ export async function LoginScreen({ routeSlug, searchParams }: LoginScreenProps)
         {p.sent && !error && <p className="kv-form__notice" role="status">{t.t('auth.code.resent')}</p>}
         {!p.sent && !error && <p className="kv-form__notice" role="status">{t.t('auth.code.sentNotice', { phone: masked })}</p>}
         {alert}
-        <form action={verifyCodeAction} className="kv-form">
+        <form action={verifyCodeAction} data-kv-act-class="countdown" data-kv-needs-signal-reason="signInCode" className="kv-form">
           {hidden}
           <div className="kv-field">
             <label htmlFor="kv-code" className="kv-field__label">{t.t('auth.code.label')}</label>
@@ -171,7 +166,7 @@ export async function LoginScreen({ routeSlug, searchParams }: LoginScreenProps)
           </div>
           <SubmitButton idle={t.t('auth.code.verify')} busy={t.t('auth.verifying')} />
         </form>
-        <form action={resendCodeAction} className="kv-form">
+        <form action={resendCodeAction} data-kv-act-class="countdown" data-kv-needs-signal-reason="signInCode" className="kv-form">
           {hidden}
           <ResendButton secondsLeft={left} idle={t.t('auth.code.resend')} waiting={t.t('auth.code.resendIn')} busy={t.t('auth.sending')} />
         </form>
@@ -193,11 +188,10 @@ export async function LoginScreen({ routeSlug, searchParams }: LoginScreenProps)
   const rule = phoneRuleFor(tenant.tenant.countryCode ?? tenant.tenant.phoneDefaultCountry);
   return (
     <section className="kv-auth" aria-labelledby="kv-auth-h">
-      <OnlineGuard labels={signalLabels} />
       <h1 id="kv-auth-h">{t.t('auth.phone.heading')}</h1>
       <p className="kv-prose__lead">{t.t('auth.lead')}</p>
       {alert}
-      <form action={requestCodeAction} className="kv-form">
+      <form action={requestCodeAction} data-kv-act-class="countdown" data-kv-needs-signal-reason="signInCode" className="kv-form">
         {hidden}
         <div className="kv-field">
           <label htmlFor="kv-phone" className="kv-field__label">{t.t('auth.phone.label')}</label>

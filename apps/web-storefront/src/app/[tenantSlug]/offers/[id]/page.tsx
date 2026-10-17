@@ -218,7 +218,7 @@ export default async function TenantOfferThread({ params, searchParams }: { para
           )}
 
           {showing === 'accept' && (
-            <form action={acceptOfferAction} className="kv-form" data-kv-confirm="accept">
+            <form action={acceptOfferAction} data-kv-act-class="money" data-kv-needs-signal-reason="respondOffer" className="kv-form" data-kv-confirm="accept">
               <input type="hidden" name="slug" value={slug} />
               <input type="hidden" name="id" value={offer.offerId} />
               <input type="hidden" name="key" value={keyFor('accept')} />
@@ -245,7 +245,7 @@ export default async function TenantOfferThread({ params, searchParams }: { para
               <Link href={self} className="kv-btn--link">{t.t('store3b.notNow')}</Link>
             </form>
           ) : (
-            <form action={counterOfferAction} className="kv-form" data-kv-confirm="counter">
+            <form action={counterOfferAction} data-kv-act-class="money" data-kv-needs-signal-reason="respondOffer" className="kv-form" data-kv-confirm="counter">
               <input type="hidden" name="slug" value={slug} />
               <input type="hidden" name="id" value={offer.offerId} />
               <input type="hidden" name="key" value={keyFor('counter')} />
@@ -259,7 +259,7 @@ export default async function TenantOfferThread({ params, searchParams }: { para
           ))}
 
           {showing === 'decline' && (
-            <form action={declineOfferAction} className="kv-form" data-kv-confirm="decline">
+            <form action={declineOfferAction} data-kv-act-class="money" data-kv-needs-signal-reason="respondOffer" className="kv-form" data-kv-confirm="decline">
               <input type="hidden" name="slug" value={slug} />
               <input type="hidden" name="id" value={offer.offerId} />
               <input type="hidden" name="key" value={keyFor('decline')} />

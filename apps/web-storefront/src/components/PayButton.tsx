@@ -106,7 +106,8 @@ export function PayButton(
   return (
     <div className="kv-pay" data-kv-attempt={attempt}>
       {error && <p className="kv-form__error" role="alert">{error}</p>}
-      <button type="button" className="kv-btn kv-btn--money" onClick={onPay} disabled={busy}>
+      {/* PC-56 STORE-6a · D1: a money act outside any form — features/store6/signal-words.ts holds it "— needs signal" offline, with the reason */}
+      <button type="button" className="kv-btn kv-btn--money" onClick={onPay} disabled={busy} data-kv-act-class="money" data-kv-needs-signal-reason="paymentAttempt">
         {busy ? labels.processing : labels.pay}
       </button>
     </div>

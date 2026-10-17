@@ -11,6 +11,7 @@
 //   • the one-time "same organisation, new look" note: shown once when a member who had seen an EARLIER version comes back.
 import { PLATFORM_BRAND, PLATFORM_BRAND_COLOURS, normaliseHex, showsPoweredBy, type BrandSurface } from '@krishalaya/tokens';
 import type { PublishedBrand, TenantBranding } from '@krishalaya/sdk-js';
+import { manifestIdentity, tenantIcons } from '../store6/manifest';
 
 export { PLATFORM_BRAND };
 
@@ -49,20 +50,28 @@ export function brandingForMark(apiOrigin: string, b: TenantBranding | null): { 
   return { displayName: b.displayName, logoUrl: b.logoUrl };
 }
 
+// PC-56 STORE-6a · D6 (survey F-5): + `id`, `lang`, `dir` on both manifests (features/store6/manifest.ts `manifestIdentity`).
 export interface ManifestShape {
+  id: string; lang: string; dir: 'ltr' | 'rtl';
   name: string; short_name: string; description: string; start_url: string; scope?: string; display: 'standalone';
   background_color: string; theme_color: string; icons: Array<{ src: string; sizes: string; type: string; purpose?: 'any' | 'maskable' }>;
 }
-const PLATFORM_ICONS: ManifestShape['icons'] = [
+/** The platform's OWN icons (public/) — the platform manifest's only. Exported so the white-label specs can prove a tenant manifest never
+ *  carries one (PC-56 STORE-6a · D6). */
+export const PLATFORM_ICONS: ManifestShape['icons'] = [
   { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
   { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
   { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
 ];
+/** The language a manifest is written in (the person's language at install — a later switch applies at the next open). */
+export interface ManifestLocale { lang: string; dir: 'ltr' | 'rtl' }
+const DEFAULT_LOCALE: ManifestLocale = { lang: 'en', dir: 'ltr' };
 
 /** The platform's own manifest — only where no tenant is resolved. */
-export function platformManifest(description: string): ManifestShape {
+export function platformManifest(description: string, locale: ManifestLocale = DEFAULT_LOCALE): ManifestShape {
   return {
-    name: PLATFORM_BRAND.platformStoreName, short_name: PLATFORM_BRAND.name, description, start_url: '/', display: 'standalone',
+    ...manifestIdentity('/', locale.lang, locale.dir),
+    name: PLATFORM_BRAND.platformStoreName, short_name: PLATFORM_BRAND.name, description, start_url: '/', scope: '/', display: 'standalone',
     background_color: '#f6faf6', theme_color: PLATFORM_BRAND_COLOURS.primary, icons: PLATFORM_ICONS,
   };
 }
@@ -70,18 +79,21 @@ export function platformManifest(description: string): ManifestShape {
 /**
  * A tenant's manifest: its published name / short name / primary / logo; before it publishes, its OWN name on the platform colours
  * (never the platform's own store name for a tenant's storefront — canon: "Members currently see the platform brand with your name").
+ * PC-56 STORE-6a · D6 (founder Q6): the icons are the ORGANISATION's only — its logo, or its generated monogram (`/<slug>/app-icon.svg`); the
+ * platform's icons are never appended (they were the install fallback, the platform's maskable 512 included). `startUrl` is `/<slug>` on a
+ * path store and `/` on a store's own host (one manifest per store — the caller decides from the host routing).
  */
-export function tenantManifest(b: TenantBranding | null, slug: string, startUrl: string, apiOrigin: string, description: string): ManifestShape {
+export function tenantManifest(b: TenantBranding | null, slug: string, startUrl: string, apiOrigin: string, description: string, locale: ManifestLocale = DEFAULT_LOCALE): ManifestShape {
   const brand = b?.brand ?? null;
   const c = brandColours(brand);
   const name = (brand?.displayName || b?.displayName || slug).trim();
   const short = (brand?.appShortName || name).slice(0, 12).trim();
   const logo = logoSrc(apiOrigin, brand);
   return {
+    ...manifestIdentity(startUrl, locale.lang, locale.dir),
     name, short_name: short, description, start_url: startUrl, scope: startUrl, display: 'standalone',
     background_color: c?.surface ?? '#ffffff', theme_color: c?.primary ?? PLATFORM_BRAND_COLOURS.primary,
-    // an SVG logo scales to any size; a PNG is offered at its published bytes — the platform icons stay as the install fallback
-    icons: logo ? [{ src: logo, sizes: brand!.logoMime === 'image/svg+xml' ? 'any' : '512x512', type: brand!.logoMime, purpose: 'any' }, ...PLATFORM_ICONS] : PLATFORM_ICONS,
+    icons: tenantIcons(logo, brand?.logoMime ?? null, slug),
   };
 }
 
@@ -110,5 +122,8 @@ export function hostRewritePath(slug: string, pathname: string): string | null {
   // chrome (another organisation's lot is sent on to the platform's page by the screen); the certificate page likewise
   if (pathname.startsWith('/trace/') || pathname === '/certificates' || pathname.startsWith('/certificates/')) return `/${slug}${pathname}`;
   if (pathname === '/manifest.webmanifest') return `/${slug}/manifest.webmanifest`;
+  // PC-56 STORE-6a · D6 / C3: the offline page (W313 — the worker's fallback on a store host), the queued-actions list (W314) and the install
+  // page (W319) are the ORGANISATION's on its own host — and the offline page's form states (`/offline?form=…`, the query is kept by the rewrite)
+  if (pathname === '/offline' || pathname === '/queued' || pathname === '/app') return `/${slug}${pathname}`;
   return null;
 }

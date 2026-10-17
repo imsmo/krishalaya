@@ -10,6 +10,7 @@ import { env } from '../lib/env';
 import { getLanguageDef, getTranslator } from '../lib/i18n';
 import { getThemeHtmlAttrs, getSeniorMode, getContrastMode, getCalmMotion } from '../lib/mechanism';
 import { PLATFORM_BRAND } from '../features/branding/brand-theme';
+import { PLATFORM_BRAND_COLOURS } from '@krishalaya/tokens';
 
 export function generateMetadata(): Metadata {
   const t = getTranslator();
@@ -23,13 +24,17 @@ export function generateMetadata(): Metadata {
     robots: { index: true, follow: true },
     // PC-24c: installability (manifest served by app/manifest.ts; iOS uses the apple-touch icon).
     icons: { icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }, { url: '/icon-192.png', sizes: '192x192' }], apple: '/apple-touch-icon.png' },
+    // PC-56 STORE-6a · D6: the manifest is CONFIG metadata (it was the `app/manifest.ts` file convention, which overrides every layout — a path
+    // store linked the platform's manifest); an organisation's layout now replaces it with its own (app/(platform)/manifest.webmanifest/route.ts).
+    manifest: '/manifest.webmanifest',
     // PC-56 TENANT-13d: the platform's own name from PLATFORM_BRAND (never a literal); a tenant's routes override all of this from their
     // published brand ([tenantSlug]/layout.tsx — title, manifest, icon, theme colour).
     appleWebApp: { capable: true, statusBarStyle: 'default', title: env.appName },
   };
 }
 
-export const viewport = { themeColor: '#15803d' };
+// PC-56 STORE-6a (survey F-16): the platform's theme colour is the token (`#1e6f3f`, the manifest's) — it was a second green literal.
+export const viewport = { themeColor: PLATFORM_BRAND_COLOURS.primary };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const lang = getLanguageDef();
@@ -51,10 +56,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* PC-24c: register the conservative offline shell (never caches authed/API responses).
             Progressive enhancement: no SW support (or JS off) → the site works exactly as before.
             PC-56 HOTFIX-8 · D1 (b): the worker is the ROUTE app/sw.js/route.ts (versioned by the build, `Cache-Control: no-cache`), and the
-            registration says `updateViaCache: 'none'` — the browser never answers its update check from the HTTP cache. */}
+            registration says `updateViaCache: 'none'` — the browser never answers its update check from the HTTP cache.
+            PC-56 STORE-6a · D4 (survey F-11): a failed registration is no longer swallowed silently — one console warning (no metric, no
+            beacon), and the page keeps working without a worker (Law 12). */}
         <script
           dangerouslySetInnerHTML={{
-            __html: "if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).catch(function(){})})}",
+            __html: "if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).catch(function(e){if(window.console&&console.warn)console.warn('[kv-sw] the offline worker could not be registered — the site works without it:',e&&e.message)})})}",
           }}
         />
       </body>

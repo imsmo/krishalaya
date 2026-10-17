@@ -131,7 +131,7 @@ export default async function ForOrganisationsPage({ searchParams }: { searchPar
         </p>
         {p.sent && !error && <p className="kv-form__notice" role="status">{t.t('signup.code.resent')}</p>}
         {alert}
-        <form action={confirmCodeAction} className="kv-form">
+        <form action={confirmCodeAction} data-kv-act-class="countdown" data-kv-needs-signal-reason="signupCode" className="kv-form">
           <div className="kv-field">
             <label htmlFor="kv-su-code" className="kv-field__label">{t.t('signup.code.label')}</label>
             <input id="kv-su-code" name="code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="\d{4,8}" maxLength={8}
@@ -140,7 +140,7 @@ export default async function ForOrganisationsPage({ searchParams }: { searchPar
           </div>
           <SubmitButton idle={t.t('signup.code.continue')} busy={t.t('auth.sending')} />
         </form>
-        <form action={resendCodeAction} className="kv-form">
+        <form action={resendCodeAction} data-kv-act-class="countdown" data-kv-needs-signal-reason="signupCode" className="kv-form">
           <ResendButton secondsLeft={left} idle={t.t('auth.code.resend')} waiting={t.t('auth.code.resendIn')} busy={t.t('auth.sending')} />
         </form>
         <form action={editFormAction} className="kv-form">
@@ -164,7 +164,7 @@ export default async function ForOrganisationsPage({ searchParams }: { searchPar
         </dl>
         <p data-kv-review="trial">{trialDays ? t.t('signup.review.trial', { days: formatNumber(trialDays, lang) }) : t.t('signup.review.trialUnknown')}</p>
         <p>{t.t('signup.review.status')}</p>
-        <form action={submitSignupAction} className="kv-form">
+        <form action={submitSignupAction} data-kv-act-class="countdown" data-kv-needs-signal-reason="signupCode" className="kv-form">
           {/* the Idempotency-Key, minted AT RENDER (survey F-14): a double-submit of this form is ONE request */}
           <input type="hidden" name="idem" value={randomUUID()} />
           <SubmitButton idle={t.t('signup.review.submit')} busy={t.t('signup.review.busy')} />
@@ -205,7 +205,7 @@ export default async function ForOrganisationsPage({ searchParams }: { searchPar
         <h2>{t.t('signup.failure.title')}</h2>
         {alert}
         <p>{t.t('signup.failure.lede')}</p>
-        <form action={submitSignupAction} className="kv-form">
+        <form action={submitSignupAction} data-kv-act-class="countdown" data-kv-needs-signal-reason="signupCode" className="kv-form">
           {/* W2470–W2472: the Retry is the SAME request again — the key the first attempt carried (remembered server-side) */}
           <input type="hidden" name="idem" value={pending.idem ?? randomUUID()} />
           <SubmitButton idle={t.t('signup.failure.retry')} busy={t.t('signup.review.busy')} />
@@ -222,7 +222,7 @@ export default async function ForOrganisationsPage({ searchParams }: { searchPar
   } else {
     // the form (W307) — and, with refusals, W2466 / W3064 (the same form, every refusal against its field, every value kept)
     body = (
-      <form action={startSignupAction} className="kv-form kv-card" aria-labelledby="kv-su-form-h" data-kv-step="form">
+      <form action={startSignupAction} data-kv-act-class="countdown" data-kv-needs-signal-reason="signupCode" className="kv-form kv-card" aria-labelledby="kv-su-form-h" data-kv-step="form">
         <h2 id="kv-su-form-h">{t.t('signup.form.title')}</h2>
         {p.fields.length > 0 && <p className="kv-form__error" role="alert" data-kv-state="form-error">{t.t('signup.form.fixFields')}</p>}
         {alert}

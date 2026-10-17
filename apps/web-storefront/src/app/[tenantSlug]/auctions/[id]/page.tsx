@@ -132,7 +132,7 @@ export default async function TenantAuctionPage({ params, searchParams }: { para
       {state === 'scheduled' && <p className="kv-detail__muted" data-kv-state="scheduled">{t.t('store2c.auction.state.scheduled')}</p>}
 
       {v.isOpen && state !== 'scheduled' && (ownStore ? (
-        <form action={placeBidAction} className="kv-auction__bid" data-kv-form="bid">
+        <form action={placeBidAction} data-kv-act-class="money" data-kv-needs-signal-reason="bid" className="kv-auction__bid" data-kv-form="bid">
           <input type="hidden" name="slug" value={slug} />
           <input type="hidden" name="auctionId" value={v.auctionId} />
           <input type="hidden" name="idempotencyKey" value={bidKey} />

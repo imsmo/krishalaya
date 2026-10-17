@@ -81,7 +81,8 @@ describe('HOTFIX-8 · D1 (a) · the offline shell renders session-free', () => {
   it('"Try again" is `/` in the HTML and the script points it at the requested URL when the shell stands in for another page', async () => {
     const h = await render(SESSION);
     expect(h).toMatch(/<a href="\/" class="kv-btn" data-kv-retry="">/);
-    expect(h).toContain("location.pathname!=='/offline'");
+    // PC-56 STORE-6a: the same script recognises the organisation's own offline page too (`/<slug>/offline`) — any path ending in /offline
+    expect(h).toContain("!/\\/offline$/.test(location.pathname)");
     expect(h).toContain("a.setAttribute('href',location.href)");
   });
 

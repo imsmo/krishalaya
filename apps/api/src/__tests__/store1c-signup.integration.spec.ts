@@ -120,7 +120,8 @@ run('PC-56 STORE-1c · for organisations — signup switch, replay, plans, flags
       const f = await request(http).get('/v1/storefront/flags');
       // PC-56 STORE-2a (0207): + storefront_browse, the second platform-scoped switch (seeded ON)
       // PC-56 STORE-2b (0208): + storefront_cart, the third platform-scoped switch (seeded ON)
-      expect(f.body.data).toEqual({ org_self_signup: false, storefront_browse: true, storefront_cart: true });
+      // PC-56 STORE-6a (0221): + storefront_pwa, the fourth platform-scoped switch (seeded ON — the named Law 10 exception)
+      expect(f.body.data).toEqual({ org_self_signup: false, storefront_browse: true, storefront_cart: true, storefront_pwa: true });
     } finally {
       await setSignup(true);
     }
@@ -179,7 +180,7 @@ run('PC-56 STORE-1c · for organisations — signup switch, replay, plans, flags
   it('(6) GET /v1/storefront/flags: no tenant → ONLY org_self_signup; a tenant → group_lots + org_self_signup; no rules leak', async () => {
     const platform = await request(http).get('/v1/storefront/flags');
     expect(platform.status).toBe(200);
-    expect(platform.body.data).toEqual({ org_self_signup: true, storefront_browse: true, storefront_cart: true });   // PC-56 STORE-2a: + storefront_browse; STORE-2b: + storefront_cart (platform)
+    expect(platform.body.data).toEqual({ org_self_signup: true, storefront_browse: true, storefront_cart: true, storefront_pwa: true });   // PC-56 STORE-2a: + storefront_browse; STORE-2b: + storefront_cart; STORE-6a: + storefront_pwa (platform)
     const store = await request(http).get('/v1/storefront/flags').set('x-tenant-slug', liveSlug);
     expect(store.status).toBe(200);
     // PC-56 HOTFIX-4 · A8: + the five tenant-scoped switches the STORE-2 surfaces read
@@ -189,7 +190,8 @@ run('PC-56 STORE-1c · for organisations — signup switch, replay, plans, flags
     // PC-56 STORE-4c · B1 (founder Q12): + communication (tenant-scoped, fail-closed — the headers' Messages link)
     // PC-56 HOTFIX-7 · B25: + `traceability` (tenant-scoped, 12 keys)
     // PC-56 STORE-5b · B5 (founder Q7): + `certificates_public` (tenant-scoped, seeded OFF — 13 keys)
-    expect(Object.keys(store.body.data).sort()).toEqual(['auctions', 'buyer_charges', 'certificates_public', 'communication', 'disputes', 'group_lots', 'offers', 'online_payments', 'org_self_signup', 'reviews', 'storefront_browse', 'storefront_cart', 'traceability']);
+    // PC-56 STORE-6a (0221): + `storefront_pwa` (platform-scoped, ON) + `storefront_offline_reads` (tenant-scoped, seeded OFF) — 15 keys
+    expect(Object.keys(store.body.data).sort()).toEqual(['auctions', 'buyer_charges', 'certificates_public', 'communication', 'disputes', 'group_lots', 'offers', 'online_payments', 'org_self_signup', 'reviews', 'storefront_browse', 'storefront_cart', 'storefront_offline_reads', 'storefront_pwa', 'traceability']);
     expect(typeof store.body.data.group_lots).toBe('boolean');
     for (const b of [platform.body, store.body]) expect(JSON.stringify(b)).not.toMatch(/rollout|tenant_ids|rules|pct/);
   });

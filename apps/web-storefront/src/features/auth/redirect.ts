@@ -28,6 +28,10 @@ export const STATIC_TOP_SEGMENTS: readonly string[] = Object.freeze([
   'certificates',
   // PC-56 HOTFIX-8 · D1 (b): the service worker is served by the route `app/sw.js/route.ts` (it was `public/sw.js`); never a slug (a dot)
   'sw.js',
+  // PC-56 STORE-6a · C3: canon W319's install page and W314's queued-actions list (`/app`, `/queued` — reserved as tenant slugs in migration 0204)
+  'app', 'queued',
+  // PC-56 STORE-6a · D6: the host-root manifest is a ROUTE now (`(platform)/manifest.webmanifest`, reserved as a tenant slug in migration 0204)
+  'manifest.webmanifest',
 ]);
 const SLUG = /^[a-z0-9][a-z0-9-]{0,49}$/;
 

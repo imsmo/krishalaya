@@ -241,7 +241,7 @@ function CartLine({ item, photo, slug, org, chain, lang }: { item: CartItem; pho
           </form>
         )}
         {mine && chain.step === 'confirm' && chain.act === 'accept' && drift && (
-          <form action={acceptPriceAction} className="kv-cart__confirm" data-kv-confirm="accept">
+          <form action={acceptPriceAction} data-kv-act-class="money" data-kv-needs-signal-reason="acceptPrice" className="kv-cart__confirm" data-kv-confirm="accept">
             <input type="hidden" name="tenantSlug" value={slug} />
             <input type="hidden" name="listingId" value={id} />
             <input type="hidden" name="expectedPriceMinor" value={item.currentPriceMinor ?? ''} />

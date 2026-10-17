@@ -76,5 +76,9 @@ INSERT INTO feature_flags (key, description, is_enabled, rollout_pct, rules) VAL
   ('insights_wastage', 'PC-56 TENANT-SW-f: measured loss from recorded facts only (returns, rejected pours, POD disputes, cold-chain losses, POD rejections) (W195) — OFF = the wastage screen says it is off', false, 100, '{}'),
   ('insights_reports', 'PC-56 TENANT-SW-f: the tenant report builder — allow-listed datasets, ≤ 92 days, 50,000 rows, 60 s statement timeout, watermarked + audited CSV on the export plane (W196) — OFF = the builder says it is off', false, 100, '{}'),
   -- PC-56 STORE-5b (founder D1; 0219 also inserts it — ON CONFLICT DO NOTHING): the public certificate page, per organisation
-  ('certificates_public', 'PC-56 STORE-5b (founder D1): an organisation''s certificates are readable on the public certificate page (by id from a trace, by number from the lookup form) — OFF = the page says "not published"', false, 100, '{}')
+  ('certificates_public', 'PC-56 STORE-5b (founder D1): an organisation''s certificates are readable on the public certificate page (by id from a trace, by number from the lookup form) — OFF = the page says "not published"', false, 100, '{}'),
+  -- PC-56 STORE-6a (0221 also inserts them — ON CONFLICT DO NOTHING). `storefront_pwa` is seeded ON: a named Law 10 exception (the worker has
+  -- been live since PC-24c — the org_self_signup precedent); `storefront_offline_reads` OFF, per organisation (founder D2)
+  ('storefront_pwa', 'PC-56 STORE-6a (founder D4, Law 10 exception — ON since PC-24c): the storefront service worker (/sw.js). Platform-scoped, fail-open. OFF = /sw.js serves a self-unregistering worker that deletes every kv-* cache', true, 100, '{}'),
+  ('storefront_offline_reads', 'PC-56 STORE-6a (founder D2): the public pages a person opened (listing, organisation, trace, verify, certificate, browse) may be kept on their phone — 20 pages / 7 days, never signed in, never prefetched, no photos — and shown offline with an as-of band. Per organisation, fail-closed', false, 100, '{}')
 ON CONFLICT (key) DO NOTHING;

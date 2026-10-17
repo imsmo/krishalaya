@@ -144,7 +144,7 @@ export default async function TenantCancelPage({ params, searchParams }: { param
             <a href={reloadHref(cancelHref(slug, order.id), searchParams)} className="kv-btn" data-kv-retry="reload">{t.t('home.retry')}</a>
           </div>
         ) : (
-          <form action={cancelOrderAction} className="kv-form" data-kv-form="cancel">
+          <form action={cancelOrderAction} data-kv-act-class="money" data-kv-needs-signal-reason="cancelRefund" className="kv-form" data-kv-form="cancel">
             <input type="hidden" name="slug" value={slug} />
             <input type="hidden" name="id" value={order.id} />
             <input type="hidden" name="key" value={key} />

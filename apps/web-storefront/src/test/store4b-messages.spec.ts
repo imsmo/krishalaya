@@ -117,6 +117,7 @@ describe('STORE-4b · the refusal registry', () => {
     // PC-56 STORE-5a: + 113 store5a.* + store3a.received.confirmCod; − store3a.received.codLine and the seven retired platform-form review.* keys → 2,039
     // PC-56 STORE-5b: + 163 (store5b.* 144, trace.step.* 9, trace.meta.* 8, the self_declared chip ×2) − 5 retired v2 trace.* keys → 2,197
     // PC-56 HOTFIX-8: + 1 (offline.shell.home — the session-free shell's header label) → 2,198
-    expect(Object.keys(en).length).toBe(2198);
+    // PC-56 STORE-6a: + 157 store6.* (the offline page, money never queues, app & install, the chain, reasons, band, update) − offline.hint → 2,354
+    expect(Object.keys(en).length).toBe(2354);
   });
 });

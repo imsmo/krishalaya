@@ -439,3 +439,36 @@ describe('STORE-5b · claims guard (the trace, verify, export, certificate and d
     for (const [k, v] of r) expect([k, /\bnot\b|\bno\b|\bnever\b|\bnothing\b/i.test(v)]).toEqual([k, true]);
   });
 });
+
+// PC-56 STORE-6a · brief C4 / §E (founders D1 / D3 / D7 / D8, survey E10) — the offline, queued-actions and install pages' refused canon claims stay
+// out of every catalogue: "mobile app", "offline-first" (the retired `offline.hint` — a platform plug, false for buyers), a size figure ("3 MB",
+// "under N MB") and a phone price ("₹6,000 phones") appear NOWHERE, not even in a refusal (the refusals word them generically). "will sync",
+// "waiting to sync", "speaks when asked" and "clears cached photos" appear only inside a refusal. Every STORE-6a refusal says no; no store6 value
+// names a person.
+describe('STORE-6a · claims guard (the offline page, money never queues, app & install)', () => {
+  const NOWHERE = [/mobile app|मोबाइल ऐप|મોબાઇલ એપ/i, /offline-first|ऑफ़लाइन-फर्स्ट|ઑફલાઇન-ફર્સ્ટ/i, /\b\d+(\.\d+)?\s?MB\b/, /6,?000/, /smaller than three photos/i];
+  const REFUSED_ONLY = [/will sync|syncs later/i, /waiting to sync/i, /speaks when asked/i, /clears? cached photos/i, /fresh data is loading/i];
+  it.each(Object.entries(CATS))('%s: the plug, the size and the phone price nowhere; the queue words only inside a refusal', (_l, cat) => {
+    expect('offline.hint' in cat).toBe(false);                                      // retired (founder D7)
+    for (const [k, v] of Object.entries(cat)) {
+      for (const re of NOWHERE) expect([k, re.test(v)]).toEqual([k, false]);
+      if (/\.refusal\./.test(k) || k.startsWith('signup.refused.') || k.startsWith('auth.refused.')) continue;
+      for (const re of REFUSED_ONLY) expect([k, re.test(v)]).toEqual([k, false]);
+    }
+  });
+  it.each(Object.entries(CATS))('%s: no currency sign and no person placeholder in a store6 value; the only figure-like placeholder is {mb} (measured)', (_l, cat) => {
+    const keys = Object.keys(cat).filter((k) => k.startsWith('store6.'));
+    expect(keys.length).toBe(157);
+    for (const k of keys) {
+      const v = (cat as Record<string, string>)[k];
+      expect([k, /[₹$€£¥]/.test(v)]).toEqual([k, false]);
+      expect([k, /\{(seller|sellerName|farmer|farmerName|member|fullName|owner|buyer|person)\}/i.test(v)]).toEqual([k, false]);
+      expect([k, /[0-9०-९૦-૯]/.test(v.replace(/\{[a-z]+\}/gi, ''))]).toEqual([k, false]);   // every number is interpolated
+    }
+  });
+  it('every English STORE-6a refusal says no / not / never / nothing (23 keys)', () => {
+    const r = Object.entries(en).filter(([k]) => k.startsWith('store6.refusal.'));
+    expect(r.length).toBe(23);
+    for (const [k, v] of r) expect([k, /\bnot\b|\bno\b|\bnever\b|\bnothing\b|\bnone\b/i.test(v)]).toEqual([k, true]);
+  });
+});

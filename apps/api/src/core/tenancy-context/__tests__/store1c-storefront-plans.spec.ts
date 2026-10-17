@@ -78,15 +78,19 @@ describe('STORE-1c · D1 — the flags allow-list gains ONE platform switch', ()
     // PC-56 STORE-4c · B1 (founder Q12): + `communication` (tenant-scoped, fail-closed) — the headers' Messages link
     // PC-56 HOTFIX-7 · B25: + `traceability` (tenant-scoped) — 12 keys
     // PC-56 STORE-5b · B5 (founder D1): + `certificates_public` (tenant-scoped, fail-closed) — 13 keys
-    expect(STOREFRONT_PUBLIC_FLAGS).toEqual(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse', 'storefront_cart', 'disputes', 'communication', 'traceability', 'certificates_public']);
-    expect([...PLATFORM_SCOPED_FLAGS]).toEqual(['org_self_signup', 'storefront_browse', 'storefront_cart']);
+    // PC-56 STORE-6a · B (founder D4 / D2, 0221): + `storefront_pwa` (the FOURTH platform-scoped key, fail-open) + `storefront_offline_reads`
+    // (tenant-scoped, fail-closed) — 15 keys
+    expect(STOREFRONT_PUBLIC_FLAGS).toEqual(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse', 'storefront_cart', 'disputes', 'communication', 'traceability', 'certificates_public', 'storefront_pwa', 'storefront_offline_reads']);
+    expect([...PLATFORM_SCOPED_FLAGS]).toEqual(['org_self_signup', 'storefront_browse', 'storefront_cart', 'storefront_pwa']);
   });
 
   it('no tenant in context (the platform page) → ONLY the platform switches, each evaluated with `{}` (the signup gate\'s own context)', async () => {
-    const isEnabled = jest.fn(async (k: string) => k === 'org_self_signup' || k === 'storefront_browse' || k === 'storefront_cart');
+    const isEnabled = jest.fn(async (k: string) => k === 'org_self_signup' || k === 'storefront_browse' || k === 'storefront_cart' || k === 'storefront_pwa');
     const ctl = new StorefrontPublicController({} as never, { isEnabled } as never);
-    expect(await ctl.publicFlags({ tenantId: '' } as RequestContext)).toEqual({ data: { org_self_signup: true, storefront_browse: true, storefront_cart: true } });
-    expect(isEnabled).toHaveBeenCalledTimes(3);   // STORE-2b: + storefront_cart
+    // PC-56 STORE-6a: the platform answer (no tenant) now carries `storefront_pwa`; `storefront_offline_reads` is tenant-scoped — absent here
+    expect(await ctl.publicFlags({ tenantId: '' } as RequestContext)).toEqual({ data: { org_self_signup: true, storefront_browse: true, storefront_cart: true, storefront_pwa: true } });
+    expect(isEnabled).toHaveBeenCalledTimes(4);   // STORE-2b: + storefront_cart · STORE-6a: + storefront_pwa
+    expect(isEnabled).toHaveBeenCalledWith('storefront_pwa', {});
     expect(isEnabled).toHaveBeenCalledWith('storefront_cart', {});
     expect(isEnabled).toHaveBeenCalledWith('org_self_signup', {});
     expect(isEnabled).toHaveBeenCalledWith('storefront_browse', {});
@@ -95,7 +99,10 @@ describe('STORE-1c · D1 — the flags allow-list gains ONE platform switch', ()
   it('STORE-2a: a flag-store failure reads storefront_browse ON (fail open, as the API gate) and every other key OFF', async () => {
     const ctl = new StorefrontPublicController({} as never, { isEnabled: async () => { throw new Error('flag store down'); } } as never);
     // STORE-2b: storefront_cart fails open too (the gate's own answer)
-    expect(await ctl.publicFlags({ tenantId: '' } as RequestContext)).toEqual({ data: { org_self_signup: false, storefront_browse: true, storefront_cart: true } });
+    // STORE-6a: storefront_pwa fails open too — a dead flag store never unregisters every phone's worker
+    expect(await ctl.publicFlags({ tenantId: '' } as RequestContext)).toEqual({ data: { org_self_signup: false, storefront_browse: true, storefront_cart: true, storefront_pwa: true } });
+    // …and with a tenant in context, storefront_offline_reads fails CLOSED (OFF)
+    expect((await ctl.publicFlags({ tenantId: T } as RequestContext)).data).toMatchObject({ storefront_pwa: true, storefront_offline_reads: false });
   });
 
   it('a tenant in context → both keys; the platform switch still ignores the tenant; a flag-store failure reads OFF', async () => {

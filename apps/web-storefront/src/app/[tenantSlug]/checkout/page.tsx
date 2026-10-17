@@ -193,7 +193,7 @@ async function AddressStep({ slug, state, addresses, chosen, preview, previewRef
       {status === 'requoted' && <p className="kv-form__notice" role="status">{t.t('store2c.address.requoted')}</p>}
       {status && status in PLACE_REFUSAL_KEYS && <p className="kv-form__error" role="alert">{t.t(PLACE_REFUSAL_KEYS[status as keyof typeof PLACE_REFUSAL_KEYS])}</p>}
 
-      <form action={chooseDeliveryAction} className="kv-checkout__form" data-kv-form="delivery">
+      <form action={chooseDeliveryAction} data-kv-act-class="money" data-kv-needs-signal-reason="chooseDelivery" className="kv-checkout__form" data-kv-form="delivery">
         <input type="hidden" name="slug" value={slug} />
         <input type="hidden" name="quotedFor" value={selected?.id ?? ''} />
         <fieldset className="kv-checkout__section">
@@ -316,7 +316,7 @@ async function PaymentStep({ slug, state, preview, onlinePayments, lang }: { slu
   return (
     <div className="kv-checkout__step" data-kv-step-body="payment">
       {onlinePayments ? (
-        <form action={choosePaymentAction} className="kv-checkout__form" data-kv-form="pay-method">
+        <form action={choosePaymentAction} data-kv-act-class="money" data-kv-needs-signal-reason="choosePayment" className="kv-checkout__form" data-kv-form="pay-method">
           <input type="hidden" name="slug" value={slug} />
           <fieldset className="kv-checkout__section">
             <legend>{t.t('store2c.pay.legend')}</legend>
@@ -402,7 +402,7 @@ function ReviewStep({ slug, org, state, preview, previewRefusal, onlinePayments,
         <p className="kv-cart__subtotal" data-kv-grand=""><span>{t.t('store2c.review.allOrders', { count: String(sellers.length) })}</span> <strong>{money(preview.grandTotalMinor)}</strong></p>
       )}
 
-      <form action={applyCouponAction} className="kv-checkout__coupon-form" data-kv-form="coupon">
+      <form action={applyCouponAction} data-kv-act-class="money" data-kv-needs-signal-reason="applyCoupon" className="kv-checkout__coupon-form" data-kv-form="coupon">
         <input type="hidden" name="slug" value={slug} />
         <label htmlFor="coupon" className="kv-field__label">{t.t('checkout.couponLabel')}</label>
         <div className="kv-checkout__coupon-row">
@@ -423,7 +423,7 @@ function ReviewStep({ slug, org, state, preview, previewRefusal, onlinePayments,
         </>
       ) : <p className="kv-cart__note">{t.t('store2c.pay.offLine')}</p>}
 
-      <form action={placeOrderAction} className="kv-checkout__form" data-kv-form="place">
+      <form action={placeOrderAction} data-kv-act-class="money" data-kv-needs-signal-reason="placeOrder" className="kv-checkout__form" data-kv-form="place">
         <input type="hidden" name="slug" value={slug} />
         <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
         {preview && !lineRefusal && !previewMoneyRefusal && <SubmitButton idle={t.t('checkout.placeOrder')} busy={t.t('checkout.placing')} className="kv-btn kv-btn--money" />}
