@@ -287,10 +287,17 @@ export class ShipmentService {
    * Coordinates are rounded HERE, by viewer, and not in a template: a full-precision coordinate that reaches
    * a serializer has already left the building, and "the UI rounds it" is not a privacy control. W236:
    * "GPS coordinates round to ~100m for non-lead roles."
+   *
+   * **PC-56 HOTFIX-9 · A2 (survey F-1b) — AND ONLY A PARTY TO THE SHIPMENT MAY READ IT.** This read had no party check while `getById`
+   * asserted one, so any signed-in member of the organisation — a buyer included — with `logistics` + `logistics_event_explorer` ON got the
+   * serialised shipment (the rider's id, partner, vehicle, COD and charge) and the coordinates. `assertManagerOrRider` now runs right after the
+   * not-found check, exactly as `getById` does: a manager (`logistics.manage`) or the shipment's OWN rider; anyone else → `ShipmentForbiddenError`
+   * (403). The route keeps no `@RequirePermissions` (a rider holds no `manage`; the service decides).
    */
   async trail(tenantId: string, actor: ShipmentActor, id: string) {
     const s = await this.repo.getById(tenantId, id);
     if (!s) throw new ShipmentNotFoundError(id);
+    this.assertManagerOrRider(actor, s);                 // HOTFIX-9 · F-1b: the party check getById has
     const p = s.toProps();
     const dp = precisionFor(actor.canManage);
     const raw = await this.repo.trailFor(tenantId, id);

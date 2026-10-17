@@ -155,6 +155,7 @@ export class ShipmentsController {
     }).then((data) => ({ data }));
   }
 
+  /** PC-56 HOTFIX-9 · A2: a manager or the shipment's own rider only — checked in the service (`assertManagerOrRider`), not by a decorator. */
   @Get(':id/trail') @FeatureFlag('logistics_event_explorer')
   trail(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
     return this.shipments.trail(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data }));

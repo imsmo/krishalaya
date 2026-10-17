@@ -670,9 +670,13 @@ export interface Shipment {
 export interface OrderEventPoint { fromStatus: string | null; toStatus: string; at: string; note: string | null; }
 /** One shipment tracking point: a status transition or a rider location ping (lat/lng when posted). */
 export interface ShipmentEventPoint { status: string; at: string; lat: number | null; lng: number | null; note: string | null; }
+/** PC-56 HOTFIX-9 (founder Q3): the read is VIEWER-SHAPED — a BUYER always receives `riderUserId: null`, every event `note: null` and every
+ *  `lat`/`lng: null` (no person, no note, no coordinate); the seller and staff keep the full row. `riderAssigned` says a rider is assigned
+ *  (never who) and `deliveryAttempts` counts failed attempts — both optional here so no older caller breaks. */
 export interface TrackingShipment {
   id: string; status: string; riderUserId: string | null; awbNo: string | null;
   scheduledPickupAt: string | null; pickedUpAt: string | null; deliveredAt: string | null;
+  riderAssigned?: boolean; deliveryAttempts?: number;
 }
 /** The order-tracking feed. No ETA field exists (the app shows ETA as "—" rather than fabricating one). */
 export interface OrderTracking {

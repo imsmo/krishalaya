@@ -16,6 +16,7 @@ import { Shipment } from '../domain/shipment.entity';
 import { SHIPMENT_STATUSES } from '../domain/shipment.state';
 import { ORDER_STATUSES } from '../../orders/domain/order.state';
 import { ShipmentService } from '../services/shipment.service';
+import { ShipmentForbiddenError } from '../domain/logistics.errors';   // PC-56 HOTFIX-9 · A2
 import { ShipmentRepository } from '../repositories/shipment.repository';
 import { OrderRepository } from '../../orders/repositories/order.repository';
 import { OrderService } from '../../orders/services/order.service';
@@ -425,8 +426,10 @@ describe('TENANT-5a · the gate, run rather than read', () => {
   const PEPPER = 'test-pepper';
   const hash = (code: string) => createHmac('sha256', PEPPER).update(code).digest('hex');
 
-  function harness(opts: { status?: 'pending' | 'assigned' | 'picked_up' | 'pickup_scheduled'; orderStatus?: string | null; orderThrows?: boolean; flag?: boolean | 'throws'; trail?: Array<{ at: Date; status: string; lat: number | null; lng: number | null; note: string | null }> } = {}) {
-    const s = ship({ status: opts.status ?? 'assigned' });
+  // PC-56 HOTFIX-9 · A2: + `rider` — `trail()` now asserts a manager or the shipment's OWN rider (the party check `getById` has), so the
+  // non-lead trail reader below is the assigned rider rather than any member.
+  function harness(opts: { status?: 'pending' | 'assigned' | 'picked_up' | 'pickup_scheduled'; orderStatus?: string | null; orderThrows?: boolean; flag?: boolean | 'throws'; rider?: string; trail?: Array<{ at: Date; status: string; lat: number | null; lng: number | null; note: string | null }> } = {}) {
+    const s = ship({ status: opts.status ?? 'assigned', riderUserId: opts.rider ?? null });
     const tx = { query: jest.fn(async () => ({ rows: [], rowCount: 0 })), tenantId: 't1' };
     const uow = { run: jest.fn(async (t: string, fn: (x: typeof tx) => Promise<unknown>) => { void t; return fn(tx); }) };
     const orders = { transportStatus: jest.fn(async () => {
@@ -556,12 +559,23 @@ describe('TENANT-5a · the gate, run rather than read', () => {
     const pt = [{ at: new Date('2026-08-18T07:00:00Z'), status: 'in_transit', lat: 22.043791, lng: 70.812345, note: null }];
     const lead = await harness({ trail: pt }).svc.trail('t1', boss, 's1');
     expect(lead.points[0].lat).toBe(22.043791);
-    const other = await harness({ trail: pt }).svc.trail('t1', member, 's1');
+    const other = await harness({ trail: pt, rider: member.userId }).svc.trail('t1', member, 's1');   // HOTFIX-9: the non-lead is the shipment's rider
     // ~110m at this latitude — the canon's "~100m for non-lead roles", applied in the domain and not in a
     // template: a full-precision coordinate that reaches a serializer has already left the building.
     expect(other.points[0].lat).toBe(22.044);
     expect(other.points[0].lng).toBe(70.812);
     expect(other.eta).toEqual({ kind: 'no_eta_source' });
+  });
+
+  it('PC-56 HOTFIX-9 · A2: the trail refuses anyone who is neither a manager nor the shipment\'s own rider (the party check getById has)', async () => {
+    const pt = [{ at: new Date('2026-08-18T07:00:00Z'), status: 'in_transit', lat: 22.043791, lng: 70.812345, note: 'gate code 4411' }];
+    await expect(harness({ trail: pt, rider: 'rider-7' }).svc.trail('t1', member, 's1')).rejects.toBeInstanceOf(ShipmentForbiddenError);
+    await expect(harness({ trail: pt }).svc.trail('t1', member, 's1')).rejects.toBeInstanceOf(ShipmentForbiddenError);   // no rider yet
+    const h = harness({ trail: pt, rider: 'rider-7' });
+    await expect(h.svc.trail('t1', member, 's1')).rejects.toThrow();
+    expect(h.repo.trailFor).not.toHaveBeenCalled();                                     // refused BEFORE a single point is read
+    expect((await harness({ trail: pt, rider: 'rider-7' }).svc.trail('t1', { userId: 'rider-7', canManage: false }, 's1')).points).toHaveLength(1);
+    expect((await harness({ trail: pt }).svc.trail('t1', boss, 's1')).points).toHaveLength(1);
   });
 
   it('always queries a RESOLVED window, and reports the clamp it applied', async () => {

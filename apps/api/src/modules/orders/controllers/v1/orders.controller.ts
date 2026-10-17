@@ -131,7 +131,8 @@ export class OrdersController {
   /** An order's frozen line items (buyer/seller/moderator). */
   @Get(':id/items') @ApiScopes('orders.read') items(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.orderItems.listForOrder(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
   /** Order-tracking feed (buyer/seller/moderator): stamped order-status transitions + the shipment's
-   *  status/location timeline (real per-step timestamps; lat/lng when a rider has posted one). */
+   *  status/location timeline (real per-step timestamps; lat/lng when a rider has posted one).
+   *  PC-56 HOTFIX-9 (founder Q3): VIEWER-SHAPED — a buyer receives milestones and times only (no rider id, no note, no coordinate). */
   @Get(':id/tracking') trackingFeed(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.tracking.tracking(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
   /** Buyer trust summary for the seller's accept/reject decision (seller/moderator only). */
   @Get(':id/buyer-summary') buyerSummaryFor(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.buyerSummary.forOrder(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
