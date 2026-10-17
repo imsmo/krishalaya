@@ -18,6 +18,8 @@ import { reloadHref } from '../../../features/home/load-result';
 import { contextChip, lockKey, messagesHref, previewOf, readMessagesQuery } from '../../../features/store4b/messages';
 import { threadHref } from '../../../features/store4b/thread';
 import { RefusalList } from '../../../components/RefusalList';
+// PC-56 STORE-CLOSE · RTL spot-check: the keyset "Show more" arrow is the direction-safe DirArrow (it was the catalogue's "Show more →").
+import { DirArrow } from '../../../components/DirArrow';
 
 export const dynamic = 'force-dynamic';
 type SP = Record<string, string | string[] | undefined>;
@@ -110,7 +112,7 @@ export default async function TenantMessagesPage({ params, searchParams }: { par
         </ul>
       )}
       {nextCursor && (
-        <p className="kv-loadmore"><Link href={messagesHref(slug, { cursor: nextCursor })} className="kv-btn kv-btn--ghost" rel="next" data-kv-next>{t.t('discover.nextPage')}</Link></p>
+        <p className="kv-loadmore"><Link href={messagesHref(slug, { cursor: nextCursor })} className="kv-btn kv-btn--ghost" rel="next" data-kv-next>{t.t('discover.showMore')} <DirArrow /></Link></p>
       )}
       <RefusalList surface="messages" />
     </section>

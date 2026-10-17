@@ -20,6 +20,8 @@ import { reloadHref } from '../../../features/home/load-result';
 import { orderStatusKey, orderStatusTone } from '../../../features/store3a/order-status';
 import { readGroup, ordersHref, orderHref, orderTabs, countForm, moreItems, showsDeadline } from '../../../features/store3a/orders';
 import { RefusalList } from '../../../components/RefusalList';
+// PC-56 STORE-CLOSE · RTL spot-check: the keyset "Show more" arrow is the direction-safe DirArrow (it was the catalogue's "Show more →").
+import { DirArrow } from '../../../components/DirArrow';
 
 export const dynamic = 'force-dynamic';
 type SP = Record<string, string | string[] | undefined>;
@@ -120,7 +122,7 @@ export default async function TenantOrdersPage({ params, searchParams }: { param
           })}
         </ul>
       )}
-      {nextCursor && <p><Link href={ordersHref(slug, group, nextCursor)} className="kv-btn--link" rel="next">{t.t('discover.nextPage')}</Link></p>}
+      {nextCursor && <p><Link href={ordersHref(slug, group, nextCursor)} className="kv-btn--link" rel="next">{t.t('discover.showMore')} <DirArrow /></Link></p>}
       <RefusalList surface="orders" />
     </section>
   );

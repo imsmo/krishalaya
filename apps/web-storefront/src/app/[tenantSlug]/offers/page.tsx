@@ -25,6 +25,8 @@ import {
   offerAgainHref, declineReasonKey,
 } from '../../../features/store3b/offers';
 import { RefusalList } from '../../../components/RefusalList';
+// PC-56 STORE-CLOSE · RTL spot-check: the keyset "Show more" arrow is the direction-safe DirArrow (it was the catalogue's "Show more →").
+import { DirArrow } from '../../../components/DirArrow';
 
 export const dynamic = 'force-dynamic';
 type SP = Record<string, string | string[] | undefined>;
@@ -162,7 +164,7 @@ export default async function TenantOffersPage({ params, searchParams }: { param
           })}
         </ul>
       )}
-      {nextCursor && <p><Link href={offersHref(slug, tab, nextCursor)} className="kv-btn--link" rel="next">{t.t('discover.nextPage')}</Link></p>}
+      {nextCursor && <p><Link href={offersHref(slug, tab, nextCursor)} className="kv-btn--link" rel="next">{t.t('discover.showMore')} <DirArrow /></Link></p>}
       <RefusalList surface="offers" />
     </section>
   );

@@ -13,7 +13,8 @@ export interface Column<T> {
   header: string;
   /** Cell renderer; defaults to String((row as any)[key]). Format money/dates HERE, never in the page. */
   render?: (row: T) => ReactNode;
-  align?: 'left' | 'right' | 'center';
+  /** Logical alignment (PC-56 STORE-CLOSE · RTL spot-check: was 'left' | 'right' — a physical side that does not mirror under dir="rtl"). */
+  align?: 'start' | 'end' | 'center';
 }
 
 export interface DataTableProps<T> {

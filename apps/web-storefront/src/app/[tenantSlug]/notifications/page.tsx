@@ -24,6 +24,8 @@ import {
 } from '../../../features/store4c/inbox';
 import { markReadAction, markAllReadAction } from './actions';
 import { RefusalList } from '../../../components/RefusalList';
+// PC-56 STORE-CLOSE · RTL spot-check: the keyset "Show more" arrow is the direction-safe DirArrow (it was the catalogue's "Show more →").
+import { DirArrow } from '../../../components/DirArrow';
 
 export const dynamic = 'force-dynamic';
 type SP = Record<string, string | string[] | undefined>;
@@ -144,7 +146,7 @@ export default async function TenantNotificationsPage({ params, searchParams }: 
         </>
       )}
       {nextCursor && (
-        <p className="kv-loadmore"><Link href={inboxHref(slug, { unread: unreadOnly, cursor: nextCursor })} className="kv-btn kv-btn--ghost" rel="next" data-kv-next>{t.t('discover.nextPage')}</Link></p>
+        <p className="kv-loadmore"><Link href={inboxHref(slug, { unread: unreadOnly, cursor: nextCursor })} className="kv-btn kv-btn--ghost" rel="next" data-kv-next>{t.t('discover.showMore')} <DirArrow /></Link></p>
       )}
       <RefusalList surface="inbox" />
     </section>
