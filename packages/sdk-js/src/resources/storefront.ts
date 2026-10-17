@@ -2,7 +2,7 @@
 // page?" answered by the API from the request's own tenant context (the client's `tenantSlug` → `X-Tenant-Slug`, or a verified
 // storefront host). A 404 TENANT_NOT_FOUND means no LIVE tenant resolved — never a default one.
 import { HttpClient } from '../http';
-import { DiscoveryCard, OrganisationCard, Page, PublicAuction, PublicAuctionCard, PublicAuctionGroup, StorefrontFlags, StorefrontGroupLot, StorefrontPlans, StorefrontProfile, StorefrontStats, StorefrontTenant } from '../types';
+import { DiscoveryCard, OrganisationCard, Page, PlatformFacts, PublicAuction, PublicAuctionCard, PublicAuctionGroup, StorefrontFlags, StorefrontGroupLot, StorefrontPlans, StorefrontProfile, StorefrontStats, StorefrontTenant } from '../types';
 
 export class StorefrontResource {
   constructor(private readonly http: HttpClient) {}
@@ -20,6 +20,11 @@ export class StorefrontResource {
   /** D3 — the platform's precomputed public counts and when they were computed. */
   async stats(signal?: AbortSignal): Promise<StorefrontStats> {
     return (await this.http.request<StorefrontStats>('GET', 'storefront/stats', { anonymous: true, signal })).data;
+  }
+  /** PC-56 STORE-SWEEP-a · B3 — the platform's published facts (legal entity, office, grievance officer and figures, four mailboxes); null = not
+   *  published yet. Anonymous, no tenant. */
+  async platformFacts(signal?: AbortSignal): Promise<PlatformFacts> {
+    return (await this.http.request<PlatformFacts>('GET', 'storefront/platform-facts', { anonymous: true, signal })).data;
   }
   /** D1 — one keyset page of the cross-tenant discovery feed (`after` = the previous page's nextCursor). */
   async discover(q: { after?: string; limit?: number; category?: string; q?: string } = {}, signal?: AbortSignal): Promise<Page<DiscoveryCard>> {

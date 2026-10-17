@@ -17,12 +17,17 @@
 //   4. PC-56 STORE-6a · D6: an organisation's offline page (`/<slug>/offline`, or `/offline` on its host) is rendered by its layout in the
 //      SESSION-FREE shell chrome (`x-kv-shell: offline`) — the worker pre-caches it on a store host, with the page's cookies. And a store host
 //      answers `/apple-touch-icon.png` 404: iOS would otherwise put the PLATFORM's icon on an organisation's home screen.
+//   5. PC-56 STORE-SWEEP-a · D4 (founder Q5): on a store's OWN host the PLATFORM-ONLY pages (/about, /press, /pricing, /blog, /trust-data) answer
+//      a 307 to the same path on the platform's origin (`NEXT_PUBLIC_SITE_URL`, read here from the environment — the middleware cannot import
+//      lib/env's module-load check); with no usable origin configured nothing is redirected (features/sweep/paths.ts `platformOnlyRedirect`).
+//      `/help`, `/quality-promise` and `/contact` are the store's own pages there (rewritten by `hostRewritePath`).
 import { NextRequest, NextResponse } from 'next/server';
 import { pickUrlLang } from './lib/locale-url';
 import { TENANT_SLUG_HEADER, isOwnHost, resolveStorefrontHost } from './lib/host-routing';
 import { hostRewritePath } from './features/branding/brand-theme';
 import { CACHEABLE_HEADER, SHELL_HEADER, cacheableRule, cacheableScope, hasSessionCookie, isTenantOfflinePath } from './features/store6/sw-rules';
 import { offlineReadsOn } from './lib/offline-reads';
+import { platformOnlyRedirect } from './features/sweep/paths';
 
 // NOT imported from `lib/i18n.ts` on purpose: that module is `import 'server-only'` + `next/headers` (React Server Component APIs, backed
 // by an AsyncLocalStorage context that Middleware's Edge runtime does not provide). The same cookie name `lib/i18n.ts`'s `LANG_COOKIE` holds.
@@ -70,6 +75,10 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
       if (a.redirectTo) return NextResponse.redirect(`${a.redirectTo}${req.nextUrl.pathname}${req.nextUrl.search}`, 301);
       // STORE-6a · D6: never the platform's apple-touch icon on an organisation's host (iOS probes the root when a page links none)
       if (req.nextUrl.pathname === '/apple-touch-icon.png' || req.nextUrl.pathname === '/apple-touch-icon-precomposed.png') return new NextResponse(null, { status: 404 });
+      // STORE-SWEEP-a · D4: a platform-only page is the PLATFORM's — never served under an organisation's domain (after the host lookup, before
+      // the rewrite; 307 so a later decision can move it)
+      const away = platformOnlyRedirect(req.nextUrl.pathname, process.env.NEXT_PUBLIC_SITE_URL || '');
+      if (away) return NextResponse.redirect(`${away}${req.nextUrl.search}`, 307);
       const base = new Headers(req.headers);
       base.set(TENANT_SLUG_HEADER, a.tenant.slug);
       const target = hostRewritePath(a.tenant.slug, req.nextUrl.pathname);

@@ -1,7 +1,10 @@
-// apps/web-storefront/src/app/(platform)/help/page.tsx · static "Help" FAQ page. Localized copy; semantic <dl> for the
-// question/answer pairs (screen-reader friendly). No SDK call — buyer support FAQs are static marketing copy.
+// apps/web-storefront/src/app/(platform)/help/page.tsx · PC-56 STORE-SWEEP-a · C2 (canon W311; founder D8) — Help under the PLATFORM chrome. The
+// SHARED screen (components/sweep/HelpScreen.tsx): on the platform both money cases are printed (no store's flag decides here). It replaced the
+// static four-answer page whose money, tracking and support answers were false (survey F-2). No flag (0223's named Law 10 exception).
 import type { Metadata } from 'next';
 import { getTranslator } from '../../../lib/i18n';
+import { HelpScreen } from '../../../components/sweep/HelpScreen';
+import { PLATFORM_CHROME } from '../../../features/store4a/account';
 
 export function generateMetadata(): Metadata {
   const t = getTranslator();
@@ -9,21 +12,5 @@ export function generateMetadata(): Metadata {
 }
 
 export default function HelpPage() {
-  const t = getTranslator();
-  const faqs = ['1', '2', '3', '4'].map((n) => ({ q: t.t(`help.q${n}`), a: t.t(`help.a${n}`) }));
-  return (
-    <article className="kv-prose">
-      <h1>{t.t('help.title')}</h1>
-      <p className="kv-prose__lead">{t.t('help.lead')}</p>
-      <dl className="kv-faq">
-        {faqs.map((f) => (
-          <div key={f.q} className="kv-faq__item">
-            <dt className="kv-faq__q">{f.q}</dt>
-            <dd className="kv-faq__a">{f.a}</dd>
-          </div>
-        ))}
-      </dl>
-      <p className="kv-prose__note">{t.t('help.contact')}</p>
-    </article>
-  );
+  return <HelpScreen chrome={PLATFORM_CHROME} flags={null} />;
 }

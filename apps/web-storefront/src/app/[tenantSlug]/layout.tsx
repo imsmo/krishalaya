@@ -28,6 +28,9 @@
 //     token (the platform token's green only as the colour of an organisation that has published none);
 //   • the offline page (`x-kv-shell: offline`, set by the middleware for `/<slug>/offline`) renders the SESSION-FREE chrome
 //     (components/offline/TenantShellHeader.tsx): no session read, no cart, no flags, no forms — HOTFIX-8's law on the store's own fallback.
+// PC-56 STORE-SWEEP-a · D3 / D4: the footer carries this store's Help / Quality promise / Contact, the PLATFORM's Grievances link and "Powered by" as a
+// link to the platform's About — on a host-routed request those two point at the platform's origin (`env.siteUrl`, NEXT_PUBLIC_SITE_URL), on a path
+// store at the same origin.
 // PC-56 STORE-6b · D3: the install invitation (components/install/InstallInvite.tsx) mounted ONCE here with the organisation's name and icon EXACTLY
 // as its manifest has them (brand-theme.ts `tenantManifest`: the published display name, else the tenant's, else the slug; the logo, else the
 // monogram) and THIS organisation's `storefront_install_prompt` (the public flags read — fail closed: unreadable → OFF). Not in the offline
@@ -96,6 +99,7 @@ export default async function TenantLayout({ children, params }: { children: Rea
   const mark = brandingForMark(env.publicApiUrl, b);
   const name = (mark?.displayName || (shell.kind === 'ok' ? shell.tenant.displayName : '') || params.tenantSlug).trim();
   const powered = poweredByVisible('storefront', b?.brand);
+  const platformOrigin = hostRouted(params.tenantSlug) ? env.siteUrl : '';   // STORE-SWEEP-a: the platform's pages from a store's own host
   const degraded = shell.kind === 'unavailable' && <p className="kv-state kv-state--error" role="status" data-kv-state="degraded">{t.t('tenant.degraded')}</p>;
   if (shellMode()) {
     // the offline page: the organisation's name and mark only — the same HTML for every person on the phone
@@ -104,7 +108,7 @@ export default async function TenantLayout({ children, params }: { children: Rea
         {css && <style data-kv-tenant-brand={String(b!.brand!.version)} dangerouslySetInnerHTML={{ __html: css }} />}
         <TenantShellHeader slug={params.tenantSlug} name={name} logoSrc={mark?.logoUrl ?? null} showPoweredBy={powered} />
         <main className="kv-container" id="main">{degraded}{children}</main>
-        <TenantFooter name={name} showPoweredBy={powered} />
+        <TenantFooter name={name} slug={params.tenantSlug} showPoweredBy={powered} platformOrigin={platformOrigin} />
       </>
     );
   }
@@ -130,7 +134,7 @@ export default async function TenantLayout({ children, params }: { children: Rea
         {children}
         <InstallInvite name={manifestName} iconHref={manifestIcon} flagOn={installOn} appHref={appHref(tenantChrome(params.tenantSlug))} labels={inviteLabels()} />
       </main>
-      <TenantFooter name={name} showPoweredBy={powered} />
+      <TenantFooter name={name} slug={params.tenantSlug} showPoweredBy={powered} platformOrigin={platformOrigin} />
     </>
   );
 }

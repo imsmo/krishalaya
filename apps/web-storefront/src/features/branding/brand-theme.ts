@@ -127,5 +127,10 @@ export function hostRewritePath(slug: string, pathname: string): string | null {
   if (pathname === '/offline' || pathname === '/queued' || pathname === '/app') return `/${slug}${pathname}`;
   // PC-56 STORE-6b · C3: "On this phone" (W315 rebuilt, and its discard chain `?discard=` / `?done=` — the query is kept by the rewrite)
   if (pathname === '/sync') return `/${slug}/sync`;
+  // PC-56 STORE-SWEEP-a · D4: Help, the quality promise and the store's own Contact page are the ORGANISATION's on its own host (the platform-only
+  // pages — /about, /press, /pricing, /blog, /trust-data — answer a 307 to the platform origin instead: features/sweep/paths.ts)
+  if (pathname === '/help') return `/${slug}/help`;
+  if (pathname === '/quality-promise') return `/${slug}/quality-promise`;
+  if (pathname === '/contact') return `/${slug}/contact`;
   return null;
 }

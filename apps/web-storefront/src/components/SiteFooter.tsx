@@ -2,8 +2,9 @@
 // platform's own pages; a tenant store wears TenantFooter (the canon put this platform footer on W274 too — a DELTA, not copied).
 // Canon W273's three columns, built only where a route exists:
 //   • the platform store (name from packages/tokens, founder D2) + a sentence that claims nothing it cannot back;
-//   • Help — "Help centre" → /help; "Returns & quality promise" and "Contact" are STORE-5 routes (W309 / W312), ANNOUNCED as coming,
-//     not dead links; the canon's phone / missed-call / USSD line is refused (the IVR/USSD gateway is unimplemented — STORE-1a C-2);
+//   • Help — "Help centre" → /help; PC-56 STORE-SWEEP-a (survey F-10): the "coming soon · STORE-5" lines are RETIRED — "Quality promise" →
+//     /quality-promise (W309), "Contact" → /contact (W312), "Trust & your data" → /trust-data (W310); the canon's phone / missed-call / USSD line
+//     is refused (the IVR/USSD gateway is unimplemented — STORE-1a C-2);
 //   • For farmers & organisations — "Open your organisation's storefront" → /for-organisations (canon W307's route, PC-56 STORE-1c; the old
 //     /tenants-signup answers a permanent redirect there), "How farm-to-fork trace works" → /trace.
 // Company links (about / blog / press / pricing) stay as they were.
@@ -24,8 +25,9 @@ export function SiteFooter() {
           <nav className="kv-footer__col" aria-label={t.t('footer.col.help')}>
             <h2 className="kv-footer__heading">{t.t('footer.col.help')}</h2>
             <Link href="/help" className="kv-footer__link">{t.t('footer.help')}</Link>
-            <span className="kv-footer__link" data-kv-soon="STORE-5">{t.t('footer.returns')} · <small>{t.t('footer.soon')}</small></span>
-            <span className="kv-footer__link" data-kv-soon="STORE-5">{t.t('footer.contact')} · <small>{t.t('footer.soon')}</small></span>
+            <Link href="/quality-promise" className="kv-footer__link" data-kv-foot="quality">{t.t('footer.returns')}</Link>
+            <Link href="/contact" className="kv-footer__link" data-kv-foot="contact">{t.t('footer.contact')}</Link>
+            <Link href="/trust-data" className="kv-footer__link" data-kv-foot="trust">{t.t('sweep.footer.trust')}</Link>
           </nav>
           <nav className="kv-footer__col" aria-label={t.t('footer.col.farmers')}>
             <h2 className="kv-footer__heading">{t.t('footer.col.farmers')}</h2>

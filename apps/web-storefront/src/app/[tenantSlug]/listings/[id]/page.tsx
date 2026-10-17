@@ -251,7 +251,7 @@ export default async function ListingDetail(
         <p className="kv-detail__muted">{t.t('listing.traceNote', { platform: t.t('brand.platform') })}</p>
         {traceLink
           ? <Link href={traceLink} className="kv-link">{t.t('listing.traceScanLink')}</Link>
-          : <Link href="/help" className="kv-link">{t.t('listing.traceLink')}</Link>}
+          : <Link href={`/${slug}/help#help-qr`} className="kv-link">{t.t('listing.traceLink')}</Link>}{/* STORE-SWEEP-a · D4: THIS store's help */}
       </section>
 
       <RefusalList surface="listing" />

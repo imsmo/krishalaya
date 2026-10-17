@@ -148,10 +148,12 @@ describe('STORE-1b · W273 the platform home', () => {
     for (const r of STORE1B_REFUSALS.filter((x) => x.answer !== 'rendered')) expect(html).not.toContain(`data-kv-refusal="${r.id}"`);
   });
 
-  it('the platform footer: Help; Returns and Contact ANNOUNCED (not dead links); storefront signup; how trace works', async () => {
+  it('the platform footer: Help, the quality promise, Contact and Trust as LINKS (STORE-SWEEP-a retired the "coming soon" lines); storefront signup; how trace works', async () => {
     const html = await home();
     expect(html).toContain('href="/help"'); expect(html).toContain('href="/for-organisations"'); /* STORE-1c: W307's route */ expect(html).toContain('href="/trace"');
     expect(html).not.toMatch(/href="#returns"|href="#contact"/);
-    expect((html.match(/data-kv-soon="STORE-5"/g) ?? []).length).toBe(2);
+    // PC-56 STORE-SWEEP-a (survey F-10): the two `data-kv-soon="STORE-5"` spans are links now — W309, W312 and W310's routes
+    expect(html).not.toContain('data-kv-soon');
+    for (const href of ['/quality-promise', '/contact', '/trust-data']) expect(html).toContain(`href="${href}"`);
   });
 });

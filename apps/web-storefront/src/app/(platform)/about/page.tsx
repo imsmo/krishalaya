@@ -1,24 +1,26 @@
-// apps/web-storefront/src/app/(platform)/about/page.tsx · static "About" page. Server-rendered, localized copy from the
-// i18n catalogs (no SDK call — there is no CMS resource in the SDK, so marketing copy is static per the backlog's
-// "else static copy" branch). Per-request metadata is localized too.
+// apps/web-storefront/src/app/(platform)/about/page.tsx · PC-56 STORE-SWEEP-a · C2 (canon W308; founder D5) — ABOUT, PLATFORM-ONLY. Rebuilt from the
+// static page whose `about.p2` named payments, logistics and traceability as live while their flags are OFF (survey F-9). Two reads: the
+// precomputed counts (`storefront.stats()`, as the platform home) and the platform facts (the press mailbox, migration 0223). Dynamic: Retry must
+// read again. On a store's own host `/about` answers 307 to the platform's origin (middleware.ts); "Powered by" links here.
 import type { Metadata } from 'next';
+import type { PlatformFacts, StorefrontStats } from '@krishalaya/sdk-js';
 import { getTranslator } from '../../../lib/i18n';
+import { publicClient } from '../../../lib/api-client';
+import { loadResult } from '../../../features/home/load-result';
+import { AboutScreen } from '../../../components/sweep/AboutScreen';
+
+export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
   const t = getTranslator();
-  return { title: t.t('about.title'), description: t.t('about.lead') };
+  return { title: t.t('about.title'), description: t.t('about.visionNote') };
 }
 
-export default function AboutPage() {
-  const t = getTranslator();
-  return (
-    <article className="kv-prose">
-      <h1>{t.t('about.title')}</h1>
-      <p className="kv-prose__lead">{t.t('about.lead')}</p>
-      <p>{t.t('about.p1')}</p>
-      <p>{t.t('about.p2')}</p>
-      <h2>{t.t('about.missionTitle')}</h2>
-      <p>{t.t('about.mission')}</p>
-    </article>
-  );
+export default async function AboutPage() {
+  const api = publicClient();
+  const [stats, facts] = await Promise.all([
+    loadResult<StorefrontStats>(() => api.storefront.stats()),
+    loadResult<PlatformFacts>(() => api.storefront.platformFacts()),
+  ]);
+  return <AboutScreen stats={stats} facts={facts} />;
 }

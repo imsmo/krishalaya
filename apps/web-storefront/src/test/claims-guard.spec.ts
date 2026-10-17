@@ -511,3 +511,53 @@ describe('STORE-6b · claims guard (On this phone, the keeper, the install invit
     }
   });
 });
+
+// PC-56 STORE-SWEEP-a · brief C2 / B15 (founders D1 / D2 / D3 / D5 / D7 / D8) — Help, About, Press and every sweep page (the quality promise, Trust &
+// your data, Contact, a store's contact page, the facts, the refusals) carry NONE of the canon's false literals, not even inside a refusal (the
+// refusals word them generically): no helpline number, no short code, no `@` (a mailbox is DATA — 0223 — never a catalogue string), no brand
+// domain, no `.com` mailbox, no chat-app name, no "12 languages", no phone price, no "regulated payment partner", no "disputed value only", no
+// "3%", no "6 hours", no "credits", no "versioned", no "24×7", no "two business days", no "held until" (mutant M1 restores help.a2's old sentence
+// → red; M4 prints "freezes the disputed value only" → red). The retired help lines (tracking, the support team, the platform wallet) are gone;
+// every English sweep refusal says no. And no mailbox or brand-domain literal in the sweep's code — screens, routes, helpers.
+describe('STORE-SWEEP-a · claims guard (help, about, press, the sweep pages)', () => {
+  const SCOPE = /^(help|about|press|sweep)\./;
+  const FORBIDDEN = [
+    /1800/, /\*123#/, /@/, /krishalaya\.(in|com)/i, /\.com\b/i, /WhatsApp|व्हाट्सऐप|वॉट्सऐप|વૉટ્સએપ|વોટ્સએપ/i, /12 languages|12 भाषा|12 ભાષા/i,
+    /₹\s?1,?000/, /regulated payment partner/i, /disputed value only/i, /\b3\s?%/, /\b6 hours|6 घंटे|6 કલાક/i, /\bcredits\b/i, /versioned/i,
+    /24\s?[×x]\s?7/i, /two business days/i, /held until/i,
+  ];
+  it.each(Object.entries(CATS))('%s: none of the canon\'s false literals in any help / about / press / sweep value', (_l, cat) => {
+    const keys = Object.keys(cat).filter((k) => SCOPE.test(k));
+    expect(keys.length).toBe(181);   // help.* 44 (33 new + the 11 reworded) · about.* 18 (12 new + 6 kept / reworded) · press.* 4 · sweep.* 115
+    for (const k of keys) {
+      const v = (cat as Record<string, string>)[k];
+      for (const re of FORBIDDEN) expect([k, re.toString(), re.test(v)]).toEqual([k, re.toString(), false]);
+    }
+  });
+  it('the retired help lines are gone (founder D8): no tracking promise, no support team, no platform wallet', () => {
+    for (const cat of Object.values(CATS)) for (const [k, v] of Object.entries(cat)) {
+      if (!k.startsWith('help.')) continue;
+      expect([k, /track (your )?deliver|support team|platform wallet|from within your account/i.test(v)]).toEqual([k, false]);
+    }
+  });
+  it('every English sweep refusal says no / not / never / nothing / none / nobody (35 keys)', () => {
+    const r = Object.entries(en).filter(([k]) => k.startsWith('sweep.refusal.'));
+    expect(r.length).toBe(35);
+    for (const [k, v] of r) expect([k, /\bnot\b|\bno\b|\bnever\b|\bnothing\b|\bnone\b|\bnobody\b/i.test(v)]).toEqual([k, true]);
+  });
+  it('no mailbox and no brand domain in the sweep\'s code (screens, routes, helpers) — the five mailboxes come ONLY from the facts read (D7)', () => {
+    const { readdirSync, readFileSync, statSync } = jest.requireActual('node:fs') as typeof import('node:fs');
+    const { join } = jest.requireActual('node:path') as typeof import('node:path');
+    const files: string[] = [];
+    const walk = (d: string) => { for (const e of readdirSync(d)) { const p = join(d, e); if (statSync(p).isDirectory()) walk(p); else if (/\.tsx?$/.test(e)) files.push(p); } };
+    for (const d of ['components/sweep', 'features/sweep', 'app/(platform)/about', 'app/(platform)/help', 'app/(platform)/press', 'app/(platform)/contact', 'app/(platform)/trust-data',
+      'app/(platform)/quality-promise', 'app/[tenantSlug]/help', 'app/[tenantSlug]/contact', 'app/[tenantSlug]/quality-promise']) walk(join(__dirname, '..', d));
+    files.push(join(__dirname, '..', 'components', 'TenantFooter.tsx'), join(__dirname, '..', 'components', 'SiteFooter.tsx'), join(__dirname, '..', 'components', 'PoweredByMark.tsx'));
+    expect(files.length).toBeGreaterThanOrEqual(25);
+    for (const f of files) {
+      const src = readFileSync(f, 'utf8');
+      expect([f, /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.[A-Za-z]{2,}/.test(src)]).toEqual([f, false]);   // a mailbox (an import path '@scope/pkg' has no local part)
+      expect([f, /krishalaya\.(in|com)/i.test(src)]).toEqual([f, false]);
+    }
+  });
+});

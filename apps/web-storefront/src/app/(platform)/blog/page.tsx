@@ -1,6 +1,6 @@
-// apps/web-storefront/src/app/(platform)/blog/page.tsx · "Blog" index. There is NO CMS resource in the SDK yet, so this
-// renders a localized empty state rather than faking posts (no stubs — backlog "else static copy"). When a CMS
-// content resource lands in the SDK, this page lists posts through it; the empty state is the honest interim.
+// apps/web-storefront/src/app/(platform)/blog/page.tsx · "Blog" index. PC-56 STORE-SWEEP-a (survey C-3): the SDK has carried a CMS resource since
+// TENANT-8c, but there is NO anonymous published-only read (pages are behind AuthGuard + the `cms` flag, OFF) and nothing writes platform pages
+// (B4, named) — so this renders a localized empty state rather than faking posts. Platform-only: a store's own host answers 307 to the platform.
 import type { Metadata } from 'next';
 import { getTranslator } from '../../../lib/i18n';
 

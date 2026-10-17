@@ -119,6 +119,7 @@ describe('STORE-4b · the refusal registry', () => {
     // PC-56 HOTFIX-8: + 1 (offline.shell.home — the session-free shell's header label) → 2,198
     // PC-56 STORE-6a: + 157 store6.* (the offline page, money never queues, app & install, the chain, reasons, band, update) − offline.hint → 2,354
     // PC-56 STORE-6b: + 83 store6b.* (On this phone and its discard chain, the keeper, the chip, the install invitation, /app states) → 2,437
-    expect(Object.keys(en).length).toBe(2437);
+    // PC-56 STORE-SWEEP-a: + 160 (help.* 33, about.* 12, sweep.* 115 — help, the quality promise, trust, contact, the facts, the refusals) − footer.soon → 2,596
+    expect(Object.keys(en).length).toBe(2596);
   });
 });

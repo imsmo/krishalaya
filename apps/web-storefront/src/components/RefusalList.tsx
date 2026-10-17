@@ -27,8 +27,11 @@ import { STORE5B_REFUSALS } from '../features/store5b/refusals';
 import { STORE6A_REFUSALS, type Store6Surface } from '../features/store6/refusals';
 // PC-56 STORE-6b: and `STORE6B_REFUSALS` ("On this phone" and its discard chain; the install invitation on `/app`) — `Store6bSurface`.
 import { STORE6B_REFUSALS, type Store6bSurface } from '../features/store6b/refusals';
+// PC-56 STORE-SWEEP-a: and `SWEEP_REFUSALS` (Help, the quality promise, Trust & your data, About, Contact and a store's own contact page) —
+// `SweepSurface`.
+import { SWEEP_REFUSALS, type SweepSurface } from '../features/sweep/refusals';
 
-export function RefusalList({ surface }: { surface: Store2aSurface | Store2bSurface | Store2cSurface | Store3aSurface | Store3bSurface | Store3cSurface | Store4Surface | Store5Surface | Store6Surface | Store6bSurface }) {
+export function RefusalList({ surface }: { surface: Store2aSurface | Store2bSurface | Store2cSurface | Store3aSurface | Store3bSurface | Store3cSurface | Store4Surface | Store5Surface | Store6Surface | Store6bSurface | SweepSurface }) {
   const t = getTranslator();
   const rows = [
     ...STORE2A_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
@@ -45,6 +48,7 @@ export function RefusalList({ surface }: { surface: Store2aSurface | Store2bSurf
     ...STORE5B_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
     ...STORE6A_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
     ...STORE6B_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
+    ...SWEEP_REFUSALS.filter((r) => (r.surfaces as readonly string[]).includes(surface)),
   ];
   return (
     <section className="kv-refused" data-kv-refused={surface} aria-labelledby={`kv-refused-${surface}`}>

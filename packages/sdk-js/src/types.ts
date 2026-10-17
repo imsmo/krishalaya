@@ -300,6 +300,13 @@ export interface StorefrontProfile {
 }
 /** PC-56 STORE-1b · D3 — the platform home's PRECOMPUTED counts; `computedAt` null = never computed (say so, never print zeros as fact). */
 export interface StorefrontStats { liveListings: number; verifiedOrganisations: number; districts: number; computedAt: string | null }
+/** PC-56 STORE-SWEEP-a · B3 (founder D3 / D7, migration 0223) — the platform's published facts (`GET /v1/storefront/platform-facts`). Every field
+ *  is the value set in the admin realm, or null = NOT PUBLISHED YET (the page says so, per fact — never a placeholder, never a guessed mailbox). */
+export interface PlatformFacts {
+  legal: { entityName: string | null; registeredOffice: string | null };
+  grievance: { officerName: string | null; address: string | null; email: string | null; ackHours: number | null; resolveDays: number | null };
+  contact: { securityEmail: string | null; partnersEmail: string | null; pressEmail: string | null; generalEmail: string | null };
+}
 /** PC-56 STORE-1b · D1 — a discovery-feed card: names the ORGANISATION (never a seller, user or farmer); money = bigint minor string. */
 export interface DiscoveryCard {
   listingId: string; tenantSlug: string; organisation: string; title: string; priceMinor: string; currencyCode: string; unitCode: string;

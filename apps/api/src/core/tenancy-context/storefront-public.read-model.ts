@@ -52,6 +52,53 @@ export interface PublicPlans {
   trialDays: number | null;
 }
 
+/**
+ * PC-56 STORE-SWEEP-a · B3 (founder D3 / D7, migration 0223) — the eleven PLATFORM FACTS the Trust, Contact, About and Press pages print: the
+ * legal entity and its office, the grievance officer (name, address, mailbox, the published acknowledgement / resolution figures) and four
+ * mailboxes. Each is a platform `setting_definitions` row read through `kv_platform_setting(key)` (0194: the admin realm's
+ * `platform_setting_values` row, else the registry default). AN EMPTY VALUE IS "NOT PUBLISHED YET": an empty or blank string, a JSON null, a
+ * non-string where a string belongs, or a figure that is not a whole number ≥ 1 answers `null` — the page then says so; nothing is invented.
+ */
+export const PLATFORM_FACT_KEYS = Object.freeze({
+  entityName: 'platform.legal.entity_name',
+  registeredOffice: 'platform.legal.registered_office',
+  officerName: 'platform.grievance.officer_name',
+  grievanceAddress: 'platform.grievance.address',
+  grievanceEmail: 'platform.grievance.email',
+  ackHours: 'platform.grievance.ack_hours',
+  resolveDays: 'platform.grievance.resolve_days',
+  securityEmail: 'platform.contact.security_email',
+  partnersEmail: 'platform.contact.partners_email',
+  pressEmail: 'platform.contact.press_email',
+  generalEmail: 'platform.contact.general_email',
+} as const);
+export interface PlatformFacts {
+  legal: { entityName: string | null; registeredOffice: string | null };
+  grievance: { officerName: string | null; address: string | null; email: string | null; ackHours: number | null; resolveDays: number | null };
+  contact: { securityEmail: string | null; partnersEmail: string | null; pressEmail: string | null; generalEmail: string | null };
+}
+/** A text fact: a non-blank string (trimmed, at most the admin realm's 4,000 characters), else null — "" is NOT published. */
+export function factText(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const v = raw.trim();
+  return v.length > 0 && v.length <= 4000 ? v : null;
+}
+/** A figure fact (hours, days): a whole number ≥ 1, else null — JSON null (the seeded default) is NOT published. */
+export function factCount(raw: unknown): number | null {
+  return typeof raw === 'number' && Number.isInteger(raw) && raw >= 1 ? raw : null;
+}
+/** The answer's shape from the key → raw jsonb value map (a missing key is unpublished). */
+export function platformFactsOf(values: ReadonlyMap<string, unknown>): PlatformFacts {
+  const text = (k: string) => factText(values.get(k));
+  const count = (k: string) => factCount(values.get(k));
+  const K = PLATFORM_FACT_KEYS;
+  return {
+    legal: { entityName: text(K.entityName), registeredOffice: text(K.registeredOffice) },
+    grievance: { officerName: text(K.officerName), address: text(K.grievanceAddress), email: text(K.grievanceEmail), ackHours: count(K.ackHours), resolveDays: count(K.resolveDays) },
+    contact: { securityEmail: text(K.securityEmail), partnersEmail: text(K.partnersEmail), pressEmail: text(K.pressEmail), generalEmail: text(K.generalEmail) },
+  };
+}
+
 /** A pg row as the driver hands it back: untyped (`any`) by the driver's own contract — every field is narrowed / converted below before it
  *  leaves this file (String(), Number(), === true), so no `any` reaches a caller. */
 type PgRow = Record<string, any>;   // eslint-disable-line @typescript-eslint/no-explicit-any -- justified above
@@ -161,6 +208,15 @@ export class StorefrontPublicReadModel {
       })),
       trialDays: trialDaysOf((s.rows[0] as PgRow | undefined)?.value),
     };
+  }
+
+  /** PC-56 STORE-SWEEP-a · B3: the eleven platform facts in ONE query (an array of keys through `kv_platform_setting`), on the replica. Read-only:
+   *  nothing here writes, and no other setting can be asked for — the key list is this file's constant, never a parameter. */
+  async platformFacts(): Promise<PlatformFacts> {
+    const keys = Object.values(PLATFORM_FACT_KEYS);
+    const r = await this.pools.replica(0).query(
+      `SELECT k.key, kv_platform_setting(k.key) AS value FROM unnest($1::varchar[]) AS k(key)`, [keys]);
+    return platformFactsOf(new Map((r.rows as PgRow[]).map((x) => [String(x.key), x.value as unknown])));
   }
 
   /** PC-56 STORE-2a (brief C2, 0207 `public_organisation_search`): verified live organisations whose DISPLAY NAME starts with `prefix`

@@ -34,6 +34,9 @@ export const STATIC_TOP_SEGMENTS: readonly string[] = Object.freeze([
   'manifest.webmanifest',
   // PC-56 STORE-6b · C3: canon W315's "On this phone" (`/sync` — reserved as a tenant slug in migration 0204:150)
   'sync',
+  // PC-56 STORE-SWEEP-a · C2: canon W309's quality promise, W310's trust page and W312's contact page (`/quality-promise`, `/trust-data`, `/contact` —
+  // reserved as tenant slugs in migration 0204)
+  'quality-promise', 'trust-data', 'contact',
 ]);
 const SLUG = /^[a-z0-9][a-z0-9-]{0,49}$/;
 

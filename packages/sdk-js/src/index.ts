@@ -21,6 +21,7 @@ export { nameById } from './resources/lookups';
 export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, ListingAnalytics, ViewsByDayPoint, ProductCard, TraceProvenance, AuthTokens, UserProfile,
   OtpRequestResult, OtpChannel, OtpInvalidDetails, AuthSessionSummary, StorefrontTenant,   // PC-56 STORE-1a
   StorefrontProfile, StorefrontStats, DiscoveryCard, OrganisationCard, StorefrontFlags,   // PC-56 STORE-1b
+  PlatformFacts,   // PC-56 STORE-SWEEP-a
   TraceVerification, PublicCertificate, CertificateStatus,   // PC-56 STORE-5b
   PublicListingDetail, OrderPaymentState, CheckoutGroupDetail,   // PC-56 HOTFIX-4
   PublicListingCard, PublicLotAttribute, FacetValue, ListingFacets, ListingSearchPage, ListingSearchQuery, ListingTombstone, RegulatedMarker, OrganisationPage,   // PC-56 STORE-2a

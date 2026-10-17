@@ -17,6 +17,9 @@
 //                                     and `storefront_offline_reads` — tenant-scoped, fail-closed (15 keys).
 //                                     PC-56 STORE-6b (founder D3/Q8) adds `storefront_install_prompt` — tenant-scoped, fail-closed (16 keys).
 //   GET /v1/storefront/plans?country=XX  STORE-1c · D2 — the PUBLIC plan catalogue of a country (a platform table, no RLS — read model header)
+//   GET /v1/storefront/platform-facts    STORE-SWEEP-a · B3 (founder D3/D7, 0223) — the eleven platform facts (legal entity, office, grievance
+//                                     officer and figures, four mailboxes); an empty value answers null ("not published yet"). No tenant, no flag
+//                                     (a grievance address has no kill-switch — the named Law 10 exception in 0223's header).
 //
 // No money moves, nothing is written: each is a SELECT through a 0204 SECURITY DEFINER function (storefront-public.read-model.ts), or — for
 // the plans — a plain SELECT of the platform catalogue.
@@ -108,6 +111,12 @@ export class StorefrontPublicController {
       try { out[key] = await this.flags.isEnabled(key, platform ? {} : { tenantId: ctx.tenantId }); } catch { out[key] = FAIL_OPEN_FLAGS.has(key); }
     }
     return { data: out };
+  }
+
+  /** STORE-SWEEP-a · B3: the platform's published facts — the same `@Public()` + per-IP rate limit as `stats`; nothing tenant-scoped. */
+  @Public() @RateLimit({ limit: 120, windowSec: 60, by: 'ip' }) @Get('platform-facts')
+  async platformFacts() {
+    return { data: await this.reads.platformFacts() };
   }
 
   /** STORE-1c · D2: the public plans of `?country=XX` (two letters). A missing / malformed country is refused by name, never defaulted. */

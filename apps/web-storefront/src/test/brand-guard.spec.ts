@@ -7,6 +7,7 @@ import { PLATFORM_BRAND } from '@krishalaya/tokens';
 import { en } from '../i18n/en';
 import { hi } from '../i18n/hi';
 import { gu } from '../i18n/gu';
+import { STORE_RENDERED_SURFACES, SWEEP_REFUSALS } from '../features/sweep/refusals';
 
 const CATS = { en, hi, gu } as const;
 const SURVEY_KEYS = ['storefront.metaDescription', 'listing.auctionNote', 'listing.serviceNote', 'listing.traceNote', 'trace.metaDescription'];
@@ -23,7 +24,7 @@ describe('STORE-1a · brand guard', () => {
     // /trace, the as-of stamp) — the platform's name only ever arrives as {platform} / {store}.
     const STORE1B = /^(meta\.|header\.|footer\.(about|col\.help|col\.farmers|help|returns|contact|soon|openStorefront|traceHow)$|home\.(hero|cta|glance|refusal|categories|fresh|orgs|trace)\.|home\.retry$|card\.soldBy$|discover\.(title|lead|empty|error|showMore|clearSearch)$|orgs\.|trace\.(how|code)\.|asOf\.|tenant\.)/;
     const scoped = [...SURVEY_KEYS, ...Object.keys(cat).filter((k) => k.startsWith('auth.') || STORE1B.test(k))];
-    expect(scoped.filter((k) => STORE1B.test(k)).length).toBe(91);   // every key STORE-1b added
+    expect(scoped.filter((k) => STORE1B.test(k)).length).toBe(90);   // every key STORE-1b added (PC-56 STORE-SWEEP-a: − footer.soon, the retired "coming soon")
     for (const k of scoped) {
       const v = (cat as Record<string, string>)[k];
       for (const lit of PLATFORM_LITERALS) expect([k, v.includes(lit)]).toEqual([k, false]);
@@ -108,6 +109,21 @@ describe('STORE-1a · brand guard', () => {
       expect([k, v.includes('{platform}')]).toEqual([k, false]);
     }
     expect((cat as Record<string, string>)['store6.manifest.description']).toContain('{tenant}');
+  });
+
+  // PC-56 STORE-SWEEP-a · C2 (founders D4 / D8): Help, the quality promise and a store's contact page render under a STORE's chrome — every sentence a
+  // store renders (help.*, sweep.quality.*, sweep.storeContact.*, the footer's new keys, the refusals printed on those three surfaces) names no
+  // platform: no literal name, no {platform} (organisation-neutral words; the platform's own help question opens no store). About, Press, Trust and
+  // the platform's Contact are the platform's pages (a store host redirects them).
+  it.each(Object.entries(CATS))('%s: no store-rendered SWEEP-a value carries the platform\'s name or {platform}', (_l, cat) => {
+    const storeRefusals = SWEEP_REFUSALS.filter((r) => r.surfaces.some((x) => STORE_RENDERED_SURFACES.includes(x))).map((r) => r.key);
+    const keys = [...Object.keys(cat).filter((k) => /^(help\.|sweep\.quality\.|sweep\.storeContact\.|sweep\.footer\.)/.test(k)), ...storeRefusals];
+    expect(keys.length).toBe(94);   // help.* 44 · sweep.quality.* 17 · sweep.storeContact.* 9 · sweep.footer.* 2 · the 22 refusals printed on help / quality / contact_store
+    for (const k of keys) {
+      const v = (cat as Record<string, string>)[k];
+      for (const lit of PLATFORM_LITERALS) expect([k, v.includes(lit)]).toEqual([k, false]);
+      expect([k, v.includes('{platform}')]).toEqual([k, false]);
+    }
   });
 
   it('the one brand entry: the token name in English, the decided vernacular spellings in hi / gu', () => {
