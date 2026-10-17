@@ -2,7 +2,7 @@
 // SWITCH, LIVE. The real AppModule over HTTP (supertest — listening ONCE on 127.0.0.1, the HOTFIX-5 pin), real Postgres + RLS as kv_app, the
 // seeded row of 0222 / seed core/0009. Own fixtures (two live organisations); nothing moves money, nothing is written by the API.
 //
-//   (1) the row as seeded: `storefront_install_prompt` OFF (Law 10); the allow-list answers 16 booleans for an organisation, the new key OFF;
+//   (1) the row as seeded: `storefront_install_prompt` OFF (Law 10); the allow-list answers 17 booleans for an organisation (STORE-SWEEP-b: + logistics), the new key OFF;
 //   (2) it is TENANT-scoped: absent with no tenant (the platform host — the storefront reads it OFF there, the 6a Q1 limit named again);
 //   (3) per ORGANISATION: a tenant allow-list names A → A reads ON, B still OFF; the kill-switch (is_enabled = false) beats the allow-list;
 //   (4) no rule, percentage or tenant list leaks in any answer.
@@ -50,12 +50,12 @@ run('PC-56 STORE-6b · storefront_install_prompt (integration, real AppModule ov
     await admin?.end();
   }, 40_000);
 
-  it('(1) the row as seeded (0222 + seed 0009): OFF, 100, {}; an organisation is answered 16 booleans with the new key OFF', async () => {
+  it('(1) the row as seeded (0222 + seed 0009): OFF, 100, {}; an organisation is answered 17 booleans with the new key OFF (STORE-SWEEP-b: was 16)', async () => {
     const rows = (await admin.query(`SELECT key, is_enabled, rollout_pct, rules FROM feature_flags WHERE key = $1`, [KEY])).rows;
     expect(rows).toEqual([{ key: KEY, is_enabled: false, rollout_pct: 100, rules: {} }]);
     const r = await flags(slug[A]);
     expect(r.status).toBe(200);
-    expect(Object.keys(r.body.data)).toHaveLength(16);
+    expect(Object.keys(r.body.data)).toHaveLength(17);   // PC-56 STORE-SWEEP-b (founder D1): + logistics
     expect(r.body.data[KEY]).toBe(false);
     for (const v of Object.values(r.body.data)) expect(typeof v).toBe('boolean');
   });

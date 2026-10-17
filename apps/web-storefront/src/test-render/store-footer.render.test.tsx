@@ -67,7 +67,7 @@ describe('STORE-SWEEP-a · the store\'s footer (the real layout)', () => {
 
 describe('STORE-SWEEP-a · the platform footer', () => {
   it('the "coming soon" lines are retired: the quality promise, Contact and Trust & your data are links', async () => {
-    const h = await renderResolved(PlatformLayout({ children: <p>page</p> }), [SiteHeader]);
+    const h = await renderResolved(await PlatformLayout({ children: <p>page</p> }), [SiteHeader]);
     const f = footerOf(h);
     expect(f).not.toContain('data-kv-soon');
     expect(f).not.toContain(en['footer.returns'] + ' · ');

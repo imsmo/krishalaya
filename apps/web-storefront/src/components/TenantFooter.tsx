@@ -30,6 +30,8 @@ export function TenantFooter({ name, slug, showPoweredBy, platformOrigin = '' }:
             <Link href={sweepHref(chrome, 'quality-promise')} className="kv-footer__link" data-kv-foot="quality">{t.t('footer.returns')}</Link>
             <Link href={sweepHref(chrome, 'contact')} className="kv-footer__link" data-kv-foot="contact">{t.t('footer.contact')}</Link>
             <a href={grievancesHref(chrome, platformOrigin)} className="kv-footer__link" data-kv-foot="grievances">{t.t('sweep.footer.grievances')}</a>
+            {/* PC-56 STORE-SWEEP-b · D3: the store's own language page (W323) */}
+            <Link href={sweepHref(chrome, 'language')} className="kv-footer__link" data-kv-foot="language">{t.t('sweep.footer.language')}</Link>
           </nav>
         </div>
         {showPoweredBy && <PoweredByMark label={PLATFORM_BRAND.poweredByMark} href={platformAboutHref(chrome, platformOrigin)} />}

@@ -75,7 +75,7 @@ describe('STORE-SWEEP-a · W309 · the refusals, the links, the chrome', () => {
     expect(platform()).toContain('href="/orders"');
     const h = await store();
     expect(h).toContain(`href="/${SLUG}/orders"`);
-    expect(h).toContain('href="/trace"');
+    expect(h).toContain(`href="/${SLUG}/trace"`);   // PC-56 STORE-SWEEP-b · D5: the store's own trace entry (was the platform's /trace)
     expect(h).not.toMatch(/href="[^"]*cancel/);
   });
   it('a store: no platform name in the page', async () => {

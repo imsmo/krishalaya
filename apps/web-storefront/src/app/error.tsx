@@ -2,30 +2,12 @@
 // requirement), so it can't use the server i18n helper — instead it reads the `kv_lang` cookie on the client and
 // picks the matching catalog (falling back to English), keeping the error page localized too. The `reset()`
 // retry re-renders the segment. No PII/secret is ever shown — just a friendly message (degrade, never die).
+// PC-56 STORE-SWEEP-b · D4 (canon W316): the words answer the three questions (components/sweep/BoundaryView.tsx); `reset()` only on the button —
+// never an automatic retry. A page under a store or the platform's chrome has its own boundary now ([tenantSlug]/error, (platform)/error); this one
+// catches what is left (the session-free shell).
 'use client';
-import { useEffect } from 'react';
-import { resolveLanguage } from '@krishalaya/i18n';
-import { en } from '../i18n/en';
-import { hi } from '../i18n/hi';
-import { gu } from '../i18n/gu';
-
-const CATALOGS: Record<string, Record<string, string>> = { en, hi, gu };
-
-function pick(key: string): string {
-  const cookie = typeof document !== 'undefined'
-    ? document.cookie.split('; ').find((c) => c.startsWith('kv_lang='))?.split('=')[1]
-    : undefined;
-  const lang = resolveLanguage(cookie).code;
-  return CATALOGS[lang]?.[key] ?? en[key] ?? key;
-}
+import { BoundaryView } from '../components/sweep/BoundaryView';
 
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  useEffect(() => { /* hook for client telemetry; never logs PII/secrets */ }, [error]);
-  return (
-    <section className="kv-empty-state" role="alert">
-      <h1>{pick('common.errorTitle')}</h1>
-      <p>{pick('common.errorBody')}</p>
-      <button type="button" className="kv-btn" onClick={() => reset()}>{pick('common.retry')}</button>
-    </section>
-  );
+  return <BoundaryView kind="error" code={error?.digest ?? null} onRetry={reset} />;
 }

@@ -16,6 +16,7 @@
 //                                     PC-56 STORE-6a (founder D4/D2) adds `storefront_pwa` — platform-scoped, fail-open, the worker's kill-switch —
 //                                     and `storefront_offline_reads` — tenant-scoped, fail-closed (15 keys).
 //                                     PC-56 STORE-6b (founder D3/Q8) adds `storefront_install_prompt` — tenant-scoped, fail-closed (16 keys).
+//                                     PC-56 STORE-SWEEP-b (founder D1, survey B11) adds `logistics` — tenant-scoped, fail-closed (17 keys).
 //   GET /v1/storefront/plans?country=XX  STORE-1c · D2 — the PUBLIC plan catalogue of a country (a platform table, no RLS — read model header)
 //   GET /v1/storefront/platform-facts    STORE-SWEEP-a · B3 (founder D3/D7, 0223) — the eleven platform facts (legal entity, office, grievance
 //                                     officer and figures, four mailboxes); an empty value answers null ("not published yet"). No tenant, no flag
@@ -52,7 +53,10 @@ import { StorefrontPublicReadModel, countryParam } from './storefront-public.rea
 // PC-56 STORE-6b (founder D3 / Q8, migration 0222): + `storefront_install_prompt` (16 keys) — TENANT-scoped and fail-closed like
 // `storefront_offline_reads`: the organisation decides whether its store shows the install invitation (the second-visit bottom sheet). With no
 // organisation in context (the platform host) it is absent, and the storefront reads it OFF.
-export const STOREFRONT_PUBLIC_FLAGS = Object.freeze(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse', 'storefront_cart', 'disputes', 'communication', 'traceability', 'certificates_public', 'storefront_pwa', 'storefront_offline_reads', 'storefront_install_prompt'] as const);
+// PC-56 STORE-SWEEP-b · B11 (founder D1, HOTFIX-9 Q3): + `logistics` (17 keys) — TENANT-scoped and fail-closed like `disputes`: the order page's
+// delivery section (`#tracking`) reads the buyer's journey only when the ORDER's organisation records deliveries here; OFF says "this organisation
+// does not record deliveries here", and a flag-store failure reads OFF (the storefront then says it could not read). The seeded row (0009) is OFF.
+export const STOREFRONT_PUBLIC_FLAGS = Object.freeze(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse', 'storefront_cart', 'disputes', 'communication', 'traceability', 'certificates_public', 'storefront_pwa', 'storefront_offline_reads', 'storefront_install_prompt', 'logistics'] as const);
 export type StorefrontPublicFlag = (typeof STOREFRONT_PUBLIC_FLAGS)[number];
 /** STORE-1c: which allow-listed flags are PLATFORM switches (evaluated with no tenant, answered even when no tenant is in context).
  *  PC-56 STORE-2a · B4 (founder D4, 0207): + `storefront_browse`, the public catalogue's kill-switch — a platform switch like org_self_signup. */

@@ -85,7 +85,7 @@ describe('STORE-SWEEP-a · the registries', () => {
       for (const c of Object.values(CATS)) expect([r.key, typeof c[r.key]]).toEqual([r.key, 'string']);
       expect([r.key, /\bnot\b|\bno\b|\bnever\b|\bnothing\b|\bnone\b|\bnobody\b/i.test(en[r.key])]).toEqual([r.key, true]);
     }
-    expect(SWEEP_REFUSALS.length).toBe(35);
+    expect(SWEEP_REFUSALS.length).toBe(57);   // PC-56 STORE-SWEEP-b: + 22 (tracking 11 · language 4 · errors 2 · empty 1 · degraded 4)
     expect(sweepRefusalKeys('help').length).toBe(9);
     expect(sweepRefusalKeys('contact').length).toBe(7);
     expect(sweepRefusalKeys('contact_store').length).toBe(6);
@@ -127,7 +127,9 @@ describe('STORE-SWEEP-a · the registries', () => {
     expect(helpEntries('platform').length).toBe(HELP_ENTRIES.length);
   });
   it('the 5 SWEEP-a canon files (SW-b appends its 5) and the DELTAs', () => {
-    expect(SWEEP_CANON_FILES.map((f) => f.file)).toEqual(['W308-store-about.html', 'W309-store-quality-promise.html', 'W310-store-trust-data.html', 'W311-store-help-center.html', 'W312-store-contact.html']);
+    // PC-56 STORE-SWEEP-b appended its 5 (the panel's last ten)
+    expect(SWEEP_CANON_FILES.map((f) => f.file)).toEqual(['W308-store-about.html', 'W309-store-quality-promise.html', 'W310-store-trust-data.html', 'W311-store-help-center.html', 'W312-store-contact.html',
+      'W292-store-tracking.html', 'W316-store-error-canon.html', 'W317-store-empty-canon.html', 'W320-store-degraded-service.html', 'W323-store-language.html']);
     expect(SWEEP_DELTAS.map((d) => d.id)).toEqual(expect.arrayContaining(['quality_route', 'trust_route', 'help_language_link', 'chrome_split']));
   });
 });

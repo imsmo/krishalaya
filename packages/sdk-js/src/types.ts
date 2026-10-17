@@ -350,6 +350,10 @@ export interface StorefrontFlags {
   /** PC-56 STORE-6b (founder D3 / Q8, 0222) — tenant-scoped, fail-closed: does this organisation's store show the install invitation (a bottom
    *  sheet on the second visit of a device, "Not now" honoured 30 days per device; seed: OFF)? Absent with no tenant (the platform host: OFF). */
   storefront_install_prompt?: boolean;
+  /** PC-56 STORE-SWEEP-b (founder D1, B11) — tenant-scoped, fail-closed: does this organisation record deliveries here (seed: OFF)? ON = the
+   *  order page's delivery section reads the buyer's journey (`orders.tracking`); OFF = "this organisation does not record deliveries here";
+   *  absent (no tenant, or an older API) = the storefront says it could not read, never a guess. */
+  logistics?: boolean;
 }
 /** PC-56 STORE-1c · D2 — one PUBLIC plan of a country. Money = bigint minor-unit STRINGS + the currency and its exponent (from the DB). */
 export interface StorefrontPlan {

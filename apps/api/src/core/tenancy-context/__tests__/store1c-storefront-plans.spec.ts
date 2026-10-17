@@ -81,7 +81,8 @@ describe('STORE-1c · D1 — the flags allow-list gains ONE platform switch', ()
     // PC-56 STORE-6a · B (founder D4 / D2, 0221): + `storefront_pwa` (the FOURTH platform-scoped key, fail-open) + `storefront_offline_reads`
     // (tenant-scoped, fail-closed) — 15 keys
     // PC-56 STORE-6b (founder D3 / Q8, 0222): + `storefront_install_prompt` (tenant-scoped, fail-closed) — 16 keys
-    expect(STOREFRONT_PUBLIC_FLAGS).toEqual(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse', 'storefront_cart', 'disputes', 'communication', 'traceability', 'certificates_public', 'storefront_pwa', 'storefront_offline_reads', 'storefront_install_prompt']);
+    // PC-56 STORE-SWEEP-b (founder D1, B11): + `logistics` (tenant-scoped, fail-closed — the order page's delivery section) — 17 keys
+    expect(STOREFRONT_PUBLIC_FLAGS).toEqual(['group_lots', 'org_self_signup', 'online_payments', 'buyer_charges', 'offers', 'auctions', 'reviews', 'storefront_browse', 'storefront_cart', 'disputes', 'communication', 'traceability', 'certificates_public', 'storefront_pwa', 'storefront_offline_reads', 'storefront_install_prompt', 'logistics']);
     expect([...PLATFORM_SCOPED_FLAGS]).toEqual(['org_self_signup', 'storefront_browse', 'storefront_cart', 'storefront_pwa']);
   });
 
@@ -103,7 +104,8 @@ describe('STORE-1c · D1 — the flags allow-list gains ONE platform switch', ()
     // STORE-6a: storefront_pwa fails open too — a dead flag store never unregisters every phone's worker
     expect(await ctl.publicFlags({ tenantId: '' } as RequestContext)).toEqual({ data: { org_self_signup: false, storefront_browse: true, storefront_cart: true, storefront_pwa: true } });
     // …and with a tenant in context, storefront_offline_reads fails CLOSED (OFF) — STORE-6b: storefront_install_prompt too
-    expect((await ctl.publicFlags({ tenantId: T } as RequestContext)).data).toMatchObject({ storefront_pwa: true, storefront_offline_reads: false, storefront_install_prompt: false });
+    // STORE-SWEEP-b: logistics fails CLOSED too
+    expect((await ctl.publicFlags({ tenantId: T } as RequestContext)).data).toMatchObject({ storefront_pwa: true, storefront_offline_reads: false, storefront_install_prompt: false, logistics: false });
   });
 
   it('a tenant in context → both keys; the platform switch still ignores the tenant; a flag-store failure reads OFF', async () => {

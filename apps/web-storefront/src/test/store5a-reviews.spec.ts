@@ -164,7 +164,7 @@ describe('STORE-5a · the refusal registry and the catalogues', () => {
   it('i18n parity: en / hi / gu hold the same keys (2,039 each — 1,933 at HOTFIX-7 + 114 − 8)', () => {
     const k = Object.keys(en).sort();
     expect(Object.keys(hi).sort()).toEqual(k); expect(Object.keys(gu).sort()).toEqual(k);
-    expect(k.length).toBe(2596);   // PC-56 STORE-SWEEP-a: + 160 (help.* 33, about.* 12, sweep.* 115) − footer.soon → 2,596 · PC-56 STORE-6b: + 83 store6b.* (On this phone, the keeper, the chip, the invitation, /app states) → 2,437 · PC-56 STORE-5b: + 163 − 5 retired v2 trace.* keys (the STORE-5a figure was 2,039); HOTFIX-8: + offline.shell.home; STORE-6a: + 157 store6.* − offline.hint
+    expect(k.length).toBe(2670);   // PC-56 STORE-SWEEP-b: + 74 (the delivery section, the ribbon, the language page, the boundaries, the middleware's words, 21 refusals) → 2,670 · PC-56 STORE-SWEEP-a: + 160 (help.* 33, about.* 12, sweep.* 115) − footer.soon → 2,596 · PC-56 STORE-6b: + 83 store6b.* (On this phone, the keeper, the chip, the invitation, /app states) → 2,437 · PC-56 STORE-5b: + 163 − 5 retired v2 trace.* keys (the STORE-5a figure was 2,039); HOTFIX-8: + offline.shell.home; STORE-6a: + 157 store6.* − offline.hint
     expect(k.filter((x) => x.startsWith('store5a.')).length).toBe(113);
   });
 });

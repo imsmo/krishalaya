@@ -54,7 +54,7 @@ run('PC-56 STORE-6a · storefront_pwa + storefront_offline_reads (integration, r
     await admin?.end();
   }, 40_000);
 
-  it('(1) the rows as seeded (0221 + seed 0009): storefront_pwa ON, storefront_offline_reads OFF; an organisation is answered 16 booleans (STORE-6b: was 15)', async () => {
+  it('(1) the rows as seeded (0221 + seed 0009): storefront_pwa ON, storefront_offline_reads OFF; an organisation is answered 17 booleans (STORE-6b: was 15 → 16; STORE-SWEEP-b: 17)', async () => {
     const rows = (await admin.query(`SELECT key, is_enabled, rollout_pct, rules FROM feature_flags WHERE key IN ('storefront_pwa', 'storefront_offline_reads') ORDER BY key`)).rows;
     expect(rows).toEqual([
       { key: 'storefront_offline_reads', is_enabled: false, rollout_pct: 100, rules: {} },
@@ -62,7 +62,7 @@ run('PC-56 STORE-6a · storefront_pwa + storefront_offline_reads (integration, r
     ]);
     const r = await flags(slug[A]);
     expect(r.status).toBe(200);
-    expect(Object.keys(r.body.data)).toHaveLength(16);   // PC-56 STORE-6b (0222): + storefront_install_prompt (was 15)
+    expect(Object.keys(r.body.data)).toHaveLength(17);   // PC-56 STORE-6b (0222): + storefront_install_prompt (was 15) · PC-56 STORE-SWEEP-b (founder D1): + logistics
     expect(r.body.data).toMatchObject({ storefront_pwa: true, storefront_offline_reads: false });
     for (const v of Object.values(r.body.data)) expect(typeof v).toBe('boolean');
   });

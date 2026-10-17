@@ -528,7 +528,7 @@ describe('STORE-SWEEP-a · claims guard (help, about, press, the sweep pages)', 
   ];
   it.each(Object.entries(CATS))('%s: none of the canon\'s false literals in any help / about / press / sweep value', (_l, cat) => {
     const keys = Object.keys(cat).filter((k) => SCOPE.test(k));
-    expect(keys.length).toBe(181);   // help.* 44 (33 new + the 11 reworded) · about.* 18 (12 new + 6 kept / reworded) · press.* 4 · sweep.* 115
+    expect(keys.length).toBe(255);   // help.* 44 (33 new + the 11 reworded) · about.* 18 (12 new + 6 kept / reworded) · press.* 4 · sweep.* 115 · PC-56 STORE-SWEEP-b: + 74 (help.link.language · sweep.* 73)
     for (const k of keys) {
       const v = (cat as Record<string, string>)[k];
       for (const re of FORBIDDEN) expect([k, re.toString(), re.test(v)]).toEqual([k, re.toString(), false]);
@@ -540,9 +540,9 @@ describe('STORE-SWEEP-a · claims guard (help, about, press, the sweep pages)', 
       expect([k, /track (your )?deliver|support team|platform wallet|from within your account/i.test(v)]).toEqual([k, false]);
     }
   });
-  it('every English sweep refusal says no / not / never / nothing / none / nobody (35 keys)', () => {
+  it('every English sweep refusal says no / not / never / nothing / none / nobody (35 keys; STORE-SWEEP-b: 56)', () => {
     const r = Object.entries(en).filter(([k]) => k.startsWith('sweep.refusal.'));
-    expect(r.length).toBe(35);
+    expect(r.length).toBe(56);   // PC-56 STORE-SWEEP-b: + 21 sweep.refusal.* (tracking 11 · language 4 · errors 2 · degraded 4; W317's closest_matches carries 2a's key)
     for (const [k, v] of r) expect([k, /\bnot\b|\bno\b|\bnever\b|\bnothing\b|\bnone\b|\bnobody\b/i.test(v)]).toEqual([k, true]);
   });
   it('no mailbox and no brand domain in the sweep\'s code (screens, routes, helpers) — the five mailboxes come ONLY from the facts read (D7)', () => {
@@ -558,6 +558,33 @@ describe('STORE-SWEEP-a · claims guard (help, about, press, the sweep pages)', 
       const src = readFileSync(f, 'utf8');
       expect([f, /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.[A-Za-z]{2,}/.test(src)]).toEqual([f, false]);   // a mailbox (an import path '@scope/pkg' has no local part)
       expect([f, /krishalaya\.(in|com)/i.test(src)]).toEqual([f, false]);
+    }
+  });
+});
+
+// PC-56 STORE-SWEEP-b · brief C2 (founders D1 / D2 / D3) — the delivery section, the ribbon, the language page and the boundaries: the canon's W292 words
+// (an arrival time, a position, a person, a vehicle, a slot, a text message, a handover code) never appear in a `sweep.tracking.*` value — they live
+// only inside the refusal sentences (`sweep.refusal.*`, which say no); no status-page or "next update" promise; no IP guess or speaker offered.
+describe('STORE-SWEEP-b · claims guard (the delivery section, the ribbon, the language page, the boundaries)', () => {
+  const TRACKING_WORDS = [/\bETA\b/, /\bGPS\b/, /\bmap\b/i, /\bdriver/i, /\bvehicle/i, /\bplate\b/i, /\bslot\b/i, /\bSMS\b/, /\bOTP\b/, /नक्शा|ड्राइवर|વાહન|નકશો|ડ્રાઇવર|वाहन/,
+    /free|मुफ़्त|મફત/i, /ladder/i, /refund/i];
+  it.each(Object.entries(CATS))('%s: no canon W292 word in any sweep.tracking.* value', (_l, cat) => {
+    const keys = Object.keys(cat).filter((k) => k.startsWith('sweep.tracking.'));
+    expect(keys.length).toBe(21);
+    for (const k of keys) for (const re of TRACKING_WORDS) expect([k, re.toString(), re.test((cat as Record<string, string>)[k])]).toEqual([k, re.toString(), false]);
+  });
+  it('the W292 words appear in English only inside refusals that say no', () => {
+    for (const [k, v] of Object.entries(en)) {
+      if (!/\b(map|vehicle|plate|handover code|text message)\b/i.test(v) || !k.startsWith('sweep.')) continue;
+      expect([k, k.startsWith('sweep.refusal.') && /\bnot\b|\bno\b|\bnever\b|\bnothing\b/i.test(v)]).toEqual([k, true]);
+    }
+  });
+  it.each(Object.entries(CATS))('%s: no status page, next-update time, IP guess or speaker offered by the ribbon, the language page or the boundaries', (_l, cat) => {
+    const keys = Object.keys(cat).filter((k) => /^sweep\.(ribbon|language|err|edge)\./.test(k));
+    expect(keys.length).toBe(30);   // ribbon 5 · language 8 · err 14 · edge 3
+    for (const k of keys) {
+      const v = (cat as Record<string, string>)[k];
+      expect([k, /status page|next update|\bIP\b|speaker|स्पीकर|સ્પીકર|Oops|!/i.test(v)]).toEqual([k, false]);
     }
   });
 });

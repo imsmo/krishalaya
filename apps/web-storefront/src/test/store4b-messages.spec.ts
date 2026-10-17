@@ -120,6 +120,7 @@ describe('STORE-4b · the refusal registry', () => {
     // PC-56 STORE-6a: + 157 store6.* (the offline page, money never queues, app & install, the chain, reasons, band, update) − offline.hint → 2,354
     // PC-56 STORE-6b: + 83 store6b.* (On this phone and its discard chain, the keeper, the chip, the install invitation, /app states) → 2,437
     // PC-56 STORE-SWEEP-a: + 160 (help.* 33, about.* 12, sweep.* 115 — help, the quality promise, trust, contact, the facts, the refusals) − footer.soon → 2,596
-    expect(Object.keys(en).length).toBe(2596);
+    // PC-56 STORE-SWEEP-b: + 74 (sweep.tracking.* 21 · sweep.ribbon.* 5 · sweep.language.* 8 · sweep.err.* 14 · sweep.edge.* 3 · sweep.refusal.* 21 · help.link.language · sweep.footer.language) → 2,670
+    expect(Object.keys(en).length).toBe(2670);
   });
 });

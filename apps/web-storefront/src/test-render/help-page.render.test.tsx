@@ -80,12 +80,15 @@ describe('STORE-SWEEP-a · W311 · the questions, the refusals, the chrome', () 
     expect(h).toContain('data-kv-help-entry="open_store"');
     expect(h).toContain('href="/contact"');
     expect(h).toContain('href="/for-organisations"');
-    expect(h).toContain('href="/quality-promise"'); expect(h).toContain('href="/account/preferences"');
+    // PC-56 STORE-SWEEP-b · D3: "in your language" → the language page (was the preferences page — SW-a's DELTA help_language_link, closed)
+    expect(h).toContain('href="/quality-promise"'); expect(h).toContain('href="/language"'); expect(h).not.toContain('href="/account/preferences"');
   });
-  it('a store: every link stays in the store (its orders, its quality promise, its contact page, its preferences); no platform name', async () => {
+  it('a store: every link stays in the store (its orders, its quality promise, its contact page, its language page, its trace entry); no platform name', async () => {
     const h = await store(); const w = text(h);
     expect(h).not.toContain('data-kv-help-entry="open_store"');
-    for (const href of [`/${SLUG}/orders`, `/${SLUG}/quality-promise`, `/${SLUG}/contact`, `/${SLUG}/account/preferences`, '/trace']) expect(h).toContain(`href="${href}"`);
+    // PC-56 STORE-SWEEP-b: the language page (D3) and the store's own trace entry (D5) — both under /<slug> now
+    for (const href of [`/${SLUG}/orders`, `/${SLUG}/quality-promise`, `/${SLUG}/contact`, `/${SLUG}/language`, `/${SLUG}/trace`]) expect(h).toContain(`href="${href}"`);
+    expect(h).not.toMatch(/href="\/(trace|language)"/);
     expect(h).not.toMatch(/href="\/(contact|help|quality-promise|for-organisations|orders)"/);
     expect(w).toContain(en['help.contactStore']);
     for (const lit of [PLATFORM_BRAND.name, PLATFORM_BRAND.platformStoreName]) expect(w).not.toContain(lit);

@@ -7,7 +7,7 @@ import { PLATFORM_BRAND } from '@krishalaya/tokens';
 import { en } from '../i18n/en';
 import { hi } from '../i18n/hi';
 import { gu } from '../i18n/gu';
-import { STORE_RENDERED_SURFACES, SWEEP_REFUSALS } from '../features/sweep/refusals';
+import { STORE_RENDERED_SURFACES, STORE_RENDERED_SURFACES_B, SWEEP_REFUSALS } from '../features/sweep/refusals';
 
 const CATS = { en, hi, gu } as const;
 const SURVEY_KEYS = ['storefront.metaDescription', 'listing.auctionNote', 'listing.serviceNote', 'listing.traceNote', 'trace.metaDescription'];
@@ -118,7 +118,21 @@ describe('STORE-1a · brand guard', () => {
   it.each(Object.entries(CATS))('%s: no store-rendered SWEEP-a value carries the platform\'s name or {platform}', (_l, cat) => {
     const storeRefusals = SWEEP_REFUSALS.filter((r) => r.surfaces.some((x) => STORE_RENDERED_SURFACES.includes(x))).map((r) => r.key);
     const keys = [...Object.keys(cat).filter((k) => /^(help\.|sweep\.quality\.|sweep\.storeContact\.|sweep\.footer\.)/.test(k)), ...storeRefusals];
-    expect(keys.length).toBe(94);   // help.* 44 · sweep.quality.* 17 · sweep.storeContact.* 9 · sweep.footer.* 2 · the 22 refusals printed on help / quality / contact_store
+    expect(keys.length).toBe(96);   // help.* 44 · sweep.quality.* 17 · sweep.storeContact.* 9 · sweep.footer.* 2 · the 22 refusals printed on help / quality / contact_store · PC-56 STORE-SWEEP-b: + help.link.language, + sweep.footer.language
+    for (const k of keys) {
+      const v = (cat as Record<string, string>)[k];
+      for (const lit of PLATFORM_LITERALS) expect([k, v.includes(lit)]).toEqual([k, false]);
+      expect([k, v.includes('{platform}')]).toEqual([k, false]);
+    }
+  });
+
+  // PC-56 STORE-SWEEP-b · C2 (founders D1 / D3 / D4): the delivery section, the language page, the store's boundary words and the ribbon render under a
+  // STORE's chrome — no platform name, no {platform} (the boundaries name the organisation as {org}; the platform's own "Back to the bazaar" is a plain
+  // word, never the brand); the middleware's words name nobody at all.
+  it.each(Object.entries(CATS))('%s: no store-rendered SWEEP-b value carries the platform\'s name or {platform}', (_l, cat) => {
+    const storeRefusals = SWEEP_REFUSALS.filter((r) => r.surfaces.some((x) => STORE_RENDERED_SURFACES_B.includes(x))).map((r) => r.key);
+    const keys = [...Object.keys(cat).filter((k) => /^sweep\.(tracking|language|err|edge|ribbon)\./.test(k)), ...storeRefusals];
+    expect(keys.length).toBe(66);   // tracking 21 · language 8 · err 14 · edge 3 · ribbon 5 · the 15 refusals printed on tracking / language
     for (const k of keys) {
       const v = (cat as Record<string, string>)[k];
       for (const lit of PLATFORM_LITERALS) expect([k, v.includes(lit)]).toEqual([k, false]);

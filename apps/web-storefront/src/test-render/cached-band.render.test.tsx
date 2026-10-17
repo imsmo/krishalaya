@@ -33,7 +33,7 @@ const L: BandLabels = {
 beforeEach(() => reset());
 
 describe('STORE-6a · D2 · the chromes stamp ONLY a page the server marked cacheable', () => {
-  it.each([['the platform', async () => renderResolved(PlatformLayout({ children: <p>page</p> }), [SiteHeader]), () => platformMeta()],
+  it.each([['the platform', async () => renderResolved(await PlatformLayout({ children: <p>page</p> }), [SiteHeader]), () => platformMeta()],
     ['the organisation', async () => renderResolved(await TenantLayout({ children: <p>page</p>, params: { tenantSlug: SLUG } }), [TenantHeader]), () => tenantMeta({ params: { tenantSlug: SLUG } })]] as const)(
     '%s: marked → <meta kv-cacheable>, data-kv-rendered-at on <main>, the hidden band + script; unmarked → none', async (_n, render, meta) => {
       C.headers = { 'x-kv-cacheable': 'public' };

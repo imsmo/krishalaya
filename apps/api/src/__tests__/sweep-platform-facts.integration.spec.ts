@@ -61,7 +61,9 @@ run('PC-56 STORE-SWEEP-a · GET /v1/storefront/platform-facts (integration, real
       `SELECT key, value_type, scope, risk_class, default_value FROM setting_definitions WHERE key = ANY($1::varchar[]) ORDER BY key`, [KEYS])).rows;
     expect(rows).toHaveLength(11);
     for (const r of rows) {
-      expect([r.key, r.scope, r.risk_class]).toEqual([r.key, 'platform', 'ordinary']);
+      // PC-56 STORE-SWEEP-b (0224, founder D6): the five mailboxes and the grievance officer's name and address are `security` (two
+      // administrators); the entity, the office and the two figures stay `ordinary`
+      expect([r.key, r.scope, r.risk_class]).toEqual([r.key, 'platform', /email$|officer_name$|grievance\.address$/.test(r.key) ? 'security' : 'ordinary']);
       expect([r.key, r.default_value]).toEqual([r.key, r.value_type === 'int' ? null : '']);
     }
     const r = await facts();

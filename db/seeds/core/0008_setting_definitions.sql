@@ -26,27 +26,29 @@ ON CONFLICT (key) DO NOTHING;
 
 -- [PC-56 STORE-SWEEP-a · 0223] the eleven platform facts the Trust, Contact, About and Press pages print (founder D3/D7). An EMPTY value means
 -- "not published yet" — nothing is invented; the values are set in the admin realm (platform_setting_values). Also in 0223.
+-- [PC-56 STORE-SWEEP-b · 0224, founder D6] the five mailboxes, the grievance officer's name and address are `security` (two administrators —
+-- admin-api settings-ops `requiresChecker`); 0224 UPDATEs them on a database that has them (this block's DO NOTHING never would).
 INSERT INTO setting_definitions (key, value_type, scope, risk_class, default_value, description) VALUES
   ('platform.legal.entity_name', 'string', 'platform', 'ordinary', '""',
    'PC-56 STORE-SWEEP-a (0223, founder D3): the legal entity that operates the platform — printed on Trust & your data and Contact; empty = "not published yet".'),
   ('platform.legal.registered_office', 'string', 'platform', 'ordinary', '""',
    'PC-56 STORE-SWEEP-a (0223, founder D3): the registered office (one line) — printed on Trust & your data and Contact; empty = "not published yet".'),
-  ('platform.grievance.officer_name', 'string', 'platform', 'ordinary', '""',
+  ('platform.grievance.officer_name', 'string', 'platform', 'security', '""',
    'PC-56 STORE-SWEEP-a (0223, founder D3): the grievance officer''s name — the Grievances block on Trust & your data (linked from every store''s footer); empty = "not published yet".'),
-  ('platform.grievance.address', 'string', 'platform', 'ordinary', '""',
+  ('platform.grievance.address', 'string', 'platform', 'security', '""',
    'PC-56 STORE-SWEEP-a (0223, founder D3): the grievance officer''s postal address; empty = "not published yet".'),
-  ('platform.grievance.email', 'string', 'platform', 'ordinary', '""',
+  ('platform.grievance.email', 'string', 'platform', 'security', '""',
    'PC-56 STORE-SWEEP-a (0223, founder D3/D7): the grievance mailbox — never typed in code; empty = "not published yet".'),
   ('platform.grievance.ack_hours', 'int', 'platform', 'ordinary', 'null',
    'PC-56 STORE-SWEEP-a (0223, founder D3): the published acknowledgement time in hours (a lawyer sets it); null = not printed ("not published yet").'),
   ('platform.grievance.resolve_days', 'int', 'platform', 'ordinary', 'null',
    'PC-56 STORE-SWEEP-a (0223, founder D3): the published resolution time in days (a lawyer sets it); null = not printed ("not published yet").'),
-  ('platform.contact.security_email', 'string', 'platform', 'ordinary', '""',
+  ('platform.contact.security_email', 'string', 'platform', 'security', '""',
    'PC-56 STORE-SWEEP-a (0223, founder D7): where a security problem is reported; empty = "not published yet".'),
-  ('platform.contact.partners_email', 'string', 'platform', 'ordinary', '""',
+  ('platform.contact.partners_email', 'string', 'platform', 'security', '""',
    'PC-56 STORE-SWEEP-a (0223, founder D7): the organisations and partners mailbox; empty = "not published yet".'),
-  ('platform.contact.press_email', 'string', 'platform', 'ordinary', '""',
+  ('platform.contact.press_email', 'string', 'platform', 'security', '""',
    'PC-56 STORE-SWEEP-a (0223, founder D7): the press mailbox (Contact, Press and About); empty = "not published yet".'),
-  ('platform.contact.general_email', 'string', 'platform', 'ordinary', '""',
+  ('platform.contact.general_email', 'string', 'platform', 'security', '""',
    'PC-56 STORE-SWEEP-a (0223, founder D7): the general mailbox; empty = "not published yet".')
 ON CONFLICT (key) DO NOTHING;

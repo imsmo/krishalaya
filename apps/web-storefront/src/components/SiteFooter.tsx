@@ -28,6 +28,8 @@ export function SiteFooter() {
             <Link href="/quality-promise" className="kv-footer__link" data-kv-foot="quality">{t.t('footer.returns')}</Link>
             <Link href="/contact" className="kv-footer__link" data-kv-foot="contact">{t.t('footer.contact')}</Link>
             <Link href="/trust-data" className="kv-footer__link" data-kv-foot="trust">{t.t('sweep.footer.trust')}</Link>
+            {/* PC-56 STORE-SWEEP-b · D3: the language page (W323) */}
+            <Link href="/language" className="kv-footer__link" data-kv-foot="language">{t.t('sweep.footer.language')}</Link>
           </nav>
           <nav className="kv-footer__col" aria-label={t.t('footer.col.farmers')}>
             <h2 className="kv-footer__heading">{t.t('footer.col.farmers')}</h2>

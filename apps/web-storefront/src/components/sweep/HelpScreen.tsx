@@ -15,14 +15,18 @@ import { QUALITY_WINDOW_HOURS } from '../../features/sweep/quality-rules';
 
 const LINK_LABEL: Record<HelpLink, string> = {
   orders: 'help.link.orders', trace: 'help.link.trace', quality: 'help.link.quality', preferences: 'help.link.preferences', signup: 'help.link.signup',
+  language: 'help.link.language',
 };
 
 export function helpLinkHref(c: AccountChrome, link: HelpLink): string {
   switch (link) {
     case 'orders': return c.kind === 'tenant' ? `/${encodeURIComponent(c.slug)}/orders` : '/orders';
-    case 'trace': return '/trace';
+    // PC-56 STORE-SWEEP-b · D5: the trace ENTRY is the store's own page now (`/<slug>/trace`; `/trace` on its host) — a store's help stays in the store
+    case 'trace': return c.kind === 'tenant' ? `/${encodeURIComponent(c.slug)}/trace` : '/trace';
     case 'quality': return sweepHref(c, 'quality-promise');
     case 'preferences': return accountHref(c, 'preferences');
+    // PC-56 STORE-SWEEP-b · D3: "in your language" → the language page (SW-a's DELTA `help_language_link` closed)
+    case 'language': return sweepHref(c, 'language');
     default: return '/for-organisations';
   }
 }

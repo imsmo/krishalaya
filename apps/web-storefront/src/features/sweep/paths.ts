@@ -5,6 +5,9 @@
 //     `/<slug>/quality-promise`), and Contact — which is TWO pages: the platform's (`/contact`) and a store's own (`/<slug>/contact`, "Message
 //     the organisation").
 //   • PLATFORM-ONLY: About, Press, Pricing, Blog, Trust & your data, and the platform's Contact.
+//   • PC-56 STORE-SWEEP-b · D3 / D5: Language (`/language`, `/<slug>/language`) is BOTH chromes; `/for-organisations` (opening an organisation's
+//     store — the platform's own page) joins the platform-only 307s; the trace ENTRY `/trace` (exactly — `/trace/<token>` was already the store's
+//     since 5b) is the store's own page on its host.
 //
 // THE HOST RULE, exactly: on a store's OWN host the middleware
 //   – REWRITES `/help`, `/quality-promise`, `/contact` to the store's pages (brand-theme.ts `hostRewritePath`) — so `/contact` on a store host is
@@ -16,13 +19,15 @@
 //     for a path store, `<platform origin>/trust-data#grievances` on a store host; "Powered by" links the platform's `/about` the same way.
 import type { AccountChrome } from '../store4a/account';
 
-export type SweepPage = 'help' | 'quality-promise' | 'contact';
-/** The pages a store renders under ITS OWN chrome (and the platform under its). */
-export const SWEEP_BOTH_CHROMES: readonly SweepPage[] = Object.freeze(['help', 'quality-promise', 'contact'] as SweepPage[]);
-/** The PLATFORM's pages. `/contact` is here AND a store's own page: on a store host it is rewritten (see STORE_HOST_REWRITES), never redirected. */
-export const PLATFORM_ONLY_PATHS: readonly string[] = Object.freeze(['/about', '/press', '/pricing', '/blog', '/trust-data', '/contact']);
-/** What a store host serves as the store's own page (brand-theme.ts `hostRewritePath` maps each to `/<slug><path>`). */
-export const STORE_HOST_REWRITES: readonly string[] = Object.freeze(['/help', '/quality-promise', '/contact']);
+export type SweepPage = 'help' | 'quality-promise' | 'contact' | 'language';
+/** The pages a store renders under ITS OWN chrome (and the platform under its). STORE-SWEEP-b: + `language`. */
+export const SWEEP_BOTH_CHROMES: readonly SweepPage[] = Object.freeze(['help', 'quality-promise', 'contact', 'language'] as SweepPage[]);
+/** The PLATFORM's pages. `/contact` is here AND a store's own page: on a store host it is rewritten (see STORE_HOST_REWRITES), never redirected.
+ *  STORE-SWEEP-b · D5: + `/for-organisations` (a store host 307s it to the platform origin). */
+export const PLATFORM_ONLY_PATHS: readonly string[] = Object.freeze(['/about', '/press', '/pricing', '/blog', '/trust-data', '/contact', '/for-organisations']);
+/** What a store host serves as the store's own page (brand-theme.ts `hostRewritePath` maps each to `/<slug><path>`). STORE-SWEEP-b: + `/language`,
+ *  + `/trace` (the exact entry path; `/trace/<token>` was rewritten since 5b). */
+export const STORE_HOST_REWRITES: readonly string[] = Object.freeze(['/help', '/quality-promise', '/contact', '/language', '/trace']);
 
 /** A platform origin as `https://host[:port]` (http(s) only, no path), or null when unset / not a URL. */
 export function platformOriginOf(raw: string | null | undefined): string | null {

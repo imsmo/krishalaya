@@ -132,5 +132,9 @@ export function hostRewritePath(slug: string, pathname: string): string | null {
   if (pathname === '/help') return `/${slug}/help`;
   if (pathname === '/quality-promise') return `/${slug}/quality-promise`;
   if (pathname === '/contact') return `/${slug}/contact`;
+  // PC-56 STORE-SWEEP-b · D3 / D5: the language page (W323) is the ORGANISATION's on its own host; so is the trace ENTRY (`/trace` exactly — the
+  // home's "scan a trace QR" form and the store's footer land there; `/trace/<token>` above was already the store's)
+  if (pathname === '/language') return `/${slug}/language`;
+  if (pathname === '/trace') return `/${slug}/trace`;
   return null;
 }

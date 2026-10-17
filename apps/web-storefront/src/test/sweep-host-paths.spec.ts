@@ -6,6 +6,9 @@
 //   • with no usable platform origin nothing is redirected (a redirect to nowhere would loop);
 //   • the Grievances link and "Powered by" always reach the PLATFORM's pages — same origin on a path store, the platform origin on a host store;
 //   • the new top-level routes are static segments (never a tenant slug).
+// PC-56 STORE-SWEEP-b (founders D3 / D5): `/language` and the trace ENTRY `/trace` (exactly) are rewritten to the store's own pages on its host;
+// `/for-organisations` (and paths under it) answer the platform origin (mutant M6 — dropped from PLATFORM_ONLY_PATHS — turns this red); `language` is
+// a static segment.
 import { hostRewritePath } from '../features/branding/brand-theme';
 import { STATIC_TOP_SEGMENTS, tenantSlugOfPath } from '../features/auth/redirect';
 import { PLATFORM_CHROME, tenantChrome } from '../features/store4a/account';
@@ -45,9 +48,10 @@ describe('STORE-SWEEP-a · the host rule', () => {
   });
 
   it('the registry: both-chromes pages and the platform-only list', () => {
-    expect([...SWEEP_BOTH_CHROMES]).toEqual(['help', 'quality-promise', 'contact']);
-    expect([...PLATFORM_ONLY_PATHS].sort()).toEqual(['/about', '/blog', '/contact', '/press', '/pricing', '/trust-data']);
-    expect([...STORE_HOST_REWRITES]).toEqual(['/help', '/quality-promise', '/contact']);
+    // PC-56 STORE-SWEEP-b: + `language` (both chromes, D3); + `/for-organisations` platform-only (D5); + `/language`, `/trace` rewritten on a store host
+    expect([...SWEEP_BOTH_CHROMES]).toEqual(['help', 'quality-promise', 'contact', 'language']);
+    expect([...PLATFORM_ONLY_PATHS].sort()).toEqual(['/about', '/blog', '/contact', '/for-organisations', '/press', '/pricing', '/trust-data']);
+    expect([...STORE_HOST_REWRITES]).toEqual(['/help', '/quality-promise', '/contact', '/language', '/trace']);
   });
 });
 
@@ -70,5 +74,30 @@ describe('STORE-SWEEP-a · the links', () => {
       expect(STATIC_TOP_SEGMENTS).toContain(s);
       expect(tenantSlugOfPath(`/${s}`)).toBeNull();
     }
+  });
+});
+
+describe('STORE-SWEEP-b · the host rule (founders D3 / D5)', () => {
+  it('a store host rewrites /language and the trace entry /trace to the store\'s own pages; /trace/<token> as before', () => {
+    expect(hostRewritePath('anand', '/language')).toBe('/anand/language');
+    expect(hostRewritePath('anand', '/trace')).toBe('/anand/trace');
+    expect(hostRewritePath('anand', '/trace/KVTR9J4K2M')).toBe('/anand/trace/KVTR9J4K2M');
+    expect(hostRewritePath('anand', '/trace/')).toBe('/anand/trace/');           // the 5b prefix rule, unchanged
+    expect(hostRewritePath('anand', '/languages')).toBeNull();
+    expect(hostRewritePath('anand', '/for-organisations')).toBeNull();          // the platform's — redirected, never rewritten
+  });
+  it('/for-organisations (and anything under it) answers the platform origin; /language and /trace never do', () => {
+    expect(platformOnlyRedirect('/for-organisations', ORIGIN)).toBe(`${ORIGIN}/for-organisations`);
+    expect(platformOnlyRedirect('/for-organisations/', ORIGIN)).toBe(`${ORIGIN}/for-organisations/`);
+    expect(platformOnlyRedirect('/for-organisations?x=1'.split('?')[0], ORIGIN)).toBe(`${ORIGIN}/for-organisations`);
+    for (const p of ['/language', '/trace', '/for-organisationsx', '/organisations']) expect([p, platformOnlyRedirect(p, ORIGIN)]).toEqual([p, null]);
+    expect(platformOnlyRedirect('/for-organisations', '')).toBeNull();
+  });
+  it('the language page under both chromes; `language` is a static segment, never a tenant slug', () => {
+    expect(sweepHref(tenantChrome('anand'), 'language')).toBe('/anand/language');
+    expect(sweepHref(PLATFORM_CHROME, 'language')).toBe('/language');
+    expect(STATIC_TOP_SEGMENTS).toContain('language');
+    expect(tenantSlugOfPath('/language')).toBeNull();
+    expect(tenantSlugOfPath('/anand/language')).toBe('anand');
   });
 });

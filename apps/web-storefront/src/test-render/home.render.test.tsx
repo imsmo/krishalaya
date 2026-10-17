@@ -52,7 +52,7 @@ const CATS = [
 
 async function home(): Promise<string> {
   // the layout is called for its tree (so its <SiteHeader/> element is in it), then the async header is resolved in place
-  return renderResolved(PlatformLayout({ children: await HomePage() }), [SiteHeader]);
+  return renderResolved(await PlatformLayout({ children: await HomePage() }), [SiteHeader]);
 }
 
 beforeEach(() => {

@@ -398,3 +398,10 @@ html[data-motion="calm"] *, html[data-motion="calm"] *::before, html[data-motion
 .kv-a11y__floor { padding-inline-start: 20px; }
 /* the star inputs are tap targets too: at least 44px each (the floor) */
 .kv-stars__star { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+
+/* PC-56 STORE-SWEEP-b · the language page (W323) and the kill-switch ribbon (W320) — logical properties only (RTL) */
+.kv-lang__grid { display: flex; flex-wrap: wrap; gap: 12px; margin-block: 16px; }
+.kv-lang__choice { min-height: 56px; min-inline-size: 140px; font-size: 18px; }
+.kv-lang__choice.is-active { outline: 2px solid var(--kv-brand-700); outline-offset: 2px; }
+.kv-lang__inuse { font-size: 12px; }
+.kv-ribbon { border-inline-start: 4px solid var(--kv-brand-700); padding-inline-start: 12px; margin-block-end: 12px; }

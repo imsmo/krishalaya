@@ -63,7 +63,7 @@ describe('STORE-6b · the invitation is mounted ONCE per chrome, with the manife
     }
   });
   it('the platform chrome: the platform store\'s name and icon, flagOn FALSE (the tenant-scoped key reads absent there)', async () => {
-    const h = await renderResolved(PlatformLayout({ children: <p>page</p> }), [SiteHeader]);
+    const h = await renderResolved(await PlatformLayout({ children: <p>page</p> }), [SiteHeader]);
     expect(count(h, /data-kv-invite-mounted=/g)).toBe(1);
     expect(h).toContain('data-kv-invite-mounted="false"');
     expect(h).toContain(`data-kv-invite-name="${PLATFORM_BRAND.platformStoreName}"`);

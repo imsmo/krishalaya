@@ -12,7 +12,8 @@
 // Under a store: organisation-neutral words only (the brand guard pins every `help.*` key a store renders — no platform name).
 
 export type HelpSection = 'buying' | 'trace' | 'auctions' | 'account';
-export type HelpLink = 'orders' | 'trace' | 'quality' | 'preferences' | 'signup';
+// PC-56 STORE-SWEEP-b · D3: + `language` (the language page — the "in your language" entry is re-pointed from preferences)
+export type HelpLink = 'orders' | 'trace' | 'quality' | 'preferences' | 'signup' | 'language';
 export interface HelpEntry {
   id: string; section: HelpSection; q: string;
   /** the answer key, or 'money' (the flag-aware answer) */
@@ -34,7 +35,7 @@ export const HELP_ENTRIES: readonly HelpEntry[] = Object.freeze([
   { id: 'emd', section: 'auctions', q: 'help.q8', a: 'help.a8' },
   { id: 'clock', section: 'auctions', q: 'help.q9', a: 'help.a9' },
   { id: 'offer', section: 'auctions', q: 'help.q10', a: 'help.a10' },
-  { id: 'language', section: 'account', q: 'help.q11', a: 'help.a11', link: 'preferences' },
+  { id: 'language', section: 'account', q: 'help.q11', a: 'help.a11', link: 'language' },
   { id: 'open_store', section: 'account', q: 'help.platform.q', a: 'help.platform.a', link: 'signup', platformOnly: true },
 ] as HelpEntry[]);
 

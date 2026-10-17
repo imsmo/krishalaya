@@ -31,6 +31,12 @@
 // PC-56 STORE-SWEEP-a · D3 / D4: the footer carries this store's Help / Quality promise / Contact, the PLATFORM's Grievances link and "Powered by" as a
 // link to the platform's About — on a host-routed request those two point at the platform's origin (`env.siteUrl`, NEXT_PUBLIC_SITE_URL), on a path
 // store at the same origin.
+// PC-56 STORE-SWEEP-b (founders D2 / D4):
+//   • D2 — the kill-switch RIBBON (components/sweep/KillSwitchRibbon.tsx) beside `OnlineGuard`, from the SAME public flags read the install
+//     invitation uses (one read): while the platform's `storefront_cart` or `storefront_browse` is OFF, every page of the store says so ("our side",
+//     the working detour); not in the offline shell (no flags are read there);
+//   • D4 — the children sit inside a `BoundaryProvider` (the organisation's slug and name, the request's language): `[tenantSlug]/not-found.tsx` and
+//     `[tenantSlug]/error.tsx` render INSIDE this layout and say "Back to <organisation>" → `/<slug>` — never the platform's 404 outside the chrome.
 // PC-56 STORE-6b · D3: the install invitation (components/install/InstallInvite.tsx) mounted ONCE here with the organisation's name and icon EXACTLY
 // as its manifest has them (brand-theme.ts `tenantManifest`: the published display name, else the tenant's, else the slug; the logo, else the
 // monogram) and THIS organisation's `storefront_install_prompt` (the public flags read — fail closed: unreadable → OFF). Not in the offline
@@ -40,7 +46,7 @@ import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { PLATFORM_BRAND_COLOURS } from '@krishalaya/tokens';
 import { env } from '../../lib/env';
-import { getTranslator } from '../../lib/i18n';
+import { getLang, getTranslator } from '../../lib/i18n';
 import { loadTenantShell } from '../../lib/storefront-data';
 import { TENANT_SLUG_HEADER } from '../../lib/host-routing';
 import { brandCss, brandColours, logoSrc, brandingForMark, poweredByVisible } from '../../features/branding/brand-theme';
@@ -60,6 +66,9 @@ import { UpdateNotice } from '../../components/offline/UpdateNotice';
 import { CachedBand } from '../../components/offline/CachedBand';
 import { TenantShellHeader } from '../../components/offline/TenantShellHeader';
 import { bandLabels, reasonWords, signalLabels, updateLabels } from '../../lib/offline-labels';
+import type { StorefrontFlags } from '@krishalaya/sdk-js';
+import { KillSwitchRibbon } from '../../components/sweep/KillSwitchRibbon';   // PC-56 STORE-SWEEP-b · D2
+import { BoundaryProvider } from '../../components/sweep/BoundaryContext';   // PC-56 STORE-SWEEP-b · D4
 
 /** Is this request host-routed to THIS organisation (its own domain — the middleware named it)? */
 const hostRouted = (slug: string) => headers().get(TENANT_SLUG_HEADER) === slug;
@@ -101,13 +110,14 @@ export default async function TenantLayout({ children, params }: { children: Rea
   const powered = poweredByVisible('storefront', b?.brand);
   const platformOrigin = hostRouted(params.tenantSlug) ? env.siteUrl : '';   // STORE-SWEEP-a: the platform's pages from a store's own host
   const degraded = shell.kind === 'unavailable' && <p className="kv-state kv-state--error" role="status" data-kv-state="degraded">{t.t('tenant.degraded')}</p>;
+  const boundary = { slug: params.tenantSlug, name };   // STORE-SWEEP-b · D4: the store a boundary under this layout stays in
   if (shellMode()) {
     // the offline page: the organisation's name and mark only — the same HTML for every person on the phone
     return (
       <>
         {css && <style data-kv-tenant-brand={String(b!.brand!.version)} dangerouslySetInnerHTML={{ __html: css }} />}
         <TenantShellHeader slug={params.tenantSlug} name={name} logoSrc={mark?.logoUrl ?? null} showPoweredBy={powered} />
-        <main className="kv-container" id="main">{degraded}{children}</main>
+        <main className="kv-container" id="main">{degraded}<BoundaryProvider store={boundary} lang={getLang()}>{children}</BoundaryProvider></main>
         <TenantFooter name={name} slug={params.tenantSlug} showPoweredBy={powered} platformOrigin={platformOrigin} />
       </>
     );
@@ -115,8 +125,10 @@ export default async function TenantLayout({ children, params }: { children: Rea
   const signal = signalLabels(`/${params.tenantSlug}/offline`);
   const renderedAt = cacheable() ? new Date().toISOString() : null;
   // STORE-6b · D3: the invitation names the organisation and its icon as its manifest does; this organisation's switch (fail closed)
-  let installOn = false;
-  try { installOn = (await publicClient(params.tenantSlug).storefront.flags()).storefront_install_prompt === true; } catch { installOn = false; }
+  // STORE-SWEEP-b · D2: the same read feeds the ribbon (the platform's kill-switches; unreadable → no ribbon — they fail open at the API)
+  let flags: StorefrontFlags | null = null;
+  try { flags = await publicClient(params.tenantSlug).storefront.flags(); } catch { flags = null; }
+  const installOn = flags?.storefront_install_prompt === true;
   const manifestName = (b?.brand?.displayName || b?.displayName || params.tenantSlug).trim();
   const manifestIcon = logoSrc(env.publicApiUrl, b?.brand) ?? monogramHref(params.tenantSlug);
   return (
@@ -125,13 +137,14 @@ export default async function TenantLayout({ children, params }: { children: Rea
       <TenantHeader slug={params.tenantSlug} name={name} logoSrc={mark?.logoUrl ?? null} showPoweredBy={powered} />
       <main className="kv-container" id="main" {...(renderedAt ? { 'data-kv-rendered-at': renderedAt } : {})}>
         <OnlineGuard labels={signal} />
+        <KillSwitchRibbon chrome={tenantChrome(params.tenantSlug)} flags={flags} />
         <SignalReasons words={reasonWords()} needsSignal={signal.needsSignal} />
         <UpdateNotice labels={updateLabels()} />
         {renderedAt && <CachedBand at={renderedAt} labels={bandLabels()} />}
         {degraded}
         {b?.brand && <BrandChangeNote tenantSlug={params.tenantSlug} version={b.brand.version}
           title={t.t('brand.note.title')} body={t.t('brand.note.body', { name })} dismiss={t.t('brand.note.dismiss')} />}
-        {children}
+        <BoundaryProvider store={boundary} lang={getLang()}>{children}</BoundaryProvider>
         <InstallInvite name={manifestName} iconHref={manifestIcon} flagOn={installOn} appHref={appHref(tenantChrome(params.tenantSlug))} labels={inviteLabels()} />
       </main>
       <TenantFooter name={name} slug={params.tenantSlug} showPoweredBy={powered} platformOrigin={platformOrigin} />

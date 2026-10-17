@@ -21,6 +21,10 @@
 //      a 307 to the same path on the platform's origin (`NEXT_PUBLIC_SITE_URL`, read here from the environment — the middleware cannot import
 //      lib/env's module-load check); with no usable origin configured nothing is redirected (features/sweep/paths.ts `platformOnlyRedirect`).
 //      `/help`, `/quality-promise` and `/contact` are the store's own pages there (rewritten by `hostRewritePath`).
+//   6. PC-56 STORE-SWEEP-b · D4 (survey F-6 / B12): a store host whose organisation cannot be looked up (503, `retry-after` kept) and a host no
+//      organisation is served at (404) answer SMALL LOCALIZED HTML (lib/edge-words.ts — Edge-safe: `lang`/`dir` from the `kv_lang` cookie, the
+//      three questions' words, the code in small print; no brand, no organisation name) — no longer bare English text. D5: `/for-organisations`
+//      joins the platform-only 307s; `/language` and the trace entry `/trace` are the store's own pages on its host (`hostRewritePath`).
 import { NextRequest, NextResponse } from 'next/server';
 import { pickUrlLang } from './lib/locale-url';
 import { TENANT_SLUG_HEADER, isOwnHost, resolveStorefrontHost } from './lib/host-routing';
@@ -28,6 +32,7 @@ import { hostRewritePath } from './features/branding/brand-theme';
 import { CACHEABLE_HEADER, SHELL_HEADER, cacheableRule, cacheableScope, hasSessionCookie, isTenantOfflinePath } from './features/store6/sw-rules';
 import { offlineReadsOn } from './lib/offline-reads';
 import { platformOnlyRedirect } from './features/sweep/paths';
+import { edgeHeaders, edgeHtml } from './lib/edge-words';
 
 // NOT imported from `lib/i18n.ts` on purpose: that module is `import 'server-only'` + `next/headers` (React Server Component APIs, backed
 // by an AsyncLocalStorage context that Middleware's Edge runtime does not provide). The same cookie name `lib/i18n.ts`'s `LANG_COOKIE` holds.
@@ -70,8 +75,9 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
   if (host && apiOrigin && !isOwnHost(host, process.env.NEXT_PUBLIC_SITE_URL || '')) {
     const a = await resolveStorefrontHost(apiOrigin, host);
     if (a.routing && !a.platformHost) {
-      if (a.unavailable) return new NextResponse('The organisation for this address could not be looked up — try again shortly.', { status: 503, headers: { 'retry-after': '10' } });
-      if (!a.tenant) return new NextResponse('No organisation is served at this address.', { status: 404 });
+      // STORE-SWEEP-b · D4: localized HTML in the cookie's language (never a brand or an organisation's name); the 503 keeps `retry-after`
+      if (a.unavailable) return new NextResponse(edgeHtml('unavailable', req.cookies.get(LANG_COOKIE)?.value), { status: 503, headers: edgeHeaders('unavailable') });
+      if (!a.tenant) return new NextResponse(edgeHtml('unknown_host', req.cookies.get(LANG_COOKIE)?.value), { status: 404, headers: edgeHeaders('unknown_host') });
       if (a.redirectTo) return NextResponse.redirect(`${a.redirectTo}${req.nextUrl.pathname}${req.nextUrl.search}`, 301);
       // STORE-6a · D6: never the platform's apple-touch icon on an organisation's host (iOS probes the root when a page links none)
       if (req.nextUrl.pathname === '/apple-touch-icon.png' || req.nextUrl.pathname === '/apple-touch-icon-precomposed.png') return new NextResponse(null, { status: 404 });

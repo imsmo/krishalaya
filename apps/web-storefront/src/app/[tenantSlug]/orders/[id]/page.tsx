@@ -19,6 +19,9 @@
 //     delivery arranged with the organisation; no delivery charge in this order). Nothing else changes here.
 //   • PC-56 STORE-4b · C4 (founder D1): "Message the organisation about this order" (signed in — this page requires it — AND this store's
 //     `communication` flag ON) → the buyer's ONE order thread with the organisation (keyed at render); 3a's `get_help` refusal is removed.
+//   • PC-56 STORE-SWEEP-b · C2 (founder D1 — canon W292 as a SECTION, DELTA `tracking_route`): "The delivery" (`#tracking`) right after "Where it
+//     stands" — components/sweep/TrackingSection.tsx over `api.orders.tracking(id)` (HOTFIX-9's buyer shape), read ONLY while this store's
+//     `logistics` flag is ON (the 17th allow-listed key; fail-closed); OFF / unreadable / a failed read each say so in the section, never the page.
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -51,6 +54,8 @@ import { PoweredByMark } from '../../../../components/PoweredByMark';
 import { completeOrderAction, raiseDisputeAction } from './actions';
 import { reviewHref } from '../../../../features/store5a/review';
 import { DraftDone } from '../../../../components/drafts/DraftDone';   // PC-56 STORE-6b · D4
+import { TrackingSection } from '../../../../components/sweep/TrackingSection';   // PC-56 STORE-SWEEP-b · D1
+import { logisticsFlag, trackingState, type TrackingLoad } from '../../../../features/sweep/tracking';
 
 export const dynamic = 'force-dynamic';
 type SP = Record<string, string | string[] | undefined>;
@@ -93,6 +98,10 @@ export default async function TenantOrderPage({ params, searchParams }: { params
   try { flags = await publicClient(slug).storefront.flags(); } catch { flags = null; }
   let invoice: InvoiceDownload | null = null;
   if (order.status === 'completed') { try { invoice = await api.payments.invoices.downloadUrl(order.id); } catch { invoice = null; } }
+  // STORE-SWEEP-b · D1: the delivery's journey — asked only while the store records deliveries (`logistics` ON); its failure is the section's own
+  const logistics = logisticsFlag(flags);
+  let tracking: TrackingLoad = null;
+  if (logistics === 'on') { try { tracking = { ok: true, data: await api.orders.tracking(order.id) }; } catch { tracking = { ok: false }; } }
 
   const cur = order.currencyCode;
   const money = (minor: string | null | undefined, c: string | null = cur) => moneyText(minor ?? null, c, lang) ?? t.t('money.unavailable');
@@ -143,6 +152,8 @@ export default async function TenantOrderPage({ params, searchParams }: { params
         {events === null && <p className="kv-detail__muted" data-kv-events="unavailable">{t.t('store3a.detail.eventsUnavailable')}</p>}
         {order.status === 'disputed' && <p className="kv-form__notice" data-kv-disputed="review">{t.t('store3a.detail.underReview')}</p>}
       </section>
+
+      <TrackingSection state={trackingState(logistics, tracking)} load={tracking} reloadHref={`${orderHref(slug, order.id)}#tracking`} />
 
       {order.status === 'cancelled' && (
         <section className="kv-order__section" aria-labelledby="cancel-h" data-kv-cancelled={by ?? 'unknown'}>

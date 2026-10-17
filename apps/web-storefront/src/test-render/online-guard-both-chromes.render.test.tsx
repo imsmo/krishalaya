@@ -41,7 +41,7 @@ const count = (h: string, re: RegExp) => (h.match(re) ?? []).length;
 
 describe('STORE-6a · D1 · OnlineGuard mounted ONCE in BOTH chromes, with the reasons and the polite update', () => {
   it('the platform chrome: one guard ("Why?" → /offline), the reasons in words, the update notice', async () => {
-    const h = await renderResolved(PlatformLayout({ children: <p>page</p> }), [SiteHeader]);
+    const h = await renderResolved(await PlatformLayout({ children: <p>page</p> }), [SiteHeader]);
     expect(count(h, /data-kv-guard="/g)).toBe(1);
     expect(h).toContain('data-kv-guard="/offline"');
     expect(h).toContain(`data-kv-guard-word="${en['store6.signal.needsSignal']}"`);

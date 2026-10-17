@@ -106,7 +106,7 @@ describe('PC-56 TENANT-13d · Host routing (storefront)', () => {
     expect(hostRewritePath('anand', '/trace/KVTR9J4K2M')).toBe('/anand/trace/KVTR9J4K2M');
     expect(hostRewritePath('anand', '/trace/KVTR9J4K2M/verify')).toBe('/anand/trace/KVTR9J4K2M/verify');
     expect(hostRewritePath('anand', '/certificates')).toBe('/anand/certificates');
-    expect(hostRewritePath('anand', '/trace')).toBeNull();   // the code-entry page is the platform's
+    expect(hostRewritePath('anand', '/trace')).toBe('/anand/trace');   // PC-56 STORE-SWEEP-b · D5: the code-entry page is the store's own now (was null — the platform's)
     // PC-56 STORE-6a · C3: the offline page (the worker's fallback on a store host), the queued-actions list and the install page are the store's
     expect(hostRewritePath('anand', '/offline')).toBe('/anand/offline');
     expect(hostRewritePath('anand', '/queued')).toBe('/anand/queued');
@@ -120,7 +120,8 @@ describe('PC-56 TENANT-13d · Host routing (storefront)', () => {
   });
   it('the middleware answers 404 for an unknown host and 301 only when the API says so — never a default tenant', () => {
     const mw = readFileSync(join(SRC, 'middleware.ts'), 'utf8');
-    expect(mw).toMatch(/if \(!a\.tenant\) return new NextResponse\('No organisation is served at this address\.', \{ status: 404 \}\)/);
+    // PC-56 STORE-SWEEP-b · D4: the 404 is small localized HTML now (lib/edge-words.ts — middleware-outage.render.test.tsx renders it through the real middleware)
+    expect(mw).toMatch(/if \(!a\.tenant\) return new NextResponse\(edgeHtml\('unknown_host', req\.cookies\.get\(LANG_COOKIE\)\?\.value\), \{ status: 404, headers: edgeHeaders\('unknown_host'\) \}\)/);
     expect(mw).toMatch(/if \(a\.redirectTo\) return NextResponse\.redirect\(/);
   });
 });
