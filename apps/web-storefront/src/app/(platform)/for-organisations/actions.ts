@@ -30,6 +30,8 @@ import {
   checkSignupForm, classifyCodeRequestFailure, classifySignupFailure, isIdemKey, signupHref, signupLang,
   type PendingSignup, type SignupValues,
 } from '../../../features/signup/flow';
+import { settleOwnerAtSignIn } from '../../../lib/owner-marker';
+import { clearSiteHref } from '../../../features/offline/owner';
 
 const nowSec = () => Math.floor(Date.now() / 1000);
 
@@ -126,7 +128,9 @@ export async function submitSignupAction(formData: FormData): Promise<void> {
     // the outcome only — the phone and the code are dropped the moment they are no longer needed
     writePendingSignup({ orgName: p.orgName, orgTypeId: p.orgTypeId, fullName: p.fullName, typed: '', lang: p.lang,
       done: { org: r.displayName || p.orgName, slug: r.slug, trialEndsOn: r.trialEndsOn, resumed: r.resumed } });
-    href = signupHref('done');
+    // PC-56 HOTFIX-8 · D1 (c): this is a SIGN-IN too — a different person from the one this device last knew → the done page is reached
+    // through the clear route (`Clear-Site-Data: "cache", "storage"` on its 303), exactly as the login's finish() does
+    href = settleOwnerAtSignIn(r.tokens.accessToken) ? clearSiteHref(signupHref('done')) : signupHref('done');
   } catch (e) {
     const f = classifySignupFailure(e);
     // a refused code goes back to the code step without the code (it is dead or wrong). A name refused AFTER the code was checked

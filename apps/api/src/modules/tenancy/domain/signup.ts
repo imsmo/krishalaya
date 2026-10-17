@@ -111,6 +111,8 @@ export const RESERVED_TENANT_SLUGS: readonly string[] = Object.freeze([
   'g',
   // PC-56 STORE-5b · migration 0219: the platform's certificate page (`/certificates/[id]`, `/certificates?no=` — canon W305)
   'certificates',
+  // PC-56 HOTFIX-8 · migration 0220: the service worker served by a route at the origin's root (`/sw.js`) — never a slug (a dot)
+  'sw.js',
 ]);
 const RESERVED = new Set(RESERVED_TENANT_SLUGS);
 export function isReservedSlug(slug: string): boolean { return RESERVED.has(String(slug ?? '').trim().toLowerCase()); }

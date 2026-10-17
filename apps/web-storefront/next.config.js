@@ -17,6 +17,11 @@
 // report-only) — the Razorpay allowlist below is Razorpay's own documented CSP requirement, not a guess.
 /** @type {import('next').NextConfig} */
 const isProd = process.env.NODE_ENV === 'production';
+// PC-56 HOTFIX-8 · D1 (b): ONE build id per build — the deploy's own NEXT_PUBLIC_BUILD_ID when it sets one (a commit sha, a release tag),
+// else a value minted here at build time. It is Next's build id (`generateBuildId`) AND is inlined as NEXT_PUBLIC_BUILD_ID, which the
+// service-worker route (src/app/sw.js/route.ts) prints as its cache VERSION — so every deploy ships a new worker and its activate step
+// deletes every older cache. Characters outside [A-Za-z0-9._-] are replaced; at most 64. (`next dev` keeps Next's own 'development' id.)
+const buildId = ((process.env.NEXT_PUBLIC_BUILD_ID || '').trim() || `b${Date.now().toString(36)}`).replace(/[^A-Za-z0-9._-]/g, '-').slice(0, 64);
 const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline' https://checkout.razorpay.com${isProd ? '' : " 'unsafe-eval'"}`,
@@ -34,6 +39,8 @@ const csp = [
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  generateBuildId: async () => buildId,
+  env: { NEXT_PUBLIC_BUILD_ID: buildId },
   // pnpm symlinks workspace packages into node_modules; without this, webpack canonicalizes them to their real
   // path under packages/, classifies them as app SOURCE, and applies dev Fast-Refresh (injecting
   // `import.meta.webpackHot`) to their pre-compiled CJS dist → "Cannot use 'import.meta' outside a module".

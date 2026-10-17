@@ -4070,6 +4070,8 @@
   "storeOwnerLicenceRenewal.title": "Licence Renewal",
   "storeOwnerOrders.title": "Store Orders",
   "sync.itemFailed": "One saved item could not be sent. Please check it and try again.",
+  "sync.itemExpired": "A saved item was more than {days} days old, so it was removed without being sent. Please create it again if you still need it.",
+  "sync.signInToSave": "Sign in to save this. Nothing was saved on this phone.",
   "system.about.appInfo": "App info",
   "system.about.builtBy": "Built with ❤️ for farmers, by Dev",
   "system.about.cin": "CIN U72200GJ2024",

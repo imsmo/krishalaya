@@ -10,7 +10,8 @@ const MIGRATIONS_DIR = join(__dirname, '..', '..', '..', '..', '..', '..', 'db',
 // PC-56 STORE-2a: migration 0207 adds ONE more (`sellers`, the organisation's seller page under a tenant store) — all three seeds now
 // PC-56 STORE-3c: migration 0212 adds ONE more (`g`, the platform door to a group lot — canon W279)
 // PC-56 STORE-5b: migration 0219 adds ONE more (`certificates`, the platform's certificate page — canon W305)
-const MIGRATIONS = ['0204_storefront_home.sql', '0205_org_signup_flag_plans.sql', '0207_storefront_browse.sql', '0212_store3c_settlement_outcome.sql', '0219_store5b_trace_certificates.sql'].map((f) => join(MIGRATIONS_DIR, f));
+// PC-56 HOTFIX-8: migration 0220 adds ONE more (`sw.js`, the service worker served by a route at the origin's root)
+const MIGRATIONS = ['0204_storefront_home.sql', '0205_org_signup_flag_plans.sql', '0207_storefront_browse.sql', '0212_store3c_settlement_outcome.sql', '0219_store5b_trace_certificates.sql', '0220_hotfix8_reserved_slug_sw.sql'].map((f) => join(MIGRATIONS_DIR, f));
 const STOREFRONT_APP = join(__dirname, '..', '..', '..', '..', '..', 'web-storefront', 'src', 'app');
 
 function seededSlugs(): string[] {
@@ -24,7 +25,7 @@ function seededSlugs(): string[] {
 describe('STORE-1b · reserved tenant slugs', () => {
   it('the code list IS the migration\'s seed (same names, no duplicates)', () => {
     const seeded = seededSlugs();
-    expect(seeded.length).toBe(50);   // 0204's 46 + 0205's for-organisations + 0207's sellers + 0212's g + 0219's certificates
+    expect(seeded.length).toBe(51);   // 0204's 46 + 0205's for-organisations + 0207's sellers + 0212's g + 0219's certificates + 0220's sw.js
     expect([...seeded].sort()).toEqual([...RESERVED_TENANT_SLUGS].sort());
     expect(new Set(RESERVED_TENANT_SLUGS).size).toBe(RESERVED_TENANT_SLUGS.length);
   });

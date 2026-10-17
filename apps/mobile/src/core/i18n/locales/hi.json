@@ -4070,6 +4070,8 @@
   "storeOwnerLicenceRenewal.title": "लाइसेंस नवीनीकरण",
   "storeOwnerOrders.title": "स्टोर ऑर्डर",
   "sync.itemFailed": "एक सहेजा गया आइटम भेजा नहीं जा सका। कृपया जाँचें और फिर कोशिश करें।",
+  "sync.itemExpired": "एक सहेजा गया आइटम {days} दिनों से पुराना था, इसलिए उसे भेजे बिना हटा दिया गया। ज़रूरत हो तो उसे फिर से बनाएँ।",
+  "sync.signInToSave": "इसे सहेजने के लिए साइन इन करें। इस फ़ोन पर कुछ भी सहेजा नहीं गया।",
   "system.about.appInfo": "ऐप जानकारी",
   "system.about.builtBy": "किसानों के लिए ❤️ से बनाया — Dev द्वारा",
   "system.about.cin": "CIN U72200GJ2024",

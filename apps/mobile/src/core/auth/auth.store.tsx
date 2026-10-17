@@ -12,6 +12,10 @@
 // calls it reactively on a 401 (single-flighted + retried once — see packages/sdk-js/src/http.ts), and it signs
 // the user out if the refresh itself fails (the access token is by then confirmed dead, so there's no safe
 // degrade — only login recovers the session).
+//
+// PC-56 HOTFIX-8 · D2: the cache scope (whose queue and cache a write belongs to) is set from the session's access token at sign-in and
+// at boot restore — not only after GET /users/me — so a farmer who reopens the app with no signal can still queue their listing (the
+// queue refuses an owner-less write). Sign-out resets the scope; the offline queue is NOT cleared (held for its owner, core/offline/sync-queue).
 import React, { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import type { AuthTokens, UserProfile } from '@krishalaya/sdk-js';
 import { sessionReducer, initialSession, needsRefresh, type SessionState } from './session.reducer';
@@ -19,6 +23,7 @@ import { tokenStore } from './token-store';
 import { createRefreshExecutor } from './refresh-executor';
 import { apiClient, anonClient, registerAccessTokenGetter, registerRefreshExecutor } from '../api/client';
 import { setCacheScope, clearCacheScope } from '../offline/scope';
+import { ownerOfAccessToken } from '../offline/owner';
 import { setCrashUser, track, EVENTS } from '../observability';
 import { revokePushToken } from '../push/fcm';
 import { i18n } from '../i18n/i18n';
@@ -102,7 +107,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
       }
-      if (!cancelled) dispatch({ type: 'BOOT_RESTORED', language, activeRole: role, tokens: bootTokens });
+      if (!cancelled) {
+        const who = ownerOfAccessToken(bootTokens?.accessToken);   // HOTFIX-8 · D2: the queue's owner, even with no signal at boot
+        if (who) setCacheScope(who.userId, who.tenantId);
+        dispatch({ type: 'BOOT_RESTORED', language, activeRole: role, tokens: bootTokens });
+      }
     })();
     return () => { cancelled = true; };
   }, []);
@@ -118,13 +127,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async signIn(tokens: AuthTokens) {
       const now = Date.now();
       await tokenStore.saveTokens(tokens, now);
+      const who = ownerOfAccessToken(tokens.accessToken);           // HOTFIX-8 · D2: the queue's owner from the session itself
+      if (who) setCacheScope(who.userId, who.tenantId);
       track(EVENTS.loginSuccess); // funnel (consent-gated, no PII) — §6
       dispatch({ type: 'SIGNED_IN', tokens, nowMs: now });
     },
     async signOut() {
       await revokePushToken();        // un-target this device BEFORE the session dies (privacy, PC-21; degrades)
       await tokenStore.clearTokens();
-      await clearCacheScope();        // wipe this user's cached reads so the next user can't see them
+      await clearCacheScope();        // wipe this user's cached reads so the next user can't see them (HOTFIX-8: the write queue is HELD, not cleared)
       setCrashUser(null);             // clear the crash user context (no PII lingers)
       dispatch({ type: 'SIGNED_OUT' });
     },

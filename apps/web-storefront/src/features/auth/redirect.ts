@@ -26,6 +26,8 @@ export const STATIC_TOP_SEGMENTS: readonly string[] = Object.freeze([
   'g',
   // PC-56 STORE-5b: canon W305's platform certificate page (`/certificates`, `/certificates/[id]` — reserved as a tenant slug in migration 0219)
   'certificates',
+  // PC-56 HOTFIX-8 · D1 (b): the service worker is served by the route `app/sw.js/route.ts` (it was `public/sw.js`); never a slug (a dot)
+  'sw.js',
 ]);
 const SLUG = /^[a-z0-9][a-z0-9-]{0,49}$/;
 

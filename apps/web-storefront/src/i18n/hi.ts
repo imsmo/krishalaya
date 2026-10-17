@@ -473,6 +473,8 @@ export const hi: Messages = {
   'offline.body': 'इस पेज के लिए इंटरनेट चाहिए। आपका कार्ट और ऑर्डर सर्वर पर सुरक्षित हैं और ऑनलाइन लौटते ही यहीं मिलेंगे।',
   'offline.hint': 'खेत में सिग्नल कमज़ोर है? कृषालय मोबाइल ऐप ऑफ़लाइन-फर्स्ट काम करता है — नेटवर्क लौटते ही लिस्टिंग और अपडेट सिंक हो जाते हैं।',
   'offline.retry': 'फिर से प्रयास करें',
+  // PC-56 HOTFIX-8 · D1 (a): the session-free shell's one header word (the brand link's accessible name)
+  'offline.shell.home': '{store} — होम',
 
   // ---- PC-55 B8 — buyer return request ----
   'order.returnTitle': 'यह ऑर्डर लौटाएँ',

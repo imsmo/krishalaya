@@ -15,6 +15,11 @@
 //     holds: the API sends a code to every number, so no refusal reveals whether an account exists.
 //   - `next` is validated same-origin before any redirect (open-redirect guard).
 //   - The tenant is the page's (route slug → host → platform), resolved by the API (lib/tenant-context.ts), never a build-time id.
+// PC-56 HOTFIX-8 · D1 (c) — nothing personal in the cache on a shared phone (features/offline/owner.ts holds the rule):
+//   - sign-out redirects THROUGH `/api/session/clear` (armed), which sends `Clear-Site-Data: "cache", "storage"` on its 303 — a Server Action
+//     cannot set that header itself (Next 14), so the route handler the action redirects to does;
+//   - a sign-in whose person differs from the one this device last knew (the `kvs_owner` marker + its httpOnly binding) does the same;
+//     the same person signing in again does not.
 import { randomUUID } from 'crypto';
 import { redirect } from 'next/navigation';
 import type { AuthTokens } from '@krishalaya/sdk-js';
@@ -27,6 +32,8 @@ import { loginHref, type LoginHrefInput } from '../../../features/auth/login-sta
 import { safeNext } from '../../../features/auth/redirect';
 import { classifyRequestFailure, classifyVerifyFailure, classifyTwoFactorFailure, failureStep, type Failure } from '../../../features/auth/failure';
 import { ensureBuyer } from '../../../features/auth/buyer';
+import { settleOwnerAtSignIn, armClearSiteData } from '../../../lib/owner-marker';
+import { clearSiteHref } from '../../../features/offline/owner';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const nowSec = () => Math.floor(Date.now() / 1000);
@@ -104,7 +111,9 @@ async function finish(c: Ctx, tokens: AuthTokens, tenantId: string, slug: string
   });
   setSession(r.tokens, tenantId);
   clearLoginFlow();
-  return loginHref(c.base, { step: 'done', next: c.next, buy: r.buyer });
+  const done = loginHref(c.base, { step: 'done', next: c.next, buy: r.buyer });
+  // HOTFIX-8 · D1 (c): a different person on this device → the done page is reached through the clear route (the header on its 303)
+  return settleOwnerAtSignIn(r.tokens.accessToken) ? clearSiteHref(done) : done;
 }
 
 /** W322 "Verify". */
@@ -166,5 +175,7 @@ export async function logoutAction(): Promise<void> {
   }
   clearSession();
   clearLoginFlow();
-  redirect('/');
+  // HOTFIX-8 · D1 (c): every sign-out clears this device's caches and storage — the redirect passes the armed clear route, then home
+  armClearSiteData();
+  redirect(clearSiteHref('/'));
 }

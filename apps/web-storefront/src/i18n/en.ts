@@ -474,6 +474,8 @@ export const en: Messages = {
   'offline.body': 'This page needs the internet. Your cart and orders are safe on the server and will be here when you’re back online.',
   'offline.hint': 'On a farm with patchy signal? The Krishalaya mobile app works offline-first — listings and updates sync when the network returns.',
   'offline.retry': 'Try again',
+  // PC-56 HOTFIX-8 · D1 (a): the session-free shell's one header word (the brand link's accessible name)
+  'offline.shell.home': '{store} — home',
 
   // ---- PC-55 B8 — buyer return request ----
   'order.returnTitle': 'Return this order',

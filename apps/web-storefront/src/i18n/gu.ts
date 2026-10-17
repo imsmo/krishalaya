@@ -472,6 +472,8 @@ export const gu: Messages = {
   'offline.body': 'આ પેજ માટે ઇન્ટરનેટ જોઈએ. તમારું કાર્ટ અને ઓર્ડર સર્વર પર સુરક્ષિત છે અને ઑનલાઇન થતાં જ અહીં મળશે.',
   'offline.hint': 'ખેતરમાં સિગ્નલ નબળું છે? કૃષાલય મોબાઇલ એપ ઑફલાઇન-ફર્સ્ટ કામ કરે છે — નેટવર્ક પાછું આવતાં લિસ્ટિંગ અને અપડેટ સિંક થાય છે.',
   'offline.retry': 'ફરી પ્રયાસ કરો',
+  // PC-56 HOTFIX-8 · D1 (a): the session-free shell's one header word (the brand link's accessible name)
+  'offline.shell.home': '{store} — હોમ',
 
   // ---- PC-55 B8 — buyer return request ----
   'order.returnTitle': 'આ ઓર્ડર પરત કરો',

@@ -48,11 +48,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <a href="#main" className="kv-skip">{t.t('common.skipToContent')}</a>
         {children}
-        {/* PC-24c: register the conservative offline shell (public/sw.js — never caches authed/API responses).
-            Progressive enhancement: no SW support (or JS off) → the site works exactly as before. */}
+        {/* PC-24c: register the conservative offline shell (never caches authed/API responses).
+            Progressive enhancement: no SW support (or JS off) → the site works exactly as before.
+            PC-56 HOTFIX-8 · D1 (b): the worker is the ROUTE app/sw.js/route.ts (versioned by the build, `Cache-Control: no-cache`), and the
+            registration says `updateViaCache: 'none'` — the browser never answers its update check from the HTTP cache. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: "if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}",
+            __html: "if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).catch(function(){})})}",
           }}
         />
       </body>
