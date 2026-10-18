@@ -13,11 +13,13 @@ import { text, tr } from './partner1a-fixtures';
 import { FALSE_2A } from './partner2a-fixtures';
 
 describe('PC-56 PARTNER-2a · the DECOR / PARITY-DECOR chains (render)', () => {
+  // PC-56 PARTNER-2b: the registry also holds 2b's six chains (partner2b-chains.render.test.tsx renders those); this file keeps to 2a's six
+  const CHAINS_2A = PARTNER2_CHAINS.filter((c) => c.wave === '2a');
   it('six chains, seventeen pages', () => {
-    expect(PARTNER2_CHAINS.map((c) => c.id)).toEqual(['ins_form', 'ins_retry', 'policies_export', 'policies_retry', 'policy_export', 'policy_act']);
-    expect(PARTNER2_CHAINS.flatMap((c) => c.files).length).toBe(17);
+    expect(CHAINS_2A.map((c) => c.id)).toEqual(['ins_form', 'ins_retry', 'policies_export', 'policies_retry', 'policy_export', 'policy_act']);
+    expect(CHAINS_2A.flatMap((c) => c.files).length).toBe(17);
   });
-  for (const c of PARTNER2_CHAINS) {
+  for (const c of CHAINS_2A) {
     it.each(c.states.map((s) => [s]))(`${c.id} · %s: its sentence, its refusals, the way back to its own page — nothing written`, (state) => {
       const back = c.page.includes('[id]') ? '/insurer/policies/0192d2c4-1111-7000-8000-000000000001' : c.page;
       const html = renderToStaticMarkup(<InsurerChain t={tr(en)} chain={c.id} state={state} back={back} />); const w = text(html);

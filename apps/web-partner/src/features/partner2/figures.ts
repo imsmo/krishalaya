@@ -105,3 +105,57 @@ export function termsText(v: unknown): string {
   if (v === null || v === undefined) return '';
   try { return JSON.stringify(v, null, 2); } catch { return ''; }
 }
+
+// ══ PC-56 PARTNER-2b · WHERE THE MONEY IS NOT — the issuance queue, the premiums counts, the parametric counts, the honest pages' states ══
+// Founder Q1: the premiums page shows two COUNTS and no money — `premiumsCounts` returns integers only (the dashboard's Σ sum insured is
+// dropped here, by construction, so the premiums view cannot print a rupee figure it was never given). Founder Q3: the parametric page shows
+// the own products marked parametric and the policies in force on them — counts only. Founder Q5: the issuance queue is a read of proposals.
+
+/** The issuance queue's own links: the keyset page — nothing else ever enters the URL (the queue is `proposed` by construction). */
+export function issuanceHref(cursor?: string): string {
+  return cursor ? `/insurer/issuance?cursor=${encodeURIComponent(cursor)}` : '/insurer/issuance';
+}
+/** The queue's query from the URL: an opaque cursor (≤ 200 characters, URL-safe), never a status, never anything else. */
+export function issuanceQuery(sp: Record<string, string | string[] | undefined> | undefined): { cursor?: string } {
+  const raw = sp?.cursor; const cursor = Array.isArray(raw) ? raw[0] : raw;
+  return { cursor: cursor && cursor.length <= 200 && /^[A-Za-z0-9_-]+$/.test(cursor) ? cursor : undefined };
+}
+/** One queue row's cover-window hint: the window the proposal carries, or the honest "no window given" — nothing starts before payment. */
+export function queueWindow(row: { validFrom: string | null; validUntil: string | null }): { key: 'partner2.issuance.window' | 'partner2.issuance.noWindow'; from: string | null; until: string | null } {
+  return row.validFrom && row.validUntil
+    ? { key: 'partner2.issuance.window', from: row.validFrom, until: row.validUntil }
+    : { key: 'partner2.issuance.noWindow', from: null, until: null };
+}
+
+/** Founder Q1 — the premiums page's ONLY figures: two integer counts and the as-of. No money field exists on this shape. */
+export interface PremiumsCounts { active: number; proposed: number; computedAt: string }
+export function premiumsCounts(d: { inForce: { count: number }; proposed: number; computedAt: string } | null): PremiumsCounts | null {
+  if (!d) return null;
+  const n = (v: unknown) => (Number.isInteger(v) && (v as number) >= 0 ? (v as number) : 0);
+  return { active: n(d.inForce?.count), proposed: n(d.proposed), computedAt: d.computedAt };
+}
+
+/** Founder Q3 — the parametric page's ONLY figures: own products marked parametric, and the policies in force (`active`) on them. Counts. */
+export interface ParametricCounts { products: number; active: number; computedAt: string | null }
+export function parametricCounts(items: readonly { isParametric: boolean; policies: Record<string, number> }[] | null, computedAt: string | null): ParametricCounts | null {
+  if (!items) return null;
+  const own = items.filter((p) => p.isParametric === true);
+  const active = own.reduce((a, p) => a + (Number.isInteger(p.policies?.active) ? p.policies.active : 0), 0);
+  return { products: own.length, active, computedAt };
+}
+
+/** A page whose figures are counts: ok when the read answered, else its failure. */
+export type HonestState = 'ok' | InsurerFailure;
+export function honestState<T>(x: T | null, failure: InsurerFailure | null): HonestState {
+  if (failure) return failure;
+  return x ? 'ok' : 'error';
+}
+/** The reports page reads no figure: its state comes from the platform's public flag map (`partner_console`, `insurance`) — OFF as OFF; an
+ *  unreadable map is the error state ("couldn't load — nothing is broken on the platform's side"), never a guess that the page is live. */
+export function switchesState(map: Record<string, boolean> | null): HonestState {
+  if (!map) return 'error';
+  if (map.partner_console === false) return 'off';
+  if (map.insurance === false) return 'insurance_off';
+  if (map.partner_console === true && map.insurance === true) return 'ok';
+  return 'error';
+}

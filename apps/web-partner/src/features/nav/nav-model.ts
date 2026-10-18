@@ -1,7 +1,8 @@
 // apps/web-partner/src/features/nav/nav-model.ts · PURE, framework-free model for the partner-portal chrome +
 // SDK-error→notice mapping. No React, no fetch → unit-tested. The nav is PERSONA-AWARE and — PC-56 PARTNER-2a (founder Q9, survey P2-B13) —
 // KIND-AWARE: an INSURER organisation (`financial_partners.partner_kind = 'insurer'`, from `/me`) holding `partner.insurance.read` sees the
-// insurer group (Dashboard · Products · Policies; PARTNER-2b adds Issuance · Premiums · Reports) and NEVER the lending group; a LENDER
+// insurer group (Dashboard · Products · Policies · Issuance · Premiums · Reports — PARTNER-2b; Parametric is linked from the dashboard and the
+// products page, never the nav) and NEVER the lending group; a LENDER
 // (`bank` / `nbfc` / `mfi` / `gold_loan`) holding `partner.applications.read` sees the lending group and never the insurer group; an asset
 // manager (`amc`) sees neither vertical; an UNKNOWN kind (the `/me` read failed) keeps the lending group as before PARTNER-2 and never opens
 // the insurer group by a guess. The Account group is for every partner person, last. Within a visible group, only routes that exist in this
@@ -39,6 +40,11 @@ export const PARTNER_NAV: readonly PartnerNavItem[] = [
   { href: '/insurer/dashboard', labelKey: 'partner2.nav.dashboard', group: 'insurer', live: true },
   { href: '/insurer/products', labelKey: 'partner2.nav.products', group: 'insurer', live: true },
   { href: '/insurer/policies', labelKey: 'partner2.nav.policies', group: 'insurer', live: true },
+  // PC-56 PARTNER-2b (founder 2b-4): + Issuance · Premiums · Reports. `/insurer/parametric` is NOT a nav item (the canon's insurer sidebar has
+  // none — W262 is reached from the dashboard and the products page).
+  { href: '/insurer/issuance', labelKey: 'partner2.nav.issuance', group: 'insurer', live: true },
+  { href: '/insurer/premiums', labelKey: 'partner2.nav.premiums', group: 'insurer', live: true },
+  { href: '/insurer/reports', labelKey: 'partner2.nav.reports', group: 'insurer', live: true },
   { href: '/notifications', labelKey: 'nav.notifications', group: 'common', live: true },
   { href: '/settlements', labelKey: 'nav.settlements', group: 'common', live: true },
   { href: '/consents', labelKey: 'nav.consents', group: 'common', live: true },

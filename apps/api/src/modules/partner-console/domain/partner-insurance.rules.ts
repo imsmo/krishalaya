@@ -74,6 +74,46 @@ export function projectPolicy(row: Record<string, unknown>, names: { fpoName: st
   };
 }
 
+// ── PC-56 PARTNER-2b · WHERE THE MONEY IS NOT — the issuance QUEUE (founder Q5) ─────────────────────────────────────────────────────────
+// The insurer never issues on the platform: a captured farmer payment activates cover by itself (survey F-5). `/insurer/issuance` is a READ of
+// the `proposed` policies on the insurer's own products — the proposals awaiting the farmer's premium payment — and nothing else. ONE status
+// predicate: the service asks 0228's book definer for ISSUANCE_STATUS only (mutant M3 lets `active` through there and the live spec turns red).
+export const ISSUANCE_STATUS: PolicyStatus = 'proposed';
+
+export interface PartnerQueueRowView {
+  id: string;
+  productId: string;
+  productName: string | null;
+  /** The FPO's PUBLIC display name (0204's `public_tenant_profile`), or null — never its id. */
+  fpoName: string | null;
+  subjectType: string;
+  sumInsuredMinor: string;
+  /** The premium the FARMER will pay (the farmer's share as stored on the proposal) — not money the insurer holds. */
+  premiumMinor: string;
+  /** When the proposal was made (µs ISO). */
+  proposedAt: string | null;
+  /** The cover window the proposal carries, if any (the "window hint"); nothing starts until the farmer's payment is confirmed. */
+  validFrom: string | null;
+  validUntil: string | null;
+}
+
+/** One proposed policy row (0228's book definer, snake or camel) → a queue row. Field by field from the allow-list; nothing else passes —
+ *  no policy number (NULL on a proposal), no status (the queue is proposed by construction), never a holder, a subject, a payment or a tenant. */
+export function projectQueueRow(row: Record<string, unknown>, names: { fpoName: string | null; productName: string | null }): PartnerQueueRowView {
+  return {
+    id: String(row.id),
+    productId: String(row.product_id ?? row.productId),
+    productName: names.productName,
+    fpoName: names.fpoName,
+    subjectType: String(row.subject_type ?? row.subjectType ?? ''),
+    sumInsuredMinor: minor(row.sum_insured_minor ?? row.sumInsuredMinor),
+    premiumMinor: minor(row.premium_minor ?? row.premiumMinor),
+    proposedAt: str(row.created_us) ?? iso(row.created_at ?? row.createdAt),
+    validFrom: day(row.valid_from ?? row.validFrom),
+    validUntil: day(row.valid_until ?? row.validUntil),
+  };
+}
+
 /** The insurer's own pricing terms, typed: the two shapes enrolment prices (integer bps / a flat minor amount), or `not_priceable` — the
  *  stored terms are still printed as data (W247 is read-only), but nothing claims a parametric product can be priced or paid (founder Q3). */
 export type PartnerFormula = { kind: 'pct_of_sum_insured'; bps: number } | { kind: 'flat_minor'; amountMinor: string } | { kind: 'not_priceable' };

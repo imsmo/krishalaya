@@ -93,3 +93,11 @@ export const PartnerPoliciesQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional(),
 }).strict();
 export type PartnerPoliciesQueryDto = z.infer<typeof PartnerPoliciesQuerySchema>;
+
+// ── PC-56 PARTNER-2b ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+/** The issuance queue — keyset, newest first, limit ≤ 100. NO status parameter: the queue is `proposed` by construction (founder Q5). */
+export const PartnerIssuanceQuerySchema = z.object({
+  cursor: z.string().max(200).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+}).strict();
+export type PartnerIssuanceQueryDto = z.infer<typeof PartnerIssuanceQuerySchema>;

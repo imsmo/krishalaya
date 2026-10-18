@@ -4,7 +4,8 @@
 // string), proposed (awaiting the farmer's payment — not cover), the FPOs with a policy on the insurer's products, its products — each under
 // ONE "as of". Nothing else: no claims figure, no money set aside, no payout line, no run, no premium total called the insurer's (founder Q1 /
 // Q2) — those are refused by name below. States: empty → the products page; error → "nothing is affected" + Reload (the W2873–W2875 re-read
-// chain); off / insurance_off → the switched-off sentences.
+// chain); off / insurance_off → the switched-off sentences. PC-56 PARTNER-2b: + links to the issuance queue, premiums, reports and the parametric
+// page (the parametric page is linked from here and the products page — not the nav, founder 2b-4).
 import Link from 'next/link';
 import { formatMoneyMinor } from '@krishalaya/i18n';
 import type { PartnerInsuranceDashboard } from '@krishalaya/sdk-js';
@@ -76,6 +77,13 @@ export function InsurerDashboardView({ t, lang, state, d, orgName, regulatorRefM
       <p className="kv-pager">
         <Link className="kv-btn" href="/insurer/policies">{t.t('partner2.dash.viewPolicies')}</Link>{' '}
         <Link className="kv-btn kv-btn--muted" href="/insurer/products">{t.t('partner2.dash.viewProducts')}</Link>
+      </p>
+      {/* PC-56 PARTNER-2b (founder 2b-4): the honest pages — Parametric is reached from here and the products page, never from the nav */}
+      <p className="kv-pager" data-kv-honest-links="true">
+        <Link className="kv-btn kv-btn--muted" href="/insurer/issuance">{t.t('partner2.dash.viewIssuance')}</Link>{' '}
+        <Link className="kv-btn kv-btn--muted" href="/insurer/premiums">{t.t('partner2.dash.viewPremiums')}</Link>{' '}
+        <Link className="kv-btn kv-btn--muted" href="/insurer/reports">{t.t('partner2.dash.viewReports')}</Link>{' '}
+        <Link className="kv-btn kv-btn--muted" href="/insurer/parametric" data-kv-parametric-link="dashboard">{t.t('partner2.dash.viewParametric')}</Link>
       </p>
       <InsurerRefusals t={t} surface="ins_dashboard" />
     </section>

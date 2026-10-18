@@ -14,6 +14,7 @@
 //   • PC-56 PARTNER-1b: `keys.list` (the partner's own keys — there is NO hash field on `PartnerKey`), `keys.revoke` (an Idempotency-Key and a
 //     reason of 20–300 characters; the only write), `webhooks.list` / `.deliveries` / `.delivery` (read-only: no secret, no payload, no tenant),
 //     `readiness()` (six facts, counts only); `invites.lookup` is a POST — the token travels in the body, never in a URL (founder D4).
+//   • PC-56 PARTNER-2b: + `insurance.issuance(q)` — the `proposed` queue on the insurer's own products (a read; nothing is issued).
 //   • PC-56 PARTNER-2a: `insurance.{dashboard, products, product, policies, policy}` — an insurer's own book, policy facts only (no holder,
 //     subject, payment or tenant field exists on the types); `insurance` OFF → 404 `PARTNER_INSURANCE_SWITCHED_OFF`.
 // Money is a bigint minor-unit STRING (Law 2).
@@ -134,6 +135,21 @@ export interface PartnerInsuranceProduct {
 export interface PartnerInsuranceDashboard {
   computedAt: string; policies: number; inForce: { count: number; sumInsuredMinor: string }; proposed: number; fpos: number; products: number;
 }
+/** PC-56 PARTNER-2b (founder Q5) — one row of the issuance QUEUE: a `proposed` policy on the insurer's own products, awaiting the farmer's
+ *  premium payment. A READ: the insurer issues nothing on the platform. No holder, subject, payment, tenant, number or status field exists. */
+export interface PartnerInsuranceQueueRow {
+  id: string; productId: string; productName: string | null;
+  /** The FPO's PUBLIC display name, or null for a non-live organisation. */
+  fpoName: string | null;
+  subjectType: string;
+  sumInsuredMinor: string;
+  /** The premium the FARMER will pay (as stored on the proposal). */
+  premiumMinor: string;
+  proposedAt: string | null;
+  /** The cover window the proposal carries, if any; nothing starts until the farmer's payment is confirmed. */
+  validFrom: string | null; validUntil: string | null;
+}
+export interface PartnerInsuranceIssuancePage { items: PartnerInsuranceQueueRow[]; nextCursor: string | null; limit: number; computedAt: string | null }
 
 class PartnerInsuranceApi {
   constructor(private readonly http: HttpClient) {}
@@ -154,6 +170,12 @@ class PartnerInsuranceApi {
   }
   async policy(id: string, signal?: AbortSignal): Promise<PartnerInsurancePolicy & { computedAt: string }> {
     return (await this.http.request<PartnerInsurancePolicy & { computedAt: string }>('GET', `partner/insurance/policies/${encodeURIComponent(id)}`, { signal })).data;
+  }
+  /** PC-56 PARTNER-2b — the issuance queue (`proposed` only, keyset newest first). */
+  async issuance(q: { cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<PartnerInsuranceIssuancePage> {
+    const r = await this.http.request<PartnerInsuranceQueueRow[]>('GET', 'partner/insurance/issuance', { query: { cursor: q.cursor, limit: q.limit }, signal });
+    const m = (r.meta ?? {}) as { nextCursor?: string | null; limit?: number; computedAt?: string };
+    return { items: r.data, nextCursor: m.nextCursor ?? null, limit: m.limit ?? r.data.length, computedAt: m.computedAt ?? null };
   }
 }
 

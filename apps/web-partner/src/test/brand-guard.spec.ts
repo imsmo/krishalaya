@@ -44,11 +44,16 @@ describe('PC-56 PARTNER-1a · brand guard', () => {
   });
 });
 
-describe('PC-56 PARTNER-2a · brand guard over the insurer console\'s new files', () => {
+describe('PC-56 PARTNER-2a/2b · brand guard over the insurer console\'s new files', () => {
   const NEW = [path.join(SRC, 'components', 'partner2'), path.join(SRC, 'features', 'partner2'), path.join(SRC, 'app', 'insurer'), path.join(SRC, 'lib', 'insurer.ts')];
   const mine = files().filter((f) => NEW.some((d) => f === d || f.startsWith(d + path.sep)));
   it('they are scanned, and none carries the platform\'s name, a mailbox, a domain, a helpline, or a canon institution', () => {
-    expect(mine.length).toBeGreaterThanOrEqual(14);
+    expect(mine.length).toBeGreaterThanOrEqual(22);
+    // PC-56 PARTNER-2b: the four honest pages and their views are among them
+    for (const f of ['components/partner2/InsurerIssuanceView.tsx', 'components/partner2/InsurerPremiumsView.tsx', 'components/partner2/InsurerReportsView.tsx',
+      'components/partner2/InsurerParametricView.tsx', 'app/insurer/issuance/page.tsx', 'app/insurer/premiums/page.tsx', 'app/insurer/reports/page.tsx', 'app/insurer/parametric/page.tsx']) {
+      expect([f, mine.some((m) => path.relative(SRC, m) === f)]).toEqual([f, true]);
+    }
     for (const f of mine) {
       const src = fs.readFileSync(f, 'utf8').replace(/@krishalaya\/[a-z0-9-]+/g, '');
       const rel = path.relative(SRC, f);

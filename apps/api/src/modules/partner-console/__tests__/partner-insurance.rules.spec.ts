@@ -1,6 +1,6 @@
 // modules/partner-console/__tests__/partner-insurance.rules.spec.ts · PC-56 PARTNER-2a · founder Q6 — the projections STRIP identity BY
 // CONSTRUCTION (for ANY input row — even one a widened definer handed over, mutant M4), the in-force rule, the bigint sums, the shard merge.
-import { formulaOf, IDENTITY_FIELDS, inForce, isPartnerPolicyStatus, mergeCounts, PARTNER_POLICY_STATUSES, projectPolicy, projectProduct, sumMinor } from '../domain/partner-insurance.rules';
+import { formulaOf, IDENTITY_FIELDS, inForce, isPartnerPolicyStatus, ISSUANCE_STATUS, mergeCounts, PARTNER_POLICY_STATUSES, projectPolicy, projectProduct, projectQueueRow, sumMinor } from '../domain/partner-insurance.rules';
 
 function deepKeys(v: unknown, out: string[] = []): string[] {
   if (Array.isArray(v)) { for (const x of v) deepKeys(x, out); return out; }
@@ -77,5 +77,29 @@ describe('PC-56 PARTNER-2a · in force, the statuses, the sums, the shard merge'
     ]);
     expect(m).toEqual({ policies: 5, inForce: { count: 2, sumInsuredMinor: '9007199254741000' }, proposed: 1, fpos: 3, perProduct: { p1: { active: 2, proposed: 1, cancelled: 1 }, p2: { proposed: 1 } } });
     expect(mergeCounts([])).toEqual({ policies: 0, inForce: { count: 0, sumInsuredMinor: '0' }, proposed: 0, fpos: 0, perProduct: {} });
+  });
+});
+
+describe('PC-56 PARTNER-2b · the issuance queue row (founder Q5) — a READ of proposals, identity stripped by construction', () => {
+  it('the queue is `proposed` by construction — never in force', () => {
+    expect(ISSUANCE_STATUS).toBe('proposed');
+    expect(inForce(ISSUANCE_STATUS)).toBe(false);
+  });
+  it('a queue row: the allow-list only — no holder, subject, payment, tenant, name, phone, policy number or status; none of their values (M4)', () => {
+    const v = projectQueueRow({ ...POISONED, status: 'proposed' }, { fpoName: 'Fixture Growers Collective', productName: 'Fixture cattle cover' });
+    expect(deepKeys(v).filter((k) => FORBIDDEN.has(k))).toEqual([]);
+    expect(Object.keys(v).sort()).toEqual(['fpoName', 'id', 'premiumMinor', 'productId', 'productName', 'proposedAt', 'subjectType', 'sumInsuredMinor', 'validFrom', 'validUntil']);
+    const json = JSON.stringify(v);
+    for (const leaked of ['bbbbbbbb', 'dddddddd', 'eeeeeeee', 'aaaaaaaa', '+910000000000', 'A person', '8102', 'vaccinated', 'rain']) expect([leaked, json.includes(leaked)]).toEqual([leaked, false]);
+    expect(v).toMatchObject({ subjectType: 'animal', sumInsuredMinor: '16000000', premiumMinor: '512000', proposedAt: '2026-07-12T05:00:00.123456Z', validFrom: '2026-07-12', validUntil: '2027-07-12' });
+  });
+  it('for many generated rows, no identity field ever survives a queue row; money stays a bigint string', () => {
+    for (let i = 0; i < 200; i++) {
+      const row: Record<string, unknown> = { ...POISONED, premium_minor: '9007199254740993' };
+      for (const f of IDENTITY_FIELDS) row[f] = i % 2 ? `v-${i}` : { nested: { [f]: i } };
+      const v = projectQueueRow(row, { fpoName: i % 3 ? 'x' : null, productName: null });
+      expect(deepKeys(v).filter((k) => FORBIDDEN.has(k))).toEqual([]);
+      expect(v.premiumMinor).toBe('9007199254740993');
+    }
   });
 });

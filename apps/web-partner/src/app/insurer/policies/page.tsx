@@ -7,6 +7,7 @@ import { requirePartner } from '../../../lib/session';
 import { partnerClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
 import { insurerFailure, insurerGate } from '../../../lib/insurer';
+import { partnersMailbox } from '../../../lib/partners-mailbox';
 import type { PartnerInsurancePolicy } from '@krishalaya/sdk-js';
 import { InsurerPoliciesView } from '../../../components/partner2/InsurerPoliciesView';
 import { InsurerChain } from '../../../components/partner2/InsurerChain';
@@ -24,7 +25,7 @@ export default async function InsurerPoliciesPage({ searchParams }: { searchPara
   const t = getTranslator(); const lang = getLang();
   await insurerGate();
   const exp = chain2State('policies_export', searchParams);
-  if (exp) return <InsurerChain t={t} chain="policies_export" state={exp} />;
+  if (exp) return <InsurerChain t={t} chain="policies_export" state={exp} mailbox={await partnersMailbox()} />;   // PC-56 PARTNER-2b (founder 2b-1)
   const retry = chain2State('policies_retry', searchParams);
   if (retry) return <InsurerChain t={t} chain="policies_retry" state={retry} />;
   const q = policiesQuery(searchParams);

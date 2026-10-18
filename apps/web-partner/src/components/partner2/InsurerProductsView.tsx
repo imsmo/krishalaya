@@ -71,6 +71,8 @@ export function InsurerProductsView({ t, lang, state, items, computedAt }: { t: 
         </table>
       )}
       <p className="kv-muted" data-kv-recorded="true">{t.t('partner2.products.recordedNote')}</p>
+      {/* PC-56 PARTNER-2b (founder 2b-4): the parametric page is reached from here and the dashboard — never from the nav */}
+      <p className="kv-pager"><Link className="kv-btn kv-btn--muted" href="/insurer/parametric" data-kv-parametric-link="products">{t.t('partner2.products.viewParametric')}</Link></p>
       {computedAt && <p className="kv-muted" data-kv-asof={computedAt}>{t.t('partner2.asOf', { time: asOfText(computedAt, lang) })}</p>}
       <InsurerRefusals t={t} surface="ins_products" />
     </section>

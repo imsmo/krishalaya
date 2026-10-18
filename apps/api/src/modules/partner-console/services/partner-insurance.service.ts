@@ -10,6 +10,10 @@
 //   policy     — one of them; another insurer's or an absent id → 404 `PARTNER_POLICY_NOT_FOUND` (never "not yours");
 //   dashboard  — in force (active) count + Σ sum insured, proposed (awaiting the farmer's payment), FPOs with a policy, products, computedAt.
 //                A bank partner holding the permission gets zeros, not an error (the NAV never shows a bank the insurer group).
+//   issuance   — PC-56 PARTNER-2b (founder Q5): the QUEUE — the `proposed` policies on this insurer's products (the proposals awaiting the
+//                farmer's premium payment), keyset newest first, the queue row's allow-list (policy, product, the FPO's public name, subject
+//                type, sum insured, the premium the farmer will pay, proposed-at, the cover window if any). A READ: the insurer issues nothing on
+//                the platform (cover starts when the farmer's payment is confirmed) — no issue act, no export, no run exists behind it.
 // EVERY read writes ONE partner-realm audit row (`partner.insurance.read`, counts only — never a policy's figures, never a name): these are
 // farmers' records (the 1a dashboard precedent; keys / webhooks reads were not audited because they are the partner's own configuration).
 // The platform's `insurance` flag gates every route (PartnerInsuranceFlagGuard), the console's `partner_console` flag gates the realm.
@@ -19,7 +23,10 @@ import { PartnerRealmUnitOfWork } from '../../../core/database/partner-realm-uow
 import { METRICS, Metrics } from '../../../core/observability/metrics';
 import { decodeKeyset, encodeKeyset, UUID_RE } from '../../../shared/pagination/us-keyset';
 import { PartnerConsoleRepository } from '../repositories/partner-console.repository';
-import { InsuranceCountsShard, isPartnerPolicyStatus, mergeCounts, projectPolicy, projectProduct, PartnerInsuranceDashboard, PartnerPolicyView, PartnerProductView } from '../domain/partner-insurance.rules';
+import {
+  InsuranceCountsShard, isPartnerPolicyStatus, ISSUANCE_STATUS, mergeCounts, projectPolicy, projectProduct, projectQueueRow, PartnerInsuranceDashboard, PartnerPolicyView,
+  PartnerProductView, PartnerQueueRowView,
+} from '../domain/partner-insurance.rules';
 import { clampPartnerLimit } from '../domain/partner-console.rules';
 import { partnerRefused } from '../domain/partner-console.errors';
 import { PartnerSession } from '../guards/partner-session.guard';
@@ -36,7 +43,7 @@ export class PartnerInsuranceService {
   ) {}
 
   /** ONE partner-realm audit row for one read — counts only. */
-  private async trail(s: PartnerSession, surface: 'products' | 'policies' | 'policy' | 'dashboard', counts: Record<string, unknown>, entity?: { type: string; id: string }): Promise<void> {
+  private async trail(s: PartnerSession, surface: 'products' | 'policies' | 'policy' | 'dashboard' | 'issuance', counts: Record<string, unknown>, entity?: { type: string; id: string }): Promise<void> {
     await this.uow.run(s.partnerId, (tx) => this.audit.write(tx, {
       tenantId: null, actorUserId: s.userId, actorRole: actorRole(s), action: 'partner.insurance.read',
       entityType: entity?.type ?? 'financial_partner', entityId: entity?.id ?? s.partnerId,
@@ -89,6 +96,24 @@ export class PartnerInsuranceService {
     const last = rows[rows.length - 1];
     const computedAt = new Date().toISOString();
     await this.trail(s, 'policies', { listed: items.length, status: status ?? null, page: cursor ? 'next' : 'first' });
+    return { items, nextCursor: rows.length === limit && last ? encodeKeyset(last.created_us, last.id) : null, limit, computedAt };
+  }
+
+  /** PC-56 PARTNER-2b · the issuance QUEUE: the `proposed` policies on this insurer's products, newest first (µs keyset). ONE audit row. */
+  async issuance(s: PartnerSession, q: { cursor?: string; limit?: number }): Promise<{ items: PartnerQueueRowView[]; nextCursor: string | null; limit: number; computedAt: string }> {
+    const limit = clampPartnerLimit(q.limit);
+    const cursor = decodeKeyset(q.cursor, UUID_RE);
+    const per: Array<Array<Record<string, unknown> & { id: string; created_us: string }>> = [];
+    for (let i = 0; i < this.repo.shards; i++) per.push(await this.repo.insuranceBookShard(i, s.partnerId, { status: ISSUANCE_STATUS, cursor, limit }));
+    const rows = per.flat()
+      .sort((a, b) => (a.created_us < b.created_us ? 1 : a.created_us > b.created_us ? -1 : a.id < b.id ? 1 : a.id > b.id ? -1 : 0))
+      .slice(0, limit);
+    const names = await this.repo.publicTenantNames([...new Set(rows.map((r) => String(r.tenant_id)))]);
+    const products = rows.length ? await this.productNames(s.partnerId) : new Map<string, string>();
+    const items = rows.map((r) => projectQueueRow(r, { fpoName: names.get(String(r.tenant_id)) ?? null, productName: products.get(String(r.product_id)) ?? null }));
+    const last = rows[rows.length - 1];
+    const computedAt = new Date().toISOString();
+    await this.trail(s, 'issuance', { listed: items.length, status: ISSUANCE_STATUS, page: cursor ? 'next' : 'first' });
     return { items, nextCursor: rows.length === limit && last ? encodeKeyset(last.created_us, last.id) : null, limit, computedAt };
   }
 

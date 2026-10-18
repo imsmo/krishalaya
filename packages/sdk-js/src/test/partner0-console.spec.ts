@@ -155,3 +155,19 @@ describe('PC-56 PARTNER-2a · SDK the insurer\'s own book (read-only, policy fac
     expect(Object.keys(p).filter((k) => /holder|subject_?id|subjectId|payment|tenant/i.test(k))).toEqual([]);
   });
 });
+
+describe('PC-56 PARTNER-2b · SDK the issuance queue (a read; nothing is issued)', () => {
+  it('issuance(q) is a GET of the proposed queue with the keyset only — no status parameter, no write method on the insurance client', async () => {
+    const { fn, calls } = fakeFetch([], { nextCursor: 'cur9', limit: 3, computedAt: '2026-10-18T00:00:00.000Z' });
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const page = await c.partner.insurance.issuance({ cursor: 'cur8', limit: 3 });
+    expect(page).toEqual({ items: [], nextCursor: 'cur9', limit: 3, computedAt: '2026-10-18T00:00:00.000Z' });
+    await c.partner.insurance.issuance();
+    expect(calls.map((x) => x.url.replace('https://api.test/v1/', ''))).toEqual(['partner/insurance/issuance?cursor=cur8&limit=3', 'partner/insurance/issuance']);
+    for (const x of calls) { expect(x.init.method).toBe('GET'); expect(hdr(x, 'authorization')).toBe('Bearer tok'); }
+    for (const m of ['issue', 'issueBatch', 'exportPremiums', 'runParametric']) expect((c.partner.insurance as unknown as Record<string, unknown>)[m]).toBeUndefined();
+    const row: import('../resources/partner').PartnerInsuranceQueueRow = { id: 'po1', productId: 'pr1', productName: null, fpoName: null, subjectType: 'animal',
+      sumInsuredMinor: '16000000', premiumMinor: '512000', proposedAt: null, validFrom: null, validUntil: null };
+    expect(Object.keys(row).filter((k) => /holder|subject_?id|subjectId|payment|tenant|policyNo|status/i.test(k))).toEqual([]);
+  });
+});

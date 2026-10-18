@@ -121,3 +121,6 @@ a { color: inherit; text-decoration: none; }
 pre.kv-code { white-space: pre-wrap; padding-block: .5rem; padding-inline: .75rem; margin-block: .25rem 1rem; border-radius: .25rem; background: var(--kv-neutral-100, #f2f2f2); }
 [data-kv-insurer] .kv-stat-row { margin-block-end: .5rem; }
 [data-kv-decor] { opacity: .85; }
+/* PC-56 PARTNER-2b — where the money is not: the founder-approved statement of each honest page (logical properties only: RTL-safe) */
+.kv-statement { padding-block: .75rem; padding-inline: 1rem; margin-block: .5rem 1rem; border-inline-start: .25rem solid var(--kv-primary-600, #2f6f3e); background: var(--kv-neutral-50, #f8f8f6); font-weight: 600; }
+[data-kv-export-note] { margin-block: .5rem; }

@@ -69,3 +69,60 @@ describe('PC-56 PARTNER-2a · the list\'s links — only a status of the machine
     expect(policiesQuery(undefined)).toEqual({ status: undefined, cursor: undefined });
   });
 });
+
+// ── PC-56 PARTNER-2b · the issuance queue row model, the premiums counts (no money field), the parametric counts, the honest states ──
+import { honestState, issuanceHref, issuanceQuery, parametricCounts, premiumsCounts, queueWindow, switchesState } from '../features/partner2/figures';
+
+describe('PC-56 PARTNER-2b · the issuance queue (a read of proposals)', () => {
+  it('the only link is the keyset page; the query takes a URL-safe cursor and NOTHING else (never a status)', () => {
+    expect([issuanceHref(), issuanceHref('Y3Vyc29y')]).toEqual(['/insurer/issuance', '/insurer/issuance?cursor=Y3Vyc29y']);
+    expect(issuanceQuery({ cursor: 'Y3Vyc29y', status: 'active' })).toEqual({ cursor: 'Y3Vyc29y' });
+    expect(issuanceQuery({ cursor: 'bad cursor!' })).toEqual({ cursor: undefined });
+    expect(issuanceQuery({ cursor: 'x'.repeat(201) })).toEqual({ cursor: undefined });
+    expect(issuanceQuery(undefined)).toEqual({ cursor: undefined });
+  });
+  it('the cover-window hint: the window the proposal carries, or "no window given" — never an invented date', () => {
+    expect(queueWindow({ validFrom: '2026-07-01', validUntil: '2026-11-30' })).toEqual({ key: 'partner2.issuance.window', from: '2026-07-01', until: '2026-11-30' });
+    expect(queueWindow({ validFrom: null, validUntil: '2026-11-30' })).toEqual({ key: 'partner2.issuance.noWindow', from: null, until: null });
+    expect(queueWindow({ validFrom: null, validUntil: null }).key).toBe('partner2.issuance.noWindow');
+  });
+});
+
+describe('PC-56 PARTNER-2b · the premiums counts (founder Q1 — counts, never money)', () => {
+  it('two integers and the as-of; the dashboard\'s Σ sum insured never reaches the shape', () => {
+    const c = premiumsCounts({ computedAt: 't', policies: 3, inForce: { count: 1, sumInsuredMinor: '9007199254740993' }, proposed: 2, fpos: 2, products: 2 } as never);
+    expect(c).toEqual({ active: 1, proposed: 2, computedAt: 't' });
+    expect(Object.keys(c ?? {}).sort()).toEqual(['active', 'computedAt', 'proposed']);
+    expect(JSON.stringify(c)).not.toMatch(/sumInsured|Minor|9007199254740993/);
+    expect(premiumsCounts(null)).toBeNull();
+    expect(premiumsCounts({ computedAt: 't', inForce: { count: -1 }, proposed: 1.5 })).toEqual({ active: 0, proposed: 0, computedAt: 't' });
+  });
+});
+
+describe('PC-56 PARTNER-2b · the parametric counts (founder Q3 — counts, never money)', () => {
+  it('own products marked parametric, and the policies in force on them only', () => {
+    const items: { isParametric: boolean; policies: Record<string, number> }[] = [
+      { isParametric: true, policies: { active: 2, proposed: 5, cancelled: 1 } },
+      { isParametric: true, policies: {} },
+      { isParametric: false, policies: { active: 9 } },
+    ];
+    expect(parametricCounts(items, 't')).toEqual({ products: 2, active: 2, computedAt: 't' });
+    expect(parametricCounts([], null)).toEqual({ products: 0, active: 0, computedAt: null });
+    expect(parametricCounts(null, 't')).toBeNull();
+    expect(parametricCounts([{ isParametric: true, policies: { active: 1.5 as unknown as number } }], 't')).toEqual({ products: 1, active: 0, computedAt: 't' });
+  });
+});
+
+describe('PC-56 PARTNER-2b · the honest pages\' states', () => {
+  it('a read answered → ok; a failure is its failure; nothing → error', () => {
+    expect([honestState({}, null), honestState(null, null), honestState({}, 'insurance_off'), honestState(null, 'off')]).toEqual(['ok', 'error', 'insurance_off', 'off']);
+  });
+  it('the reports page\'s state from the public flag map: console OFF → off; insurance OFF → insurance_off; both ON → ok; unreadable or partial → error', () => {
+    expect(switchesState({ partner_console: true, insurance: true })).toBe('ok');
+    expect(switchesState({ partner_console: false, insurance: true })).toBe('off');
+    expect(switchesState({ partner_console: true, insurance: false })).toBe('insurance_off');
+    expect(switchesState({ partner_console: false, insurance: false })).toBe('off');
+    expect(switchesState({ partner_console: true })).toBe('error');
+    expect(switchesState(null)).toBe('error');
+  });
+});

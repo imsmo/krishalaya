@@ -27,7 +27,7 @@ import {
   PartnerInviteDto, PartnerInviteSchema, PartnerOtpDto, PartnerOtpSchema, PartnerReasonDto, PartnerReasonSchema, PartnerRefreshDto, PartnerRefreshSchema,
   PartnerRejectDto, PartnerRejectSchema, PartnerTotpCodeDto, PartnerTotpCodeSchema, PartnerTwoFactorDto, PartnerTwoFactorSchema,
   PartnerVerifyDto, PartnerVerifySchema, PartnerInviteLookupDto, PartnerInviteLookupSchema, PartnerKeyRevokeDto, PartnerKeyRevokeSchema,
-  PartnerDeliveriesQueryDto, PartnerDeliveriesQuerySchema, PartnerPoliciesQueryDto, PartnerPoliciesQuerySchema,
+  PartnerDeliveriesQueryDto, PartnerDeliveriesQuerySchema, PartnerPoliciesQueryDto, PartnerPoliciesQuerySchema, PartnerIssuanceQueryDto, PartnerIssuanceQuerySchema,
 } from '../../dto/partner-console.dto';
 
 const ipOf = (req: Request) => clientIpOf(req);
@@ -206,7 +206,9 @@ export class PartnerReadinessController {
 
 /** PC-56 PARTNER-2a · founder Q6 — THE INSURER READS ITS OWN BOOK: its own products and the policy FACTS on them (never a policyholder's
  *  identity), every read audited. Behind `partner_console` AND the platform's `insurance` flag (OFF → 404 `PARTNER_INSURANCE_SWITCHED_OFF`).
- *  Read-only: no product write, no issuance, no export, no cancel / endorse — refused by name in the console. */
+ *  Read-only: no product write, no issuance, no export, no cancel / endorse — refused by name in the console.
+ *  PC-56 PARTNER-2b (founder Q5) + `GET issuance`: the `proposed` queue on the insurer's own products, a READ — there is NO route to issue a
+ *  policy, export a file or run a parametric payout (the live spec pins their absence). */
 @Controller({ path: 'partner/insurance', version: '1' })
 @UseGuards(PartnerConsoleFlagGuard, PartnerSessionGuard, PartnerPermissionsGuard, PartnerInsuranceFlagGuard)
 export class PartnerInsuranceController {
@@ -228,6 +230,11 @@ export class PartnerInsuranceController {
 
   @PartnerPermissions('partner.insurance.read') @Get('policies/:id')
   policy(@CurrentPartnerSession() s: PartnerSession, @Param('id') id: string) { return this.insurance.policy(s, id).then((data) => ({ data })); }
+
+  @PartnerPermissions('partner.insurance.read') @Get('issuance')
+  issuance(@CurrentPartnerSession() s: PartnerSession, @ZodQuery(PartnerIssuanceQuerySchema) q: PartnerIssuanceQueryDto) {
+    return this.insurance.issuance(s, q).then((r) => ({ data: r.items, meta: { nextCursor: r.nextCursor, limit: r.limit, computedAt: r.computedAt } }));
+  }
 }
 
 /** For the route-uniqueness spec and the module: every controller of the realm. */
