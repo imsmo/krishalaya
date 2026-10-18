@@ -93,6 +93,11 @@ export function SettingsView({ t, lang, me, sla, team, invite, notice }: Setting
         <p className="kv-field__hint">{t.t('partner1.settings.logged')}</p>
       </div>
 
+      <div className="kv-card" data-kv-standing>
+        <h2 className="kv-card__title">{t.t('partner1.settings.standingTitle')}</h2>
+        <p>{t.t('partner1.settings.standingBody')} <Link className="kv-link" href="/onboarding/status">{t.t('partner1.settings.standingLink')}</Link></p>
+      </div>
+
       <div className="kv-card" data-kv-decor="save">
         <p><Link className="kv-btn kv-btn--muted" href="/account/settings?form=review">{t.t('partner1.settings.save')}</Link></p>
         <p className="kv-field__hint">{t.t('partner1.settings.saveRefused')}</p>

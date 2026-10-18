@@ -24,9 +24,11 @@ describe('PC-56 PARTNER-0 · the permission matrix (founder D1)', () => {
   it('admin holds every partner permission; checker reads + decides; maker reads + reviews; viewer reads', () => {
     expect([...PARTNER_ROLE_MATRIX.partner_admin].sort()).toEqual([...PARTNER_PERMISSIONS].sort());
     expect(PARTNER_PERMISSIONS).toHaveLength(8);
-    expect([...PARTNER_ROLE_MATRIX.partner_checker].sort()).toEqual(['partner.applications.decide', 'partner.applications.read']);
-    expect([...PARTNER_ROLE_MATRIX.partner_maker].sort()).toEqual(['partner.applications.read', 'partner.applications.review']);
-    expect([...PARTNER_ROLE_MATRIX.partner_viewer]).toEqual(['partner.applications.read']);
+    expect([...PARTNER_ROLE_MATRIX.partner_checker].sort()).toEqual(['partner.applications.decide', 'partner.applications.read', 'partner.keys.read', 'partner.webhooks.read']);
+    expect([...PARTNER_ROLE_MATRIX.partner_maker].sort()).toEqual(['partner.applications.read', 'partner.applications.review', 'partner.keys.read', 'partner.webhooks.read']);
+    expect([...PARTNER_ROLE_MATRIX.partner_viewer]).toEqual(['partner.applications.read', 'partner.keys.read', 'partner.webhooks.read']);
+    // PC-56 PARTNER-1b (0227): every role reads keys and webhooks; only the administrator revokes a key
+    for (const r of ['partner_checker', 'partner_maker', 'partner_viewer'] as const) expect(PARTNER_ROLE_MATRIX[r]).not.toContain('partner.keys.revoke');
     // the maker never decides, the checker never reviews, nobody but the admin manages the team
     expect(PARTNER_ROLE_MATRIX.partner_maker).not.toContain('partner.applications.decide');
     expect(PARTNER_ROLE_MATRIX.partner_checker).not.toContain('partner.applications.review');

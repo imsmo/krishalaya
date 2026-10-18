@@ -5,7 +5,7 @@
 // it needs; one that declares nothing is refused). None of them uses the tenant AuthGuard / PermissionsGuard: an FPO's tenant_admin or
 // banker holding `loan.manage` holds NOTHING here (their token is a tenant token). The machine realm `/v1/partner-api/*` (API keys, 0090) is
 // a different controller and is untouched (still behind `partner_api`, still OFF).
-import { Controller, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Headers, HttpCode, Param, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { clientIpOf } from '../../../../core/http/client-ip';
 import { RateLimit } from '../../../../core/http/rate-limit.guard';
@@ -17,11 +17,15 @@ import { PartnerAuthService } from '../../services/partner-auth.service';
 import { PartnerApplicationsService } from '../../services/partner-applications.service';
 import { PartnerTeamService } from '../../services/partner-team.service';
 import { PartnerDashboardService } from '../../services/partner-dashboard.service';
+import { PartnerKeysService } from '../../services/partner-keys.service';
+import { PartnerWebhooksService } from '../../services/partner-webhooks.service';
+import { PartnerReadinessService } from '../../services/partner-readiness.service';
 import {
   PartnerAcceptInviteDto, PartnerAcceptInviteSchema, PartnerApplicationsQueryDto, PartnerApplicationsQuerySchema, PartnerApproveDto, PartnerApproveSchema,
   PartnerInviteDto, PartnerInviteSchema, PartnerOtpDto, PartnerOtpSchema, PartnerReasonDto, PartnerReasonSchema, PartnerRefreshDto, PartnerRefreshSchema,
   PartnerRejectDto, PartnerRejectSchema, PartnerTotpCodeDto, PartnerTotpCodeSchema, PartnerTwoFactorDto, PartnerTwoFactorSchema,
-  PartnerVerifyDto, PartnerVerifySchema,
+  PartnerVerifyDto, PartnerVerifySchema, PartnerInviteLookupDto, PartnerInviteLookupSchema, PartnerKeyRevokeDto, PartnerKeyRevokeSchema,
+  PartnerDeliveriesQueryDto, PartnerDeliveriesQuerySchema,
 } from '../../dto/partner-console.dto';
 
 const ipOf = (req: Request) => clientIpOf(req);
@@ -127,7 +131,8 @@ export class PartnerTeamController {
   }
 }
 
-/** Public invite page: lookup + accept (the token AND an OTP on the invited phone). */
+/** Public invite page: lookup + accept (the token AND an OTP on the invited phone). PC-56 PARTNER-1b · D4: the lookup is a POST with the token
+ *  in the BODY (`GET /v1/partner/invites/:token` is gone — a token in a URL lands in access logs; the tenant's `auth/invites/lookup` shape). */
 @Controller({ path: 'partner/invites', version: '1' })
 @UseGuards(PartnerConsoleFlagGuard, PartnerSessionGuard, PartnerPermissionsGuard)
 export class PartnerInvitesController {
@@ -136,8 +141,8 @@ export class PartnerInvitesController {
   @PartnerPublic() @RateLimit({ limit: 10, windowSec: 60, by: 'ip' }) @Post('accept')
   accept(@Req() req: Request, @ZodBody(PartnerAcceptInviteSchema) dto: PartnerAcceptInviteDto) { return this.team.accept(dto, ipOf(req)).then((data) => ({ data })); }
 
-  @PartnerPublic() @RateLimit({ limit: 20, windowSec: 60, by: 'ip' }) @Get(':token')
-  lookup(@Param('token') token: string) { return this.team.lookup(token).then((data) => ({ data })); }
+  @PartnerPublic() @RateLimit({ limit: 20, windowSec: 60, by: 'ip' }) @Post('lookup')
+  lookup(@ZodBody(PartnerInviteLookupSchema) dto: PartnerInviteLookupDto) { return this.team.lookup(dto.token).then((data) => ({ data })); }
 }
 
 /** PC-56 PARTNER-1a · founder D1 — the dashboard's six figures, computed on the server from this partner's own book (`partner.dashboard.read` IS
@@ -151,5 +156,52 @@ export class PartnerDashboardController {
   read(@CurrentPartnerSession() s: PartnerSession) { return this.dashboard.read(s).then((data) => ({ data })); }
 }
 
+/** PC-56 PARTNER-1b · founder D1 — the partner's OWN API keys: read (every partner role) and REVOKE one with a reason (partner_admin). Mint, rotate,
+ *  re-scope and the quota stay with the platform's partner operations (the console prints that refusal). */
+@Controller({ path: 'partner/keys', version: '1' })
+@UseGuards(PartnerConsoleFlagGuard, PartnerSessionGuard, PartnerPermissionsGuard)
+export class PartnerKeysController {
+  constructor(private readonly keys: PartnerKeysService) {}
+
+  @PartnerPermissions('partner.keys.read') @Get()
+  list(@CurrentPartnerSession() s: PartnerSession) { return this.keys.list(s).then((r) => ({ data: r.items, meta: { computedAt: r.computedAt } })); }
+
+  @PartnerPermissions('partner.keys.read', 'partner.keys.revoke') @HttpCode(200) @Post(':id/revoke')
+  revoke(@CurrentPartnerSession() s: PartnerSession, @Param('id') id: string, @Headers('idempotency-key') key: string, @ZodBody(PartnerKeyRevokeSchema) dto: PartnerKeyRevokeDto) {
+    return this.keys.revoke(s, id, dto.reason, key).then((data) => ({ data }));
+  }
+}
+
+/** PC-56 PARTNER-1b · founder D2 — the partner's OWN webhook endpoints and deliveries, READ-ONLY (never a secret, never a payload, never the tenant). */
+@Controller({ path: 'partner/webhooks', version: '1' })
+@UseGuards(PartnerConsoleFlagGuard, PartnerSessionGuard, PartnerPermissionsGuard)
+export class PartnerWebhooksController {
+  constructor(private readonly hooks: PartnerWebhooksService) {}
+
+  @PartnerPermissions('partner.webhooks.read') @Get()
+  endpoints(@CurrentPartnerSession() s: PartnerSession) {
+    return this.hooks.endpoints(s).then((r) => ({ data: r.items, meta: { subscribableEvents: r.subscribableEvents, retentionDays: r.retentionDays, computedAt: r.computedAt } }));
+  }
+
+  @PartnerPermissions('partner.webhooks.read') @Get('deliveries')
+  deliveries(@CurrentPartnerSession() s: PartnerSession, @ZodQuery(PartnerDeliveriesQuerySchema) q: PartnerDeliveriesQueryDto) {
+    return this.hooks.deliveries(s, q).then((r) => ({ data: r.items, meta: { nextCursor: r.nextCursor, limit: r.limit, retentionDays: r.retentionDays, computedAt: r.computedAt } }));
+  }
+
+  @PartnerPermissions('partner.webhooks.read') @Get('deliveries/:id')
+  delivery(@CurrentPartnerSession() s: PartnerSession, @Param('id') id: string) { return this.hooks.delivery(s, id).then((data) => ({ data })); }
+}
+
+/** PC-56 PARTNER-1b · founder D3 — readiness: what the platform has set up for this partner, from facts (any member; counts and yes / no only). */
+@Controller({ path: 'partner/readiness', version: '1' })
+@UseGuards(PartnerConsoleFlagGuard, PartnerSessionGuard, PartnerPermissionsGuard)
+export class PartnerReadinessController {
+  constructor(private readonly readiness: PartnerReadinessService) {}
+
+  @PartnerAnyMember() @Get()
+  read(@CurrentPartnerSession() s: PartnerSession) { return this.readiness.read(s).then((data) => ({ data })); }
+}
+
 /** For the route-uniqueness spec and the module: every controller of the realm. */
-export const PARTNER_CONSOLE_CONTROLLERS = [PartnerAuthController, PartnerMeController, PartnerApplicationsController, PartnerTeamController, PartnerInvitesController, PartnerDashboardController];
+export const PARTNER_CONSOLE_CONTROLLERS = [PartnerAuthController, PartnerMeController, PartnerApplicationsController, PartnerTeamController, PartnerInvitesController, PartnerDashboardController,
+  PartnerKeysController, PartnerWebhooksController, PartnerReadinessController];

@@ -3,7 +3,8 @@
 // files from disk and turns red the day they differ. (Also the team acts' reason rule, mirrored from identity's verification-team.ts.)
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { WEBHOOK_CONTRACT } from '../features/partner1/webhook-contract';
+import { PARTNER_WEBHOOK_EVENT_TYPES, WEBHOOK_CONTRACT } from '../features/partner1/webhook-contract';
+import { KEY_REVOKE_REASON_MAX, KEY_REVOKE_REASON_MIN } from '../features/partner1/keys';
 import { REASON_MAX, REASON_MIN } from '../features/partner1/settings';
 
 const API = path.join(__dirname, '..', '..', '..', 'api', 'src', 'modules');
@@ -33,5 +34,25 @@ describe('PC-56 PARTNER-1a · the webhook contract = the rail\'s constants', () 
     const vt = read('identity/domain/verification-team.ts');
     expect(REASON_MIN).toBe(Number(one(vt, /export const REASON_MIN = (\d+)/)));
     expect(REASON_MAX).toBe(Number(one(vt, /export const REASON_MAX = (\d+)/)));
+  });
+  // ── PC-56 PARTNER-1b ──
+  it('the webhooks page\'s contract block: the response cap, the retention and the delivery states are the rail\'s', () => {
+    expect(WEBHOOK_CONTRACT.responseBodyCapBytes).toBe(64 * 1024);
+    expect(rail).toContain('export const RESPONSE_BODY_CAP_BYTES = 64 * 1024;');
+    expect(WEBHOOK_CONTRACT.retentionDays).toBe(Number(one(rail, /RETENTION_DAYS = (\d+)/)));
+    expect([...WEBHOOK_CONTRACT.deliveryStates]).toEqual(one(rail, /DELIVERY_STATES = \[([^\]]+)\]/).split(',').map((x) => x.trim().replace(/'/g, '')));
+  });
+  it('the subscribable events are 0090\'s allow-list exactly (never an application or a consent event)', () => {
+    const rules = read('partner-api/domain/partner-webhook.rules.ts');
+    const block = rules.slice(rules.indexOf('PARTNER_WEBHOOK_EVENTS'), rules.indexOf('});', rules.indexOf('PARTNER_WEBHOOK_EVENTS')));
+    expect([...PARTNER_WEBHOOK_EVENT_TYPES]).toEqual([...block.matchAll(/'([a-z_.]+)': '/g)].map((m) => m[1]));
+    expect(PARTNER_WEBHOOK_EVENT_TYPES).not.toContain('loan.application.submitted'); expect(PARTNER_WEBHOOK_EVENT_TYPES).not.toContain('consent.granted');
+  });
+  it('the key revoke reason rule mirrors the API\'s KEY_REVOKE_REASON_MIN / MAX (and 0227\'s definer bounds)', () => {
+    const rules = read('partner-console/domain/partner-keys.rules.ts');
+    expect(KEY_REVOKE_REASON_MIN).toBe(Number(one(rules, /export const KEY_REVOKE_REASON_MIN = (\d+)/)));
+    expect(KEY_REVOKE_REASON_MAX).toBe(Number(one(rules, /export const KEY_REVOKE_REASON_MAX = (\d+)/)));
+    const mig = fs.readFileSync(path.join(API, '..', '..', '..', '..', 'db', 'migrations', '0227_partner1b_keys_endpoints_road_in.sql'), 'utf8');
+    expect(mig).toContain(`char_length(v_reason) < ${KEY_REVOKE_REASON_MIN} OR char_length(v_reason) > ${KEY_REVOKE_REASON_MAX}`);
   });
 });

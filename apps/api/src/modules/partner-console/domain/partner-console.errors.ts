@@ -42,6 +42,11 @@ export const PARTNER_CODES: Readonly<Record<string, { status: number; message: s
   PARTNER_LAST_ADMIN: { status: 409, message: 'This is the last administrator of the partner organisation — appoint another first.' },
   PARTNER_REMOVE_SELF: { status: 409, message: 'You cannot remove yourself — another administrator must.' },
   PARTNER_ROLE_NOT_TENANT: { status: 422, message: 'A partner role is held inside a partner organisation, never inside a tenant.' },
+  // PC-56 PARTNER-1b · keys (founder D1) and webhooks (D2) — 0227's `[CODE]` refusals and the service's own
+  PARTNER_KEY_NOT_FOUND: { status: 404, message: 'This API key was not found.' },
+  PARTNER_KEY_ALREADY_REVOKED: { status: 409, message: 'This API key is revoked already — revocation is permanent.' },
+  PARTNER_KEY_REASON_REQUIRED: { status: 422, message: 'A reason of 20–300 characters is required to revoke a key.' },
+  PARTNER_DELIVERY_NOT_FOUND: { status: 404, message: 'This delivery was not found.' },
 });
 
 export function partnerRefused(code: string, details: Record<string, unknown> = {}): PartnerRefusedError {

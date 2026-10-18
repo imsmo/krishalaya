@@ -355,8 +355,10 @@ run('PC-56 PARTNER-0 · a partner is an organisation (integration, real AppModul
     // the maker / checker / viewer cannot invite
     expect((await request(http).post('/v1/partner/team/invites').set({ ...bearer(tok.aChecker.accessToken), 'idempotency-key': randomUUID() }).send({ phone: phoneOf(), roleCode: 'partner_viewer' })).status).toBe(403);
     // the public lookup: the partner's name, the role, the phone by its last 3
-    const look = await request(http).get(`/v1/partner/invites/${token}`);
-    expect(look.status).toBe(200);
+    // PC-56 PARTNER-1b · D4: the lookup is a POST with the token in the body; the old GET-with-the-token-in-the-URL route is gone (404)
+    const look = await request(http).post('/v1/partner/invites/lookup').send({ token });
+    expect(look.status).toBe(201);
+    expect((await request(http).get(`/v1/partner/invites/${token}`)).status).toBe(404);
     expect(look.body.data).toMatchObject({ organisation: 'Partner Zero Bank A', roleCode: 'partner_checker', status: 'pending', phoneMasked: `••••••${people.invitee.phone.slice(-3)}` });
     // phone-bound: another phone with the token → 404 (and no OTP was consumed for it)
     const other = await request(http).post('/v1/partner/invites/accept').send({ token, phone: people.late.phone, code: (await otp.issue(people.late.phone)).code });
@@ -448,7 +450,7 @@ run('PC-56 PARTNER-0 · a partner is an organisation (integration, real AppModul
       ['post', `/v1/partner/applications/${ids.app1}/approve`, { amountApprovedMinor: '1' }], ['post', `/v1/partner/applications/${ids.app1}/reject`, {}],
       ['post', `/v1/partner/applications/${ids.app1}/disburse`], ['get', '/v1/partner/team'], ['post', '/v1/partner/team/invites', { phone: phoneOf(), roleCode: 'partner_viewer' }],
       ['post', `/v1/partner/team/invites/${randomUUID()}/revoke`, { reason: 'a reason that is long' }], ['post', `/v1/partner/team/members/${randomUUID()}/remove`, { reason: 'a reason that is long' }],
-      ['get', `/v1/partner/invites/${'t'.repeat(43)}`], ['post', '/v1/partner/invites/accept', { token: 't'.repeat(43), phone: people.aAdmin.phone, code: '123456' }],
+      ['post', '/v1/partner/invites/lookup', { token: 't'.repeat(43) }], ['post', '/v1/partner/invites/accept', { token: 't'.repeat(43), phone: people.aAdmin.phone, code: '123456' }],
     ];
     try {
       await resetRates();

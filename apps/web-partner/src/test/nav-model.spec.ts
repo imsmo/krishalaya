@@ -12,7 +12,7 @@ describe('partner nav model (persona-aware)', () => {
     expect(hasLending(perms)).toBe(true);
     expect(hasFleet(perms)).toBe(false);
     expect(visibleGroups(perms)).toEqual(['common', 'lending', 'account']);
-    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/dashboard', '/notifications', '/settlements', '/consents', '/loan-queue', '/products', '/profile', '/portfolio', '/servicing', '/account/settings', '/help']);
+    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/dashboard', '/notifications', '/settlements', '/consents', '/loan-queue', '/products', '/profile', '/portfolio', '/servicing', '/account/settings', '/account/api', '/account/webhooks', '/onboarding/status', '/help']);
     expect(soonNavForPartner(perms)).toEqual([]); // lending vertical fully built
   });
 
@@ -21,7 +21,7 @@ describe('partner nav model (persona-aware)', () => {
     expect(hasFleet(perms)).toBe(true);
     expect(hasLending(perms)).toBe(false);
     expect(visibleGroups(perms)).toEqual(['common', 'fleet', 'account']);
-    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/dashboard', '/notifications', '/settlements', '/consents', '/shipments', '/fleet', '/zones', '/routes', '/cold-chain', '/account/settings', '/help']);
+    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/dashboard', '/notifications', '/settlements', '/consents', '/shipments', '/fleet', '/zones', '/routes', '/cold-chain', '/account/settings', '/account/api', '/account/webhooks', '/onboarding/status', '/help']);
     expect(soonNavForPartner(perms)).toEqual([]); // logistics vertical fully built
   });
 
@@ -31,7 +31,7 @@ describe('partner nav model (persona-aware)', () => {
     expect(hasLending(perms)).toBe(false);
     expect(hasFleet(perms)).toBe(false);
     expect(visibleGroups(perms)).toEqual(['common', 'insurance', 'account']);
-    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/dashboard', '/notifications', '/settlements', '/consents', '/insurance-claims', '/insurance-policies', '/insurance-products', '/insurance-book', '/account/settings', '/help']);
+    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/dashboard', '/notifications', '/settlements', '/consents', '/insurance-claims', '/insurance-policies', '/insurance-products', '/insurance-book', '/account/settings', '/account/api', '/account/webhooks', '/onboarding/status', '/help']);
     expect(soonNavForPartner(perms)).toEqual([]); // insurer console fully built this batch
   });
 
@@ -44,7 +44,7 @@ describe('partner nav model (persona-aware)', () => {
   it('no partner perms → only the common dashboard', () => {
     const perms = set();
     expect(visibleGroups(perms)).toEqual(['common', 'account']);
-    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/dashboard', '/notifications', '/settlements', '/consents', '/account/settings', '/help']);
+    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/dashboard', '/notifications', '/settlements', '/consents', '/account/settings', '/account/api', '/account/webhooks', '/onboarding/status', '/help']);
     expect(soonNavForPartner(perms)).toEqual([]);
   });
 
@@ -67,13 +67,16 @@ describe('partnerNoticeKey', () => {
   });
 });
 
-describe('PC-56 PARTNER-1a · the Account group (founder D7)', () => {
-  it('Settings and Help, built routes only, last, for every persona — and with their own ×3 label keys', () => {
+describe('PC-56 PARTNER-1a / 1b · the Account group (founder D7)', () => {
+  it('Settings · API keys · Webhooks · Readiness · Help — built routes only, last, for every persona — and with their own ×3 label keys', () => {
     const account = PARTNER_NAV.filter((i) => i.group === 'account');
-    expect(account.map((i) => [i.href, i.labelKey, i.live])).toEqual([['/account/settings', 'partner1.nav.settings', true], ['/help', 'partner1.nav.help', true]]);
+    expect(account.map((i) => [i.href, i.labelKey, i.live])).toEqual([['/account/settings', 'partner1.nav.settings', true], ['/account/api', 'partner1.nav.keys', true],
+      ['/account/webhooks', 'partner1.nav.webhooks', true], ['/onboarding/status', 'partner1.nav.readiness', true], ['/help', 'partner1.nav.help', true]]);
     for (const perms of [set(), set(LENDING_PERM), set(FLEET_PERM), set(INSURANCE_PERM), set(WILDCARD_PERM)]) {
       expect(visibleGroups(perms)[visibleGroups(perms).length - 1]).toBe('account');
-      expect(liveNavForPartner(perms).slice(-2).map((i) => i.href)).toEqual(['/account/settings', '/help']);
+      expect(liveNavForPartner(perms).slice(-5).map((i) => i.href)).toEqual(['/account/settings', '/account/api', '/account/webhooks', '/onboarding/status', '/help']);
     }
+    // the settlement page is NOT in the nav (linked from the readiness page only)
+    expect(PARTNER_NAV.some((i) => i.href === '/onboarding/settlement')).toBe(false);
   });
 });

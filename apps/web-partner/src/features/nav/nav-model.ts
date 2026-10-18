@@ -5,7 +5,8 @@
 // links; not-yet-built surfaces render as a non-link "(soon)" label until their wave lands. Partner RBAC + RLS are
 // enforced by the platform API per call — this nav reflects route existence + persona, never grants access.
 
-/** PC-56 PARTNER-1a (founder D7): + `account` — Settings and Help, visible to every partner person, rendered last under its own heading. */
+/** PC-56 PARTNER-1a (founder D7): + `account` — Settings and Help (PARTNER-1b: + API keys, Webhooks, Readiness), visible to every partner person,
+ *  rendered last under its own heading. */
 export type NavGroup = 'common' | 'lending' | 'fleet' | 'insurance' | 'account';
 
 export interface PartnerNavItem {
@@ -54,8 +55,12 @@ export const PARTNER_NAV: readonly PartnerNavItem[] = [
   { href: '/insurance-policies', labelKey: 'nav.insurancePolicies', group: 'insurance', live: true },
   { href: '/insurance-products', labelKey: 'nav.insuranceProducts', group: 'insurance', live: true },
   { href: '/insurance-book', labelKey: 'nav.insuranceBook', group: 'insurance', live: true },   // PC-55 B7 (W54-9)
-  // account (PC-56 PARTNER-1a · D7): built routes only — the canon's `account/settings` and the built `/help` (canon `account/help`, DELTA)
+  // account (PC-56 PARTNER-1a · D7): built routes only — the canon's `account/settings` and the built `/help` (canon `account/help`, DELTA);
+  // PARTNER-1b (D7): + the canon's `account/api`, `account/webhooks` and `onboarding/status` ("Readiness"). Help stays last.
   { href: '/account/settings', labelKey: 'partner1.nav.settings', group: 'account', live: true },
+  { href: '/account/api', labelKey: 'partner1.nav.keys', group: 'account', live: true },
+  { href: '/account/webhooks', labelKey: 'partner1.nav.webhooks', group: 'account', live: true },
+  { href: '/onboarding/status', labelKey: 'partner1.nav.readiness', group: 'account', live: true },
   { href: '/help', labelKey: 'partner1.nav.help', group: 'account', live: true },
 ];
 

@@ -106,3 +106,13 @@ a { color: inherit; text-decoration: none; }
 .kv-token { display: inline-block; padding-block: .25rem; padding-inline: .5rem; font-family: ui-monospace, monospace; word-break: break-all; user-select: all; }
 .kv-article ul { padding-inline-start: 1.25rem; }
 .kv-sidebar__group { margin-block: 1rem .25rem; font-size: .8rem; text-transform: uppercase; opacity: .75; }
+
+/* PC-56 PARTNER-1b — keys, webhooks, readiness, the settlement page (logical properties only: RTL-safe) */
+.kv-code { font-family: ui-monospace, monospace; font-size: .85em; word-break: break-all; }
+.kv-scope { display: inline-block; margin-inline-end: .35rem; margin-block-end: .2rem; padding-inline: .3rem; border-radius: .25rem; background: var(--kv-neutral-100, #f2f2f2); }
+.kv-filters { display: flex; flex-wrap: wrap; gap: .4rem; list-style: none; padding-inline-start: 0; margin-block: .5rem; }
+.kv-filter { display: inline-block; padding-block: .15rem; padding-inline: .6rem; border-radius: 1rem; border: 1px solid var(--kv-neutral-300, #ccc); }
+.kv-filter--on { font-weight: 600; border-color: currentColor; }
+.kv-facts-list { list-style: none; padding-inline-start: 0; margin-block: .5rem; }
+.kv-facts-list li { margin-block: .45rem; }
+.kv-badge--ok { font-weight: 600; }

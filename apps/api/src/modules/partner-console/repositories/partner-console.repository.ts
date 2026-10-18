@@ -217,6 +217,89 @@ export class PartnerConsoleRepository {
   /** How many shards the scatter reads (the dashboard service loops over them). */
   get shards(): number { return this.shardCount; }
 
+  // ═════════════════════════════════════ PC-56 PARTNER-1b · keys, endpoints, deliveries (founder D1 / D2) — on the axis, through 0227
+  // Keys and endpoints are GLOBAL control-plane rows (they reference the global `financial_partners`, like `partner_api_keys` in 0090's
+  // repository): read on shard 0. Deliveries carry the ORIGINATING tenant and live on that tenant's shard: they SCATTER over every shard and
+  // merge on (created_at, id) — at SHARD_COUNT=1 one query. 0227's policy oracle `partner_owns_endpoint` reads the shard's own replica of
+  // `partner_webhook_endpoints` — the same rows the relay's fanout reads on that shard. Nothing here selects `key_hash`, `secret_enc`,
+  // `payload` or a delivery's `tenant_id`: kv_partner holds no privilege that could (0227's definers and column grants).
+
+  /** This partner's keys (0227 `partner_console_keys()` — every column but key_hash; NULL-guarded on the axis). */
+  async keys(partnerId: string): Promise<Array<Record<string, unknown>>> {
+    return this.withAxis(0, partnerId, async (c) => (await c.query(`SELECT * FROM partner_console_keys()`)).rows);
+  }
+
+  /** This partner's endpoints (0227 `partner_console_endpoints()` — every column but secret_enc). */
+  async endpoints(partnerId: string): Promise<Array<Record<string, unknown>>> {
+    return this.withAxis(0, partnerId, async (c) => (await c.query(`SELECT * FROM partner_console_endpoints()`)).rows);
+  }
+
+  /**
+   * THE REVOKE (founder D1): inside the axis, 0227's `partner_console_revoke_key` — the key must be THIS partner's (else `[PARTNER_KEY_NOT_FOUND]`),
+   * not revoked already, the person must hold `partner.keys.revoke` here; then the partner-realm audit row (`partner.key.revoked`, the reason and
+   * the prefix — never the hash) is written AFTER `RESET ROLE`, as kv_app, in the SAME transaction: the revocation and its trail commit together.
+   */
+  async revokeKey(partnerId: string, keyId: string, reason: string, byUser: string, trail: Omit<AuditEntry, 'tenantId' | 'entityId' | 'entityType' | 'action' | 'reason' | 'newValue'>):
+    Promise<{ id: string; keyPrefix: string; revokedAt: string }> {
+    return this.withAxis(0, partnerId, async (c) => {
+      const r = await c.query<{ out: { id: string; keyPrefix: string; revokedAt: string } }>(
+        `SELECT partner_console_revoke_key($1::uuid, $2::text, $3::uuid) AS out`, [keyId, reason, byUser]);
+      const o = r.rows[0].out;
+      return { id: o.id, keyPrefix: o.keyPrefix, revokedAt: new Date(o.revokedAt).toISOString() };
+    }, async (c, out) => {
+      const tx: TxContext = { tenantId: '', query: async <R = any>(sql: string, p?: readonly unknown[]) => { const r = await c.query(sql, p as unknown[]); return { rows: r.rows as R[], rowCount: r.rowCount ?? 0 }; } };
+      await this.audit.write(tx, { ...trail, tenantId: null, action: 'partner.key.revoked', entityType: 'partner_api_key', entityId: out.id, reason,
+        oldValue: { revoked: false }, newValue: { partnerId, realm: 'partner', keyPrefix: out.keyPrefix, revokedAt: out.revokedAt } });
+    });
+  }
+
+  /** ONE shard's partner deliveries of this partner (0227's policy admits only `endpoint_kind = 'partner'` rows of ITS endpoints), newest first. */
+  async deliveriesShard(shardId: number, partnerId: string, q: { endpointId?: string; state?: string; eventType?: string; cursor?: KeysetCursor; limit: number; windowDays: number }):
+    Promise<Array<Record<string, unknown> & { created_us: string; id: string }>> {
+    return this.withAxis(shardId, partnerId, async (c) => (await c.query(`
+      SELECT d.id, d.endpoint_id, d.event_type, d.state, d.attempt, d.status_code, d.last_error, d.created_at, ${US_SQL('d.created_at')} AS created_us,
+             d.last_attempt_at, d.delivered_at, d.replay_count
+        FROM webhook_deliveries d
+       WHERE d.endpoint_kind = 'partner'
+         AND d.created_at >= now() - make_interval(days => $1::int)
+         AND ($2::uuid IS NULL OR d.endpoint_id = $2::uuid)
+         AND ($3::text IS NULL OR d.state = $3::text)
+         AND ($4::text IS NULL OR d.event_type = $4::text)
+         AND ($5::timestamptz IS NULL OR (d.created_at, d.id) < ($5::timestamptz, $6::uuid))
+       ORDER BY d.created_at DESC, d.id DESC LIMIT $7`,
+      [q.windowDays, q.endpointId ?? null, q.state ?? null, q.eventType ?? null, q.cursor?.ts ?? null, q.cursor?.id ?? null, q.limit])).rows);
+  }
+
+  /** ONE delivery of this partner and its attempts (never the payload, never a signature), searched shard by shard; partition-pruned by the v7 id. */
+  async deliveryDetail(partnerId: string, id: string): Promise<{ delivery: Record<string, unknown>; attempts: Array<Record<string, unknown>> } | null> {
+    for (let s = 0; s < this.shardCount; s++) {
+      const found = await this.withAxis(s, partnerId, async (c) => {
+        const d = (await c.query(`
+          SELECT d.id, d.endpoint_id, d.event_type, d.state, d.attempt, d.status_code, d.last_error, d.created_at, d.last_attempt_at, d.delivered_at, d.replay_count
+            FROM webhook_deliveries d
+           WHERE d.id = $1 AND d.endpoint_kind = 'partner'
+             AND d.created_at >= uuid_v7_time($1) - interval '1 hour' AND d.created_at < uuid_v7_time($1) + interval '1 hour'`, [id])).rows[0];
+        if (!d) return null;
+        const a = (await c.query(`
+          SELECT attempt_no, outcome, status_code, duration_ms, error, signed_at, created_at
+            FROM webhook_delivery_attempts WHERE delivery_id = $1 AND endpoint_kind = 'partner' ORDER BY attempt_no`, [id])).rows;
+        return { delivery: d as Record<string, unknown>, attempts: a as Array<Record<string, unknown>> };
+      });
+      if (found) return found;
+    }
+    return null;
+  }
+
+  /** ONE shard's last successful partner delivery inside the window (readiness fact 5), or null. */
+  async lastDeliveredShard(shardId: number, partnerId: string, windowDays: number): Promise<string | null> {
+    return this.withAxis(shardId, partnerId, async (c) => {
+      const r = await c.query<{ at: string | null }>(`
+        SELECT ${US_SQL('max(d.delivered_at)')} AS at FROM webhook_deliveries d
+         WHERE d.endpoint_kind = 'partner' AND d.state = 'delivered' AND d.created_at >= now() - make_interval(days => $1::int)`, [windowDays]);
+      return r.rows[0]?.at ?? null;
+    });
+  }
+
   // ═════════════════════════════════════ control plane (kv_app, the caller's partner-realm transaction)
   /** The distinct ACTIVE partners a person belongs to (active partner rows only), with names for the chooser. Needs app.user_id = userId. */
   async membershipsOfUserTx(tx: TxContext, userId: string): Promise<Array<{ partnerId: string; name: string }>> {
@@ -245,6 +328,12 @@ export class PartnerConsoleRepository {
     const r = await tx.query<any>(`SELECT id, code, default_name, partner_kind, regulator_ref, sla FROM financial_partners WHERE id = $1 AND deleted_at IS NULL`, [partnerId]);
     const x = r.rows[0];
     return x ? { id: x.id, code: x.code, name: x.default_name, kind: x.partner_kind, regulatorRef: x.regulator_ref ?? null, sla: (x.sla ?? {}) as Record<string, unknown> } : null;
+  }
+  /** PC-56 PARTNER-1b · readiness fact (1) + (6): is the organisation active, and its `sla` jsonb (the published promise). */
+  async partnerOrgActiveTx(tx: TxContext, partnerId: string): Promise<{ active: boolean; sla: Record<string, unknown> } | null> {
+    const r = await tx.query<{ active: boolean; sla: Record<string, unknown> | null }>(`SELECT (is_active AND deleted_at IS NULL) AS active, sla FROM financial_partners WHERE id = $1`, [partnerId]);
+    const x = r.rows[0];
+    return x ? { active: x.active === true, sla: (x.sla ?? {}) as Record<string, unknown> } : null;
   }
   async userPhoneTx(tx: TxContext, userId: string): Promise<string | null> {
     return (await tx.query<{ phone: string }>(`SELECT phone FROM users WHERE id = $1`, [userId])).rows[0]?.phone ?? null;

@@ -21,4 +21,17 @@ export const WEBHOOK_CONTRACT = Object.freeze({
   maxAttempts: 6,
   rotationOverlapHours: 24,
   sendTimeoutSec: 10,
+  /** PC-56 PARTNER-1b · the webhooks page's contract block: how much of a response the sender reads, and how long deliveries are kept. */
+  responseBodyCapBytes: 65536,
+  retentionDays: 90,
+  /** The rail's delivery states (rail: `DELIVERY_STATES`) — the deliveries filter and the state words. */
+  deliveryStates: ['pending', 'retrying', 'delivered', 'held', 'exhausted', 'cancelled'] as readonly string[],
 });
+
+/** PC-56 PARTNER-1b · the events a partner endpoint may subscribe to — 0090's allow-list (`partner-api/domain/partner-webhook.rules.ts`
+ *  `PARTNER_WEBHOOK_EVENTS`, pinned by the parity spec). Never an application or a consent event. */
+export const PARTNER_WEBHOOK_EVENT_TYPES: readonly string[] = Object.freeze([
+  'fintech.loan_disbursed', 'fintech.loan_repaid', 'fintech.loan_closed',
+  'insurance.policy_activated', 'insurance.policy_cancelled', 'insurance.policy_claimed',
+  'insurance.claim_filed', 'insurance.claim_surveyed', 'insurance.claim_decided', 'insurance.claim_settled', 'insurance.claim_closed',
+]);

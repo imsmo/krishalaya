@@ -70,8 +70,11 @@ describe('PC-56 PARTNER-0 · SDK partner resource', () => {
     await c.partner.twoFactor.enrol(); await c.partner.twoFactor.confirm('123456'); await c.partner.twoFactor.state();
     expect(calls.map((x) => x.url.replace('https://api.test/v1/', ''))).toEqual([
       'partner/team', 'partner/team/invites', 'partner/team/invites/i1/revoke', 'partner/team/members/m1/remove',
-      `partner/invites/${'t'.repeat(43)}`, 'partner/invites/accept', 'partner/me/2fa/enrol', 'partner/me/2fa/confirm', 'partner/me/2fa']);
+      'partner/invites/lookup', 'partner/invites/accept', 'partner/me/2fa/enrol', 'partner/me/2fa/confirm', 'partner/me/2fa']);
     expect(hdr(calls[1], 'idempotency-key')).toBe('k-i');
+    // PC-56 PARTNER-1b · D4: the lookup is a POST with the token in the BODY — never in the URL
+    expect(calls[4].init.method).toBe('POST'); expect(json(calls[4])).toEqual({ token: 't'.repeat(43) });
+    expect(calls.some((x) => x.url.includes('t'.repeat(43)))).toBe(false);
     expect(json(calls[3])).toEqual({ reason: 'left the credit team' });
     expect(hdr(calls[4], 'authorization')).toBeUndefined(); expect(hdr(calls[5], 'authorization')).toBeUndefined();
   });
@@ -98,5 +101,34 @@ describe('PC-56 PARTNER-1a · SDK partner.dashboard()', () => {
     expect(hdr(calls[0], 'authorization')).toBe('Bearer tok');
     expect(d.decidedThisMonth.approvedAmountMinor).toBe('9007199254740993');
     expect(d.onTime.shareBps).toBeNull();
+  });
+});
+
+describe('PC-56 PARTNER-1b · SDK keys / webhooks / readiness', () => {
+  it('keys: list with the session; revoke carries the Idempotency-Key and the reason in the body (never the URL)', async () => {
+    const { fn, calls } = fakeFetch([{ id: 'k1', name: 'core banking', keyPrefix: 'kv_pk_live_abcdefabcdef', scopes: ['lending:book:read'], rateLimitPerHour: 1000, status: 'active',
+      lastUsedAt: null, revokedAt: null, revokedReason: null, createdAt: '2026-10-01T00:00:00.000Z' }]);
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const keys = await c.partner.keys.list();
+    expect(Object.keys(keys[0])).not.toContain('keyHash');
+    await c.partner.keys.revoke('k1', { reason: 'the key was pasted into a public ticket' }, 'k-rv');
+    expect(calls.map((x) => [x.url, x.init.method, hdr(x, 'idempotency-key') ?? null])).toEqual([
+      ['https://api.test/v1/partner/keys', 'GET', null], ['https://api.test/v1/partner/keys/k1/revoke', 'POST', 'k-rv']]);
+    expect(json(calls[1])).toEqual({ reason: 'the key was pasted into a public ticket' });
+    for (const x of calls) expect(hdr(x, 'authorization')).toBe('Bearer tok');
+  });
+  it('webhooks: endpoints map meta; deliveries are a keyset page with filters as query params; one delivery by id; readiness', async () => {
+    const { fn, calls } = fakeFetch([], { nextCursor: 'cur2', limit: 25, retentionDays: 90, computedAt: '2026-10-18T00:00:00.000Z', subscribableEvents: ['fintech.loan_repaid'] });
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const eps = await c.partner.webhooks.list();
+    expect(eps).toEqual({ items: [], subscribableEvents: ['fintech.loan_repaid'], retentionDays: 90, computedAt: '2026-10-18T00:00:00.000Z' });
+    const page = await c.partner.webhooks.deliveries({ endpointId: 'e1', state: 'exhausted', eventType: 'fintech.loan_repaid', cursor: 'cur1', limit: 25 });
+    expect(page).toEqual({ items: [], nextCursor: 'cur2', limit: 25, retentionDays: 90, computedAt: '2026-10-18T00:00:00.000Z' });
+    await c.partner.webhooks.delivery('d1');
+    await c.partner.readiness();
+    expect(calls.map((x) => x.url.replace('https://api.test/v1/', ''))).toEqual([
+      'partner/webhooks', 'partner/webhooks/deliveries?endpointId=e1&state=exhausted&eventType=fintech.loan_repaid&cursor=cur1&limit=25',
+      'partner/webhooks/deliveries/d1', 'partner/readiness']);
+    for (const x of calls) { expect(x.init.method).toBe('GET'); expect(hdr(x, 'authorization')).toBe('Bearer tok'); }
   });
 });

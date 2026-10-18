@@ -61,6 +61,9 @@ There is **no wildcard scope**: a key can never become god-mode.
 Minting is a **human-run script** — `node db/scripts/mint-partner-key.js --partner <id|code> --name "…" --scopes …`
 (`--list`, `--revoke <prefix>`). 0090 revoked `INSERT` on `partner_api_keys` from `kv_app` **and** `kv_relay`: no
 request handler in this platform can create a credential. Revocation is permanent.
+PC-56 PARTNER-1b (0227): a partner ADMINISTRATOR may revoke one of its OWN keys from the partner console
+(`POST /v1/partner/keys/:id/revoke`, a reason of 20–300 characters) through the SECURITY DEFINER `partner_console_revoke_key`
+(EXECUTE to kv_partner only) — the only request-path write to this table; kv_app still holds no UPDATE beyond `last_used_at`.
 
 ## Webhooks out to partners
 `partner_webhook_endpoints` is the partner axis of the tenant table, and reuses the **entire** proven rail: the same

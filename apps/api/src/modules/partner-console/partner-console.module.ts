@@ -6,7 +6,8 @@
 // extended with the partner realm's session acts), UserRepository (exported by identity, the TenancyModule precedent) and TwoFactorService
 // (per-person TOTP, now exported); fintech's LoanApplicationService (the state machine, extended with the partner decision path and the
 // tenant-side product-owner rule). Flag `partner_console` OFF (0225 / seed 0009): every route answers 404 until it is switched on.
-// Not here, by founder D5: key minting, endpoint writes, a settlement account, an onboarding application. The machine realm
+// Not here, by founder D5: key minting, endpoint writes, a settlement account, an onboarding application. PC-56 PARTNER-1b adds the partner's
+// own keys (read + the one REVOKE), endpoints and deliveries (read-only) and the readiness facts — on the kv_partner axis through 0227. The machine realm
 // `/v1/partner-api/*` (PartnerApiModule, 0090) is untouched and still OFF.
 import { Inject, Module, OnModuleInit } from '@nestjs/common';
 import { IdentityModule } from '../identity/identity.module';
@@ -24,6 +25,9 @@ import { PartnerAuthService } from './services/partner-auth.service';
 import { PartnerApplicationsService } from './services/partner-applications.service';
 import { PartnerTeamService } from './services/partner-team.service';
 import { PartnerDashboardService } from './services/partner-dashboard.service';
+import { PartnerKeysService } from './services/partner-keys.service';
+import { PartnerWebhooksService } from './services/partner-webhooks.service';
+import { PartnerReadinessService } from './services/partner-readiness.service';
 import { PartnerConsoleFlagGuard, PartnerPermissionsGuard, PartnerSessionGuard } from './guards/partner-session.guard';
 import { PartnerMemberInvitedHandler } from './events/handlers/partner-member-invited.handler';
 
@@ -31,6 +35,7 @@ import { PartnerMemberInvitedHandler } from './events/handlers/partner-member-in
   imports: [IdentityModule, FintechModule],
   controllers: [...PARTNER_CONSOLE_CONTROLLERS],
   providers: [PartnerConsoleRepository, PartnerAuthService, PartnerApplicationsService, PartnerTeamService, PartnerDashboardService,
+    PartnerKeysService, PartnerWebhooksService, PartnerReadinessService,
     PartnerConsoleFlagGuard, PartnerSessionGuard, PartnerPermissionsGuard, UiMessageRepository],
 })
 export class PartnerConsoleModule implements OnModuleInit {

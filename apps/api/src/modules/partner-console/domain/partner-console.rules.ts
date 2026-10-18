@@ -13,12 +13,13 @@ export type PartnerPermission = (typeof PARTNER_PERMISSIONS)[number];
 export const PARTNER_ROLES = Object.freeze(['partner_admin', 'partner_checker', 'partner_maker', 'partner_viewer'] as const);
 export type PartnerRole = (typeof PARTNER_ROLES)[number];
 
-/** THE MATRIX (founder D1 + this wave's `review` verb for the maker). */
+/** THE MATRIX (founder D1 + PARTNER-0's `review` verb for the maker; PC-56 PARTNER-1b · 0227: every partner role READS its organisation's keys
+ *  and webhooks — `partner.keys.read`, `partner.webhooks.read` — and only the administrator REVOKES a key). */
 export const PARTNER_ROLE_MATRIX: Readonly<Record<PartnerRole, readonly PartnerPermission[]>> = Object.freeze({
   partner_admin: PARTNER_PERMISSIONS,
-  partner_checker: ['partner.applications.read', 'partner.applications.decide'],
-  partner_maker: ['partner.applications.read', 'partner.applications.review'],
-  partner_viewer: ['partner.applications.read'],
+  partner_checker: ['partner.applications.read', 'partner.applications.decide', 'partner.keys.read', 'partner.webhooks.read'],
+  partner_maker: ['partner.applications.read', 'partner.applications.review', 'partner.keys.read', 'partner.webhooks.read'],
+  partner_viewer: ['partner.applications.read', 'partner.keys.read', 'partner.webhooks.read'],
 });
 
 export const isPartnerRole = (v: unknown): v is PartnerRole => typeof v === 'string' && (PARTNER_ROLES as readonly string[]).includes(v);

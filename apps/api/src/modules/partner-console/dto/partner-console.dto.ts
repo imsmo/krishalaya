@@ -65,3 +65,22 @@ export const PartnerAcceptInviteSchema = z.object({
   device: DeviceSchema.optional(),
 }).strict();
 export type PartnerAcceptInviteDto = z.infer<typeof PartnerAcceptInviteSchema>;
+
+// ── PC-56 PARTNER-1b ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+/** D4: the invite lookup is a POST — the token travels in the BODY, never in a URL (a URL lands in access logs and proxies). */
+export const PartnerInviteLookupSchema = z.object({ token: z.string().min(20).max(100) }).strict();
+export type PartnerInviteLookupDto = z.infer<typeof PartnerInviteLookupSchema>;
+
+/** D1: revoke one of this partner's keys — the reason's 20–300 rule is the service's (a short reason is a 422 by name, not a 400). */
+export const PartnerKeyRevokeSchema = z.object({ reason: z.string().max(2000) }).strict();
+export type PartnerKeyRevokeDto = z.infer<typeof PartnerKeyRevokeSchema>;
+
+/** D2: the deliveries list — keyset, newest first; filters endpoint / state (the rail's states) / event type; limit ≤ 100. */
+export const PartnerDeliveriesQuerySchema = z.object({
+  endpointId: z.string().uuid().optional(),
+  state: z.enum(['pending', 'retrying', 'delivered', 'held', 'exhausted', 'cancelled']).optional(),
+  eventType: z.string().min(1).max(100).optional(),
+  cursor: z.string().max(200).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+}).strict();
+export type PartnerDeliveriesQueryDto = z.infer<typeof PartnerDeliveriesQuerySchema>;

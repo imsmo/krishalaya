@@ -11,6 +11,9 @@
 //   • every decision needs an Idempotency-Key (mint it when the form renders); `decide.disburse` is REFUSED by name
 //     (`PARTNER_CANNOT_DISBURSE`) — it exists so a console can show the refusal, never to move money;
 //   • `team.invite` answers the raw token ONCE (`token: null` on a replayed key).
+//   • PC-56 PARTNER-1b: `keys.list` (the partner's own keys — there is NO hash field on `PartnerKey`), `keys.revoke` (an Idempotency-Key and a
+//     reason of 20–300 characters; the only write), `webhooks.list` / `.deliveries` / `.delivery` (read-only: no secret, no payload, no tenant),
+//     `readiness()` (six facts, counts only); `invites.lookup` is a POST — the token travels in the body, never in a URL (founder D4).
 // Money is a bigint minor-unit STRING (Law 2).
 import { HttpClient } from '../http';
 import { AuthTokens } from '../types';
@@ -68,6 +71,35 @@ export interface PartnerDashboard {
   sla: { decisionPromiseHours: number | null; windowDays: number; decided: number; medianSec: number | null; p90Sec: number | null; withinPromise: number | null };
   fpos: Array<{ tenantId: string; name: string | null }>;
   needsYouToday: Array<{ id: string; tenantId: string; fpoName: string | null; productName: string; amountRequestedMinor: string; status: string; createdAt: string }>;
+}
+
+/** PC-56 PARTNER-1b · founder D1 — one of the partner's own API keys as the console reads it. No hash, no secret: the field does not exist. */
+export interface PartnerKey {
+  id: string; name: string; keyPrefix: string; scopes: string[]; rateLimitPerHour: number; status: 'active' | 'inactive' | 'revoked';
+  lastUsedAt: string | null; revokedAt: string | null; revokedReason: string | null; createdAt: string | null;
+}
+export interface PartnerKeyRevoked { id: string; keyPrefix: string; revokedAt: string; status: 'revoked' }
+/** PC-56 PARTNER-1b · founder D2 — one of the partner's own endpoints: the URL as stored (its own), the events, active — never a secret. */
+export interface PartnerWebhookEndpoint { id: string; url: string; eventTypes: string[]; active: boolean; createdAt: string | null }
+export interface PartnerWebhookEndpoints { items: PartnerWebhookEndpoint[]; subscribableEvents: string[]; retentionDays: number; computedAt: string | null }
+export type PartnerDeliveryState = 'pending' | 'retrying' | 'delivered' | 'held' | 'exhausted' | 'cancelled';
+/** One delivery: no payload body (the partner received it on the wire) and never the originating tenant. */
+export interface PartnerDelivery {
+  id: string; endpointId: string; eventType: string; state: PartnerDeliveryState | string; attempts: number; lastStatusCode: number | null;
+  lastError: string | null; createdAt: string; lastAttemptAt: string | null; deliveredAt: string | null; replayCount: number;
+}
+export interface PartnerDeliveriesPage { items: PartnerDelivery[]; nextCursor: string | null; limit: number; retentionDays: number | null; computedAt: string | null }
+export interface PartnerDeliveryAttempt { attemptNo: number; outcome: string; statusCode: number | null; durationMs: number; error: string | null; signedAt: string | null; createdAt: string | null }
+export interface PartnerDeliveryDetail extends PartnerDelivery { attemptsList: PartnerDeliveryAttempt[] }
+/** PC-56 PARTNER-1b · founder D3 — what the platform has set up for the partner, from facts (counts and yes / no; no names). */
+export interface PartnerReadiness {
+  computedAt: string;
+  organisation: { active: boolean; ready: boolean };
+  administrators: { count: number; withTwoFactor: number; ready: boolean };
+  keys: { active: number; ready: boolean };
+  endpoints: { active: number; ready: boolean };
+  deliveries: { windowDays: number; deliveredWithinWindow: boolean; lastDeliveredAt: string | null; ready: boolean };
+  sla: { published: boolean; decisionHours: number | null; ready: boolean };
 }
 
 class PartnerAuth {
@@ -141,8 +173,9 @@ class PartnerTeamApi {
 
 class PartnerInvites {
   constructor(private readonly http: HttpClient) {}
+  /** PC-56 PARTNER-1b · D4: a POST — the token is in the body, never in a URL (a URL lands in access logs). Anonymous. */
   async lookup(token: string): Promise<PartnerInviteLookup> {
-    return (await this.http.request<PartnerInviteLookup>('GET', `partner/invites/${encodeURIComponent(token)}`, { anonymous: true })).data;
+    return (await this.http.request<PartnerInviteLookup>('POST', 'partner/invites/lookup', { anonymous: true, body: { token } })).data;
   }
   /** Accept: the token AND the OTP sent to the INVITED phone → a partner session. Anonymous. */
   async accept(input: { token: string; phone: string; code: string; fullName?: string }): Promise<AuthTokens & { invite: { id: string; roleCode: string } }> {
@@ -163,6 +196,33 @@ class PartnerMe2fa {
   }
 }
 
+class PartnerKeysApi {
+  constructor(private readonly http: HttpClient) {}
+  async list(signal?: AbortSignal): Promise<PartnerKey[]> { return (await this.http.request<PartnerKey[]>('GET', 'partner/keys', { signal })).data; }
+  /** Revoke one of this partner's keys — PERMANENT; every call with it fails at once. Mint the Idempotency-Key when the confirm renders. */
+  async revoke(id: string, input: { reason: string }, idempotencyKey: string): Promise<PartnerKeyRevoked> {
+    return (await this.http.request<PartnerKeyRevoked>('POST', `partner/keys/${encodeURIComponent(id)}/revoke`, { idempotencyKey, body: { reason: input.reason } })).data;
+  }
+}
+
+class PartnerWebhooksApi {
+  constructor(private readonly http: HttpClient) {}
+  async list(signal?: AbortSignal): Promise<PartnerWebhookEndpoints> {
+    const r = await this.http.request<PartnerWebhookEndpoint[]>('GET', 'partner/webhooks', { signal });
+    const m = (r.meta ?? {}) as { subscribableEvents?: string[]; retentionDays?: number; computedAt?: string };
+    return { items: r.data, subscribableEvents: m.subscribableEvents ?? [], retentionDays: m.retentionDays ?? 0, computedAt: m.computedAt ?? null };
+  }
+  async deliveries(q: { endpointId?: string; state?: PartnerDeliveryState; eventType?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<PartnerDeliveriesPage> {
+    const r = await this.http.request<PartnerDelivery[]>('GET', 'partner/webhooks/deliveries', {
+      query: { endpointId: q.endpointId, state: q.state, eventType: q.eventType, cursor: q.cursor, limit: q.limit }, signal });
+    const m = (r.meta ?? {}) as { nextCursor?: string | null; limit?: number; retentionDays?: number; computedAt?: string };
+    return { items: r.data, nextCursor: m.nextCursor ?? null, limit: m.limit ?? r.data.length, retentionDays: m.retentionDays ?? null, computedAt: m.computedAt ?? null };
+  }
+  async delivery(id: string, signal?: AbortSignal): Promise<PartnerDeliveryDetail> {
+    return (await this.http.request<PartnerDeliveryDetail>('GET', `partner/webhooks/deliveries/${encodeURIComponent(id)}`, { signal })).data;
+  }
+}
+
 export class PartnerResource {
   readonly auth: PartnerAuth;
   readonly applications: PartnerApplications;
@@ -170,10 +230,15 @@ export class PartnerResource {
   readonly team: PartnerTeamApi;
   readonly invites: PartnerInvites;
   readonly twoFactor: PartnerMe2fa;
+  readonly keys: PartnerKeysApi;
+  readonly webhooks: PartnerWebhooksApi;
   constructor(private readonly http: HttpClient) {
     this.auth = new PartnerAuth(http); this.applications = new PartnerApplications(http); this.decide = new PartnerDecide(http);
     this.team = new PartnerTeamApi(http); this.invites = new PartnerInvites(http); this.twoFactor = new PartnerMe2fa(http);
+    this.keys = new PartnerKeysApi(http); this.webhooks = new PartnerWebhooksApi(http);
   }
+  /** PC-56 PARTNER-1b · the six readiness facts + computedAt (any member of the partner). */
+  async readiness(signal?: AbortSignal): Promise<PartnerReadiness> { return (await this.http.request<PartnerReadiness>('GET', 'partner/readiness', { signal })).data; }
   /** PC-56 PARTNER-1a · the dashboard's six figures + as-of, the SLA promise beside the actual latency, the FPOs, the oldest awaiting. */
   async dashboard(signal?: AbortSignal): Promise<PartnerDashboard> { return (await this.http.request<PartnerDashboard>('GET', 'partner/dashboard', { signal })).data; }
   /** The organisation and the signed-in person. */
