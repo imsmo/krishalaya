@@ -1,5 +1,5 @@
 // modules/insurance/__tests__/premium-calc.spec.ts · pure money math (Law 2 — exact bigint, no drift).
-import { parsePremiumCalc, computeTotalPremiumMinor, splitPremium } from '../domain/premium-calc';
+import { parsePremiumCalc, computeTotalPremiumMinor, splitPremium, isAuthorablePremiumCalc } from '../domain/premium-calc';
 import { InvalidPremiumCalcError } from '../domain/insurance.errors';
 
 describe('parsePremiumCalc', () => {
@@ -36,5 +36,25 @@ describe('splitPremium — govt subsidy, exact bigint (Law 2: no drift)', () => 
   it('100% subsidy (10000 bps) → farmer pays zero', () => {
     const s = splitPremium(500_00n, 10000);
     expect(s.farmerShareMinor).toBe(0n); expect(s.govtShareMinor).toBe(500_00n);
+  });
+});
+
+// PC-56 PARTNER-2a · survey F-3 — the authoring validator IS parsePremiumCalc: what can be authored is exactly what enrolment can price.
+describe('isAuthorablePremiumCalc — the one authoring shape (integer bps; no float percentage, no parametric terms)', () => {
+  it('accepts exactly the two shapes enrolment executes', () => {
+    expect(isAuthorablePremiumCalc({ kind: 'pct_of_sum_insured', bps: 200 })).toBe(true);
+    expect(isAuthorablePremiumCalc({ kind: 'flat_minor', amountMinor: '48000' })).toBe(true);
+  });
+  it('refuses the old tenant-authoring shapes: a float percentage, a kind-less flat amount, parametric terms', () => {
+    expect(isAuthorablePremiumCalc({ pct_of_sum_insured: 2.0 })).toBe(false);
+    expect(isAuthorablePremiumCalc({ pct_of_sum_insured: 2 })).toBe(false);
+    expect(isAuthorablePremiumCalc({ flat_minor: '48000' })).toBe(false);
+    expect(isAuthorablePremiumCalc({ parametric: { index: 'rainfall', thresholds: [55, 40, 25] } })).toBe(false);
+  });
+  it('a rate is an INTEGER number of basis points (Law 2): 2.5 bps is refused by parse and by the validator', () => {
+    expect(() => parsePremiumCalc({ kind: 'pct_of_sum_insured', bps: 2.5 })).toThrow(InvalidPremiumCalcError);
+    expect(isAuthorablePremiumCalc({ kind: 'pct_of_sum_insured', bps: 2.5 })).toBe(false);
+    expect(isAuthorablePremiumCalc({ kind: 'pct_of_sum_insured', bps: 10001 })).toBe(false);
+    expect(isAuthorablePremiumCalc({ kind: 'flat_minor', amountMinor: 48000 })).toBe(false);
   });
 });

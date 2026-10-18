@@ -132,3 +132,26 @@ describe('PC-56 PARTNER-1b · SDK keys / webhooks / readiness', () => {
     for (const x of calls) { expect(x.init.method).toBe('GET'); expect(hdr(x, 'authorization')).toBe('Bearer tok'); }
   });
 });
+
+describe('PC-56 PARTNER-2a · SDK the insurer\'s own book (read-only, policy facts only)', () => {
+  it('dashboard, products, product, policies (keyset + status as query params), policy — every call a GET with the partner token', async () => {
+    const { fn, calls } = fakeFetch([], { nextCursor: 'cur2', limit: 2, computedAt: '2026-10-18T00:00:00.000Z' });
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    await c.partner.insurance.dashboard();
+    const products = await c.partner.insurance.products();
+    expect(products).toEqual({ items: [], computedAt: '2026-10-18T00:00:00.000Z' });
+    await c.partner.insurance.product('pr1');
+    const page = await c.partner.insurance.policies({ status: 'active', cursor: 'cur1', limit: 2 });
+    expect(page).toEqual({ items: [], nextCursor: 'cur2', limit: 2, computedAt: '2026-10-18T00:00:00.000Z' });
+    await c.partner.insurance.policy('po1');
+    expect(calls.map((x) => x.url.replace('https://api.test/v1/', ''))).toEqual([
+      'partner/insurance/dashboard', 'partner/insurance/products', 'partner/insurance/products/pr1',
+      'partner/insurance/policies?status=active&cursor=cur1&limit=2', 'partner/insurance/policies/po1']);
+    for (const x of calls) { expect(x.init.method).toBe('GET'); expect(hdr(x, 'authorization')).toBe('Bearer tok'); }
+  });
+  it('the PartnerInsurancePolicy type carries no holder, subject, payment or tenant field (a compile-time wall, read at run time from a full object)', () => {
+    const p: import('../resources/partner').PartnerInsurancePolicy = { id: 'po1', policyNo: null, productId: 'pr1', productName: null, fpoName: null, subjectType: 'animal', status: 'active',
+      sumInsuredMinor: '16000000', premiumMinor: '512000', validFrom: '2026-07-12', validUntil: '2027-07-12', createdAt: null };
+    expect(Object.keys(p).filter((k) => /holder|subject_?id|subjectId|payment|tenant/i.test(k))).toEqual([]);
+  });
+});

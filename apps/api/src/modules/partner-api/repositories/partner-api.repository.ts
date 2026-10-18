@@ -144,11 +144,16 @@ export class PartnerApiRepository {
   }
 
   /** The insurer book. Ownership is proven by the SECURITY DEFINER oracle, so no insurer ever gains a route to
-   *  another insurer's `insurance_products.premium_calc` (their pricing model) — see 0090's header. */
+   *  another insurer's `insurance_products.premium_calc` (their pricing model) — see 0090's header.
+   *  PC-56 PARTNER-2a (founder Q6, migration 0228): POLICY FACTS ONLY — kv_partner's grant on insurance_policies is now a COLUMN grant
+   *  (id, tenant_id, product_id, policy_no, subject_type, status, sum_insured_minor, premium_minor, valid_from, valid_until, created_at,
+   *  deleted_at), so `holder_user_id` and `subject_id` are no longer selected (a SELECT of either is 42501) and no longer answered. The
+   *  machine realm KEEPS `tenantId`: an FPO is an organisation, not a person, and a machine caller has no public-name resolver — the
+   *  console (a person's screen) prints the FPO's public name instead and never returns the id. `partner_api` is OFF: no consumer. */
   async policies(partnerId: string, q: { status?: string; cursorId?: string; limit: number }): Promise<Array<Record<string, unknown>>> {
     const rows = await this.scatter(partnerId, async (c) => {
       const r = await c.query(
-        `SELECT id, tenant_id, holder_user_id, product_id, policy_no, subject_type, subject_id,
+        `SELECT id, tenant_id, product_id, policy_no, subject_type,
                 status::text AS status, sum_insured_minor::text, premium_minor::text, valid_from, valid_until
            FROM insurance_policies
           WHERE partner_owns_insurance_policy(product_id)
@@ -163,8 +168,8 @@ export class PartnerApiRepository {
       .sort((a: any, b: any) => (a.id < b.id ? 1 : a.id > b.id ? -1 : 0))
       .slice(0, q.limit)
       .map((x: any) => ({
-        id: x.id, tenantId: x.tenant_id, holderUserId: x.holder_user_id, productId: x.product_id,
-        policyNo: x.policy_no ?? null, subjectType: x.subject_type, subjectId: x.subject_id ?? null,
+        id: x.id, tenantId: x.tenant_id, productId: x.product_id,
+        policyNo: x.policy_no ?? null, subjectType: x.subject_type,
         status: x.status, sumInsuredMinor: x.sum_insured_minor, premiumMinor: x.premium_minor,
         validFrom: pgDate(x.valid_from), validUntil: pgDate(x.valid_until),
       }));

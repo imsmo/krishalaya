@@ -84,3 +84,12 @@ export const PartnerDeliveriesQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional(),
 }).strict();
 export type PartnerDeliveriesQueryDto = z.infer<typeof PartnerDeliveriesQuerySchema>;
+
+// ── PC-56 PARTNER-2a ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+/** The insurer's book — keyset, newest first; the status filter is the policy state machine's own list; limit ≤ 100. */
+export const PartnerPoliciesQuerySchema = z.object({
+  status: z.enum(['proposed', 'active', 'lapsed', 'cancelled', 'expired', 'claimed']).optional(),
+  cursor: z.string().max(200).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+}).strict();
+export type PartnerPoliciesQueryDto = z.infer<typeof PartnerPoliciesQuerySchema>;

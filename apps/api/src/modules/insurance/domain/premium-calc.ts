@@ -18,11 +18,12 @@ export interface PremiumSplit {
   farmerShareMinor: bigint; // what is actually collected from the farmer (== insurance_policies.premium_minor)
 }
 
-/** Parses the raw jsonb into a typed PremiumCalc, or throws — never silently guesses a shape. */
+/** Parses the raw jsonb into a typed PremiumCalc, or throws — never silently guesses a shape. PC-56 PARTNER-2a (survey F-3): the rate is an
+ *  INTEGER number of basis points (Law 2 — a float percentage of money is refused, `{pct_of_sum_insured: 2.0}` included). */
 export function parsePremiumCalc(raw: unknown): PremiumCalc {
   if (raw && typeof raw === 'object') {
     const r = raw as Record<string, unknown>;
-    if (r.kind === 'pct_of_sum_insured' && typeof r.bps === 'number' && r.bps >= 0 && r.bps <= 10000) {
+    if (r.kind === 'pct_of_sum_insured' && typeof r.bps === 'number' && Number.isInteger(r.bps) && r.bps >= 0 && r.bps <= 10000) {
       return { kind: 'pct_of_sum_insured', bps: r.bps };
     }
     if (r.kind === 'flat_minor' && typeof r.amountMinor === 'string' && /^\d{1,15}$/.test(r.amountMinor)) {
@@ -46,4 +47,14 @@ export function splitPremium(totalPremiumMinor: bigint, govtSubsidyBps: number):
   const govtShareMinor = applyBpsFloor(totalPremiumMinor, govtSubsidyBps);
   const farmerShareMinor = totalPremiumMinor - govtShareMinor;
   return { totalPremiumMinor, govtShareMinor, farmerShareMinor };
+}
+
+/**
+ * PC-56 PARTNER-2a · survey F-3 — THE ONE AUTHORING SHAPE. Whoever authors a product (the platform's admin-realm writer, founder Q7) validates
+ * `premium_calc` through THIS, which is `parsePremiumCalc` itself: what can be authored is exactly what enrolment can price. The old tenant
+ * validator accepted `{pct_of_sum_insured: <float>}`, `{flat_minor}` without a kind, and `{parametric: …}` — none of which enrolment could
+ * ever execute (an authored product that could never be enrolled). Parametric terms are not priceable at all (founder Q3: no automatic payout).
+ */
+export function isAuthorablePremiumCalc(raw: unknown): boolean {
+  try { parsePremiumCalc(raw); return true; } catch { return false; }
 }

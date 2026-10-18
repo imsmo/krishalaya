@@ -11,7 +11,8 @@ import { clientIpOf } from '../../../../core/http/client-ip';
 import { RateLimit } from '../../../../core/http/rate-limit.guard';
 import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
 import {
-  CurrentPartnerSession, PartnerAnyMember, PartnerConsoleFlagGuard, PartnerPermissions, PartnerPermissionsGuard, PartnerPublic, PartnerSession, PartnerSessionGuard,
+  CurrentPartnerSession, PartnerAnyMember, PartnerConsoleFlagGuard, PartnerInsuranceFlagGuard, PartnerPermissions, PartnerPermissionsGuard, PartnerPublic, PartnerSession,
+  PartnerSessionGuard,
 } from '../../guards/partner-session.guard';
 import { PartnerAuthService } from '../../services/partner-auth.service';
 import { PartnerApplicationsService } from '../../services/partner-applications.service';
@@ -20,12 +21,13 @@ import { PartnerDashboardService } from '../../services/partner-dashboard.servic
 import { PartnerKeysService } from '../../services/partner-keys.service';
 import { PartnerWebhooksService } from '../../services/partner-webhooks.service';
 import { PartnerReadinessService } from '../../services/partner-readiness.service';
+import { PartnerInsuranceService } from '../../services/partner-insurance.service';
 import {
   PartnerAcceptInviteDto, PartnerAcceptInviteSchema, PartnerApplicationsQueryDto, PartnerApplicationsQuerySchema, PartnerApproveDto, PartnerApproveSchema,
   PartnerInviteDto, PartnerInviteSchema, PartnerOtpDto, PartnerOtpSchema, PartnerReasonDto, PartnerReasonSchema, PartnerRefreshDto, PartnerRefreshSchema,
   PartnerRejectDto, PartnerRejectSchema, PartnerTotpCodeDto, PartnerTotpCodeSchema, PartnerTwoFactorDto, PartnerTwoFactorSchema,
   PartnerVerifyDto, PartnerVerifySchema, PartnerInviteLookupDto, PartnerInviteLookupSchema, PartnerKeyRevokeDto, PartnerKeyRevokeSchema,
-  PartnerDeliveriesQueryDto, PartnerDeliveriesQuerySchema,
+  PartnerDeliveriesQueryDto, PartnerDeliveriesQuerySchema, PartnerPoliciesQueryDto, PartnerPoliciesQuerySchema,
 } from '../../dto/partner-console.dto';
 
 const ipOf = (req: Request) => clientIpOf(req);
@@ -202,6 +204,32 @@ export class PartnerReadinessController {
   read(@CurrentPartnerSession() s: PartnerSession) { return this.readiness.read(s).then((data) => ({ data })); }
 }
 
+/** PC-56 PARTNER-2a · founder Q6 — THE INSURER READS ITS OWN BOOK: its own products and the policy FACTS on them (never a policyholder's
+ *  identity), every read audited. Behind `partner_console` AND the platform's `insurance` flag (OFF → 404 `PARTNER_INSURANCE_SWITCHED_OFF`).
+ *  Read-only: no product write, no issuance, no export, no cancel / endorse — refused by name in the console. */
+@Controller({ path: 'partner/insurance', version: '1' })
+@UseGuards(PartnerConsoleFlagGuard, PartnerSessionGuard, PartnerPermissionsGuard, PartnerInsuranceFlagGuard)
+export class PartnerInsuranceController {
+  constructor(private readonly insurance: PartnerInsuranceService) {}
+
+  @PartnerPermissions('partner.insurance.read') @Get('dashboard')
+  dashboard(@CurrentPartnerSession() s: PartnerSession) { return this.insurance.dashboard(s).then((data) => ({ data })); }
+
+  @PartnerPermissions('partner.insurance.read') @Get('products')
+  products(@CurrentPartnerSession() s: PartnerSession) { return this.insurance.products(s).then((r) => ({ data: r.items, meta: { computedAt: r.computedAt } })); }
+
+  @PartnerPermissions('partner.insurance.read') @Get('products/:id')
+  product(@CurrentPartnerSession() s: PartnerSession, @Param('id') id: string) { return this.insurance.product(s, id).then((data) => ({ data })); }
+
+  @PartnerPermissions('partner.insurance.read') @Get('policies')
+  policies(@CurrentPartnerSession() s: PartnerSession, @ZodQuery(PartnerPoliciesQuerySchema) q: PartnerPoliciesQueryDto) {
+    return this.insurance.policies(s, q).then((r) => ({ data: r.items, meta: { nextCursor: r.nextCursor, limit: r.limit, computedAt: r.computedAt } }));
+  }
+
+  @PartnerPermissions('partner.insurance.read') @Get('policies/:id')
+  policy(@CurrentPartnerSession() s: PartnerSession, @Param('id') id: string) { return this.insurance.policy(s, id).then((data) => ({ data })); }
+}
+
 /** For the route-uniqueness spec and the module: every controller of the realm. */
 export const PARTNER_CONSOLE_CONTROLLERS = [PartnerAuthController, PartnerMeController, PartnerApplicationsController, PartnerTeamController, PartnerInvitesController, PartnerDashboardController,
-  PartnerKeysController, PartnerWebhooksController, PartnerReadinessController];
+  PartnerKeysController, PartnerWebhooksController, PartnerReadinessController, PartnerInsuranceController];

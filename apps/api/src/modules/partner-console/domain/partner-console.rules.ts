@@ -7,19 +7,20 @@
 //   • which permission a decision needs (maker reviews, checker decides).
 export const PARTNER_PERMISSIONS = Object.freeze([
   'partner.applications.read', 'partner.applications.review', 'partner.applications.decide', 'partner.team.manage',
-  'partner.keys.read', 'partner.keys.revoke', 'partner.webhooks.read', 'partner.settings.read',
+  'partner.keys.read', 'partner.keys.revoke', 'partner.webhooks.read', 'partner.settings.read', 'partner.insurance.read',
 ] as const);
 export type PartnerPermission = (typeof PARTNER_PERMISSIONS)[number];
 export const PARTNER_ROLES = Object.freeze(['partner_admin', 'partner_checker', 'partner_maker', 'partner_viewer'] as const);
 export type PartnerRole = (typeof PARTNER_ROLES)[number];
 
 /** THE MATRIX (founder D1 + PARTNER-0's `review` verb for the maker; PC-56 PARTNER-1b · 0227: every partner role READS its organisation's keys
- *  and webhooks — `partner.keys.read`, `partner.webhooks.read` — and only the administrator REVOKES a key). */
+ *  and webhooks — `partner.keys.read`, `partner.webhooks.read` — and only the administrator REVOKES a key; PC-56 PARTNER-2a · 0228: every partner
+ *  role reads its insurer organisation's own book — `partner.insurance.read`, policy facts only). */
 export const PARTNER_ROLE_MATRIX: Readonly<Record<PartnerRole, readonly PartnerPermission[]>> = Object.freeze({
   partner_admin: PARTNER_PERMISSIONS,
-  partner_checker: ['partner.applications.read', 'partner.applications.decide', 'partner.keys.read', 'partner.webhooks.read'],
-  partner_maker: ['partner.applications.read', 'partner.applications.review', 'partner.keys.read', 'partner.webhooks.read'],
-  partner_viewer: ['partner.applications.read', 'partner.keys.read', 'partner.webhooks.read'],
+  partner_checker: ['partner.applications.read', 'partner.applications.decide', 'partner.keys.read', 'partner.webhooks.read', 'partner.insurance.read'],
+  partner_maker: ['partner.applications.read', 'partner.applications.review', 'partner.keys.read', 'partner.webhooks.read', 'partner.insurance.read'],
+  partner_viewer: ['partner.applications.read', 'partner.keys.read', 'partner.webhooks.read', 'partner.insurance.read'],
 });
 
 export const isPartnerRole = (v: unknown): v is PartnerRole => typeof v === 'string' && (PARTNER_ROLES as readonly string[]).includes(v);

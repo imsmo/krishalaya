@@ -1,52 +1,38 @@
-// modules/insurance/controllers/v1/authoring.controller.ts · PC-54 W54-9 (insurance.manage class-gated).
-import { Controller, Get, Headers, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+// modules/insurance/controllers/v1/authoring.controller.ts · PC-54 W54-9 (insurance.manage class-gated) — LOCKED DOWN by PC-56 PARTNER-2a
+// (survey F-1, founder Q10: the wave's first commit). Now behind `@FeatureFlag('insurance')` like its three siblings (products / policies /
+// claims): `insurance` OFF → every route here answers 404. The three WRITE routes stay so a caller gets a SENTENCE (E6 — a named refusal, not
+// a 404): they take no body (a malformed body must not turn the refusal into a 400) and answer 403 by name —
+//   POST  products              → INSURANCE_PRODUCT_PLATFORM_AUTHORED (founder Q7: the platform authors products, in the admin realm)
+//   PATCH products/:id          → INSURANCE_PRODUCT_PLATFORM_AUTHORED
+//   POST  policies/:id/issue    → INSURANCE_ISSUE_NOT_ON_PLATFORM     (founder Q5: no issuance on the platform in Phase 1)
+// `GET book` and `GET insights` are TENANT reads of the tenant's own members under tenant RLS (named, survey F-12).
+import { Controller, Get, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
-import { ZodBody } from '../../../../core/http/zod.pipe';
+import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
-import { BadRequestError } from '../../../../shared/errors/app-error';
 import { InsurancePermissions } from '../../policies/insurance.policies';
 import { AuthoringService } from '../../services/authoring.service';
-import { z } from 'zod';
-
-const CreateProductSchema = z.object({
-  partnerId: z.string().uuid(), productKindId: z.string().uuid(),
-  defaultName: z.string().trim().min(3).max(200),
-  premiumCalc: z.record(z.unknown()),
-  sumInsuredRules: z.record(z.unknown()).optional(),
-  govtSubsidyBps: z.number().int().min(0).max(10000).optional(),
-  ourCommissionBps: z.number().int().min(0).max(10000).optional(),
-  isParametric: z.boolean().optional(),
-}).strict();
-const UpdateProductSchema = z.object({
-  defaultName: z.string().trim().min(3).max(200).optional(),
-  premiumCalc: z.record(z.unknown()).optional(),
-  sumInsuredRules: z.record(z.unknown()).optional(),
-  isActive: z.boolean().optional(),
-}).strict().refine((o) => Object.keys(o).length > 0, { message: 'at least one field' });
-const IssueSchema = z.object({ policyNo: z.string().trim().min(3).max(80), parametricTriggers: z.record(z.unknown()).optional() }).strict();
 
 @Controller({ path: 'insurance/authoring', version: '1' })
-@UseGuards(AuthGuard, PermissionsGuard)
+@UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
+@FeatureFlag('insurance')
 @RequirePermissions(InsurancePermissions.Manage)
 export class AuthoringController {
   constructor(private readonly svc: AuthoringService) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: true }; } // class-gated
 
+  /** REFUSED BY NAME (founder Q7). */
   @Post('products')
-  create(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @ZodBody(CreateProductSchema) dto: z.infer<typeof CreateProductSchema>) {
-    if (!key) throw new BadRequestError('Idempotency-Key header required');
-    return this.svc.createProduct(ctx.tenantId, this.actor(ctx), key, dto).then((data) => ({ data }));
-  }
+  create() { return this.svc.createProduct(); }
+  /** REFUSED BY NAME (founder Q7). */
   @Patch('products/:id')
-  update(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(UpdateProductSchema) dto: z.infer<typeof UpdateProductSchema>) {
-    return this.svc.updateProduct(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data }));
-  }
+  update() { return this.svc.updateProduct(); }
+  /** REFUSED BY NAME (founder Q5). */
   @Post('policies/:id/issue')
-  issue(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(IssueSchema) dto: z.infer<typeof IssueSchema>) {
-    return this.svc.issue(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data }));
-  }
+  issue() { return this.svc.issue(); }
+
   @Get('book')
   book(@CurrentContext() ctx: RequestContext, @Query('status') status?: string, @Query('limit') limit?: string) {
     return this.svc.book(ctx.tenantId, this.actor(ctx), status, Number(limit) || 100).then((data) => ({ data }));

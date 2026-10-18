@@ -7,6 +7,7 @@ import { en } from '../i18n/en';
 import { hi } from '../i18n/hi';
 import { gu } from '../i18n/gu';
 import { PARTNER1_REFUSALS } from '../features/partner1/refusals';
+import { PARTNER2_REFUSALS } from '../features/partner2/refusals';
 
 const CATS = { en, hi, gu } as const;
 const SCOPE = /^(dash\.|help\.|settings\.|partner\.|partner1\.)/;
@@ -62,5 +63,39 @@ describe('PC-56 PARTNER-1b · claims guard (keys, webhooks, onboarding, readines
     expect(en['partner1.onboarding.statement']).toMatch(/lender of record/);
     expect(en['partner1.hooks.secret']).toMatch(/held encrypted by the platform/);
     expect(en['partner1.hooks.secret']).toMatch(/partner operations on request/);
+  });
+});
+
+// PC-56 PARTNER-2a · survey E2 — the insurer console's words: every `partner2.` value (and every 2a refusal) in en, hi and gu carries none of the
+// canon's money, payout, identity, health or regulator claims — no settlement promise, no "receivable", nothing "automatic", no money set aside
+// called reserves, no regulator's turnaround, no rural-sector quota, no ombudsman, no helpline or country code, no animal tag or vaccination,
+// no voice call, no lapse warning, no pro-rata refund, no registry counts, no invented policy series, no "16:00" run, no "7 years", and no canon
+// institution, scheme or person. The 1a list applies too (no mailbox, domain, round-the-clock promise …). M5 kills here.
+const SCOPE_2A = /^partner2\./;
+const FORBIDDEN_2A: readonly [string, RegExp][] = [
+  ['T+1', /T\s*\+\s*1/i], ['settles', /settles?\b|settlement/i], ['receivable', /receivable/i], ['automatic', /automatic/i], ['auto-pay', /auto[- ]?pay/i],
+  ['reserves', /reserves?\b/i], ['IRDAI TAT', /IRDAI|\bTAT\b/i], ['rural sector', /rural sector/i], ['ombudsman', /ombudsman/i], ['1800', /1800/], ['+91', /\+91/],
+  ['ear-tag', /ear[- ]?tag/i], ['vaccinated', /vaccinat/i], ['voice', /\bvoice\b/i], ['lapse warning', /lapse warning/i], ['pro-rata', /pro[- ]?rata/i],
+  ['11 kinds', /\b11 kinds\b/i], ['13 kinds', /\b13 kinds\b/i], ['BKI-', /BKI-/i], ['16:00', /16:00/], ['7 years', /\b7 years\b|seven years/i],
+  ['canon insurer', /Bharat Krishi/i], ['canon bank', /Saurashtra|Gramin/i], ['canon people', /Savita|Hetal|Meera|Jayesh|Ramesh|\bAmit\b/i],
+  ['schemes', /PMFBY|WBCIS|PMSBY|PMJJBY|\bIMD\b/i], ['avatars', /\bPM\b|\bAJ\b/],
+];
+
+describe('PC-56 PARTNER-2a · claims guard (the insurer console)', () => {
+  it.each(Object.entries(CATS))('%s: no 2a claim in any partner2. value, nor in a 2a refusal', (_l, cat) => {
+    const c = cat as Record<string, string>;
+    const keys = [...new Set([...Object.keys(c).filter((k) => SCOPE_2A.test(k)), ...PARTNER2_REFUSALS.map((r) => r.key)])];
+    expect(keys.length).toBeGreaterThan(150);
+    for (const k of keys) {
+      expect([k, typeof c[k]]).toEqual([k, 'string']);
+      for (const [name, re] of [...FORBIDDEN_2A, ...FORBIDDEN]) expect([k, name, re.test(c[k])]).toEqual([k, name, false]);
+    }
+  });
+  it('founder Q1 / Q4 / Q5 / Q6 words (en): commission and subsidy recorded, nothing charged; no policy number yet; policy facts only; switched off, nothing broken', () => {
+    expect(en['partner2.products.recordedNote']).toMatch(/recorded on the product; nothing is charged against them today/);
+    expect(en['partner2.policies.noNumber']).toBe('no policy number yet');
+    expect(en['partner2.refusal.holderIdentity']).toMatch(/policy facts only/);
+    expect(en['partner2.insuranceOff.title']).toMatch(/switched off/i); expect(en['partner2.insuranceOff.body']).toMatch(/Nothing is broken/);
+    expect(en['partner2.refusal.premiumYours']).toMatch(/No premium total is shown as yours/);
   });
 });

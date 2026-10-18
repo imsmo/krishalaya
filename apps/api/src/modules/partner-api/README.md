@@ -18,7 +18,7 @@ the partner, and nothing else in the request is trusted to.**
 | `GET /me` | `partner:identity:read` | the key's own partner id, scopes, quota — proves a credential without reading any farmer's record |
 | `GET /lending/loans` | `lending:book:read` | this partner's servicing book (cursor page) |
 | `GET /lending/loans/:id/repayments` | `lending:book:read` | one loan's schedule + collections |
-| `GET /insurance/policies` | `insurance:book:read` | policies written on this insurer's products |
+| `GET /insurance/policies` | `insurance:book:read` | policies written on this insurer's products — policy FACTS only since PC-56 PARTNER-2a (0228): no `holderUserId`, no `subjectId` |
 
 No mutations exist here **by construction**: the first partner realm should be incapable of changing a farmer's loan
 or policy. Writes are a later, separately reviewed wave (maker-checker + idempotency of their own).
@@ -27,7 +27,7 @@ or policy. Writes are a later, separately reviewed wave (maker-checker + idempot
 A partner's book spans **tenants**, so tenant RLS (`app.tenant_id`) is the wrong axis. Migration 0090 adds the other
 axis as database physics:
 
-- role **`kv_partner`** — `SELECT` on exactly `loans`, `loan_repayments`, `insurance_policies`. Nothing else.
+- role **`kv_partner`** — `SELECT` on exactly `loans`, `loan_repayments`, `insurance_policies`. Nothing else. (PC-56 PARTNER-2a, 0228: on `insurance_policies` a COLUMN grant — id, tenant_id, product_id, policy_no, subject_type, status, sum_insured_minor, premium_minor, valid_from, valid_until, created_at, deleted_at — never `holder_user_id`, `subject_id`, `premium_payment_id`.)
 - `kv_app` is a **non-inheriting** member (`WITH INHERIT FALSE`), so the app holds those privileges only inside an
   explicit `SET LOCAL ROLE kv_partner` block that ends with the transaction (the lesson migration 0076 learned).
 - **`current_partner_id()`** + RLS policies `TO kv_partner` (SELECT-only, NULL-guarded). Forget to set the partner and

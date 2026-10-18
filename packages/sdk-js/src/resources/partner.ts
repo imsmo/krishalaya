@@ -14,6 +14,8 @@
 //   • PC-56 PARTNER-1b: `keys.list` (the partner's own keys — there is NO hash field on `PartnerKey`), `keys.revoke` (an Idempotency-Key and a
 //     reason of 20–300 characters; the only write), `webhooks.list` / `.deliveries` / `.delivery` (read-only: no secret, no payload, no tenant),
 //     `readiness()` (six facts, counts only); `invites.lookup` is a POST — the token travels in the body, never in a URL (founder D4).
+//   • PC-56 PARTNER-2a: `insurance.{dashboard, products, product, policies, policy}` — an insurer's own book, policy facts only (no holder,
+//     subject, payment or tenant field exists on the types); `insurance` OFF → 404 `PARTNER_INSURANCE_SWITCHED_OFF`.
 // Money is a bigint minor-unit STRING (Law 2).
 import { HttpClient } from '../http';
 import { AuthTokens } from '../types';
@@ -100,6 +102,59 @@ export interface PartnerReadiness {
   endpoints: { active: number; ready: boolean };
   deliveries: { windowDays: number; deliveredWithinWindow: boolean; lastDeliveredAt: string | null; ready: boolean };
   sla: { published: boolean; decisionHours: number | null; ready: boolean };
+}
+
+// ── PC-56 PARTNER-2a · THE INSURER READS ITS OWN BOOK (founder Q6) — read-only; policy FACTS only. There is NO holder, subject, payment or
+//    tenant field on these types: the API never answers one (0228's definers + column grant), and the types do not offer one to print.
+export type PartnerInsurancePolicyStatus = 'proposed' | 'active' | 'lapsed' | 'cancelled' | 'expired' | 'claimed';
+export interface PartnerInsurancePolicy {
+  id: string;
+  /** NULL on every activated policy today — nobody issues on the platform (founder Q5); print "no policy number yet". */
+  policyNo: string | null;
+  productId: string; productName: string | null;
+  /** The FPO's PUBLIC display name, or null for a non-live organisation. */
+  fpoName: string | null;
+  subjectType: string;
+  status: PartnerInsurancePolicyStatus | string;
+  sumInsuredMinor: string;
+  /** The farmer's premium share as stored on the policy. */
+  premiumMinor: string;
+  validFrom: string | null; validUntil: string | null; createdAt: string | null;
+}
+export interface PartnerInsurancePoliciesPage { items: PartnerInsurancePolicy[]; nextCursor: string | null; limit: number; computedAt: string | null }
+export type PartnerFormula = { kind: 'pct_of_sum_insured'; bps: number } | { kind: 'flat_minor'; amountMinor: string } | { kind: 'not_priceable' };
+export interface PartnerInsuranceProduct {
+  id: string; productName: string; kind: { id: string | null; code: string | null };
+  formula: PartnerFormula; storedTerms: unknown; sumInsuredRules: unknown;
+  /** Recorded on the product; nothing is charged against it today (founder Q4). */
+  govtSubsidyBps: number; ourCommissionBps: number;
+  isParametric: boolean; active: boolean; createdAt: string | null; updatedAt: string | null;
+  policies: Record<string, number>;
+}
+export interface PartnerInsuranceDashboard {
+  computedAt: string; policies: number; inForce: { count: number; sumInsuredMinor: string }; proposed: number; fpos: number; products: number;
+}
+
+class PartnerInsuranceApi {
+  constructor(private readonly http: HttpClient) {}
+  async dashboard(signal?: AbortSignal): Promise<PartnerInsuranceDashboard> {
+    return (await this.http.request<PartnerInsuranceDashboard>('GET', 'partner/insurance/dashboard', { signal })).data;
+  }
+  async products(signal?: AbortSignal): Promise<{ items: PartnerInsuranceProduct[]; computedAt: string | null }> {
+    const r = await this.http.request<PartnerInsuranceProduct[]>('GET', 'partner/insurance/products', { signal });
+    return { items: r.data, computedAt: ((r.meta ?? {}) as { computedAt?: string }).computedAt ?? null };
+  }
+  async product(id: string, signal?: AbortSignal): Promise<PartnerInsuranceProduct & { computedAt: string }> {
+    return (await this.http.request<PartnerInsuranceProduct & { computedAt: string }>('GET', `partner/insurance/products/${encodeURIComponent(id)}`, { signal })).data;
+  }
+  async policies(q: { status?: PartnerInsurancePolicyStatus; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<PartnerInsurancePoliciesPage> {
+    const r = await this.http.request<PartnerInsurancePolicy[]>('GET', 'partner/insurance/policies', { query: { status: q.status, cursor: q.cursor, limit: q.limit }, signal });
+    const m = (r.meta ?? {}) as { nextCursor?: string | null; limit?: number; computedAt?: string };
+    return { items: r.data, nextCursor: m.nextCursor ?? null, limit: m.limit ?? r.data.length, computedAt: m.computedAt ?? null };
+  }
+  async policy(id: string, signal?: AbortSignal): Promise<PartnerInsurancePolicy & { computedAt: string }> {
+    return (await this.http.request<PartnerInsurancePolicy & { computedAt: string }>('GET', `partner/insurance/policies/${encodeURIComponent(id)}`, { signal })).data;
+  }
 }
 
 class PartnerAuth {
@@ -232,10 +287,12 @@ export class PartnerResource {
   readonly twoFactor: PartnerMe2fa;
   readonly keys: PartnerKeysApi;
   readonly webhooks: PartnerWebhooksApi;
+  /** PC-56 PARTNER-2a · an insurer's own products and the policy facts on them (read-only; every read audited server-side). */
+  readonly insurance: PartnerInsuranceApi;
   constructor(private readonly http: HttpClient) {
     this.auth = new PartnerAuth(http); this.applications = new PartnerApplications(http); this.decide = new PartnerDecide(http);
     this.team = new PartnerTeamApi(http); this.invites = new PartnerInvites(http); this.twoFactor = new PartnerMe2fa(http);
-    this.keys = new PartnerKeysApi(http); this.webhooks = new PartnerWebhooksApi(http);
+    this.keys = new PartnerKeysApi(http); this.webhooks = new PartnerWebhooksApi(http); this.insurance = new PartnerInsuranceApi(http);
   }
   /** PC-56 PARTNER-1b · the six readiness facts + computedAt (any member of the partner). */
   async readiness(signal?: AbortSignal): Promise<PartnerReadiness> { return (await this.http.request<PartnerReadiness>('GET', 'partner/readiness', { signal })).data; }

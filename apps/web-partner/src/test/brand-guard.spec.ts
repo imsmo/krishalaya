@@ -43,3 +43,21 @@ describe('PC-56 PARTNER-1a · brand guard', () => {
     expect(fs.readFileSync(path.join(SRC, 'lib', 'env.ts'), 'utf8')).toContain('PLATFORM_BRAND.name');
   });
 });
+
+describe('PC-56 PARTNER-2a · brand guard over the insurer console\'s new files', () => {
+  const NEW = [path.join(SRC, 'components', 'partner2'), path.join(SRC, 'features', 'partner2'), path.join(SRC, 'app', 'insurer'), path.join(SRC, 'lib', 'insurer.ts')];
+  const mine = files().filter((f) => NEW.some((d) => f === d || f.startsWith(d + path.sep)));
+  it('they are scanned, and none carries the platform\'s name, a mailbox, a domain, a helpline, or a canon institution', () => {
+    expect(mine.length).toBeGreaterThanOrEqual(14);
+    for (const f of mine) {
+      const src = fs.readFileSync(f, 'utf8').replace(/@krishalaya\/[a-z0-9-]+/g, '');
+      const rel = path.relative(SRC, f);
+      for (const lit of LITERALS) expect([rel, lit, src.includes(lit)]).toEqual([rel, lit, false]);
+      expect([rel, /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.(com|in|org|net|co)\b|krishalaya\.(in|com)|1800|Bharat Krishi|Saurashtra/i.test(src)]).toEqual([rel, false]);
+    }
+  });
+  it('the sidebar links the mark to the person\'s own home (kind-aware), still from PLATFORM_BRAND', () => {
+    const sb = fs.readFileSync(path.join(SRC, 'components', 'Sidebar.tsx'), 'utf8');
+    expect(sb).toContain('PLATFORM_BRAND.name'); expect(sb).toContain('homeHref(kind)');
+  });
+});

@@ -35,3 +35,16 @@ guards → Zod `.strict()` DTOs → `UnitOfWork` txn + RLS + outbox → paramete
 
 See `Development_Program/dev_specs/spec_dev22.md` / `dev22_report.md` for the full reference-chain conformance
 table, endpoint list, and state-machine text.
+
+## PC-56 PARTNER-2a (2026-10-18) — the tenant realm authors nothing
+
+- `AuthoringController` (`/v1/insurance/authoring/*`) is behind `@FeatureFlag('insurance')` like its siblings (OFF → 404).
+- `POST products` / `PATCH products/:id` → 403 `INSURANCE_PRODUCT_PLATFORM_AUTHORED` (founder Q7: the platform authors products in the
+  admin realm after a signed agreement — that writer is not built yet); `POST policies/:id/issue` → 403 `INSURANCE_ISSUE_NOT_ON_PLATFORM`
+  (founder Q5). Nothing is written; the repository's write methods are removed.
+- `premium_calc` has ONE shape, owned by `domain/premium-calc.ts`: `{kind:'pct_of_sum_insured', bps:<integer>}` or
+  `{kind:'flat_minor', amountMinor:'<digits>'}` (`isAuthorablePremiumCalc` = `parsePremiumCalc`). A float percentage and parametric terms
+  are refused.
+- An insurer reads its OWN products and the policy facts written on them in the partner realm (`modules/partner-console`,
+  `partner.insurance.read`, migration 0228) — never a policyholder's identity.
+- Stale above (survey C-9): premium collection + activation and claims settlement exist (see `insurance.module.ts`).

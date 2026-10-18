@@ -1,9 +1,9 @@
-// modules/insurance/repositories/authoring.repository.ts · PC-54 W54-9 `insurance-authoring`. SQL for the
-// INSURER side: product create/update (premium_calc jsonb is the pricing contract — set here, executed by
-// the enrolment path), issuance (policy_no + activate), the book, and the loss-ratio insight aggregates.
+// modules/insurance/repositories/authoring.repository.ts · PC-54 W54-9 `insurance-authoring`. PC-56 PARTNER-2a (survey F-1 / F-5): the
+// product INSERT / UPDATE and the policy "issue" UPDATE (a raw status write outside the state machine) are REMOVED — no authoring write
+// survives from the tenant realm (founder Q5 + Q7; the platform's admin-realm writer, when it is built, lives in apps/admin-api, Law 11).
+// What is left: the tenant's own book and the loss-ratio aggregates, read under tenant RLS behind the `insurance` flag.
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
-import { TxContext } from '../../../core/database/unit-of-work';
 import { pgDate } from '../../../core/database/pg-date';
 // [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date. The shape this file used —
 // `String(row.some_date).slice(0, 10)` — yields "Mon Jul 13" for the JS Date node-pg hands back for a `date`
@@ -13,33 +13,6 @@ import { pgDate } from '../../../core/database/pg-date';
 @Injectable()
 export class AuthoringRepository {
   constructor(@Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider) {}
-
-  async insertProduct(tx: TxContext, p: { id: string; partnerId: string; productKindId: string; defaultName: string; premiumCalc: Record<string, unknown>; sumInsuredRules?: Record<string, unknown>; govtSubsidyBps?: number; ourCommissionBps?: number; isParametric?: boolean }): Promise<void> {
-    await tx.query(
-      `INSERT INTO insurance_products (id, partner_id, product_kind_id, default_name, premium_calc, sum_insured_rules, govt_subsidy_bps, our_commission_bps, is_parametric)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-      [p.id, p.partnerId, p.productKindId, p.defaultName, JSON.stringify(p.premiumCalc), JSON.stringify(p.sumInsuredRules ?? {}), p.govtSubsidyBps ?? 0, p.ourCommissionBps ?? 0, p.isParametric ?? false]);
-  }
-  async updateProduct(tx: TxContext, id: string, patch: { defaultName?: string; premiumCalc?: Record<string, unknown>; sumInsuredRules?: Record<string, unknown>; isActive?: boolean }): Promise<boolean> {
-    const r = await tx.query(
-      `UPDATE insurance_products SET
-         default_name = COALESCE($2, default_name),
-         premium_calc = COALESCE($3::jsonb, premium_calc),
-         sum_insured_rules = COALESCE($4::jsonb, sum_insured_rules),
-         is_active = COALESCE($5, is_active)
-       WHERE id=$1 AND deleted_at IS NULL`,
-      [id, patch.defaultName ?? null, patch.premiumCalc ? JSON.stringify(patch.premiumCalc) : null, patch.sumInsuredRules ? JSON.stringify(patch.sumInsuredRules) : null, patch.isActive ?? null]);
-    return (r.rowCount ?? 0) > 0;
-  }
-
-  async lockPolicy(tx: TxContext, tenantId: string, id: string): Promise<{ id: string; status: string; premiumPaymentId: string | null } | null> {
-    const r = await tx.query(`SELECT id, status, premium_payment_id FROM insurance_policies WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL FOR UPDATE`, [id, tenantId]);
-    return r.rows[0] ? { id: r.rows[0].id, status: r.rows[0].status, premiumPaymentId: r.rows[0].premium_payment_id } : null;
-  }
-  async issuePolicy(tx: TxContext, tenantId: string, id: string, policyNo: string, parametricTriggers?: Record<string, unknown>): Promise<void> {
-    await tx.query(`UPDATE insurance_policies SET status='active', policy_no=$3, parametric_triggers=COALESCE($4::jsonb, parametric_triggers) WHERE id=$1 AND tenant_id=$2`,
-      [id, tenantId, policyNo, parametricTriggers ? JSON.stringify(parametricTriggers) : null]);
-  }
 
   /** The insurer's BOOK: policies by status with premium/sum-insured as minor strings. */
   async book(tenantId: string, status: string | undefined, limit: number): Promise<Array<Record<string, unknown>>> {

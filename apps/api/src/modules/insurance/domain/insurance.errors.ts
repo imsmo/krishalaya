@@ -19,7 +19,7 @@ export class PartnerNotAnInsurerError extends DomainError {
 export class InsuranceProductInactiveError extends DomainError {
   constructor(id: string) { super('INSURANCE_PRODUCT_INACTIVE', 'Insurance product is not active', 422, { id }); }
 }
-/** premium_calc jsonb did not match either supported shape (pct_of_sum_insured | flat_minor). */
+/** premium_calc jsonb did not match either supported shape ({kind:'pct_of_sum_insured', bps:<integer>} | {kind:'flat_minor', amountMinor:'<digits>'}). */
 export class InvalidPremiumCalcError extends DomainError {
   constructor() { super('INSURANCE_INVALID_PREMIUM_CALC', 'Product premium_calc is malformed', 500); }
 }
@@ -31,6 +31,26 @@ export class InvalidPolicyValidityError extends DomainError {
 }
 export class InsuranceForbiddenError extends AppError {
   constructor(message = 'Not allowed on this insurance resource') { super('INSURANCE_FORBIDDEN', message, 403); }
+}
+
+// ---- PC-56 PARTNER-2a (survey F-1 / F-5, founder Q7 + Q5 + Q10, 2026-10-18): the tenant realm authors NOTHING ----------------
+
+/** Founder Q7: insurance products are authored by the PLATFORM (in the admin realm, after a signed agreement) — never from a tenant's
+ *  console. `POST /v1/insurance/authoring/products` and `PATCH …/products/:id` stay as routes so a caller gets THIS sentence (E6: a named
+ *  refusal, not a 404); nothing is written. */
+export class InsuranceProductPlatformAuthoredError extends AppError {
+  constructor() {
+    super('INSURANCE_PRODUCT_PLATFORM_AUTHORED',
+      'Insurance products are authored by the platform after a signed agreement with the insurer, not from an organisation\'s console. Nothing was written.', 403);
+  }
+}
+/** Founder Q5: in Phase 1 an insurer never "issues" a policy on the platform — cover starts when the farmer's payment is confirmed, and no
+ *  policy number is stamped by anybody (survey F-5: the old route could only answer 409 in the normal path). Nothing is written. */
+export class InsuranceIssueNotOnPlatformError extends AppError {
+  constructor() {
+    super('INSURANCE_ISSUE_NOT_ON_PLATFORM',
+      'Policies are not issued on the platform: cover starts when the farmer\'s premium payment is confirmed, and no policy number is stamped here. Nothing was written.', 403);
+  }
 }
 
 // ---- DEV-23 (KV-BL-053/054): premium collection + claims ------------------------------------------------

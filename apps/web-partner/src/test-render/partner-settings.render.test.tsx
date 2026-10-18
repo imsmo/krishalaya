@@ -26,7 +26,7 @@ describe('PC-56 PARTNER-1a · W269 organisation settings (render)', () => {
     expect(w).toContain('median 31.0 hours');
     expect(w).toContain(en['partner1.settings.slaWho']);
     expect(w).toContain('Fixture Administrator'); expect(w).toContain('Fixture Checker'); expect(w).not.toContain('Removed Person');
-    expect(w).toContain('Administrator'); expect(w).toContain('Checker — decides applications');
+    expect(w).toContain('Administrator'); expect(w).toContain('Checker — decides what is under review');
     expect(w).toContain('Enrolled'); expect(w).toContain('Not enrolled');
     expect(html).toContain('href="/account/settings?act=remove_member&amp;id=m-2"');
     expect(html).toContain('href="/account/settings?act=revoke_invite&amp;id=i-1"');
@@ -48,7 +48,7 @@ describe('PC-56 PARTNER-1a · W269 organisation settings (render)', () => {
     expect(html).toContain('data-kv-canon="W3006"');
     expect(html).toContain(`<input type="hidden" name="idempotencyKey" value="${KEY}"/>`);
     expect(html).toContain('••••••678'); expect(html).not.toContain('9812345678');
-    expect(text(html)).toContain('Checker — decides applications');
+    expect(text(html)).toContain('Checker — decides what is under review');
   });
   it('W3007 success: the code shown ONCE with "send it yourself; we never email a secret"; a replay shows no code', () => {
     const html = view('success', { result: { token: 'A'.repeat(43), expiresAt: '2026-10-25T06:30:00.000Z', phoneMasked: '••••••678', roleCode: 'partner_checker' } });
@@ -70,7 +70,7 @@ describe('PC-56 PARTNER-1a · W269 organisation settings (render)', () => {
   it('revoke / remove: their own confirm with a reason of at least the API\'s minimum, posting the id; a missing subject says so', () => {
     const html = renderToStaticMarkup(<ActConfirm t={tr(en)} act="remove_member" id="m-2" subject={{ name: 'Fixture Checker', role: 'partner_checker' }} action="/x" />);
     expect(html).toContain('name="reason"'); expect(html).toContain('minLength="10"'); expect(html).toContain('value="m-2"');
-    expect(text(html)).toContain('Fixture Checker (Checker — decides applications) loses access');
+    expect(text(html)).toContain('Fixture Checker (Checker — decides what is under review) loses access');
     expect(renderToStaticMarkup(<ActConfirm t={tr(en)} act="revoke_invite" id="x" subject={null} action="/x" />)).toContain('data-kv-act-missing');
   });
 });

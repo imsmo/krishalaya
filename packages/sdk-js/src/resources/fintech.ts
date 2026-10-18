@@ -54,19 +54,12 @@ export class FintechResource {
   }
 }
 
-// PC-54 W54-9 · insurer authoring surface (insurance.manage-gated server-side).
+// PC-54 W54-9 · the tenant's insurance desk reads (insurance.manage-gated server-side, behind the `insurance` flag). PC-56 PARTNER-2a (survey
+// F-1, founder Q5 + Q7): `createProduct`, `updateProduct` and `issuePolicy` are REMOVED — the API refuses them by name from the tenant realm
+// (INSURANCE_PRODUCT_PLATFORM_AUTHORED / INSURANCE_ISSUE_NOT_ON_PLATFORM): products are authored by the platform, and nobody issues on the
+// platform in Phase 1. What is left are the tenant's own book and insights reads.
 export class InsuranceAuthoringResource {
   constructor(private readonly http: HttpClient) {}
-  async createProduct(input: { partnerId: string; productKindId: string; defaultName: string; premiumCalc: Record<string, unknown>; sumInsuredRules?: Record<string, unknown>; govtSubsidyBps?: number; ourCommissionBps?: number; isParametric?: boolean }, idempotencyKey: string): Promise<{ id: string }> {
-    return (await this.http.request<{ id: string }>('POST', 'insurance/authoring/products', { body: input, idempotencyKey })).data;
-  }
-  async updateProduct(id: string, patch: Record<string, unknown>): Promise<{ id: string }> {
-    return (await this.http.request<{ id: string }>('PATCH', `insurance/authoring/products/${encodeURIComponent(id)}`, { body: patch })).data;
-  }
-  /** No premium, no cover: the server refuses issuance until the premium payment is linked. */
-  async issuePolicy(id: string, input: { policyNo: string; parametricTriggers?: Record<string, unknown> }): Promise<{ id: string; status: string; policyNo: string }> {
-    return (await this.http.request<{ id: string; status: string; policyNo: string }>('POST', `insurance/authoring/policies/${encodeURIComponent(id)}/issue`, { body: input })).data;
-  }
   async book(params: { status?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
     return (await this.http.request<Array<Record<string, unknown>>>('GET', 'insurance/authoring/book', { query: { status: params.status, limit: params.limit ?? 100 }, signal })).data;
   }

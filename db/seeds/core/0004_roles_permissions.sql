@@ -332,12 +332,20 @@ END $$;
 DO $$
 BEGIN
   IF to_regclass('public.partner_memberships') IS NOT NULL THEN
+    -- [PC-56 PARTNER-2a · founder Q9] the four roles are described for EVERY partner kind (an insurer's people hold them too); migration
+    -- 0228 rewords existing rows, the UPDATE below re-asserts the words (never a delete; the codes stay).
     INSERT INTO roles (code, default_name, scope, requires_kyc, requires_approval, module_code) VALUES
-      ('partner_admin',   'Partner administrator', 'partner', false, false, 'M19'),
-      ('partner_checker', 'Partner checker (decides applications)', 'partner', false, false, 'M19'),
-      ('partner_maker',   'Partner maker (starts reviews)', 'partner', false, false, 'M19'),
-      ('partner_viewer',  'Partner viewer (reads applications)', 'partner', false, false, 'M19')
+      ('partner_admin',   'Partner administrator (the organisation''s people, keys and settings)', 'partner', false, false, 'M19'),
+      ('partner_checker', 'Partner checker (decides what is under review)', 'partner', false, false, 'M19'),
+      ('partner_maker',   'Partner maker (starts a review)', 'partner', false, false, 'M19'),
+      ('partner_viewer',  'Partner viewer (reads the organisation''s own book)', 'partner', false, false, 'M19')
     ON CONFLICT (code) DO NOTHING;
+    UPDATE roles r SET default_name = v.name
+      FROM (VALUES ('partner_admin', 'Partner administrator (the organisation''s people, keys and settings)'),
+                   ('partner_checker', 'Partner checker (decides what is under review)'),
+                   ('partner_maker', 'Partner maker (starts a review)'),
+                   ('partner_viewer', 'Partner viewer (reads the organisation''s own book)')) AS v(code, name)
+     WHERE r.code = v.code AND r.scope = 'partner' AND r.default_name IS DISTINCT FROM v.name;
     INSERT INTO permissions (code, default_name, module_code) VALUES
       ('partner.applications.read',   'Partner console: read the consented loan applications on this partner''s products', 'M19'),
       ('partner.applications.review', 'Partner console: start the review of a consented application (maker)', 'M19'),
@@ -346,7 +354,9 @@ BEGIN
       ('partner.keys.read',           'Partner console: read this partner''s API keys (prefix, scopes — never a secret)', 'M19'),
       ('partner.keys.revoke',         'Partner console: revoke one of this partner''s API keys (not built in PARTNER-0)', 'M19'),
       ('partner.webhooks.read',       'Partner console: read this partner''s webhook endpoints and deliveries (not built in PARTNER-0)', 'M19'),
-      ('partner.settings.read',       'Partner console: read this partner''s organisation settings', 'M19')
+      ('partner.settings.read',       'Partner console: read this partner''s organisation settings', 'M19'),
+      -- [PC-56 PARTNER-2a · founder Q6] migration 0228 grants it to every partner role (bound by scope); here the row, inserted where missing
+      ('partner.insurance.read',      'Partner console: read this insurer''s own products and the policies written on them — policy facts only, never a policyholder''s identity', 'M19')
     ON CONFLICT (code) DO NOTHING;
     INSERT INTO role_permissions (role_id, permission_code)
     SELECT r.id, p.code FROM roles r JOIN permissions p ON

@@ -33,6 +33,17 @@ const nextConfig = {
   // `import.meta.webpackHot`) to their pre-compiled CJS dist → "Cannot use 'import.meta' outside a module".
   // symlinks:false keeps the node_modules identity so they're consumed as ordinary (pre-built) deps.
   webpack: (config) => { config.resolve.symlinks = false; return config; },
+  // PC-56 PARTNER-2a (survey E3): the four DEV-24 insurance routes moved to the canon's own `insurer/*` paths — a real HTTP 307
+  // (permanent: false) answered before any page runs (a page-level redirect would stream behind app/loading.tsx as a 200). Mirrors
+  // src/features/partner2/refusals.ts INSURANCE_REDIRECTS (pinned equal by test-render/not-yet.render.test.tsx). The claims pair stays not-yet.
+  async redirects() {
+    return [
+      { source: '/insurance-products', destination: '/insurer/products', permanent: false },
+      { source: '/insurance-policies', destination: '/insurer/policies', permanent: false },
+      { source: '/insurance-policies/:id', destination: '/insurer/policies/:id', permanent: false },
+      { source: '/insurance-book', destination: '/insurer/dashboard', permanent: false },
+    ];
+  },
   async headers() {
     return [{
       source: '/:path*',

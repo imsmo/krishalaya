@@ -12,8 +12,9 @@ export const NOT_YET_ROUTES: Readonly<Record<string, NotYetSurface>> = Object.fr
   '/products': 'products', '/products/[id]': 'products',
   '/portfolio': 'portfolio', '/portfolio/[id]': 'portfolio',
   '/servicing': 'servicing',
-  '/insurance-book': 'insurance', '/insurance-claims': 'insurance', '/insurance-claims/[id]': 'insurance',
-  '/insurance-policies': 'insurance', '/insurance-policies/[id]': 'insurance', '/insurance-products': 'insurance',
+  // PC-56 PARTNER-2a: /insurance-book, /insurance-products, /insurance-policies(/[id]) answer 307 to the built `insurer/*` routes; the claims pair
+  // stays not-yet (PARTNER-3)
+  '/insurance-claims': 'insurance', '/insurance-claims/[id]': 'insurance',
   '/fleet': 'fleet', '/fleet/carriers/[id]': 'fleet', '/fleet/slots': 'fleet', '/fleet/slots/[id]': 'fleet', '/fleet/vehicles': 'fleet', '/fleet/vehicles/[id]': 'fleet',
   '/shipments': 'logistics', '/shipments/[id]': 'logistics', '/zones': 'logistics', '/zones/[id]': 'logistics', '/routes': 'logistics', '/routes/[id]': 'logistics',
   '/cold-chain': 'logistics',
@@ -27,3 +28,10 @@ export function notYetSurface(route: string): NotYetSurface | null {
   return NOT_YET_ROUTES[route] ?? null;
 }
 export const surfaceKey = (s: NotYetSurface) => `partner.surface.${s}`;
+
+/** PC-56 PARTNER-2a (survey P2): the not-yet page's way back is KIND-aware without a call — an insurance page is reached from the insurer's
+ *  console, so it goes back to the insurer dashboard (a lender who typed the address is sent on to its own dashboard from there); every other
+ *  page goes back to the loan queue, as before. */
+export function notYetBack(route: string): { href: string; key: string } {
+  return notYetSurface(route) === 'insurance' ? { href: '/insurer/dashboard', key: 'partner2.notYet.back' } : { href: '/loan-queue', key: 'partner.notYet.back' };
+}

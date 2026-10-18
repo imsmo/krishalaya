@@ -57,6 +57,20 @@ export class PartnerConsoleFlagGuard implements CanActivate {
   }
 }
 
+/** PC-56 PARTNER-2a — the insurer routes ALSO need the platform's `insurance` flag (platform-scoped, fail-closed, evaluated with no tenant —
+ *  the same reasoning as `partner_console`). It runs AFTER the session and permission guards: OFF → 404 `PARTNER_INSURANCE_SWITCHED_OFF`,
+ *  so a signed-in insurer's console can say "insurance is switched off on the platform — nothing is broken" instead of an outage. */
+export const PARTNER_INSURANCE_FLAG = 'insurance';
+@Injectable()
+export class PartnerInsuranceFlagGuard implements CanActivate {
+  constructor(private readonly flags: FlagsService) {}
+  async canActivate(): Promise<boolean> {
+    const on = await this.flags.isEnabled(PARTNER_INSURANCE_FLAG, {}).catch(() => false);
+    if (!on) throw partnerRefused('PARTNER_INSURANCE_SWITCHED_OFF');
+    return true;
+  }
+}
+
 @Injectable()
 export class PartnerSessionGuard implements CanActivate {
   constructor(private readonly reflector: Reflector, private readonly tokens: TokenService, private readonly uow: PartnerRealmUnitOfWork, private readonly repo: PartnerConsoleRepository) {}

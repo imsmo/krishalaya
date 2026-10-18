@@ -116,3 +116,8 @@ a { color: inherit; text-decoration: none; }
 .kv-facts-list { list-style: none; padding-inline-start: 0; margin-block: .5rem; }
 .kv-facts-list li { margin-block: .45rem; }
 .kv-badge--ok { font-weight: 600; }
+
+/* PC-56 PARTNER-2a — the insurer console (logical properties only: RTL-safe) */
+pre.kv-code { white-space: pre-wrap; padding-block: .5rem; padding-inline: .75rem; margin-block: .25rem 1rem; border-radius: .25rem; background: var(--kv-neutral-100, #f2f2f2); }
+[data-kv-insurer] .kv-stat-row { margin-block-end: .5rem; }
+[data-kv-decor] { opacity: .85; }

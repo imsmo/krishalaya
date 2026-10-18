@@ -300,6 +300,44 @@ export class PartnerConsoleRepository {
     });
   }
 
+  // ═════════════════════════════════════ PC-56 PARTNER-2a · the insurer's own book (founder Q6) — on the axis, through 0228
+  // Products are GLOBAL reference data (`insurance_products`, no tenant): read on shard 0. Policies carry their TENANT and live on that
+  // tenant's shard: the book and the counts SCATTER over every shard and merge (the 1a dashboard shape) — at SHARD_COUNT=1 one query each.
+  // 0228's definers return the policy FACTS only (never holder_user_id, subject_id, premium_payment_id, parametric_triggers, created_by), and
+  // kv_partner's COLUMN grant on insurance_policies holds none of those either: nothing here could select them.
+
+  /** This insurer's own products (0228 `partner_insurance_products()` — its own premium_calc, never another insurer's). */
+  async insuranceProducts(partnerId: string): Promise<Array<Record<string, unknown>>> {
+    return this.withAxis(0, partnerId, async (c) => (await c.query(`SELECT * FROM partner_insurance_products()`)).rows);
+  }
+
+  /** ONE shard's page of the policies on this insurer's products, newest first, µs keyset (0228 `partner_insurance_book`). */
+  async insuranceBookShard(shardId: number, partnerId: string, q: { status?: string; cursor?: KeysetCursor; limit: number }):
+    Promise<Array<Record<string, unknown> & { id: string; created_us: string }>> {
+    return this.withAxis(shardId, partnerId, async (c) => (await c.query(
+      `SELECT b.*, ${US_SQL('b.created_at')} AS created_us FROM partner_insurance_book($1::text, $2::timestamptz, $3::uuid, $4::int) b`,
+      [q.status ?? null, q.cursor?.ts ?? null, q.cursor?.id ?? null, q.limit])).rows);
+  }
+
+  /** ONE policy on this insurer's products (0228 `partner_insurance_policy`), searched shard by shard; null for another insurer's / an absent id. */
+  async insurancePolicy(partnerId: string, id: string): Promise<Record<string, unknown> | null> {
+    for (let s = 0; s < this.shardCount; s++) {
+      const row = await this.withAxis(s, partnerId, async (c) => (await c.query(
+        `SELECT p.*, ${US_SQL('p.created_at')} AS created_us FROM partner_insurance_policy($1::uuid) p`, [id])).rows[0] ?? null);
+      if (row) return row as Record<string, unknown>;
+    }
+    return null;
+  }
+
+  /** ONE shard's dashboard counts (0228 `partner_insurance_counts()`): in force + Σ sum insured (bigint text), proposed, all, FPOs, per product. */
+  async insuranceCountsShard(shardId: number, partnerId: string): Promise<{ policies: string; inForce: string; inForceSumInsuredMinor: string; proposed: string; fpos: string; perProduct: Record<string, Record<string, number>> }> {
+    return this.withAxis(shardId, partnerId, async (c) => {
+      const x = (await c.query(`SELECT * FROM partner_insurance_counts()`)).rows[0] ?? {};
+      return { policies: String(x.policies ?? '0'), inForce: String(x.in_force ?? '0'), inForceSumInsuredMinor: String(x.in_force_sum_insured_minor ?? '0'),
+        proposed: String(x.proposed ?? '0'), fpos: String(x.fpos ?? '0'), perProduct: (x.per_product ?? {}) as Record<string, Record<string, number>> };
+    });
+  }
+
   // ═════════════════════════════════════ control plane (kv_app, the caller's partner-realm transaction)
   /** The distinct ACTIVE partners a person belongs to (active partner rows only), with names for the chooser. Needs app.user_id = userId. */
   async membershipsOfUserTx(tx: TxContext, userId: string): Promise<Array<{ partnerId: string; name: string }>> {

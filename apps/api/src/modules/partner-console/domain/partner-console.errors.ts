@@ -47,6 +47,11 @@ export const PARTNER_CODES: Readonly<Record<string, { status: number; message: s
   PARTNER_KEY_ALREADY_REVOKED: { status: 409, message: 'This API key is revoked already — revocation is permanent.' },
   PARTNER_KEY_REASON_REQUIRED: { status: 422, message: 'A reason of 20–300 characters is required to revoke a key.' },
   PARTNER_DELIVERY_NOT_FOUND: { status: 404, message: 'This delivery was not found.' },
+  // PC-56 PARTNER-2a · the insurer's own book (founder Q6) — another insurer's policy and an absent id answer the same 404 (never "not yours")
+  PARTNER_POLICY_NOT_FOUND: { status: 404, message: 'This policy was not found.' },
+  PARTNER_PRODUCT_NOT_FOUND: { status: 404, message: 'This product was not found.' },
+  /** The platform's `insurance` flag is OFF: the insurer routes answer 404 with this code, so the console prints "switched off — nothing is broken". */
+  PARTNER_INSURANCE_SWITCHED_OFF: { status: 404, message: 'Insurance is switched off on the platform — nothing is broken.' },
 });
 
 export function partnerRefused(code: string, details: Record<string, unknown> = {}): PartnerRefusedError {
