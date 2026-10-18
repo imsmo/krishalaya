@@ -12,18 +12,25 @@
 // `premiums_act` (W2898–W2900) · `reports_form` (W254's "Generate Q1 pack" — the canon gives it the PRODUCT form chain, F-18: no files of its
 // own) · `parametric_act` (W2977–W2979). The 2b sentences word every refused money, regulatory and payout claim generically: no figure, no
 // scheme, no regulator, no person — the claims guard's `partner2.` scope keeps the canon's words out.
+// PC-56 PARTNER-2c · THE LENDER'S SHELF (founder Q7, Q6's spirit, Q9): `loan_products` (W208) · `loan_product` (W209) · `lender_form`
+// (W2980–W2983 — DECOR: the platform authors loan products) · `lender_act` (W2984–W2986 — PARITY-DECOR: Retry is a re-read). The 2c sentences
+// refuse the canon's farmer-side, fee, rate-limit and member-count claims generically: no institution, no place, no person, no figure.
 export type Partner2Surface =
   | 'ins_dashboard' | 'ins_products' | 'ins_product' | 'ins_policies' | 'ins_policy'
   | 'ins_form' | 'ins_retry' | 'policies_export' | 'policies_retry' | 'policy_export' | 'policy_act'
   | 'ins_issuance' | 'ins_premiums' | 'ins_reports' | 'ins_parametric'
-  | 'issuance_form' | 'issuance_act' | 'premiums_export' | 'premiums_act' | 'reports_form' | 'parametric_act';
+  | 'issuance_form' | 'issuance_act' | 'premiums_export' | 'premiums_act' | 'reports_form' | 'parametric_act'
+  | 'loan_products' | 'loan_product' | 'lender_form' | 'lender_act';
 export interface Partner2Refusal { id: string; canon: string; surfaces: readonly Partner2Surface[]; key: string; why: string }
 
 const BOOK: readonly Partner2Surface[] = ['ins_dashboard', 'ins_products', 'ins_product', 'ins_policies', 'ins_policy'];
 /** PC-56 PARTNER-2b — the four honest pages. */
 const HONEST: readonly Partner2Surface[] = ['ins_issuance', 'ins_premiums', 'ins_reports', 'ins_parametric'];
 /** Every chain page that shares the canon's chain template sentences ("reconcile zero-sum", "page the on-call", "the audit trail has the entry"). */
-const CHAIN_TEMPLATE: readonly Partner2Surface[] = ['ins_form', 'ins_retry', 'policies_retry', 'policy_act', 'issuance_form', 'issuance_act', 'premiums_act', 'reports_form', 'parametric_act'];
+const CHAIN_TEMPLATE: readonly Partner2Surface[] = ['ins_form', 'ins_retry', 'policies_retry', 'policy_act', 'issuance_form', 'issuance_act', 'premiums_act', 'reports_form', 'parametric_act',
+  'lender_form', 'lender_act'];
+/** PC-56 PARTNER-2c — the two lender pages. */
+const SHELF: readonly Partner2Surface[] = ['loan_products', 'loan_product'];
 
 export const PARTNER2_REFUSALS: readonly Partner2Refusal[] = Object.freeze([
   // ── founder Q1 / Q2 / Q4 — money the insurer console never claims (every insurer page) ──
@@ -192,6 +199,30 @@ export const PARTNER2_REFUSALS: readonly Partner2Refusal[] = Object.freeze([
     key: 'partner2.refusal.runStates', why: 'founder Q3: nothing arms, evaluates or runs' },
   { id: 'trigger_trail', canon: 'W262 "Trigger audit trail" → W2977–W2979 (FM chain-mutate, a read — F-17) · "Retry"', surfaces: ['ins_parametric', 'parametric_act'],
     key: 'partner2.refusal.triggerTrail', why: 'no trigger record exists to open (founder Q3)' },
+  // ══ PC-56 PARTNER-2c · THE LENDER'S SHELF ═══════════════════════════════════════════════════════════════════════════════════════════════
+  // ── founder Q7: the platform authors loan products; the console reads its own shelf (W208 / W209 / W2980–W2983) ──
+  { id: 'loan_products_platform_authored', canon: 'W208 "New product" ×2 · W209 "Choose kind" · "Save (new applications only)" → W2980–W2983', surfaces: [...SHELF, 'lender_form'],
+    key: 'partner2.refusal.loanProductsPlatformAuthored', why: 'founder Q7: nothing writes `loan_products` except the platform\'s seed (survey F-9 / C-3) — P2-B0\'s lending twin, the platform\'s authoring wave' },
+  { id: 'loan_kinds_count', canon: 'W208 "Product kinds are registry data — 13 kinds from KCC to invoice discounting"', surfaces: SHELF,
+    key: 'partner2.refusal.loanKindsCount', why: 'the platform\'s `loan_kind` registry holds 9 values (seed 0005), not 13; each kind is printed from it, or "kind not registered"' },
+  { id: 'terms_compared', canon: 'W208 "Farmers compare your terms against other lenders\', openly"', surfaces: ['loan_products'],
+    key: 'partner2.refusal.termsCompared', why: 'an unverified farmer-side surface (survey §1J): no view of several lenders\' terms side by side was found' },
+  { id: 'eligibility_evaluated', canon: 'W208 "Eligibility rules are machine-evaluable jsonb — farmers only ever see products they can actually get"', surfaces: SHELF,
+    key: 'partner2.refusal.eligibilityEvaluated', why: 'the rules are printed as the lender\'s own stored JSON; no farmer-side evaluator was verified (survey §1J)' },
+  { id: 'listed_same_day', canon: 'W208 empty state "No products listed — list a product and FPO members see it in their app the same day"', surfaces: ['loan_products'],
+    key: 'partner2.refusal.listedSameDay', why: 'founder Q7: no partner writer exists, so nothing is listed from the console; no timing to farmers is provable' },
+  { id: 'new_applications_only', canon: 'W208 state "Products restricted — rate changes take effect for NEW applications only (snapshot law)" · W209 "Save (new applications only)"', surfaces: SHELF,
+    key: 'partner2.refusal.newApplicationsOnly', why: 'no rate change is made from the console; whether `loan_applications` keep the terms they were filed under is unverified (a standing question)' },
+  { id: 'farmer_display', canon: 'W209 "Farmer-facing display (auto-generated, Gujarati) … always ₹ terms, never bps"', surfaces: ['loan_product'],
+    key: 'partner2.refusal.farmerDisplay', why: 'no generator of farmer-facing text from a loan product\'s terms was found (survey §1K)' },
+  { id: 'members_qualify', canon: 'W209 "≈ 640 Anand FPO members qualify today (estimate shown before you save)"', surfaces: ['loan_product'],
+    key: 'partner2.refusal.membersQualify', why: 'founder Q6\'s spirit: a count of an FPO\'s members given to a lender is member data across the wall' },
+  { id: 'fee_charged', canon: 'W209 "Origination fee (to platform) 50 bps … ₹1,500 … Charged to your bank — never the farmer"', surfaces: SHELF,
+    key: 'partner2.refusal.feeCharged', why: 'fintech.module.ts:17: the origination-fee revenue leg is deferred — the fee columns are data and nothing charges them; who would bear it is unprovable' },
+  { id: 'loan_changes_recorded', canon: 'W209 "Product changes are recorded · rate changes never touch filed applications"', surfaces: ['loan_product'],
+    key: 'partner2.refusal.loanChangesRecorded', why: 'no writer, so no change record; the application-keeps-its-terms rule is unverified (a standing question)' },
+  { id: 'rate_limit', canon: 'W209 state "Product editing restricted — APR above the platform fair-lending ceiling for the kind will not save"', surfaces: ['loan_product'],
+    key: 'partner2.refusal.rateLimit', why: 'no per-kind maximum-rate rule exists in fintech (survey §1K); nothing saves from the console' },
 ]);
 
 /** The canon shapes PARTNER-2a builds differently — recorded DELTAs, not refusals. */
@@ -204,7 +235,7 @@ export const PARTNER2_DELTAS: readonly { id: string; canon: string; built: strin
   { id: 'fm_numbering', canon: 'FLOWMAP chain targets W1326… / W1404… / W1456… (survey C-14)', built: 'none exist; mapped by module + pattern to W2869–W2875 / W2881–W2890' },
   { id: 'fm_misclass', canon: 'FLOWMAP W248 "proposed" chip as chain-mutate, the policy-row drills as `filter`, the avatar as `filter` (F-17)', built: 'the chip is a status filter; the rows link to the policy; no avatar is drawn' },
   { id: 'chain_back_defect', canon: 'W2869 "Back to the form" / W2870 "Back to edit" → W245 (the dashboard); W2872 "Retry — back to confirm" on a form chain (F-18)', built: 'every chain page links back to its own page' },
-  { id: 'lending_in_insurance', canon: '04_PARTNER "Insurance … 50 screens" (C-2)', built: '9 of the 50 are lending (W208, W209, W2980–W2986) — PARTNER-2c, `pending_2c` below' },
+  { id: 'lending_in_insurance', canon: '04_PARTNER "Insurance … 50 screens" (C-2)', built: '9 of the 50 are lending (W208, W209, W2980–W2986) — built in PARTNER-2c as the lender\'s shelf (`/lender/products`), not in the insurer console' },
   { id: 'regulator_ref', canon: 'the insurer header "<regulator> ref ••118"', built: 'the masked `regulator_ref` from `/me` (last 4) with no regulator named — `financial_partners` carries no regulator name' },
   { id: 'kind_nav', canon: 'the canon insurer sidebar (Dashboard · Products · Policies · Issuance · Premiums · Claims · reports · Notifications · Help)',
     built: 'kind-aware nav: an insurer sees Dashboard · Products · Policies (2b adds Issuance · Premiums · Reports) and the Account group, never the lending group; built routes only' },
@@ -221,9 +252,19 @@ export const PARTNER2_DELTAS: readonly { id: string; canon: string; built: strin
   { id: 'parametric_not_in_nav', canon: 'the canon insurer sidebar has no Parametric item; W262 is reached from the run', built: '`/insurer/parametric` is linked from the insurer dashboard and the products page, NOT from the nav (founder 2b-4)' },
   { id: 'streamed_redirects', canon: '(engineering) every page-level `redirect()` of the console', built: 'arrives as HTTP 200 + a meta-refresh (app/loading.tsx streams the shell); accepted by the founder (2b-3) — a named item for the partner sweep; nothing changed' },
   { id: 'premiums_counts', canon: 'W251 the four money KPIs', built: 'two COUNTS from the 2a dashboard read (in force, proposed) labelled as counts — no rupee figure anywhere on the page (founder Q1)' },
+  // ── PC-56 PARTNER-2c ──
+  { id: 'lender_routes', canon: 'W208 `lender/products` · W209 `lender/products/[id]`',
+    built: 'the canon\'s own paths, built over `GET /v1/partner/loan-products(/:id)`; the old not-yet `/products` and `/products/[id]` answer a real 307 to them (next.config.js, LENDER_REDIRECTS) and their page files are gone' },
+  { id: 'lender_chain_routes', canon: 'the chain pages W2980–W2986 as separate files', built: 'query states of both lender pages: `?form=error|review|success|failure` (W2980–W2983) and `?act=confirm|success|failure` (W2984–W2986)' },
+  { id: 'loan_product_read_only', canon: 'W209 "Product Edit (KCC)" (an editor with Choose kind and Save)', built: '`/lender/products/[id]` READ-ONLY: every stored field as data; Choose kind / Save are DECOR (founder Q7)' },
+  { id: 'fm_drill_misclass', canon: 'FLOWMAP W208: one product row as `nav-entity`, two as `nav-detail` for the same kind of row, and the one linked canon row missing (F-17)', built: 'every shelf row links to its own product page' },
+  { id: 'lender_chain_defects', canon: 'W2980–W2983 every step → W208 even from W209\'s Save; W2983 "Retry — back to confirm" on a FORM chain (F-18)', built: 'each chain state links back to its own page (the shelf, or the product it was opened from); a form has no confirm' },
+  { id: 'apr_as_bps', canon: 'W208 / W209 the APR as a percentage with a decimal and the subsidy subtracted', built: 'the lender\'s own stored APR and subvention in INTEGER basis points and their integer difference, "net of subsidy" — never a float percentage' },
+  { id: 'shelf_decor', canon: 'W208 pagination "1" (FM:77), the bulk bar (FM:78), the avatar (FM:79)', built: 'one page (the definer answers up to 200 products), no bulk act, no avatar — DECOR, not drawn' },
+  { id: 'lender_identity', canon: 'the lender header "<a bank> · <regulator> ref ••4471" and its avatar', built: 'the platform\'s mark and the lender\'s own name from `/me` (founder Q9) — never the canon\'s institution or person' },
 ]);
 
-/** Every canon file of PARTNER-2 (50): 2a's 22 and 2b's 19 decided; 2c's 9 pending its wave. */
+/** Every canon file of PARTNER-2 (50): 2a's 22, 2b's 19 and 2c's 9 — all decided (PARTNER-2 closes at 50 of 50). */
 export type Partner2Verdict = 'BUILT' | 'BUILT (read-only)' | 'BUILT (read)' | 'BUILT (honest)' | 'PARITY-DECOR' | 'DECOR' | 'pending_2b' | 'pending_2c';
 export const PARTNER2_CANON_FILES: readonly { file: string; wave: '2a' | '2b' | '2c'; verdict: Partner2Verdict; note: string }[] = Object.freeze([
   // ── 2a · THE INSURER READS ITS OWN BOOK (22) ──
@@ -270,15 +311,15 @@ export const PARTNER2_CANON_FILES: readonly { file: string; wave: '2a' | '2b' | 
   { file: 'W2978-partner-parametric-mutate-success.html', wave: '2b', verdict: 'DECOR', note: '/insurer/parametric?act=success — nothing ran' },
   { file: 'W2979-partner-parametric-mutate-failure.html', wave: '2b', verdict: 'DECOR', note: '/insurer/parametric?act=failure — nothing ran, so nothing failed' },
   // ── 2c · THE LENDER'S SHELF (9) ──
-  { file: 'W208-partner-products.html', wave: '2c', verdict: 'pending_2c', note: 'loan products — PARTNER-2c (lending, C-2)' },
-  { file: 'W209-partner-product-edit.html', wave: '2c', verdict: 'pending_2c', note: 'loan product terms — PARTNER-2c' },
-  { file: 'W2980-partner-product-form-form-error.html', wave: '2c', verdict: 'pending_2c', note: 'PARTNER-2c' },
-  { file: 'W2981-partner-product-form-review.html', wave: '2c', verdict: 'pending_2c', note: 'PARTNER-2c' },
-  { file: 'W2982-partner-product-form-success.html', wave: '2c', verdict: 'pending_2c', note: 'PARTNER-2c' },
-  { file: 'W2983-partner-product-form-failure.html', wave: '2c', verdict: 'pending_2c', note: 'PARTNER-2c' },
-  { file: 'W2984-partner-product-mutate-confirm.html', wave: '2c', verdict: 'pending_2c', note: 'PARTNER-2c' },
-  { file: 'W2985-partner-product-mutate-success.html', wave: '2c', verdict: 'pending_2c', note: 'PARTNER-2c' },
-  { file: 'W2986-partner-product-mutate-failure.html', wave: '2c', verdict: 'pending_2c', note: 'PARTNER-2c' },
+  { file: 'W208-partner-products.html', wave: '2c', verdict: 'BUILT', note: '/lender/products over GET /v1/partner/loan-products: own products only — name, kind or "not registered", amount range in the product\'s currency, APR / subvention / net in integer bps, repayment style, collateral, tenure, consented applications in 30 days (a count), active, as-of; New product DECOR; 13 kinds / farmer comparison / evaluated eligibility / same-day listing / snapshot claims refused' },
+  { file: 'W209-partner-product-edit.html', wave: '2c', verdict: 'BUILT (read-only)', note: '/lender/products/[id] over GET /v1/partner/loan-products/:id: every stored field as data (the eligibility JSON as stored, the required documents, the origination fee as recorded — nothing charged); Choose kind / Save DECOR (founder Q7); farmer display / member estimate / fee bearer / change record / rate limit refused' },
+  { file: 'W2980-partner-product-form-form-error.html', wave: '2c', verdict: 'DECOR', note: '/lender/products?form=error (and on the product page) — no product form: the platform authors loan products; write to the partners mailbox' },
+  { file: 'W2981-partner-product-form-review.html', wave: '2c', verdict: 'DECOR', note: '?form=review — nothing to review' },
+  { file: 'W2982-partner-product-form-success.html', wave: '2c', verdict: 'DECOR', note: '?form=success — nothing was saved' },
+  { file: 'W2983-partner-product-form-failure.html', wave: '2c', verdict: 'DECOR', note: '?form=failure — nothing changed; the "Retry — back to confirm" and "every step → W208" defects are DELTAs' },
+  { file: 'W2984-partner-product-mutate-confirm.html', wave: '2c', verdict: 'PARITY-DECOR', note: '?act=confirm on the shelf / the product — Retry is a re-read; nothing to confirm' },
+  { file: 'W2985-partner-product-mutate-success.html', wave: '2c', verdict: 'PARITY-DECOR', note: '?act=success — read again; nothing written' },
+  { file: 'W2986-partner-product-mutate-failure.html', wave: '2c', verdict: 'PARITY-DECOR', note: '?act=failure — nothing changed (W2986 Retry → W2984 is correct)' },
 ]);
 
 /** The refusal i18n keys printed on one surface (render tests read this). */
@@ -288,13 +329,17 @@ export function partner2RefusalKeys(surface: Partner2Surface): string[] {
 
 // ── THE DECOR / PARITY-DECOR CHAINS: each is a query state of its parent page ──
 export type Chain2Id = 'ins_form' | 'ins_retry' | 'policies_export' | 'policies_retry' | 'policy_export' | 'policy_act'
-  | 'issuance_form' | 'issuance_act' | 'premiums_export' | 'premiums_act' | 'reports_form' | 'parametric_act';
+  | 'issuance_form' | 'issuance_act' | 'premiums_export' | 'premiums_act' | 'reports_form' | 'parametric_act'
+  | 'lender_form' | 'lender_act';
 export interface Chain2Def {
-  id: Chain2Id; wave: '2a' | '2b'; param: string; page: string; surface: Partner2Surface; states: readonly string[]; key: (state: string) => string; files: readonly string[];
+  id: Chain2Id; wave: '2a' | '2b' | '2c'; param: string; page: string; surface: Partner2Surface; states: readonly string[]; key: (state: string) => string; files: readonly string[];
   /** PC-56 PARTNER-2b: a sentence the chain page prints above its own (the founder-approved statement of its page), if any. */
   statement?: string;
   /** PC-56 PARTNER-2b (founder 2b-1): an export / pack chain prints "exports are not available … write to the partners mailbox" + the mailbox fact. */
   mailbox?: boolean;
+  /** PC-56 PARTNER-2c: the sentence printed above the mailbox fact when it is not the export one (the lender's form chain: "write to the
+   *  partners mailbox to propose a change"). */
+  mailboxKey?: string;
 }
 export const PARTNER2_CHAINS: readonly Chain2Def[] = Object.freeze([
   { id: 'ins_form', wave: '2a', param: 'form', page: '/insurer/products', surface: 'ins_form', states: ['error', 'review', 'success', 'failure'],
@@ -322,6 +367,11 @@ export const PARTNER2_CHAINS: readonly Chain2Def[] = Object.freeze([
     key: (s: string) => `partner2.chain.reportsForm.${s}`, files: [], statement: 'partner2.reports.statement' },
   { id: 'parametric_act', wave: '2b', param: 'act', page: '/insurer/parametric', surface: 'parametric_act', states: ['confirm', 'success', 'failure'],
     key: (s: string) => `partner2.chain.parametricAct.${s}`, files: ['W2977', 'W2978', 'W2979'], statement: 'partner2.parametric.statement' },
+  // ── PC-56 PARTNER-2c (both lender pages carry both chains; each links back to the page it was opened from) ──
+  { id: 'lender_form', wave: '2c', mailbox: true, mailboxKey: 'partner2.loanProducts.proposeChange', param: 'form', page: '/lender/products', surface: 'lender_form',
+    states: ['error', 'review', 'success', 'failure'], key: (s: string) => `partner2.chain.lenderForm.${s}`, files: ['W2980', 'W2981', 'W2982', 'W2983'] },
+  { id: 'lender_act', wave: '2c', param: 'act', page: '/lender/products', surface: 'lender_act', states: ['confirm', 'success', 'failure'],
+    key: (s: string) => `partner2.chain.lenderAct.${s}`, files: ['W2984', 'W2985', 'W2986'] },
 ]);
 export function chain2ById(id: Chain2Id): Chain2Def { return PARTNER2_CHAINS.find((c) => c.id === id) as Chain2Def; }
 /** The chain state a page was opened in (`?form=review` …), or null for the page itself / an unknown state. */
@@ -339,4 +389,11 @@ export const INSURANCE_REDIRECTS: Readonly<Record<string, string>> = Object.free
   '/insurance-policies': '/insurer/policies',
   '/insurance-policies/:id': '/insurer/policies/:id',
   '/insurance-book': '/insurer/dashboard',
+});
+
+/** PC-56 PARTNER-2c (survey E3) — the PARTNER-0 not-yet `/products` pair answers a real HTTP 307 to the canon's `lender/products` paths
+ *  (next.config.js `redirects()`, pinned equal to INSURANCE_REDIRECTS + this map by the not-yet render test — their page files are gone). */
+export const LENDER_REDIRECTS: Readonly<Record<string, string>> = Object.freeze({
+  '/products': '/lender/products',
+  '/products/:id': '/lender/products/:id',
 });

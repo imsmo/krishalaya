@@ -8,7 +8,7 @@ import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { NotYet } from '../components/NotYet';
 import { NOT_YET_ROUTES, notYetBack, surfaceKey } from '../features/partner/not-yet';
-import { INSURANCE_REDIRECTS } from '../features/partner2/refusals';
+import { INSURANCE_REDIRECTS, LENDER_REDIRECTS } from '../features/partner2/refusals';
 import { en } from '../i18n/en';
 import { gu } from '../i18n/gu';
 
@@ -29,13 +29,13 @@ describe('PC-56 PARTNER-0 · the not-yet pages, derived from the routes', () => 
 
   it('every page rendering <NotYet> is registered under its own route, and every registered route is such a page', () => {
     expect(notYet.map(routeOf).sort()).toEqual(Object.keys(NOT_YET_ROUTES).sort());
-    expect(notYet.length).toBe(26);   // PC-56 PARTNER-2a: the four built insurer routes left the list (30 → 26)
+    expect(notYet.length).toBe(24);   // PC-56 PARTNER-2a: the four built insurer routes left the list (30 → 26); PARTNER-2c: /products(/[id]) left (26 → 24)
   });
   it('PC-56 PARTNER-2a · the four old insurance routes answer a real 307 from next.config.js (equal to the registry); their page files are gone; claims stay not-yet', async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const cfg = require(path.join(__dirname, '..', '..', 'next.config.js')) as { redirects: () => Promise<Array<{ source: string; destination: string; permanent: boolean }>> };
     const rules = await cfg.redirects();
-    expect(Object.fromEntries(rules.map((r) => [r.source, r.destination]))).toEqual(INSURANCE_REDIRECTS);
+    expect(Object.fromEntries(rules.map((r) => [r.source, r.destination]))).toEqual({ ...INSURANCE_REDIRECTS, ...LENDER_REDIRECTS });   // PC-56 PARTNER-2c: + the /products pair
     for (const r of rules) {
       expect([r.source, r.permanent]).toEqual([r.source, false]);   // 307, not 308: the move may be revisited
       expect([r.source, fs.existsSync(path.join(APP, ...r.source.replace(':id', '[id]').slice(1).split('/'), 'page.tsx'))]).toEqual([r.source, false]);
@@ -52,8 +52,11 @@ describe('PC-56 PARTNER-0 · the not-yet pages, derived from the routes', () => 
       expect([routeOf(f), src.includes(`const ROUTE = '${routeOf(f)}'`)]).toEqual([routeOf(f), true]);
     }
   });
-  it('the pages WITH a partner read are not on the list: dashboard, the loan queue and its detail; help is static', () => {
-    for (const r of ['/dashboard', '/loan-queue', '/loan-queue/[id]', '/help', '/login']) expect(NOT_YET_ROUTES[r]).toBeUndefined();
+  it('the pages WITH a partner read are not on the list: dashboard, the loan queue and its detail, the lender\'s shelf; help is static', () => {
+    for (const r of ['/dashboard', '/loan-queue', '/loan-queue/[id]', '/help', '/login', '/products', '/products/[id]', '/lender/products', '/lender/products/[id]']) expect(NOT_YET_ROUTES[r]).toBeUndefined();
+    // PC-56 PARTNER-2c: the retired pair answers 307 to the lender's shelf, and its page files are gone
+    expect(LENDER_REDIRECTS).toEqual({ '/products': '/lender/products', '/products/:id': '/lender/products/:id' });
+    expect([fs.existsSync(path.join(APP, 'products', 'page.tsx')), fs.existsSync(path.join(APP, 'products', '[id]', 'page.tsx'))]).toEqual([false, false]);
     const queue = fs.readFileSync(path.join(APP, 'loan-queue', 'page.tsx'), 'utf8');
     expect(queue).toContain('partner.applications.list');
     expect(queue).not.toContain("'fintech/loan-applications'");

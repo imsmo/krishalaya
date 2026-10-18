@@ -15,7 +15,7 @@ describe('partner nav model (persona-aware)', () => {
   it('a lender (bank / nbfc / mfi / gold_loan) sees its dashboard, common + lending — never the insurer group', () => {
     for (const kind of ['bank', 'nbfc', 'mfi', 'gold_loan']) {
       expect([kind, visibleGroups(PARTNER_READS, kind)]).toEqual([kind, ['common', 'lending', 'account']]);
-      expect(liveNavForPartner(PARTNER_READS, kind).map((i) => i.href)).toEqual(['/dashboard', '/notifications', '/settlements', '/consents', '/loan-queue', '/products', '/profile', '/portfolio', '/servicing', ...ACCOUNT]);
+      expect(liveNavForPartner(PARTNER_READS, kind).map((i) => i.href)).toEqual(['/dashboard', '/notifications', '/settlements', '/consents', '/loan-queue', '/lender/products', '/profile', '/portfolio', '/servicing', ...ACCOUNT]);
       expect(liveNavForPartner(PARTNER_READS, kind).some((i) => i.href.startsWith('/insurer/'))).toBe(false);
     }
     expect(hasLending(set('partner.applications.read'))).toBe(true);
@@ -29,7 +29,7 @@ describe('partner nav model (persona-aware)', () => {
     expect(liveNavForPartner(PARTNER_READS, 'insurer').map((i) => i.labelKey).slice(0, 6)).toEqual(['partner2.nav.dashboard', 'partner2.nav.products', 'partner2.nav.policies',
       'partner2.nav.issuance', 'partner2.nav.premiums', 'partner2.nav.reports']);
     expect(PARTNER_NAV.filter((i) => i.group === 'insurer').length).toBe(6);
-    for (const lending of ['/dashboard', '/loan-queue', '/products', '/portfolio', '/servicing']) expect(liveNavForPartner(PARTNER_READS, 'insurer').map((i) => i.href)).not.toContain(lending);
+    for (const lending of ['/dashboard', '/loan-queue', '/lender/products', '/products', '/portfolio', '/servicing']) expect(liveNavForPartner(PARTNER_READS, 'insurer').map((i) => i.href)).not.toContain(lending);
     // the insurer group opens on the PARTNER realm's read — the tenant permission a partner token never carries opens nothing
     expect(hasInsurer(set('partner.insurance.read'))).toBe(true);
     expect(hasInsurer(set('insurance.manage'))).toBe(false);
@@ -44,6 +44,14 @@ describe('partner nav model (persona-aware)', () => {
     }
     // a lender never sees the three new insurer items
     for (const href of ['/insurer/issuance', '/insurer/premiums', '/insurer/reports']) expect(liveNavForPartner(PARTNER_READS, 'bank').map((i) => i.href)).not.toContain(href);
+  });
+
+  it('PC-56 PARTNER-2c · the lending group\'s Products item is the lender\'s shelf at `/lender/products` (never the retired `/products`); an insurer never sees it', () => {
+    const products = PARTNER_NAV.filter((i) => i.labelKey === 'partner2.nav.loanProducts');
+    expect(products.map((i) => [i.href, i.group, i.live])).toEqual([['/lender/products', 'lending', true]]);
+    expect(PARTNER_NAV.some((i) => i.href === '/products' || i.href.startsWith('/products/'))).toBe(false);
+    for (const kind of ['bank', 'nbfc', 'mfi', 'gold_loan', null]) expect([kind, liveNavForPartner(PARTNER_READS, kind).map((i) => i.href)]).toEqual([kind, expect.arrayContaining(['/lender/products'])]);
+    for (const kind of ['insurer', 'amc']) expect([kind, liveNavForPartner(PARTNER_READS, kind).some((i) => i.href.startsWith('/lender/'))]).toEqual([kind, false]);
   });
 
   it('PC-56 PARTNER-2a · an asset manager sees neither vertical; an unknown kind keeps the lending group and never opens the insurer group', () => {

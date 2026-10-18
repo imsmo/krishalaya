@@ -9,7 +9,7 @@
 export type NotYetSurface = 'products' | 'portfolio' | 'servicing' | 'insurance' | 'fleet' | 'logistics' | 'consents' | 'settlements' | 'notifications' | 'profile';
 
 export const NOT_YET_ROUTES: Readonly<Record<string, NotYetSurface>> = Object.freeze({
-  '/products': 'products', '/products/[id]': 'products',
+  // PC-56 PARTNER-2c: /products and /products/[id] answer 307 to the built `lender/products` routes (the lender's shelf)
   '/portfolio': 'portfolio', '/portfolio/[id]': 'portfolio',
   '/servicing': 'servicing',
   // PC-56 PARTNER-2a: /insurance-book, /insurance-products, /insurance-policies(/[id]) answer 307 to the built `insurer/*` routes; the claims pair

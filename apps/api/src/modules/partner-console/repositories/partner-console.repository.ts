@@ -338,6 +338,30 @@ export class PartnerConsoleRepository {
     });
   }
 
+  // ═════════════════════════════════════ PC-56 PARTNER-2c · the lender's own shelf (founder Q7) — on the axis, through 0229 and 0225
+  // Loan products are GLOBAL reference data (`loan_products`, no tenant): their terms are read on shard 0 through 0229's definer (kv_partner
+  // holds no grant on the table — 0090's pricing-IP rule). The 30-day count reads `loan_applications` on EVERY shard inside the axis, where
+  // 0225's RLS policy admits only this partner's CONSENTED applications (`partner_owns_application`); the predicate below repeats it (defence
+  // in depth — the policy alone already holds). Counts only: no application id, applicant or amount leaves this method.
+
+  /** This partner's own loan products' terms (0229 `partner_loan_product_terms` — all of them, or the one named; never another lender's). */
+  async loanProductTerms(partnerId: string, id?: string): Promise<Array<Record<string, unknown>>> {
+    return this.withAxis(0, partnerId, async (c) => (await c.query(`SELECT * FROM partner_loan_product_terms($1::uuid)`, [id ?? null])).rows);
+  }
+
+  /** ONE shard's count of this partner's CONSENTED applications per product, created in the last `windowDays` days (0225's consent axis). */
+  async loanApplicationsWindowShard(shardId: number, partnerId: string, windowDays: number): Promise<Record<string, number>> {
+    return this.withAxis(shardId, partnerId, async (c) => {
+      const r = await c.query<{ product_id: string; n: string }>(`
+        SELECT a.product_id, count(*)::text AS n
+          FROM loan_applications a
+         WHERE a.deleted_at IS NULL AND a.created_at >= now() - make_interval(days => $1::int)
+           AND partner_owns_application(a.id)
+         GROUP BY a.product_id`, [windowDays]);
+      return Object.fromEntries(r.rows.map((x) => [String(x.product_id), Number(x.n)]));
+    });
+  }
+
   // ═════════════════════════════════════ control plane (kv_app, the caller's partner-realm transaction)
   /** The distinct ACTIVE partners a person belongs to (active partner rows only), with names for the chooser. Needs app.user_id = userId. */
   async membershipsOfUserTx(tx: TxContext, userId: string): Promise<Array<{ partnerId: string; name: string }>> {

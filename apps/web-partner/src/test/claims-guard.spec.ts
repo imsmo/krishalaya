@@ -176,3 +176,55 @@ describe('PC-56 PARTNER-2b · claims guard (where the money is not)', () => {
     }
   });
 });
+
+// PC-56 PARTNER-2c · THE LENDER'S SHELF — every `partner2.` value (and every refusal) in en, hi and gu carries none of the canon's lending-shelf
+// claims: no count of kinds the registry does not hold, no farmer-side comparison of lenders' terms, nothing "openly", no same-day listing, no
+// rate ceiling or fair-lending rule, no generated farmer display, no member estimate for an organisation, no fee bearer, no snapshot law, and no
+// canon institution, place or avatar. Each regex is proven on its own canon phrase. M5 ("farmers compare your terms openly" planted in the
+// shelf's copy) kills here. Founder Q7's sentence is pinned verbatim (en) and exists in hi and gu.
+const FORBIDDEN_2C: readonly [string, RegExp, string][] = [
+  ['13 kinds', /\b13 kinds\b/i, 'Product kinds are registry data — 13 kinds from KCC to invoice discounting'],
+  ['compare your terms', /compare (your|their|the) terms/i, 'Farmers compare your terms against other lenders\''],
+  ['openly', /\bopenly\b/i, 'against other lenders\', openly'],
+  ['the same day', /the same day|same[- ]day/i, 'FPO members see it in their app the same day'],
+  ['fair-lending', /fair[- ]lending/i, 'APR above the platform fair-lending ceiling'],
+  ['ceiling', /\bceiling\b/i, 'above the ceiling for the kind will not save'],
+  ['auto-generated', /auto[- ]?generated/i, 'Farmer-facing display (auto-generated, Gujarati)'],
+  ['qualify today', /qualify today/i, 'members qualify today (estimate shown before you save)'],
+  ['640', /\b640\b/, '≈ 640 Anand FPO members'],
+  ['never the farmer', /never the farmer/i, 'Charged to your bank — never the farmer'],
+  ['charged to your bank', /charged to your (bank|organisation)/i, 'Charged to your bank'],
+  ['snapshot law', /snapshot law/i, 'rate changes take effect for NEW applications only (snapshot law)'],
+  ['Saurashtra', /Saurashtra/i, 'Saurashtra Gramin Bank'],
+  ['Anand', /\bAnand\b/, '640 Anand FPO members'],
+  ['AJ', /\bAJ\b/, 'the avatar AJ'],
+];
+
+describe('PC-56 PARTNER-2c · claims guard (the lender\'s shelf)', () => {
+  it('every 2c forbidden word is caught when planted once (each regex proven on its own canon phrase); an honest sentence passes', () => {
+    for (const [name, re, planted] of FORBIDDEN_2C) expect([name, re.test(planted)]).toEqual([name, true]);
+    for (const [name, re] of FORBIDDEN_2C) expect([name, re.test(en['partner2.refusal.loanProductsPlatformAuthored'])]).toEqual([name, false]);
+  });
+  it.each(Object.entries(CATS))('%s: no 2c claim in any partner2. value, nor in any partner2 refusal', (_l, cat) => {
+    const c = cat as Record<string, string>;
+    const keys = [...new Set([...Object.keys(c).filter((k) => SCOPE_2A.test(k)), ...PARTNER2_REFUSALS.map((r) => r.key)])];
+    expect(keys.length).toBeGreaterThan(350);
+    for (const k of keys) {
+      expect([k, typeof c[k]]).toEqual([k, 'string']);
+      for (const [name, re] of FORBIDDEN_2C) expect([k, name, re.test(c[k])]).toEqual([k, name, false]);
+    }
+  });
+  it('founder Q7 (en, verbatim) and the shelf\'s binding words: the fee is data, nothing charged; rates in basis points; the count is consented; hi and gu carry their own', () => {
+    expect(en['partner2.refusal.loanProductsPlatformAuthored']).toBe('Loan products are authored by the platform\'s partner operations after a signed agreement, not from this console; write to the partners mailbox to propose a change.');
+    expect(en['partner2.loanProducts.feeLine']).toBe('recorded on the product: {amount} per loan / {bps} bps — the platform\'s fee leg is not live; nothing is charged today');
+    expect(en['partner2.loanProducts.aprLine']).toBe('{apr} bps APR − {subvention} bps subsidy = {net} bps net of subsidy');
+    expect(en['partner2.loanProducts.empty.title']).toBe('No products on your shelf yet');
+    expect(en['partner2.loanProducts.empty.body']).toMatch(/^Products are authored by the platform's partner operations/);
+    expect(en['partner2.loanProducts.appsNote']).toMatch(/consented/); expect(en['partner2.loanProducts.appsNote']).toMatch(/No applicant is named/);
+    for (const k of ['partner2.refusal.loanProductsPlatformAuthored', 'partner2.loanProducts.feeLine', 'partner2.loanProducts.lead']) {
+      expect([k, typeof hi[k] === 'string' && hi[k] !== en[k], typeof gu[k] === 'string' && gu[k] !== en[k]]).toEqual([k, true, true]);
+    }
+    // no percentage anywhere in the shelf's words — rates are integer basis points (the M4 wall is in the render test)
+    for (const [k, v] of Object.entries(en).filter(([x]) => x.startsWith('partner2.loanProducts.'))) expect([k, /\d+(\.\d+)?\s*%|\{\w+\}\s*%/.test(v)]).toEqual([k, false]);
+  });
+});

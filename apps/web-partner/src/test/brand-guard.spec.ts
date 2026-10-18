@@ -66,3 +66,22 @@ describe('PC-56 PARTNER-2a/2b · brand guard over the insurer console\'s new fil
     expect(sb).toContain('PLATFORM_BRAND.name'); expect(sb).toContain('homeHref(kind)');
   });
 });
+
+describe('PC-56 PARTNER-2c · brand guard over the lender\'s shelf (founder Q9: the platform\'s mark + the lender\'s own name)', () => {
+  const NEW = ['components/partner2/LenderProductsView.tsx', 'components/partner2/LenderProductView.tsx', 'app/lender/products/page.tsx', 'app/lender/products/[id]/page.tsx',
+    'lib/lender.ts', 'features/partner2/figures.ts', 'features/partner2/refusals.ts'];
+  it('they exist, are scanned, and none carries the platform\'s name, a mailbox, a domain, a helpline, or a canon institution, place, person or avatar', () => {
+    const all = files().map((f) => path.relative(SRC, f));
+    for (const rel of NEW) {
+      expect([rel, all.includes(rel)]).toEqual([rel, true]);
+      const src = fs.readFileSync(path.join(SRC, rel), 'utf8').replace(/@krishalaya\/[a-z0-9-]+/g, '');
+      for (const lit of LITERALS) expect([rel, lit, src.includes(lit)]).toEqual([rel, lit, false]);
+      expect([rel, /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.(com|in|org|net|co)\b|krishalaya\.(in|com)|mailto:|1800|Saurashtra|Gramin/i.test(src)]).toEqual([rel, false]);
+    }
+    // the views and pages carry no canon place, person or avatar (the registry NAMES the canon's claims to refuse them, so it is not scanned for these)
+    for (const rel of NEW.slice(0, 5)) {
+      const src = fs.readFileSync(path.join(SRC, rel), 'utf8');
+      expect([rel, /\bAnand\b|\bAJ\b|Savita|Hetal|Meera|Jayesh|Ramesh|\bAmit\b/.test(src)]).toEqual([rel, false]);
+    }
+  });
+});

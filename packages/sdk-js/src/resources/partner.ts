@@ -14,6 +14,9 @@
 //   • PC-56 PARTNER-1b: `keys.list` (the partner's own keys — there is NO hash field on `PartnerKey`), `keys.revoke` (an Idempotency-Key and a
 //     reason of 20–300 characters; the only write), `webhooks.list` / `.deliveries` / `.delivery` (read-only: no secret, no payload, no tenant),
 //     `readiness()` (six facts, counts only); `invites.lookup` is a POST — the token travels in the body, never in a URL (founder D4).
+//   • PC-56 PARTNER-2c: `loanProducts.{list, get}` — a lender's OWN loan products' terms (integer bps, minor-unit strings, the product's
+//     currency) and the COUNT of its consented applications in the last 30 days; read-only (no create / change exists — the platform authors
+//     loan products); another lender's or an absent id → 404 `PARTNER_LOAN_PRODUCT_NOT_FOUND`.
 //   • PC-56 PARTNER-2b: + `insurance.issuance(q)` — the `proposed` queue on the insurer's own products (a read; nothing is issued).
 //   • PC-56 PARTNER-2a: `insurance.{dashboard, products, product, policies, policy}` — an insurer's own book, policy facts only (no holder,
 //     subject, payment or tenant field exists on the types); `insurance` OFF → 404 `PARTNER_INSURANCE_SWITCHED_OFF`.
@@ -179,6 +182,47 @@ class PartnerInsuranceApi {
   }
 }
 
+/** PC-56 PARTNER-2c (founder Q7) — one of the lender's OWN loan products, as the platform holds it (read-only). No person field exists on the
+ *  type (no author, no applicant); rates are integer basis points; money is a bigint minor-unit STRING in `currencyCode`. */
+export interface PartnerLoanProduct {
+  id: string;
+  /** The product's own name. */
+  defaultName: string;
+  /** The platform's `loan_kind` registry code, or null when the kind id does not resolve ("kind not registered"). */
+  kind: { id: string | null; code: string | null };
+  currencyCode: string;
+  minAmountMinor: string; maxAmountMinor: string;
+  interestAprBps: number; subventionBps: number;
+  /** interestAprBps − subventionBps (an integer — "net of subsidy"). */
+  netAprBps: number;
+  tenureMonthsMin: number | null; tenureMonthsMax: number | null;
+  ltvBps: number | null;
+  collateralKind: string | null;
+  /** Recorded on the product; the platform's fee leg is not live — nothing is charged today. */
+  originationFeeMinor: string; originationFeeBps: number;
+  /** The lender's own stored rules, as stored (nothing is evaluated). */
+  eligibilityRules: unknown;
+  requiredDocuments: { count: number; codes: string[] };
+  repaymentStyle: string;
+  active: boolean;
+  createdAt: string | null; updatedAt: string | null;
+  /** This lender's CONSENTED applications on the product created in the last `windowDays` days — a count. */
+  applications30d: number;
+}
+export interface PartnerLoanShelf { items: PartnerLoanProduct[]; computedAt: string | null; windowDays: number | null }
+
+class PartnerLoanProductsApi {
+  constructor(private readonly http: HttpClient) {}
+  async list(signal?: AbortSignal): Promise<PartnerLoanShelf> {
+    const r = await this.http.request<PartnerLoanProduct[]>('GET', 'partner/loan-products', { signal });
+    const m = (r.meta ?? {}) as { computedAt?: string; windowDays?: number };
+    return { items: r.data, computedAt: m.computedAt ?? null, windowDays: m.windowDays ?? null };
+  }
+  async get(id: string, signal?: AbortSignal): Promise<PartnerLoanProduct & { computedAt: string; windowDays: number }> {
+    return (await this.http.request<PartnerLoanProduct & { computedAt: string; windowDays: number }>('GET', `partner/loan-products/${encodeURIComponent(id)}`, { signal })).data;
+  }
+}
+
 class PartnerAuth {
   constructor(private readonly http: HttpClient) {}
   /** The phone OTP (the platform's — enumeration-safe). Anonymous. */
@@ -311,10 +355,13 @@ export class PartnerResource {
   readonly webhooks: PartnerWebhooksApi;
   /** PC-56 PARTNER-2a · an insurer's own products and the policy facts on them (read-only; every read audited server-side). */
   readonly insurance: PartnerInsuranceApi;
+  /** PC-56 PARTNER-2c · a lender's own loan products' terms + the consented 30-day count (read-only; every read audited server-side). */
+  readonly loanProducts: PartnerLoanProductsApi;
   constructor(private readonly http: HttpClient) {
     this.auth = new PartnerAuth(http); this.applications = new PartnerApplications(http); this.decide = new PartnerDecide(http);
     this.team = new PartnerTeamApi(http); this.invites = new PartnerInvites(http); this.twoFactor = new PartnerMe2fa(http);
     this.keys = new PartnerKeysApi(http); this.webhooks = new PartnerWebhooksApi(http); this.insurance = new PartnerInsuranceApi(http);
+    this.loanProducts = new PartnerLoanProductsApi(http);
   }
   /** PC-56 PARTNER-1b · the six readiness facts + computedAt (any member of the partner). */
   async readiness(signal?: AbortSignal): Promise<PartnerReadiness> { return (await this.http.request<PartnerReadiness>('GET', 'partner/readiness', { signal })).data; }

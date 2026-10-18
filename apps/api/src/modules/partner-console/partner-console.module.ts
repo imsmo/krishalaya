@@ -30,6 +30,7 @@ import { PartnerKeysService } from './services/partner-keys.service';
 import { PartnerWebhooksService } from './services/partner-webhooks.service';
 import { PartnerReadinessService } from './services/partner-readiness.service';
 import { PartnerInsuranceService } from './services/partner-insurance.service';
+import { PartnerLoanProductsService } from './services/partner-loan-products.service';
 import { PartnerConsoleFlagGuard, PartnerInsuranceFlagGuard, PartnerPermissionsGuard, PartnerSessionGuard } from './guards/partner-session.guard';
 import { PartnerMemberInvitedHandler } from './events/handlers/partner-member-invited.handler';
 
@@ -37,7 +38,7 @@ import { PartnerMemberInvitedHandler } from './events/handlers/partner-member-in
   imports: [IdentityModule, FintechModule],
   controllers: [...PARTNER_CONSOLE_CONTROLLERS],
   providers: [PartnerConsoleRepository, PartnerAuthService, PartnerApplicationsService, PartnerTeamService, PartnerDashboardService,
-    PartnerKeysService, PartnerWebhooksService, PartnerReadinessService, PartnerInsuranceService,
+    PartnerKeysService, PartnerWebhooksService, PartnerReadinessService, PartnerInsuranceService, PartnerLoanProductsService,
     PartnerConsoleFlagGuard, PartnerSessionGuard, PartnerPermissionsGuard, PartnerInsuranceFlagGuard, UiMessageRepository],
 })
 export class PartnerConsoleModule implements OnModuleInit {

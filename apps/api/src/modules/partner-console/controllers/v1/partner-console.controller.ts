@@ -22,6 +22,7 @@ import { PartnerKeysService } from '../../services/partner-keys.service';
 import { PartnerWebhooksService } from '../../services/partner-webhooks.service';
 import { PartnerReadinessService } from '../../services/partner-readiness.service';
 import { PartnerInsuranceService } from '../../services/partner-insurance.service';
+import { PartnerLoanProductsService } from '../../services/partner-loan-products.service';
 import {
   PartnerAcceptInviteDto, PartnerAcceptInviteSchema, PartnerApplicationsQueryDto, PartnerApplicationsQuerySchema, PartnerApproveDto, PartnerApproveSchema,
   PartnerInviteDto, PartnerInviteSchema, PartnerOtpDto, PartnerOtpSchema, PartnerReasonDto, PartnerReasonSchema, PartnerRefreshDto, PartnerRefreshSchema,
@@ -237,6 +238,24 @@ export class PartnerInsuranceController {
   }
 }
 
+/** PC-56 PARTNER-2c · founder Q7 — THE LENDER'S SHELF: this lender's OWN loan products' terms (0229's definer — never another lender's) with,
+ *  per product, the COUNT of its CONSENTED applications in the last 30 days (0225's axis), every read audited (`partner.products.read`, counts
+ *  only). Guarded by `partner.applications.read` (every partner role — no new permission). READ-ONLY: there is NO POST / PATCH route — loan
+ *  products are authored by the platform (the console prints that refusal); the live spec pins the absence. */
+@Controller({ path: 'partner/loan-products', version: '1' })
+@UseGuards(PartnerConsoleFlagGuard, PartnerSessionGuard, PartnerPermissionsGuard)
+export class PartnerLoanProductsController {
+  constructor(private readonly products: PartnerLoanProductsService) {}
+
+  @PartnerPermissions('partner.applications.read') @Get()
+  list(@CurrentPartnerSession() s: PartnerSession) {
+    return this.products.list(s).then((r) => ({ data: r.items, meta: { computedAt: r.computedAt, windowDays: r.windowDays } }));
+  }
+
+  @PartnerPermissions('partner.applications.read') @Get(':id')
+  get(@CurrentPartnerSession() s: PartnerSession, @Param('id') id: string) { return this.products.get(s, id).then((data) => ({ data })); }
+}
+
 /** For the route-uniqueness spec and the module: every controller of the realm. */
 export const PARTNER_CONSOLE_CONTROLLERS = [PartnerAuthController, PartnerMeController, PartnerApplicationsController, PartnerTeamController, PartnerInvitesController, PartnerDashboardController,
-  PartnerKeysController, PartnerWebhooksController, PartnerReadinessController, PartnerInsuranceController];
+  PartnerKeysController, PartnerWebhooksController, PartnerReadinessController, PartnerInsuranceController, PartnerLoanProductsController];

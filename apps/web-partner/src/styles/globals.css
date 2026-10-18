@@ -124,3 +124,6 @@ pre.kv-code { white-space: pre-wrap; padding-block: .5rem; padding-inline: .75re
 /* PC-56 PARTNER-2b — where the money is not: the founder-approved statement of each honest page (logical properties only: RTL-safe) */
 .kv-statement { padding-block: .75rem; padding-inline: 1rem; margin-block: .5rem 1rem; border-inline-start: .25rem solid var(--kv-primary-600, #2f6f3e); background: var(--kv-neutral-50, #f8f8f6); font-weight: 600; }
 [data-kv-export-note] { margin-block: .5rem; }
+/* PC-56 PARTNER-2c — the lender's shelf (logical properties only: RTL-safe): the rate cell keeps its integer bps sentence on one line */
+[data-kv-lender] td[data-kv-col="apr"] { white-space: nowrap; }
+[data-kv-lender] [data-kv-propose] { margin-block: .5rem 1rem; padding-inline-start: .75rem; border-inline-start: .25rem solid var(--kv-neutral-200, #e5e5e5); }

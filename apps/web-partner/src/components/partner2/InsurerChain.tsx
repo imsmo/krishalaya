@@ -6,6 +6,8 @@
 // PC-56 PARTNER-2b: a chain of an honest page prints that page's founder-approved statement first (issuance, premiums, reports, parametric);
 // an export / pack chain (founder 2b-1) prints "exports are not available from the partner console yet; write to the partners mailbox" and
 // the mailbox FACT (lib/partners-mailbox.ts — never a literal), when the page passes it.
+// PC-56 PARTNER-2c: the lender's shelf reuses this chain page for W2980–W2986 (`lender_form` prints "write to the partners mailbox to propose a
+// change" above the fact — the chain's `mailboxKey`).
 import Link from 'next/link';
 import type { Tr } from '../NotYet';
 import type { Mailbox } from '../partner1/HelpView';
@@ -25,7 +27,7 @@ export function InsurerChain({ t, chain, state, back, mailbox }: { t: Tr; chain:
       <p>{t.t(`${k}.body`)}</p>
       {c.mailbox && (
         <div data-kv-export-note="true">
-          <p>{t.t('partner2.export.notAvailable')}</p>
+          <p>{t.t(c.mailboxKey ?? 'partner2.export.notAvailable')}</p>
           {mailbox && <MailboxLine t={t} mailbox={mailbox} />}
         </div>
       )}

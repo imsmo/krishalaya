@@ -159,3 +159,70 @@ export function switchesState(map: Record<string, boolean> | null): HonestState 
   if (map.partner_console === true && map.insurance === true) return 'ok';
   return 'error';
 }
+
+// ══ PC-56 PARTNER-2c · THE LENDER'S SHELF — the terms row model (founder Q7; the brief's binding words) ══════════════════════════════════
+// Every rate is the lender's OWN stored INTEGER in basis points, printed as an integer with "bps" — never a percentage, never a float (M4 plants
+// a float percentage here and `lender-products.render` turns red). The net is the server's integer difference (APR − subvention), printed as
+// "net of subsidy". Amounts are bigint minor-unit strings with the product's own currency, formatted by the view (formatMoneyMinor — bigint-exact).
+// The kind is the registry code or "kind not registered"; the required documents are their codes when every id resolves, else the count.
+// The 30-day figure is a COUNT of the lender's consented applications — never an applicant, never a member count.
+
+/** Integer basis points as text for a sentence variable — the integer itself; anything that is not a whole number prints as "0". */
+export function bpsInt(bps: number | null | undefined): string {
+  return Number.isInteger(bps) ? String(bps) : '0';
+}
+
+export interface LenderTermsRow {
+  id: string; href: string; name: string;
+  kind: { key: 'partner2.loanProducts.kindNotRegistered' } | { code: string };
+  amount: { min: string; max: string; currency: string };
+  apr: { key: 'partner2.loanProducts.aprLine'; vars: { apr: string; subvention: string; net: string } };
+  tenure: { key: 'partner2.loanProducts.tenureRange' | 'partner2.loanProducts.tenureFrom' | 'partner2.loanProducts.tenureUpTo' | 'partner2.loanProducts.tenureNone'; vars: Record<string, string> };
+  repaymentStyle: string; collateral: string | null; applications30d: number; active: boolean;
+}
+
+/** One shelf row (a `PartnerLoanProduct` as the API answered it) → the text pieces the table prints. Integer arithmetic only. */
+export function lenderTermsRow(p: {
+  id: string; defaultName: string; kind: { code: string | null }; currencyCode: string; minAmountMinor: string; maxAmountMinor: string;
+  interestAprBps: number; subventionBps: number; netAprBps: number; tenureMonthsMin: number | null; tenureMonthsMax: number | null;
+  repaymentStyle: string; collateralKind: string | null; applications30d: number; active: boolean;
+}): LenderTermsRow {
+  return {
+    id: p.id, href: `/lender/products/${encodeURIComponent(p.id)}`, name: p.defaultName,
+    kind: p.kind?.code ? { code: p.kind.code } : { key: 'partner2.loanProducts.kindNotRegistered' },
+    amount: { min: p.minAmountMinor, max: p.maxAmountMinor, currency: p.currencyCode || 'INR' },
+    apr: { key: 'partner2.loanProducts.aprLine', vars: { apr: bpsInt(p.interestAprBps), subvention: bpsInt(p.subventionBps), net: bpsInt(p.netAprBps) } },
+    tenure: tenureText(p.tenureMonthsMin, p.tenureMonthsMax),
+    repaymentStyle: p.repaymentStyle, collateral: p.collateralKind, applications30d: Number.isInteger(p.applications30d) ? p.applications30d : 0, active: p.active === true,
+  };
+}
+
+/** The tenure in whole months: a range, a floor, a ceiling or "not set" — never an invented number. */
+export function tenureText(min: number | null | undefined, max: number | null | undefined): LenderTermsRow['tenure'] {
+  const a = Number.isInteger(min) ? String(min) : null; const b = Number.isInteger(max) ? String(max) : null;
+  if (a && b) return { key: 'partner2.loanProducts.tenureRange', vars: { min: a, max: b } };
+  if (a) return { key: 'partner2.loanProducts.tenureFrom', vars: { min: a } };
+  if (b) return { key: 'partner2.loanProducts.tenureUpTo', vars: { max: b } };
+  return { key: 'partner2.loanProducts.tenureNone', vars: {} };
+}
+
+/** The required documents: their registry codes when every stored id resolves, else the count of stored ids (never a guessed name). */
+export function documentsText(d: { count: number; codes: string[] } | null | undefined): { key: 'partner2.loanProducts.docsCodes' | 'partner2.loanProducts.docsCount' | 'partner2.loanProducts.docsNone'; vars: Record<string, string> } {
+  const count = d && Number.isInteger(d.count) ? d.count : 0;
+  if (count === 0) return { key: 'partner2.loanProducts.docsNone', vars: {} };
+  const codes = (d?.codes ?? []).filter((c) => typeof c === 'string' && c.length > 0);
+  return codes.length === count ? { key: 'partner2.loanProducts.docsCodes', vars: { codes: codes.join(', ') } } : { key: 'partner2.loanProducts.docsCount', vars: { count: String(count) } };
+}
+
+/** The origination fee as data: the recorded minor amount and bps (the platform's fee leg is not live — nothing is charged today). */
+export function originationFee(p: { originationFeeMinor: string; originationFeeBps: number; currencyCode: string }): { minor: string; bps: string; currency: string } {
+  return { minor: /^\d+$/.test(p.originationFeeMinor ?? '') ? p.originationFeeMinor : '0', bps: bpsInt(p.originationFeeBps), currency: p.currencyCode || 'INR' };
+}
+
+/** The shelf's page state: OFF as OFF (`partner_console`), error, empty, ok — `fintech` is a tenant switch the partner realm does not read. */
+export type ShelfState = 'ok' | 'empty' | 'off' | 'error';
+export function shelfState(items: readonly unknown[] | null, failure: 'off' | 'error' | null): ShelfState {
+  if (failure) return failure;
+  if (!items) return 'error';
+  return items.length === 0 ? 'empty' : 'ok';
+}

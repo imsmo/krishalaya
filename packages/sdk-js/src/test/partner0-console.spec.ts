@@ -171,3 +171,21 @@ describe('PC-56 PARTNER-2b · SDK the issuance queue (a read; nothing is issued)
     expect(Object.keys(row).filter((k) => /holder|subject_?id|subjectId|payment|tenant|policyNo|status/i.test(k))).toEqual([]);
   });
 });
+
+describe('PC-56 PARTNER-2c · SDK the lender\'s shelf (read-only, no person field)', () => {
+  it('loanProducts.list / get are GETs with the partner token; meta maps computedAt + windowDays; no create / change method exists', async () => {
+    const { fn, calls } = fakeFetch([], { computedAt: '2026-10-18T00:00:00.000Z', windowDays: 30 });
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const shelf = await c.partner.loanProducts.list();
+    expect(shelf).toEqual({ items: [], computedAt: '2026-10-18T00:00:00.000Z', windowDays: 30 });
+    await c.partner.loanProducts.get('lp 1');
+    expect(calls.map((x) => x.url.replace('https://api.test/v1/', ''))).toEqual(['partner/loan-products', 'partner/loan-products/lp%201']);
+    for (const x of calls) { expect(x.init.method).toBe('GET'); expect(hdr(x, 'authorization')).toBe('Bearer tok'); }
+    for (const m of ['create', 'update', 'save', 'remove']) expect((c.partner.loanProducts as unknown as Record<string, unknown>)[m]).toBeUndefined();
+    const p: import('../resources/partner').PartnerLoanProduct = { id: 'lp1', defaultName: 'Fixture seasonal credit', kind: { id: null, code: null }, currencyCode: 'INR',
+      minAmountMinor: '5000000', maxAmountMinor: '50000000', interestAprBps: 725, subventionBps: 300, netAprBps: 425, tenureMonthsMin: 6, tenureMonthsMax: 12, ltvBps: null,
+      collateralKind: 'none', originationFeeMinor: '150000', originationFeeBps: 50, eligibilityRules: {}, requiredDocuments: { count: 0, codes: [] }, repaymentStyle: 'emi',
+      active: true, createdAt: null, updatedAt: null, applications30d: 0 };
+    expect(Object.keys(p).filter((k) => /createdBy|updatedBy|applicant|holder|^name$|phone|partnerId|tenant/i.test(k))).toEqual([]);
+  });
+});

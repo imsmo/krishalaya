@@ -52,6 +52,8 @@ export const PARTNER_CODES: Readonly<Record<string, { status: number; message: s
   PARTNER_PRODUCT_NOT_FOUND: { status: 404, message: 'This product was not found.' },
   /** The platform's `insurance` flag is OFF: the insurer routes answer 404 with this code, so the console prints "switched off — nothing is broken". */
   PARTNER_INSURANCE_SWITCHED_OFF: { status: 404, message: 'Insurance is switched off on the platform — nothing is broken.' },
+  // PC-56 PARTNER-2c · the lender's own shelf (founder Q7) — another lender's product and an absent id answer the same 404 (never "not yours")
+  PARTNER_LOAN_PRODUCT_NOT_FOUND: { status: 404, message: 'This loan product was not found.' },
 });
 
 export function partnerRefused(code: string, details: Record<string, unknown> = {}): PartnerRefusedError {

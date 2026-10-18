@@ -50,7 +50,8 @@ export const PARTNER_NAV: readonly PartnerNavItem[] = [
   { href: '/consents', labelKey: 'nav.consents', group: 'common', live: true },
   // lending vertical (financial partners)
   { href: '/loan-queue', labelKey: 'nav.loanQueue', group: 'lending', live: true },
-  { href: '/products', labelKey: 'nav.products', group: 'lending', live: true },
+  // PC-56 PARTNER-2c: the lender's own shelf at the canon's `lender/products` (the old `/products` answers 307 there)
+  { href: '/lender/products', labelKey: 'partner2.nav.loanProducts', group: 'lending', live: true },
   { href: '/profile', labelKey: 'nav.lenderProfile', group: 'lending', live: true },
   { href: '/portfolio', labelKey: 'nav.portfolio', group: 'lending', live: true },
   { href: '/servicing', labelKey: 'nav.servicing', group: 'lending', live: true },   // PC-55 B7 (W54-8)
