@@ -25,6 +25,7 @@ import { AuthService, AuthTokens, DeviceInput, TwoFactorPendingError } from '../
 import { UserRepository } from '../../identity/repositories/user.repository';
 import { TwoFactorService } from '../../identity/services/two-factor.service';
 import { InvalidOtpError, InvalidPhoneError, InvalidRefreshError } from '../../identity/domain/identity.errors';
+import { slaDecisionHours } from '../domain/partner-dashboard.rules';
 import { PartnerConsoleRepository } from '../repositories/partner-console.repository';
 import { chooseSignIn, maskPhoneTail, maskRegulatorRef } from '../domain/partner-console.rules';
 import { namedPartnerRefusal, partnerRefused } from '../domain/partner-console.errors';
@@ -152,7 +153,8 @@ export class PartnerAuthService {
       const org = await this.repo.partnerOrgTx(tx, s.partnerId);
       const phone = await this.repo.userPhoneTx(tx, s.userId);
       return {
-        organisation: org ? { id: org.id, name: org.name, kind: org.kind, regulatorRefMasked: maskRegulatorRef(org.regulatorRef), sla: org.sla } : null,
+        // PC-56 PARTNER-1a (D5): + the partner code (the settings page's identity block) and the published decision promise as a number
+        organisation: org ? { id: org.id, code: org.code, name: org.name, kind: org.kind, regulatorRefMasked: maskRegulatorRef(org.regulatorRef), sla: org.sla, slaDecisionHours: slaDecisionHours(org.sla) } : null,
         person: { userId: s.userId, roles: s.roles, permissions: [...s.permissions].sort(), phoneMasked: maskPhoneTail(phone) },
         realm: 'partner' as const,
       };

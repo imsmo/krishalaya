@@ -98,3 +98,11 @@ a { color: inherit; text-decoration: none; }
 .kv-status--info { color: #1565c0; }
 .kv-status--danger { color: var(--kv-danger); }
 .kv-status--muted { color: var(--kv-neutral-600); }
+/* PC-56 PARTNER-1a — refusals, chain pages, the invite code, the help article, the Account group (logical properties only: RTL-safe) */
+.kv-refused { margin-block: 1rem; padding-inline-start: 0; }
+.kv-refused ul, .kv-list { margin: 0; padding-inline-start: 1.25rem; }
+.kv-refusal { margin-block: .25rem; color: var(--kv-neutral-600); }
+.kv-chain { margin-block: 1rem; }
+.kv-token { display: inline-block; padding-block: .25rem; padding-inline: .5rem; font-family: ui-monospace, monospace; word-break: break-all; user-select: all; }
+.kv-article ul { padding-inline-start: 1.25rem; }
+.kv-sidebar__group { margin-block: 1rem .25rem; font-size: .8rem; text-transform: uppercase; opacity: .75; }

@@ -273,6 +273,14 @@ export const OwnerPermissions = {
   // what moves the serving pointer, which is the only act on this plane a recipient can see. Separate grant, because the
   // desk that writes the words is not the desk that decides they may be sent.
   TemplatesApprove: 'templates.approve',
+  /* ---- PC-56 PARTNER-1a · the partner registry (founder D2 + D3, migration 0226). Until this wave no surface in either
+     realm could read `financial_partners` as a list, change a partner's published decision promise, or author a
+     partner's FIRST administrator — the partner console had a door and nobody below owner SQL could cut the key. ---- */
+  // Read the registry: code, kind, masked licence, console headcounts, the pending platform invite, the decision SLA.
+  PartnersRead: 'partners.read',
+  // Set a partner's decision SLA and invite a partner's first administrator (a partner with no active admin). Both
+  // routes add FIDO2 + step-up; neither can touch a partner that already runs its own team.
+  PartnersManage: 'partners.manage',
 } as const;
 export type OwnerPermission = (typeof OwnerPermissions)[keyof typeof OwnerPermissions];
 
@@ -432,6 +440,11 @@ const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.fr
   // plane, and previously impossible to grant because neither permission existed.
   platform_settlement_viewer: [OwnerPermissions.SettlementRead, OwnerPermissions.BillingRead],
   platform_settlement_ops: [OwnerPermissions.SettlementRead, OwnerPermissions.LedgerSettle, OwnerPermissions.BillingRead, OwnerPermissions.ReconRead],
+  /* ---- PC-56 PARTNER-1a ---- */
+  // The partner-onboarding desk: reads the registry, sets the published decision SLA, appoints a first administrator.
+  platform_partners_ops:    [OwnerPermissions.PartnersManage, OwnerPermissions.PartnersRead],
+  // Read-only: which partners exist, whether each has anyone running its console, and what it has promised.
+  platform_partners_viewer: [OwnerPermissions.PartnersRead],
 });
 
 /** Flatten a token's roles to a permission set against the static owner catalog (unknown roles grant nothing). */

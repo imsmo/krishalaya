@@ -46,6 +46,7 @@ import { PayoutOpsModule } from './modules/payout-ops/payout-ops.module';
 import { TranslationsModule } from './modules/translations/translations.module';
 import { CatalogueDepthModule } from './modules/catalogue-depth/catalogue-depth.module';
 import { CellsOpsModule } from './modules/cells-ops/cells-ops.module';
+import { PartnerOpsModule } from './modules/partner-ops/partner-ops.module';   // PC-56 PARTNER-1a
 
 @Module({
   imports: [AdminCoreModule, AiModelsOpsModule, TenantOpsModule, ReconMonitorModule, ComplianceOpsModule, BillingOpsModule, FlagsOpsModule, PlansOpsModule, ImpersonationModule, SupportOversightModule, PlatformReportsModule, ProvidersOpsModule, AnnouncementsModule, GlobalCatalogueOpsModule, SchemesRegistryOpsModule, SchemesOversightModule, ConsentOpsModule, CellsOpsModule, CatalogueDepthModule,
@@ -81,7 +82,9 @@ import { CellsOpsModule } from './modules/cells-ops/cells-ops.module';
   // `payout-ops.module.ts`'s own header for why this plane is deliberately separate from ledger-ops/ledger-correction.
   // Negative-tested (DEV-56): temporarily removed again, `admin-module-boot.spec.ts`'s two structural tests both
   // failed with `payout-ops` named explicitly, then this mount was restored and the suite went green again.
-  PayoutOpsModule],
+  PayoutOpsModule,
+  // PC-56 PARTNER-1a: the partner registry, the decision SLA, and a partner's first administrator (0226).
+  PartnerOpsModule],
 })
 export class AdminModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

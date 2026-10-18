@@ -84,3 +84,19 @@ describe('PC-56 PARTNER-0 · SDK partner resource', () => {
     expect(calls[1].url).toBe('https://api.test/v1/partner-api/me');
   });
 });
+
+describe('PC-56 PARTNER-1a · SDK partner.dashboard()', () => {
+  it('GET /v1/partner/dashboard with the session bearer; the figures come back as the server sent them (strings for money, integers for bps)', async () => {
+    const body = { computedAt: '2026-10-18T00:00:00.000Z', applicationsTotal: 3, awaitingDecision: 2,
+      decidedThisMonth: { decided: 1, approved: 1, rejected: 0, approvedAmountMinor: '9007199254740993', approvalRateBps: 10000, monthStartsAt: '2026-09-30T18:30:00.000Z', timeZone: 'Asia/Kolkata' },
+      portfolio: { outstandingMinor: '0', activeLoans: 0 }, onTime: { windowDays: 90, due: 0, onTime: 0, shareBps: null, basis: 'recorded_instalments' },
+      sla: { decisionPromiseHours: null, windowDays: 30, decided: 0, medianSec: null, p90Sec: null, withinPromise: null }, fpos: [], needsYouToday: [] };
+    const { fn, calls } = fakeFetch(body);
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const d = await c.partner.dashboard();
+    expect(calls[0].url).toBe('https://api.test/v1/partner/dashboard');
+    expect(hdr(calls[0], 'authorization')).toBe('Bearer tok');
+    expect(d.decidedThisMonth.approvedAmountMinor).toBe('9007199254740993');
+    expect(d.onTime.shareBps).toBeNull();
+  });
+});

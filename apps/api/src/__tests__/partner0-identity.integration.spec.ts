@@ -176,7 +176,9 @@ run('PC-56 PARTNER-0 · a partner is an organisation (integration, real AppModul
     // /me: the organisation (regulator reference by its last 4, the published sla) and the person (phone by its last 3)
     const me = await request(http).get('/v1/partner/me').set(bearer(tok.aAdmin.accessToken));
     expect(me.status).toBe(200);
-    expect(me.body.data.organisation).toEqual({ id: PA, name: 'Partner Zero Bank A', kind: 'bank', regulatorRefMasked: '••••4471', sla: { decisionHours: 72 } });
+    // PC-56 PARTNER-1a: /me also carries the partner code and the published decision promise (`sla.decision_hours` — this fixture's
+    // camelCase key is NOT the promise, so it reads null)
+    expect(me.body.data.organisation).toEqual({ id: PA, code: expect.stringMatching(/^p0a_/), name: 'Partner Zero Bank A', kind: 'bank', regulatorRefMasked: '••••4471', sla: { decisionHours: 72 }, slaDecisionHours: null });
     expect(me.body.data.person.phoneMasked).toBe(`••••••${people.aAdmin.phone.slice(-3)}`);
     expect(JSON.stringify(me.body)).not.toContain(people.aAdmin.phone);
     // the refresh re-mints a PARTNER token; a partner refresh token is no tenant refresh token

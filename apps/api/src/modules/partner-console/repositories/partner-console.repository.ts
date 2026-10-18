@@ -30,8 +30,15 @@ export interface PartnerApplicationRow {
   cursorTs: string;
 }
 export interface PartnerInviteRow {
-  id: string; partnerId: string; phone: string; roleId: string; roleCode: string; invitedBy: string; languageCode: string;
-  status: string; expiresAt: string; tokenSealed: string | null; sentAt: string | null;
+  id: string; partnerId: string; phone: string; roleId: string; roleCode: string;
+  /** The partner administrator who invited — NULL for the platform's first-administrator invite (0226: `invitedByAdminId` instead). */
+  invitedBy: string | null; invitedByAdminId: string | null; languageCode: string;
+  status: string; expiresAt: string; tokenSealed: string | null; sentAt: string | null; sendFailure: string | null;
+}
+export interface DashboardShard {
+  total: string; awaiting: string; approved: string; rejected: string; approvedMinor: string; activeLoans: string; outstandingMinor: string;
+  due: string; onTime: string; latenciesSec: number[]; tenantIds: string[];
+  oldest: Array<{ id: string; tenantId: string; productName: string; amountRequestedMinor: string; status: string; createdAt: string }>;
 }
 export interface MembershipRow { id: string; userId: string; partnerId: string; roleId: string; roleCode: string; isActive: boolean }
 
@@ -144,6 +151,72 @@ export class PartnerConsoleRepository {
     });
   }
 
+  // ═════════════════════════════════════ PC-56 PARTNER-1a · the dashboard (founder D1) — ONE shard's partial figures, on the axis
+  /**
+   * Everything the dashboard counts, for this partner, on ONE shard, inside `withAxis` (kv_partner + app.partner_id from the token): the
+   * applications are the oracle-admitted ones only (0225 — this partner's products AND a live consent), the loans and repayments the 0090
+   * partner book (`loans.partner_id`). The caller merges the shards (counts and bigint sums add; latencies are concatenated raw so the
+   * percentiles merge exactly). The month boundary is the calendar month of Asia/Kolkata computed BY THE DATABASE from now() — no clock in
+   * the process, no hour literal; the on-time window is the last 90 IST days of due dates; the latency window the last 30 days of decisions.
+   */
+  async dashboardShard(shardId: number, partnerId: string): Promise<DashboardShard> {
+    return this.withAxis(shardId, partnerId, async (c) => {
+      const f = (await c.query(`
+        WITH w AS (SELECT (date_trunc('month', now() AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata') AS m0,
+                          ((date_trunc('month', now() AT TIME ZONE 'Asia/Kolkata') + interval '1 month') AT TIME ZONE 'Asia/Kolkata') AS m1)
+        SELECT
+          (SELECT count(*) FROM loan_applications a WHERE a.deleted_at IS NULL)::text AS total,
+          (SELECT count(*) FROM loan_applications a WHERE a.deleted_at IS NULL AND a.status IN ('submitted', 'under_review'))::text AS awaiting,
+          (SELECT count(*) FROM loan_applications a, w WHERE a.deleted_at IS NULL AND a.decision_at >= w.m0 AND a.decision_at < w.m1
+              AND a.amount_approved_minor IS NOT NULL)::text AS approved,
+          (SELECT count(*) FROM loan_applications a, w WHERE a.deleted_at IS NULL AND a.decision_at >= w.m0 AND a.decision_at < w.m1
+              AND a.status = 'rejected')::text AS rejected,
+          (SELECT COALESCE(sum(a.amount_approved_minor), 0) FROM loan_applications a, w WHERE a.deleted_at IS NULL AND a.decision_at >= w.m0
+              AND a.decision_at < w.m1 AND a.amount_approved_minor IS NOT NULL)::text AS approved_minor,
+          (SELECT count(*) FROM loans l WHERE l.deleted_at IS NULL AND l.status IN ('active', 'overdue'))::text AS active_loans,
+          (SELECT COALESCE(sum(l.outstanding_minor), 0) FROM loans l WHERE l.deleted_at IS NULL AND l.status IN ('active', 'overdue'))::text AS outstanding_minor,
+          (SELECT count(*) FROM loan_repayments r
+            WHERE r.due_date > (now() AT TIME ZONE 'Asia/Kolkata')::date - 90 AND r.due_date <= (now() AT TIME ZONE 'Asia/Kolkata')::date
+              AND r.created_at >= now() - interval '2 years')::text AS due,
+          (SELECT count(*) FROM loan_repayments r
+            WHERE r.due_date > (now() AT TIME ZONE 'Asia/Kolkata')::date - 90 AND r.due_date <= (now() AT TIME ZONE 'Asia/Kolkata')::date
+              AND r.created_at >= now() - interval '2 years'
+              AND r.paid_at IS NOT NULL AND (r.paid_at AT TIME ZONE 'Asia/Kolkata')::date <= r.due_date)::text AS on_time,
+          (SELECT COALESCE(array_agg(floor(extract(epoch FROM (a.decision_at - a.created_at)))::bigint), '{}')
+             FROM loan_applications a WHERE a.deleted_at IS NULL AND a.decision_at IS NOT NULL AND a.decision_at >= now() - interval '30 days'
+              AND a.decision_at >= a.created_at) AS latencies,
+          (SELECT COALESCE(array_agg(DISTINCT a.tenant_id), '{}') FROM loan_applications a WHERE a.deleted_at IS NULL) AS tenants`)).rows[0];
+      const oldest = (await c.query(`
+        SELECT a.id, a.tenant_id, p.name AS product_name, a.amount_requested_minor::text AS amount, a.status::text AS status, ${US_SQL('a.created_at')} AS created_us
+          FROM loan_applications a JOIN partner_loan_products() p ON p.id = a.product_id
+         WHERE a.deleted_at IS NULL AND a.status IN ('submitted', 'under_review')
+         ORDER BY a.created_at ASC, a.id ASC LIMIT 5`)).rows;
+      return {
+        total: f.total, awaiting: f.awaiting, approved: f.approved, rejected: f.rejected, approvedMinor: f.approved_minor,
+        activeLoans: f.active_loans, outstandingMinor: f.outstanding_minor, due: f.due, onTime: f.on_time,
+        latenciesSec: (f.latencies as Array<string | number>).map((x) => Number(x)),
+        tenantIds: (f.tenants as string[]).map(String),
+        oldest: oldest.map((x: any) => ({ id: x.id, tenantId: x.tenant_id, productName: x.product_name, amountRequestedMinor: x.amount, status: x.status, createdAt: x.created_us })),
+      };
+    });
+  }
+
+  /**
+   * Each FPO's PUBLIC display name — 0204's `public_tenant_profile(id)` (SECURITY DEFINER, EXECUTE to kv_app): a live (active | grace)
+   * organisation's display name, NULL for any other (the console prints a neutral word). Nothing else of the FPO is read.
+   */
+  async publicTenantNames(tenantIds: readonly string[]): Promise<Map<string, string | null>> {
+    const out = new Map<string, string | null>();
+    if (tenantIds.length === 0) return out;
+    const r = await this.pools.writer(0).query(
+      `SELECT t.id::text AS id, p.display_name AS name FROM unnest($1::uuid[]) AS t(id) LEFT JOIN LATERAL public_tenant_profile(t.id) p ON true`, [tenantIds]);
+    for (const x of r.rows as Array<{ id: string; name: string | null }>) out.set(x.id, x.name ?? null);
+    return out;
+  }
+
+  /** How many shards the scatter reads (the dashboard service loops over them). */
+  get shards(): number { return this.shardCount; }
+
   // ═════════════════════════════════════ control plane (kv_app, the caller's partner-realm transaction)
   /** The distinct ACTIVE partners a person belongs to (active partner rows only), with names for the chooser. Needs app.user_id = userId. */
   async membershipsOfUserTx(tx: TxContext, userId: string): Promise<Array<{ partnerId: string; name: string }>> {
@@ -168,10 +241,10 @@ export class PartnerConsoleRepository {
         AND revoked_at IS NULL AND NOT two_factor_pending AND expires_at > now()`, [sessionId, userId, partnerId]);
     return r.rowCount > 0;
   }
-  async partnerOrgTx(tx: TxContext, partnerId: string): Promise<{ id: string; name: string; kind: string; regulatorRef: string | null; sla: Record<string, unknown> } | null> {
-    const r = await tx.query<any>(`SELECT id, default_name, partner_kind, regulator_ref, sla FROM financial_partners WHERE id = $1 AND deleted_at IS NULL`, [partnerId]);
+  async partnerOrgTx(tx: TxContext, partnerId: string): Promise<{ id: string; code: string; name: string; kind: string; regulatorRef: string | null; sla: Record<string, unknown> } | null> {
+    const r = await tx.query<any>(`SELECT id, code, default_name, partner_kind, regulator_ref, sla FROM financial_partners WHERE id = $1 AND deleted_at IS NULL`, [partnerId]);
     const x = r.rows[0];
-    return x ? { id: x.id, name: x.default_name, kind: x.partner_kind, regulatorRef: x.regulator_ref ?? null, sla: (x.sla ?? {}) as Record<string, unknown> } : null;
+    return x ? { id: x.id, code: x.code, name: x.default_name, kind: x.partner_kind, regulatorRef: x.regulator_ref ?? null, sla: (x.sla ?? {}) as Record<string, unknown> } : null;
   }
   async userPhoneTx(tx: TxContext, userId: string): Promise<string | null> {
     return (await tx.query<{ phone: string }>(`SELECT phone FROM users WHERE id = $1`, [userId])).rows[0]?.phone ?? null;
@@ -189,10 +262,10 @@ export class PartnerConsoleRepository {
   async partnerForTokenTx(tx: TxContext, tokenHash: string): Promise<string | null> {
     return (await tx.query<{ p: string | null }>(`SELECT partner_invite_partner($1::char(64)) AS p`, [tokenHash])).rows[0]?.p ?? null;
   }
-  private inviteSelect = `SELECT i.id, i.partner_id, i.phone, i.role_id, r.code AS role_code, i.invited_by, i.language_code, i.status, i.expires_at, i.token_sealed, i.sent_at
+  private inviteSelect = `SELECT i.id, i.partner_id, i.phone, i.role_id, r.code AS role_code, i.invited_by, i.invited_by_admin_id, i.language_code, i.status, i.expires_at, i.token_sealed, i.sent_at, i.send_failure
       FROM partner_invites i JOIN roles r ON r.id = i.role_id`;
-  private toInvite = (x: any): PartnerInviteRow => ({ id: x.id, partnerId: x.partner_id, phone: x.phone, roleId: x.role_id, roleCode: x.role_code, invitedBy: x.invited_by,
-    languageCode: x.language_code, status: x.status, expiresAt: new Date(x.expires_at).toISOString(), tokenSealed: x.token_sealed ?? null, sentAt: iso(x.sent_at) });
+  private toInvite = (x: any): PartnerInviteRow => ({ id: x.id, partnerId: x.partner_id, phone: x.phone, roleId: x.role_id, roleCode: x.role_code, invitedBy: x.invited_by ?? null,
+    invitedByAdminId: x.invited_by_admin_id ?? null, languageCode: x.language_code, status: x.status, expiresAt: new Date(x.expires_at).toISOString(), tokenSealed: x.token_sealed ?? null, sentAt: iso(x.sent_at), sendFailure: x.send_failure ?? null });
   async inviteByHashForUpdateTx(tx: TxContext, tokenHash: string): Promise<PartnerInviteRow | null> {
     const r = await tx.query(`${this.inviteSelect} WHERE i.token_hash = $1 FOR UPDATE OF i`, [tokenHash]);
     return r.rows[0] ? this.toInvite(r.rows[0]) : null;
@@ -233,11 +306,11 @@ export class PartnerConsoleRepository {
     const r = await tx.query(`${this.membershipSelect} WHERE m.partner_id = $1 AND m.user_id = $2 AND m.role_id = $3 AND m.deleted_at IS NULL FOR UPDATE OF m`, [partnerId, userId, roleId]);
     return r.rows[0] ? this.toMembership(r.rows[0]) : null;
   }
-  async insertMembershipTx(tx: TxContext, m: { id: string; userId: string; partnerId: string; roleId: string; invitedBy: string; inviteId: string }): Promise<void> {
+  async insertMembershipTx(tx: TxContext, m: { id: string; userId: string; partnerId: string; roleId: string; invitedBy: string | null; inviteId: string }): Promise<void> {
     await tx.query(`INSERT INTO partner_memberships (id, user_id, partner_id, role_id, is_active, invited_by, invite_id, created_by) VALUES ($1, $2, $3, $4, true, $5, $6, $5)`,
       [m.id, m.userId, m.partnerId, m.roleId, m.invitedBy, m.inviteId]);
   }
-  async reactivateMembershipTx(tx: TxContext, id: string, invitedBy: string, inviteId: string): Promise<void> {
+  async reactivateMembershipTx(tx: TxContext, id: string, invitedBy: string | null, inviteId: string): Promise<void> {
     await tx.query(`UPDATE partner_memberships SET is_active = true, removed_at = NULL, removed_by = NULL, removed_reason = NULL, invited_by = $2, invite_id = $3, updated_by = $2 WHERE id = $1`,
       [id, invitedBy, inviteId]);
   }

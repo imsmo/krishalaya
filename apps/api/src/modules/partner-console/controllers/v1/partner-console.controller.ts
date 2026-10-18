@@ -16,6 +16,7 @@ import {
 import { PartnerAuthService } from '../../services/partner-auth.service';
 import { PartnerApplicationsService } from '../../services/partner-applications.service';
 import { PartnerTeamService } from '../../services/partner-team.service';
+import { PartnerDashboardService } from '../../services/partner-dashboard.service';
 import {
   PartnerAcceptInviteDto, PartnerAcceptInviteSchema, PartnerApplicationsQueryDto, PartnerApplicationsQuerySchema, PartnerApproveDto, PartnerApproveSchema,
   PartnerInviteDto, PartnerInviteSchema, PartnerOtpDto, PartnerOtpSchema, PartnerReasonDto, PartnerReasonSchema, PartnerRefreshDto, PartnerRefreshSchema,
@@ -139,5 +140,16 @@ export class PartnerInvitesController {
   lookup(@Param('token') token: string) { return this.team.lookup(token).then((data) => ({ data })); }
 }
 
+/** PC-56 PARTNER-1a · founder D1 — the dashboard's six figures, computed on the server from this partner's own book (`partner.dashboard.read` IS
+ *  `partner.applications.read`: the figures are counts over the same consented applications the list shows, plus the 0090 loan book). */
+@Controller({ path: 'partner/dashboard', version: '1' })
+@UseGuards(PartnerConsoleFlagGuard, PartnerSessionGuard, PartnerPermissionsGuard)
+export class PartnerDashboardController {
+  constructor(private readonly dashboard: PartnerDashboardService) {}
+
+  @PartnerPermissions('partner.applications.read') @Get()
+  read(@CurrentPartnerSession() s: PartnerSession) { return this.dashboard.read(s).then((data) => ({ data })); }
+}
+
 /** For the route-uniqueness spec and the module: every controller of the realm. */
-export const PARTNER_CONSOLE_CONTROLLERS = [PartnerAuthController, PartnerMeController, PartnerApplicationsController, PartnerTeamController, PartnerInvitesController];
+export const PARTNER_CONSOLE_CONTROLLERS = [PartnerAuthController, PartnerMeController, PartnerApplicationsController, PartnerTeamController, PartnerInvitesController, PartnerDashboardController];

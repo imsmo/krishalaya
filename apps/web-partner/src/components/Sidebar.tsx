@@ -24,13 +24,20 @@ export async function Sidebar() {
       </Link>
       <p className="kv-sidebar__org">{orgName ?? t.t('partner.shell.orgUnknown')}</p>
       <ul className="kv-sidebar__nav">
-        {live.map((n) => (
+        {live.filter((n) => n.group !== 'account').map((n) => (
           <li key={n.href}><Link href={n.href} className="kv-sidebar__link">{t.t(n.labelKey)}</Link></li>
         ))}
         {soon.map((n) => (
           <li key={n.href}>
             <span className="kv-sidebar__soon" title={t.t('nav.soonTitle')}>{t.t(n.labelKey)} <span className="kv-muted">{t.t('nav.soon')}</span></span>
           </li>
+        ))}
+      </ul>
+      {/* PC-56 PARTNER-1a (D7): the Account group — Settings, Help (built routes only) */}
+      <p className="kv-sidebar__group">{t.t('partner1.nav.account')}</p>
+      <ul className="kv-sidebar__nav" data-kv-nav-group="account">
+        {live.filter((n) => n.group === 'account').map((n) => (
+          <li key={n.href}><Link href={n.href} className="kv-sidebar__link">{t.t(n.labelKey)}</Link></li>
         ))}
       </ul>
       <form action="/api/session" method="post" className="kv-sidebar__foot">

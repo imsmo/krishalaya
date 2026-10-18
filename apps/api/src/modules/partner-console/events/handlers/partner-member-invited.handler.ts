@@ -20,6 +20,8 @@ import { PartnerConsoleRepository } from '../../repositories/partner-console.rep
 import { inviteState } from '../../domain/partner-console.rules';
 import { PARTNER_MEMBER_INVITED, partnerInviteAad } from '../../services/partner-team.service';
 
+/** What a platform invite's `send_failure` says: no SMS — the platform administrator handed the code over (0226). */
+export const PLATFORM_HANDOVER = 'platform_handover';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const fill = (t: string, v: Record<string, string>) => t.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m));
 
@@ -40,6 +42,12 @@ export class PartnerMemberInvitedHandler implements OutboxHandler {
     if (!inviteId || !partnerId) return;   // malformed — fail closed, never invent a recipient
     const outcome = await this.uow.run(partnerId, async (tx) => {
       const inv = await this.repo.inviteForUpdateTx(tx, inviteId);
+      // PC-56 PARTNER-1a (0226): the PLATFORM's first-administrator invite keeps no sealed copy (the admin realm holds no KEK) — the platform
+      // administrator hands the code over; record that on the invite once, so a pending invite never reads as "queued" for an SMS that never goes.
+      if (inv && inviteState(inv) === 'usable' && !inv.tokenSealed && !inv.sentAt && inv.invitedByAdminId && !inv.sendFailure) {
+        await this.repo.markInviteSendFailedTx(tx, inv.id, PLATFORM_HANDOVER);
+        return 'handover';
+      }
       if (!inv || inviteState(inv) !== 'usable' || !inv.tokenSealed || inv.sentAt) return 'skipped';
       const token = openEnvelope(this.kek, inv.tokenSealed, partnerInviteAad(inv.id));
       const words = await this.ui.mapsUnder('partner.invite.sms.', tx);

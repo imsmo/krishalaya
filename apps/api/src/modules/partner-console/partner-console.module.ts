@@ -23,13 +23,14 @@ import { PartnerConsoleRepository } from './repositories/partner-console.reposit
 import { PartnerAuthService } from './services/partner-auth.service';
 import { PartnerApplicationsService } from './services/partner-applications.service';
 import { PartnerTeamService } from './services/partner-team.service';
+import { PartnerDashboardService } from './services/partner-dashboard.service';
 import { PartnerConsoleFlagGuard, PartnerPermissionsGuard, PartnerSessionGuard } from './guards/partner-session.guard';
 import { PartnerMemberInvitedHandler } from './events/handlers/partner-member-invited.handler';
 
 @Module({
   imports: [IdentityModule, FintechModule],
   controllers: [...PARTNER_CONSOLE_CONTROLLERS],
-  providers: [PartnerConsoleRepository, PartnerAuthService, PartnerApplicationsService, PartnerTeamService,
+  providers: [PartnerConsoleRepository, PartnerAuthService, PartnerApplicationsService, PartnerTeamService, PartnerDashboardService,
     PartnerConsoleFlagGuard, PartnerSessionGuard, PartnerPermissionsGuard, UiMessageRepository],
 })
 export class PartnerConsoleModule implements OnModuleInit {

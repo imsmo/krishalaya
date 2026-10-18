@@ -18,7 +18,8 @@ import { AuthTokens } from '../types';
 export type PartnerRoleCode = 'partner_admin' | 'partner_checker' | 'partner_maker' | 'partner_viewer';
 export interface PartnerChoice { id: string; name: string }
 export interface PartnerMe {
-  organisation: { id: string; name: string; kind: string; regulatorRefMasked: string | null; sla: Record<string, unknown> } | null;
+  /** PC-56 PARTNER-1a: + `code` and `slaDecisionHours` (the published decision promise, `sla.decision_hours`, or null). */
+  organisation: { id: string; code: string; name: string; kind: string; regulatorRefMasked: string | null; sla: Record<string, unknown>; slaDecisionHours: number | null } | null;
   person: { userId: string; roles: string[]; permissions: string[]; phoneMasked: string | null };
   realm: 'partner';
 }
@@ -48,10 +49,26 @@ export interface PartnerTeamMember {
   membershipId: string; userId: string; name: string | null; phoneMasked: string; roleCode: PartnerRoleCode | string; active: boolean;
   since: string | null; removedAt: string | null; removedReason: string | null; twoFactor: boolean;
 }
-export interface PartnerPendingInvite { id: string; phoneMasked: string; roleCode: string; invitedBy: string; expiresAt: string | null; sentAt: string | null; sendFailure: string | null; createdAt: string | null }
+export interface PartnerPendingInvite { id: string; phoneMasked: string; roleCode: string; invitedBy: string | null; expiresAt: string | null; sentAt: string | null; sendFailure: string | null; createdAt: string | null }
 export interface PartnerTeam { members: PartnerTeamMember[]; invites: PartnerPendingInvite[] }
 export interface PartnerInviteCreated { id: string; expiresAt: string; phoneMasked: string; roleCode: string; days: number; token: string | null; tokenShown: boolean }
 export interface PartnerInviteLookup { organisation: string; roleCode: string; phoneMasked: string | null; status: 'pending' | 'used' | 'revoked' | 'expired'; expiresAt: string }
+
+/** PC-56 PARTNER-1a · founder D1 — the dashboard's figures, computed on the server from the partner's OWN book (the consented applications on
+ *  its products + its 0090 loan book). Money: bigint minor-unit STRINGS. Rates: integer BASIS POINTS (null = nothing in the denominator).
+ *  Latencies: whole SECONDS. `fpos[].name` is the organisation's PUBLIC display name (null for one that is not live). No applicant name,
+ *  no `LA-…` number exists anywhere in it. */
+export interface PartnerDashboard {
+  computedAt: string;
+  applicationsTotal: number;
+  awaitingDecision: number;
+  decidedThisMonth: { decided: number; approved: number; rejected: number; approvedAmountMinor: string; approvalRateBps: number | null; monthStartsAt: string; timeZone: string };
+  portfolio: { outstandingMinor: string; activeLoans: number };
+  onTime: { windowDays: number; due: number; onTime: number; shareBps: number | null; basis: 'recorded_instalments' };
+  sla: { decisionPromiseHours: number | null; windowDays: number; decided: number; medianSec: number | null; p90Sec: number | null; withinPromise: number | null };
+  fpos: Array<{ tenantId: string; name: string | null }>;
+  needsYouToday: Array<{ id: string; tenantId: string; fpoName: string | null; productName: string; amountRequestedMinor: string; status: string; createdAt: string }>;
+}
 
 class PartnerAuth {
   constructor(private readonly http: HttpClient) {}
@@ -157,6 +174,8 @@ export class PartnerResource {
     this.auth = new PartnerAuth(http); this.applications = new PartnerApplications(http); this.decide = new PartnerDecide(http);
     this.team = new PartnerTeamApi(http); this.invites = new PartnerInvites(http); this.twoFactor = new PartnerMe2fa(http);
   }
+  /** PC-56 PARTNER-1a · the dashboard's six figures + as-of, the SLA promise beside the actual latency, the FPOs, the oldest awaiting. */
+  async dashboard(signal?: AbortSignal): Promise<PartnerDashboard> { return (await this.http.request<PartnerDashboard>('GET', 'partner/dashboard', { signal })).data; }
   /** The organisation and the signed-in person. */
   async me(signal?: AbortSignal): Promise<PartnerMe> { return (await this.http.request<PartnerMe>('GET', 'partner/me', { signal })).data; }
 }

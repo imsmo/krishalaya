@@ -5,7 +5,8 @@
 // links; not-yet-built surfaces render as a non-link "(soon)" label until their wave lands. Partner RBAC + RLS are
 // enforced by the platform API per call — this nav reflects route existence + persona, never grants access.
 
-export type NavGroup = 'common' | 'lending' | 'fleet' | 'insurance';
+/** PC-56 PARTNER-1a (founder D7): + `account` — Settings and Help, visible to every partner person, rendered last under its own heading. */
+export type NavGroup = 'common' | 'lending' | 'fleet' | 'insurance' | 'account';
 
 export interface PartnerNavItem {
   href: string;
@@ -36,7 +37,6 @@ export const PARTNER_NAV: readonly PartnerNavItem[] = [
   { href: '/notifications', labelKey: 'nav.notifications', group: 'common', live: true },
   { href: '/settlements', labelKey: 'nav.settlements', group: 'common', live: true },
   { href: '/consents', labelKey: 'nav.consents', group: 'common', live: true },
-  { href: '/help', labelKey: 'nav.help', group: 'common', live: true },
   // lending vertical (financial partners)
   { href: '/loan-queue', labelKey: 'nav.loanQueue', group: 'lending', live: true },
   { href: '/products', labelKey: 'nav.products', group: 'lending', live: true },
@@ -54,6 +54,9 @@ export const PARTNER_NAV: readonly PartnerNavItem[] = [
   { href: '/insurance-policies', labelKey: 'nav.insurancePolicies', group: 'insurance', live: true },
   { href: '/insurance-products', labelKey: 'nav.insuranceProducts', group: 'insurance', live: true },
   { href: '/insurance-book', labelKey: 'nav.insuranceBook', group: 'insurance', live: true },   // PC-55 B7 (W54-9)
+  // account (PC-56 PARTNER-1a · D7): built routes only — the canon's `account/settings` and the built `/help` (canon `account/help`, DELTA)
+  { href: '/account/settings', labelKey: 'partner1.nav.settings', group: 'account', live: true },
+  { href: '/help', labelKey: 'partner1.nav.help', group: 'account', live: true },
 ];
 
 export function hasLending(perms: ReadonlySet<string>): boolean {
@@ -71,6 +74,7 @@ export function visibleGroups(perms: ReadonlySet<string>): NavGroup[] {
   if (hasLending(perms)) groups.push('lending');
   if (hasFleet(perms)) groups.push('fleet');
   if (hasInsurance(perms)) groups.push('insurance');
+  groups.push('account');
   return groups;
 }
 /** Nav items the partner may see at all (their persona groups), preserving map order. */
