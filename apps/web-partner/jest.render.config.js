@@ -5,6 +5,8 @@
 // `features/insurance/insurance.ts`) actually renders the right rows/status classes/action forms, mirroring
 // `apps/web-tenant/jest.render.config.js`'s own precedent for this exact "new test class, new project"
 // pattern (itself following DEV-46's mobile `render` project precedent).
+// PC-56 PARTNER-3a: the DEV-24 claims console (`features/insurance/insurance.ts`, `app/insurance-claims/**`) and its render test are removed;
+// the insurer console's render tests now mount the presentational components under `components/partner2/*` and `components/partner3/*`.
 //
 // DISCLOSED SUBSTITUTION (same one web-tenant's own jest.render.config.js discloses): a real jsdom test
 // would need `jest-environment-jsdom`, which is not installed anywhere in this repo (no network access to

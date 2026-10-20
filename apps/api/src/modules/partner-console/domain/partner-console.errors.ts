@@ -54,6 +54,9 @@ export const PARTNER_CODES: Readonly<Record<string, { status: number; message: s
   PARTNER_INSURANCE_SWITCHED_OFF: { status: 404, message: 'Insurance is switched off on the platform — nothing is broken.' },
   // PC-56 PARTNER-2c · the lender's own shelf (founder Q7) — another lender's product and an absent id answer the same 404 (never "not yours")
   PARTNER_LOAN_PRODUCT_NOT_FOUND: { status: 404, message: 'This loan product was not found.' },
+  // PC-56 PARTNER-3a · the claims on the insurer's own products (founder Q4) — another insurer's claim and an absent id answer the same 404
+  PARTNER_CLAIM_NOT_FOUND: { status: 404, message: 'This claim was not found.' },
+  PARTNER_CLAIM_WINDOW_INVALID: { status: 422, message: 'The window is two calendar days, from before to, at most 400 days apart.' },
 });
 
 export function partnerRefused(code: string, details: Record<string, unknown> = {}): PartnerRefusedError {

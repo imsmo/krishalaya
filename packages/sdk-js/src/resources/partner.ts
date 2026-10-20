@@ -17,6 +17,9 @@
 //   • PC-56 PARTNER-2c: `loanProducts.{list, get}` — a lender's OWN loan products' terms (integer bps, minor-unit strings, the product's
 //     currency) and the COUNT of its consented applications in the last 30 days; read-only (no create / change exists — the platform authors
 //     loan products); another lender's or an absent id → 404 `PARTNER_LOAN_PRODUCT_NOT_FOUND`.
+//   • PC-56 PARTNER-3a: + `insurance.claims.{list, get, counts}` — the claim FACTS on the insurer's own products (oldest first) and their COUNTS
+//     in an FY window; the types carry no claimant, description, surveyor, report, note, payout or tenant field. Read-only: no decide /
+//     settle / assign / flag method exists.
 //   • PC-56 PARTNER-2b: + `insurance.issuance(q)` — the `proposed` queue on the insurer's own products (a read; nothing is issued).
 //   • PC-56 PARTNER-2a: `insurance.{dashboard, products, product, policies, policy}` — an insurer's own book, policy facts only (no holder,
 //     subject, payment or tenant field exists on the types); `insurance` OFF → 404 `PARTNER_INSURANCE_SWITCHED_OFF`.
@@ -154,8 +157,65 @@ export interface PartnerInsuranceQueueRow {
 }
 export interface PartnerInsuranceIssuancePage { items: PartnerInsuranceQueueRow[]; nextCursor: string | null; limit: number; computedAt: string | null }
 
-class PartnerInsuranceApi {
+/** PC-56 PARTNER-3a (founder Q4) — the claim statuses of the platform's state machine. */
+export type PartnerInsuranceClaimStatus = 'intimated' | 'docs_pending' | 'survey_scheduled' | 'surveyed' | 'approved' | 'partially_approved' | 'rejected' | 'paid' | 'closed';
+/** PC-56 PARTNER-3a (founder Q4) — one claim on the insurer's own products: claim FACTS only. No claimant, description, surveyor, survey report,
+ *  note, media, payout or tenant field exists on this type. */
+export interface PartnerInsuranceClaim {
+  /** The claim's id — its REFERENCE (there is no claim number). */
+  id: string;
+  policyId: string;
+  /** NULL today on every policy (nobody issues on the platform): "no policy number yet". */
+  policyNo: string | null;
+  productId: string; productName: string | null;
+  /** The FPO's PUBLIC display name, or null. */
+  fpoName: string | null;
+  subjectType: string;
+  sumInsuredMinor: string;
+  /** A platform `claim_event` code, or null ("not recorded"). */
+  eventTypeCode: string | null;
+  eventDate: string | null;
+  status: PartnerInsuranceClaimStatus | string;
+  /** The recorded yes / no, or null. */
+  reportedWithin72h: boolean | null;
+  /** The approved amount AS RECORDED (minor units), or null. */
+  approvedMinor: string | null;
+  /** The survey's damage percentage (whole number) when recorded. */
+  damagePercent: number | null;
+  filedAt: string | null; lastChangedAt: string | null; closedAt: string | null;
+  /** Whole days since filing for an open claim; null once rejected / paid / closed. */
+  waitingDays: number | null;
+}
+export interface PartnerInsuranceClaimsPage { items: PartnerInsuranceClaim[]; nextCursor: string | null; limit: number; computedAt: string | null }
+/** PC-56 PARTNER-3a — COUNTS of the claims filed in [from, to) (IST days; by default the current FY): no amount, no ratio. */
+export interface PartnerInsuranceClaimCounts {
+  from: string; to: string; timeZone: string; fy: string | null; total: number;
+  byStatus: Record<string, number>; byEvent: Record<string, number>;
+  decided: { approved: number; partiallyApproved: number; rejected: number };
+  computedAt: string;
+}
+
+class PartnerInsuranceClaimsApi {
   constructor(private readonly http: HttpClient) {}
+  /** The queue — oldest first, keyset; the status filter is the machine's own list. */
+  async list(q: { status?: PartnerInsuranceClaimStatus; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<PartnerInsuranceClaimsPage> {
+    const r = await this.http.request<PartnerInsuranceClaim[]>('GET', 'partner/insurance/claims', { query: { status: q.status, cursor: q.cursor, limit: q.limit }, signal });
+    const m = (r.meta ?? {}) as { nextCursor?: string | null; limit?: number; computedAt?: string };
+    return { items: r.data, nextCursor: m.nextCursor ?? null, limit: m.limit ?? r.data.length, computedAt: m.computedAt ?? null };
+  }
+  async get(id: string, signal?: AbortSignal): Promise<PartnerInsuranceClaim & { computedAt: string }> {
+    return (await this.http.request<PartnerInsuranceClaim & { computedAt: string }>('GET', `partner/insurance/claims/${encodeURIComponent(id)}`, { signal })).data;
+  }
+  /** Counts in [from, to) — both or neither (neither = the current FY, answered by the platform's database). */
+  async counts(q: { from?: string; to?: string } = {}, signal?: AbortSignal): Promise<PartnerInsuranceClaimCounts> {
+    return (await this.http.request<PartnerInsuranceClaimCounts>('GET', 'partner/insurance/claims/counts', { query: { from: q.from, to: q.to }, signal })).data;
+  }
+}
+
+class PartnerInsuranceApi {
+  /** PC-56 PARTNER-3a — the claims on the insurer's own products (read-only). */
+  readonly claims: PartnerInsuranceClaimsApi;
+  constructor(private readonly http: HttpClient) { this.claims = new PartnerInsuranceClaimsApi(http); }
   async dashboard(signal?: AbortSignal): Promise<PartnerInsuranceDashboard> {
     return (await this.http.request<PartnerInsuranceDashboard>('GET', 'partner/insurance/dashboard', { signal })).data;
   }

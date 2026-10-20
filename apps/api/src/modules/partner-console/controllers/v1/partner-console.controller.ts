@@ -23,12 +23,14 @@ import { PartnerWebhooksService } from '../../services/partner-webhooks.service'
 import { PartnerReadinessService } from '../../services/partner-readiness.service';
 import { PartnerInsuranceService } from '../../services/partner-insurance.service';
 import { PartnerLoanProductsService } from '../../services/partner-loan-products.service';
+import { PartnerClaimsService } from '../../services/partner-claims.service';
 import {
   PartnerAcceptInviteDto, PartnerAcceptInviteSchema, PartnerApplicationsQueryDto, PartnerApplicationsQuerySchema, PartnerApproveDto, PartnerApproveSchema,
   PartnerInviteDto, PartnerInviteSchema, PartnerOtpDto, PartnerOtpSchema, PartnerReasonDto, PartnerReasonSchema, PartnerRefreshDto, PartnerRefreshSchema,
   PartnerRejectDto, PartnerRejectSchema, PartnerTotpCodeDto, PartnerTotpCodeSchema, PartnerTwoFactorDto, PartnerTwoFactorSchema,
   PartnerVerifyDto, PartnerVerifySchema, PartnerInviteLookupDto, PartnerInviteLookupSchema, PartnerKeyRevokeDto, PartnerKeyRevokeSchema,
   PartnerDeliveriesQueryDto, PartnerDeliveriesQuerySchema, PartnerPoliciesQueryDto, PartnerPoliciesQuerySchema, PartnerIssuanceQueryDto, PartnerIssuanceQuerySchema,
+  PartnerClaimsQueryDto, PartnerClaimsQuerySchema, PartnerClaimCountsQueryDto, PartnerClaimCountsQuerySchema,
 } from '../../dto/partner-console.dto';
 
 const ipOf = (req: Request) => clientIpOf(req);
@@ -256,6 +258,29 @@ export class PartnerLoanProductsController {
   get(@CurrentPartnerSession() s: PartnerSession, @Param('id') id: string) { return this.products.get(s, id).then((data) => ({ data })); }
 }
 
+/** PC-56 PARTNER-3a · founder Q3 + Q4 — THE INSURER READS ITS OWN CLAIMS: the claim FACTS on its own products (0230's definers — never a
+ *  claimant, a note, a surveyor, a payment), the queue OLDEST first, the counts in an FY window; every read audited (`partner.claims.read`,
+ *  counts only). Behind `partner_console` AND the platform's `insurance` flag (OFF → 404 `PARTNER_INSURANCE_SWITCHED_OFF`). READ-ONLY: there is
+ *  NO route to decide, settle, assign or flag a claim, verify evidence, accept a survey or add a surveyor (the live spec pins every absence). */
+@Controller({ path: 'partner/insurance/claims', version: '1' })
+@UseGuards(PartnerConsoleFlagGuard, PartnerSessionGuard, PartnerPermissionsGuard, PartnerInsuranceFlagGuard)
+export class PartnerClaimsController {
+  constructor(private readonly claims: PartnerClaimsService) {}
+
+  @PartnerPermissions('partner.claims.read') @Get()
+  list(@CurrentPartnerSession() s: PartnerSession, @ZodQuery(PartnerClaimsQuerySchema) q: PartnerClaimsQueryDto) {
+    return this.claims.list(s, q).then((r) => ({ data: r.items, meta: { nextCursor: r.nextCursor, limit: r.limit, computedAt: r.computedAt } }));
+  }
+
+  @PartnerPermissions('partner.claims.read') @Get('counts')
+  counts(@CurrentPartnerSession() s: PartnerSession, @ZodQuery(PartnerClaimCountsQuerySchema) q: PartnerClaimCountsQueryDto) {
+    return this.claims.counts(s, q).then((data) => ({ data }));
+  }
+
+  @PartnerPermissions('partner.claims.read') @Get(':id')
+  get(@CurrentPartnerSession() s: PartnerSession, @Param('id') id: string) { return this.claims.get(s, id).then((data) => ({ data })); }
+}
+
 /** For the route-uniqueness spec and the module: every controller of the realm. */
 export const PARTNER_CONSOLE_CONTROLLERS = [PartnerAuthController, PartnerMeController, PartnerApplicationsController, PartnerTeamController, PartnerInvitesController, PartnerDashboardController,
-  PartnerKeysController, PartnerWebhooksController, PartnerReadinessController, PartnerInsuranceController, PartnerLoanProductsController];
+  PartnerKeysController, PartnerWebhooksController, PartnerReadinessController, PartnerInsuranceController, PartnerLoanProductsController, PartnerClaimsController];

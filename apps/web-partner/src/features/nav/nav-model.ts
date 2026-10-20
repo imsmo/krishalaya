@@ -1,8 +1,8 @@
 // apps/web-partner/src/features/nav/nav-model.ts · PURE, framework-free model for the partner-portal chrome +
 // SDK-error→notice mapping. No React, no fetch → unit-tested. The nav is PERSONA-AWARE and — PC-56 PARTNER-2a (founder Q9, survey P2-B13) —
 // KIND-AWARE: an INSURER organisation (`financial_partners.partner_kind = 'insurer'`, from `/me`) holding `partner.insurance.read` sees the
-// insurer group (Dashboard · Products · Policies · Issuance · Premiums · Reports — PARTNER-2b; Parametric is linked from the dashboard and the
-// products page, never the nav) and NEVER the lending group; a LENDER
+// insurer group (Dashboard · Products · Policies · Issuance · Premiums · Reports — PARTNER-2b; + Claims between Premiums and Reports — PARTNER-3a;
+// Parametric is linked from the dashboard and the products page, never the nav) and NEVER the lending group; a LENDER
 // (`bank` / `nbfc` / `mfi` / `gold_loan`) holding `partner.applications.read` sees the lending group and never the insurer group; an asset
 // manager (`amc`) sees neither vertical; an UNKNOWN kind (the `/me` read failed) keeps the lending group as before PARTNER-2 and never opens
 // the insurer group by a guess. The Account group is for every partner person, last. Within a visible group, only routes that exist in this
@@ -44,6 +44,9 @@ export const PARTNER_NAV: readonly PartnerNavItem[] = [
   // none — W262 is reached from the dashboard and the products page).
   { href: '/insurer/issuance', labelKey: 'partner2.nav.issuance', group: 'insurer', live: true },
   { href: '/insurer/premiums', labelKey: 'partner2.nav.premiums', group: 'insurer', live: true },
+  // PC-56 PARTNER-3a: + Claims, between Premiums and Reports (the canon's insurer sidebar order). ONE item: the claims pages carry their own
+  // sub-navigation (Queue · Insights now; PARTNER-3b adds Evidence · Surveyors · Surveys · Fraud) — the canon's other claims screens are orphans.
+  { href: '/insurer/claims', labelKey: 'partner3.nav.claims', group: 'insurer', live: true },
   { href: '/insurer/reports', labelKey: 'partner2.nav.reports', group: 'insurer', live: true },
   { href: '/notifications', labelKey: 'nav.notifications', group: 'common', live: true },
   { href: '/settlements', labelKey: 'nav.settlements', group: 'common', live: true },

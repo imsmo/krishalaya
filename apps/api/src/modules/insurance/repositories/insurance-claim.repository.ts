@@ -12,6 +12,7 @@ import { uuidv7 } from '../../../core/database/uuid.util';
 import { InsuranceClaim } from '../domain/insurance-claim.entity';
 import { ClaimStatus } from '../domain/insurance-claim.state';
 import { InsuranceClaimNotFoundError } from '../domain/insurance.errors';
+import { memberSuspendedSql } from '../../../shared/sql/member-suspension.sql';
 
 const COLS = `id, tenant_id, policy_id, claimant_user_id, event_date, event_type_id, description, status,
   intimated_within_72h, surveyor_user_id, survey_report, approved_minor, payout_id, closed_at, created_at`;
@@ -33,15 +34,33 @@ export interface ClaimListQuery { claimantUserId?: string; policyId?: string; st
 export class InsuranceClaimRepository {
   constructor(@Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider) {}
 
-  async insert(tx: TxContext, claim: InsuranceClaim): Promise<void> {
+  /** PC-56 PARTNER-3a (founder Q2): `claimant_user_id` is the policy's HOLDER; `created_by` is the person who FILED (the holder, or a desk
+   *  member filing on the holder's behalf) — the one place the filer is knowable, read back by `filerOf` for the decider-conflict check. */
+  async insert(tx: TxContext, claim: InsuranceClaim, filedBy: string): Promise<void> {
     const c = claim.toProps();
     await tx.query(
       `INSERT INTO insurance_claims
         (id, tenant_id, policy_id, claimant_user_id, event_date, event_type_id, description, status,
          intimated_within_72h, created_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$4)`,
-      [c.id, c.tenantId, c.policyId, c.claimantUserId, c.eventDate, c.eventTypeId, c.description, c.status, c.intimatedWithin72h],
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      [c.id, c.tenantId, c.policyId, c.claimantUserId, c.eventDate, c.eventTypeId, c.description, c.status, c.intimatedWithin72h, filedBy],
     );
+  }
+
+  /** PC-56 PARTNER-3a (founder Q2): who FILED the claim (`created_by`, add_std_columns) — null on a row written before the rule. */
+  async filerOf(tx: TxContext, tenantId: string, id: string): Promise<string | null> {
+    const r = await tx.query<{ created_by: string | null }>(`SELECT created_by FROM insurance_claims WHERE id=$1 AND tenant_id=$2`, [id, tenantId]);
+    return r.rows[0]?.created_by ?? null;
+  }
+
+  /** PC-56 PARTNER-3a (founder Q5): is this person an ACTIVE member of the claim's organisation? A live `user_tenant_roles` grant (any role,
+   *  `is_active`, not deleted) in THIS tenant, and no live suspension there (`tenant_member_suspensions`, the shared predicate). */
+  async isActiveMember(tx: TxContext, tenantId: string, userId: string): Promise<boolean> {
+    const r = await tx.query<{ ok: boolean }>(
+      `SELECT (EXISTS (SELECT 1 FROM user_tenant_roles utr
+                        WHERE utr.tenant_id = $1 AND utr.user_id = $2 AND utr.is_active AND utr.deleted_at IS NULL)
+               AND NOT ${memberSuspendedSql('$1', '$2')}) AS ok`, [tenantId, userId]);
+    return r.rows[0]?.ok === true;
   }
 
   async update(tx: TxContext, claim: InsuranceClaim): Promise<void> {

@@ -9,6 +9,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { NotYet } from '../components/NotYet';
 import { NOT_YET_ROUTES, notYetBack, surfaceKey } from '../features/partner/not-yet';
 import { INSURANCE_REDIRECTS, LENDER_REDIRECTS } from '../features/partner2/refusals';
+import { CLAIMS_REDIRECTS } from '../features/partner3/refusals';
 import { en } from '../i18n/en';
 import { gu } from '../i18n/gu';
 
@@ -29,20 +30,25 @@ describe('PC-56 PARTNER-0 · the not-yet pages, derived from the routes', () => 
 
   it('every page rendering <NotYet> is registered under its own route, and every registered route is such a page', () => {
     expect(notYet.map(routeOf).sort()).toEqual(Object.keys(NOT_YET_ROUTES).sort());
-    expect(notYet.length).toBe(24);   // PC-56 PARTNER-2a: the four built insurer routes left the list (30 → 26); PARTNER-2c: /products(/[id]) left (26 → 24)
+    expect(notYet.length).toBe(22);   // PC-56 PARTNER-2a: the four built insurer routes left the list (30 → 26); PARTNER-2c: /products(/[id]) left (26 → 24); PARTNER-3a: /insurance-claims(/[id]) left (24 → 22)
   });
-  it('PC-56 PARTNER-2a · the four old insurance routes answer a real 307 from next.config.js (equal to the registry); their page files are gone; claims stay not-yet', async () => {
+  it('PC-56 PARTNER-2a/3a · the six old insurance routes answer a real 307 from next.config.js (equal to the registries); their page files are gone', async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const cfg = require(path.join(__dirname, '..', '..', 'next.config.js')) as { redirects: () => Promise<Array<{ source: string; destination: string; permanent: boolean }>> };
     const rules = await cfg.redirects();
-    expect(Object.fromEntries(rules.map((r) => [r.source, r.destination]))).toEqual({ ...INSURANCE_REDIRECTS, ...LENDER_REDIRECTS });   // PC-56 PARTNER-2c: + the /products pair
+    expect(Object.fromEntries(rules.map((r) => [r.source, r.destination]))).toEqual({ ...INSURANCE_REDIRECTS, ...LENDER_REDIRECTS, ...CLAIMS_REDIRECTS });   // PC-56 PARTNER-2c: + the /products pair; PARTNER-3a: + the claims pair
     for (const r of rules) {
       expect([r.source, r.permanent]).toEqual([r.source, false]);   // 307, not 308: the move may be revisited
       expect([r.source, fs.existsSync(path.join(APP, ...r.source.replace(':id', '[id]').slice(1).split('/'), 'page.tsx'))]).toEqual([r.source, false]);
       expect(fs.existsSync(path.join(APP, ...r.destination.replace(':id', '[id]').slice(1).split('/'), 'page.tsx'))).toBe(true);
     }
-    expect(Object.keys(NOT_YET_ROUTES).filter((r) => r.startsWith('/insurance-'))).toEqual(['/insurance-claims', '/insurance-claims/[id]']);
+    // PC-56 PARTNER-3a: no insurance page is not-yet any more — the claims pair answers 307 to the built `insurer/claims` routes
+    expect(Object.keys(NOT_YET_ROUTES).filter((r) => r.startsWith('/insurance-'))).toEqual([]);
+    expect(CLAIMS_REDIRECTS).toEqual({ '/insurance-claims': '/insurer/claims', '/insurance-claims/:id': '/insurer/claims/:id' });
     expect(fs.existsSync(path.join(APP, 'insurance-book', 'actions.ts'))).toBe(false);   // the dead DEV-24 authoring action is gone (survey F-15)
+    // the dead DEV-24 claims console is gone (survey F-13): its server actions, its pure helpers, its two tests
+    for (const rel of [['insurance-claims', 'actions.ts'], ['insurance-claims', 'page.tsx'], ['insurance-claims', '[id]', 'page.tsx']]) expect([rel.join('/'), fs.existsSync(path.join(APP, ...rel))]).toEqual([rel.join('/'), false]);
+    for (const rel of ['features/insurance/insurance.ts', 'test/insurance.spec.ts', 'test-render/insurance-console.render.test.tsx']) expect([rel, fs.existsSync(path.join(__dirname, '..', rel))]).toEqual([rel, false]);
   });
   it('no not-yet page imports an API client or the SDK (it calls nothing), and each still gates the session', () => {
     for (const f of notYet) {

@@ -89,3 +89,10 @@ answer "which of my events went to which partner?".
 a `*` scope, treating a missing `@PartnerScope` as open, ignoring the resolved-owner mismatch in `deliverable()`,
 disclosing the 401 reason, and an off-by-one quota. The SDK spec proves a partner call never attaches a user bearer
 token (removing `anonymous: true` fails it).
+
+## PC-56 PARTNER-3a (2026-10-20) — what a partner webhook CARRIES (founder Q7; survey F-3 / C-7 / C-8)
+Ownership routing above is unchanged. The CONTENT is no longer the raw outbox payload: `PartnerWebhookFanoutHandler` enqueues
+`data: projectPartnerPayload(event.eventType, event.payload)` (`domain/partner-webhook-projection.ts`) — a pure, per-event-type ALLOW-LIST
+of ids, statuses, event type codes, minor-unit amounts and timestamps, each value type-checked. Never a user id (`claimantUserId`,
+`applicantUserId`, `holderUserId`), a note, a survey report, a payment id, a description, a surveyor. An event type with no projection
+→ `{}` (never the raw payload). The S2 review now also covers this projection.

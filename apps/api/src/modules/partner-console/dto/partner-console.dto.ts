@@ -101,3 +101,17 @@ export const PartnerIssuanceQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional(),
 }).strict();
 export type PartnerIssuanceQueryDto = z.infer<typeof PartnerIssuanceQuerySchema>;
+
+// ── PC-56 PARTNER-3a ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+/** The insurer's claims queue — keyset, OLDEST first; the status filter is the claim state machine's own list; limit ≤ 100. */
+export const PartnerClaimsQuerySchema = z.object({
+  status: z.enum(['intimated', 'docs_pending', 'survey_scheduled', 'surveyed', 'approved', 'partially_approved', 'rejected', 'paid', 'closed']).optional(),
+  cursor: z.string().max(200).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+}).strict();
+export type PartnerClaimsQueryDto = z.infer<typeof PartnerClaimsQuerySchema>;
+/** The claims counts' window — two IST calendar days [from, to), both or neither (neither = the current FY, answered by the database). */
+const isoDay = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD');
+export const PartnerClaimCountsQuerySchema = z.object({ from: isoDay.optional(), to: isoDay.optional() }).strict()
+  .refine((q) => (q.from === undefined) === (q.to === undefined), { message: 'from and to are given together, or neither' });
+export type PartnerClaimCountsQueryDto = z.infer<typeof PartnerClaimCountsQuerySchema>;

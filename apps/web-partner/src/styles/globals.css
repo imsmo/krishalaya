@@ -127,3 +127,9 @@ pre.kv-code { white-space: pre-wrap; padding-block: .5rem; padding-inline: .75re
 /* PC-56 PARTNER-2c — the lender's shelf (logical properties only: RTL-safe): the rate cell keeps its integer bps sentence on one line */
 [data-kv-lender] td[data-kv-col="apr"] { white-space: nowrap; }
 [data-kv-lender] [data-kv-propose] { margin-block: .5rem 1rem; padding-inline-start: .75rem; border-inline-start: .25rem solid var(--kv-neutral-200, #e5e5e5); }
+/* PC-56 PARTNER-3a — the insurer's own claims (logical properties only: RTL-safe): the claims sub-navigation and the count chips */
+.kv-subnav { display: flex; flex-wrap: wrap; gap: .4rem; margin-block: .5rem 1rem; padding-block-end: .5rem; border-block-end: 1px solid var(--kv-neutral-200, #e5e5e5); }
+.kv-counts__list { display: flex; flex-wrap: wrap; gap: .75rem; margin-block: .5rem; }
+.kv-counts__item { min-inline-size: 7.5rem; padding-block: .4rem; padding-inline: .75rem; border-radius: .5rem; background: var(--kv-neutral-50, #f8f8f6); }
+.kv-counts__item dd { margin-inline-start: 0; font-size: 1.25rem; font-weight: 600; }
+[data-kv-decide] { margin-block: 1rem; }

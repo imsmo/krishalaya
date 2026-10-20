@@ -99,11 +99,11 @@ describe.skip('insurance e2e (requires test-DB harness)', () => {
     // farmer-role auth attempting POST .../decide or .../settle → expect 403
   });
 
-  it('POST /v1/insurance/claims/:id/settle is money-OUT: credits the claimant wallet via the existing wallet port and never creates a new payouts row (payoutId stays null — money-path boundary #2, see spec_dev23.md)', async () => {
-    // decide(approved) → settle → assert a wallet ledger entry for the claimant + insurance_claims.payout_id IS NULL
+  it('PC-56 PARTNER-3a · POST /v1/insurance/claims/:id/settle is REFUSED BY NAME (403 INSURANCE_SETTLEMENT_NOT_ON_PLATFORM): no wallet posting, the claim stays approved, the policy active', async () => {
+    // proven LIVE in src/__tests__/partner3a-settlement-lockdown.integration.spec.ts (1)–(2)
   });
 
-  it('a claim cannot be settled without a prior approved decision (the trust-critical guard)', async () => {
-    // file → settle directly → expect 409/422, claim status unchanged
+  it('PC-56 PARTNER-3a · settle answers the same sentence whatever the claim\'s state (no money path exists from the tenant realm)', async () => {
+    // decide(approved) → settle → 403 by name; file → settle → 403 by name
   });
 });

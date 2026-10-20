@@ -172,6 +172,26 @@ describe('PC-56 PARTNER-2b · SDK the issuance queue (a read; nothing is issued)
   });
 });
 
+describe('PC-56 PARTNER-3a · SDK the insurer\'s own claims (read-only, claim facts only)', () => {
+  it('claims.list / get / counts are GETs with the partner token (keyset + status, the window as query); no decide / settle / assign / flag method', async () => {
+    const { fn, calls } = fakeFetch([], { nextCursor: 'cur4', limit: 2, computedAt: '2026-10-20T00:00:00.000Z' });
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const page = await c.partner.insurance.claims.list({ status: 'surveyed', cursor: 'cur3', limit: 2 });
+    expect(page).toEqual({ items: [], nextCursor: 'cur4', limit: 2, computedAt: '2026-10-20T00:00:00.000Z' });
+    await c.partner.insurance.claims.get('cl 1');
+    await c.partner.insurance.claims.counts();
+    await c.partner.insurance.claims.counts({ from: '2026-04-01', to: '2027-04-01' });
+    expect(calls.map((x) => x.url.replace('https://api.test/v1/', ''))).toEqual(['partner/insurance/claims?status=surveyed&cursor=cur3&limit=2', 'partner/insurance/claims/cl%201',
+      'partner/insurance/claims/counts', 'partner/insurance/claims/counts?from=2026-04-01&to=2027-04-01']);
+    for (const x of calls) { expect(x.init.method).toBe('GET'); expect(hdr(x, 'authorization')).toBe('Bearer tok'); }
+    for (const m of ['decide', 'settle', 'assign', 'flag', 'takeNext', 'export']) expect((c.partner.insurance.claims as unknown as Record<string, unknown>)[m]).toBeUndefined();
+    const k: import('../resources/partner').PartnerInsuranceClaim = { id: 'cl1', policyId: 'po1', policyNo: null, productId: 'pr1', productName: null, fpoName: null, subjectType: 'animal',
+      sumInsuredMinor: '11000000', eventTypeCode: 'death', eventDate: '2026-10-10', status: 'surveyed', reportedWithin72h: true, approvedMinor: null, damagePercent: 62,
+      filedAt: null, lastChangedAt: null, closedAt: null, waitingDays: 3 };
+    expect(Object.keys(k).filter((x) => /claimant|description|surveyor|surveyReport|note|payout|tenant|created_?by|phone|^name$/i.test(x))).toEqual([]);
+  });
+});
+
 describe('PC-56 PARTNER-2c · SDK the lender\'s shelf (read-only, no person field)', () => {
   it('loanProducts.list / get are GETs with the partner token; meta maps computedAt + windowDays; no create / change method exists', async () => {
     const { fn, calls } = fakeFetch([], { computedAt: '2026-10-18T00:00:00.000Z', windowDays: 30 });

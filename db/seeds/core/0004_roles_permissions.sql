@@ -356,7 +356,9 @@ BEGIN
       ('partner.webhooks.read',       'Partner console: read this partner''s webhook endpoints and deliveries (not built in PARTNER-0)', 'M19'),
       ('partner.settings.read',       'Partner console: read this partner''s organisation settings', 'M19'),
       -- [PC-56 PARTNER-2a · founder Q6] migration 0228 grants it to every partner role (bound by scope); here the row, inserted where missing
-      ('partner.insurance.read',      'Partner console: read this insurer''s own products and the policies written on them — policy facts only, never a policyholder''s identity', 'M19')
+      ('partner.insurance.read',      'Partner console: read this insurer''s own products and the policies written on them — policy facts only, never a policyholder''s identity', 'M19'),
+      -- [PC-56 PARTNER-3a · founder Q4] migration 0230 grants it to every partner role (bound by scope); here the row, inserted where missing
+      ('partner.claims.read',         'Partner console: read the claims on this insurer''s own products — claim facts only, never a claimant', 'M19')
     ON CONFLICT (code) DO NOTHING;
     INSERT INTO role_permissions (role_id, permission_code)
     SELECT r.id, p.code FROM roles r JOIN permissions p ON

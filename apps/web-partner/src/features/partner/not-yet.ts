@@ -12,9 +12,8 @@ export const NOT_YET_ROUTES: Readonly<Record<string, NotYetSurface>> = Object.fr
   // PC-56 PARTNER-2c: /products and /products/[id] answer 307 to the built `lender/products` routes (the lender's shelf)
   '/portfolio': 'portfolio', '/portfolio/[id]': 'portfolio',
   '/servicing': 'servicing',
-  // PC-56 PARTNER-2a: /insurance-book, /insurance-products, /insurance-policies(/[id]) answer 307 to the built `insurer/*` routes; the claims pair
-  // stays not-yet (PARTNER-3)
-  '/insurance-claims': 'insurance', '/insurance-claims/[id]': 'insurance',
+  // PC-56 PARTNER-2a: /insurance-book, /insurance-products, /insurance-policies(/[id]) answer 307 to the built `insurer/*` routes; PC-56 PARTNER-3a:
+  // the claims pair /insurance-claims(/[id]) answers 307 to the built `insurer/claims` routes (CLAIMS_REDIRECTS) — no insurance page is not-yet now
   '/fleet': 'fleet', '/fleet/carriers/[id]': 'fleet', '/fleet/slots': 'fleet', '/fleet/slots/[id]': 'fleet', '/fleet/vehicles': 'fleet', '/fleet/vehicles/[id]': 'fleet',
   '/shipments': 'logistics', '/shipments/[id]': 'logistics', '/zones': 'logistics', '/zones/[id]': 'logistics', '/routes': 'logistics', '/routes/[id]': 'logistics',
   '/cold-chain': 'logistics',

@@ -1,12 +1,15 @@
 // modules/insurance/__tests__/insurance-claim.service.spec.ts · claims use-case tests (fakes, no DB).
 // Pins: filing requires the policy to be ON COVER (active); decisions cap approvedMinor at the policy's own
-// sum insured; settlement is the TRUST-CRITICAL money-out path — RBAC-gated, idempotent, credits the
-// claimant's wallet via the wallet port (never a new money primitive), and fires the underlying policy's
-// active->claimed transition in the SAME tx.
+// sum insured. PC-56 PARTNER-3a (founder Q1 / Q2 / Q5): settlement is REFUSED BY NAME — the old money-out cases (a wallet credit from the
+// platform's payouts account, the policy flipped to claimed) are replaced by the refusal: nothing is read, keyed or posted. The claimant is
+// the policy's HOLDER (an assisted filing audits the filer); a death claim on one's own cover needs a nominee; the decider is never the filer,
+// the claimant or the surveyor; the surveyor is an active member of the claim's organisation and never the claimant.
 import { InsuranceClaimService } from '../services/insurance-claim.service';
 import { InsuranceClaim } from '../domain/insurance-claim.entity';
 import { InsurancePolicy } from '../domain/insurance-policy.entity';
-import { InsuranceForbiddenError, PolicyNotOnCoverError, InvalidClaimEventTypeError, InvalidClaimDecisionError, ClaimEvidenceNotAttachableError } from '../domain/insurance.errors';
+import { InsuranceForbiddenError, PolicyNotOnCoverError, InvalidClaimEventTypeError, InvalidClaimDecisionError, ClaimEvidenceNotAttachableError,
+  InsuranceSettlementNotOnPlatformError, InsuranceClaimNeedsNomineeError, InsuranceDeciderConflictError, InsuranceSurveyorInvalidError, InsurancePolicyNotFoundError } from '../domain/insurance.errors';
+import { decisionConflict, needsNominee } from '../services/insurance-claim.service';
 
 // A FRESH InsurancePolicy instance per call — the entity mutates `props` in place (e.g. markClaimed()), so a
 // module-level shared instance would leak status across tests (test-fixture bug, not a production one: the
@@ -34,12 +37,13 @@ function harness() {
   const repo = {
     insert: jest.fn(), getForUpdate: jest.fn(), update: jest.fn(), getById: jest.fn(), listFor: jest.fn(),
     attachEvidence: jest.fn(), evidenceAttachable: jest.fn(async () => true), resolveEventTypeId: jest.fn(async () => 'evt-flood'),
-    countEvidence: jest.fn(async () => 0),
+    countEvidence: jest.fn(async () => 0), filerOf: jest.fn(async () => 'u1'), isActiveMember: jest.fn(async () => true),
   };
   const policies = { getById: jest.fn(async () => freshActivePolicy()), getForUpdate: jest.fn(async () => freshActivePolicy()), update: jest.fn() };
   const vetCert = { verify: jest.fn(async () => ({ status: 'verified', providerRef: 'ref-1' })) };
   const flags = { isEnabled: jest.fn(async () => true), assertEnabled: jest.fn(async () => true) };
-  const svc = new InsuranceClaimService(uow as any, outbox as any, idem as any, quota as any, metrics as any, wallet as any, vetCert as any, flags as any, audit as any, repo as any, policies as any);
+  // PC-56 PARTNER-3a: the service holds NO wallet port any more (the settle posting is removed); the fake is kept to prove it is never called
+  const svc = new InsuranceClaimService(uow as any, outbox as any, idem as any, quota as any, metrics as any, vetCert as any, flags as any, audit as any, repo as any, policies as any);
   return { svc, repo, policies, outbox, quota, idem, wallet, audit, vetCert, flags };
 }
 const farmer = { userId: 'u1', canManage: false };
@@ -111,7 +115,7 @@ describe('decide — RBAC + sum-insured cap (screen 293)', () => {
   });
 });
 
-describe('settle — money-out (the trust-critical path, screen 293)', () => {
+describe('settle — REFUSED BY NAME from the tenant realm (PC-56 PARTNER-3a, founder Q1; was the money-out path of screen 293)', () => {
   function approvedClaim() {
     const c = InsuranceClaim.file({ id: 'c1', tenantId: 't1', policyId: 'p1', claimantUserId: 'u1', eventDate: '2026-06-30', eventTypeId: 'evt-flood', description: null });
     c.pullEvents();
@@ -119,38 +123,95 @@ describe('settle — money-out (the trust-critical path, screen 293)', () => {
     c.decide('approved', 28_500_00n, null); c.pullEvents();
     return c;
   }
-  it('a non-manager cannot settle a claim', async () => {
+  it('PC-56 PARTNER-3a · settle is REFUSED BY NAME for a manager — nothing read, keyed or posted; the claim and the policy untouched', async () => {
+    const { svc, repo, wallet, idem, policies, audit, outbox } = harness();
+    (repo.getForUpdate as jest.Mock).mockResolvedValue(approvedClaim());
+    await expect(svc.settle('t1', insurer, 'c1')).rejects.toBeInstanceOf(InsuranceSettlementNotOnPlatformError);
+    await expect(svc.settle('t1', insurer, 'c1')).rejects.toMatchObject({ code: 'INSURANCE_SETTLEMENT_NOT_ON_PLATFORM', httpStatus: 403,
+      message: 'Claim settlement is not made on the platform yet: an insurer\'s funding leg does not exist. Nothing has been paid.' });
+    for (const m of [repo.getForUpdate, repo.update, wallet.post, idem.remember, policies.getForUpdate, policies.update, audit.write, outbox.write]) expect(m).not.toHaveBeenCalled();
+  });
+  it('PC-56 PARTNER-3a · settle is refused for a non-manager too (the same sentence — no money path exists for anybody)', async () => {
     const { svc } = harness();
-    await expect(svc.settle('t1', farmer, 'idem-s1', 'c1')).rejects.toBeInstanceOf(InsuranceForbiddenError);
+    await expect(svc.settle('t1', farmer, 'c1')).rejects.toBeInstanceOf(InsuranceSettlementNotOnPlatformError);
   });
-  it('credits the claimant\'s wallet from the platform payouts account — zero-sum, via the EXISTING wallet port', async () => {
-    const { svc, repo, wallet } = harness();
-    (repo.getForUpdate as jest.Mock).mockResolvedValue(approvedClaim());
-    const out = await svc.settle('t1', insurer, 'idem-s2', 'c1');
-    expect(out.status).toBe('paid');
-    expect(wallet.post).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
-      txnType: 'insurance_claim_settlement',
-      idempotencyKey: 'insurance-claim-settle:c1',
-      legs: [
-        { account: expect.objectContaining({ accountCode: 'payouts' }), amountMinor: -28_500_00n },
-        { account: expect.objectContaining({ userId: 'u1' }), amountMinor: 28_500_00n },
-      ],
-    }));
+  it('PC-56 PARTNER-3a · the service source carries no wallet posting any more (removed, not merely unreachable)', () => {
+    const src = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'services', 'insurance-claim.service.ts'), 'utf8') as string;
+    const code = src.split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
+    for (const w of ['wallet.post', 'WALLET_SERVICE', 'PlatformAccount', 'userMain(', 'markClaimed']) expect([w, code.includes(w)]).toEqual([w, false]);
   });
-  it('fires the underlying policy\'s active->claimed transition in the SAME settlement', async () => {
-    const { svc, repo, policies } = harness();
-    (repo.getForUpdate as jest.Mock).mockResolvedValue(approvedClaim());
-    await svc.settle('t1', insurer, 'idem-s3', 'c1');
-    expect(policies.getForUpdate).toHaveBeenCalledWith(expect.anything(), 't1', 'p1');
-    expect(policies.update).toHaveBeenCalledTimes(1);
-    const updatedPolicy = (policies.update as jest.Mock).mock.calls[0][1] as InsurancePolicy;
-    expect(updatedPolicy.status).toBe('claimed');
+});
+
+describe('PC-56 PARTNER-3a · founder Q2 — the claimant is the HOLDER; assisted filings are audited; a death on one\'s own cover needs a nominee', () => {
+  it('the holder files: the claimant is the holder, created_by the holder, assisted false', async () => {
+    const { svc, repo, audit } = harness();
+    const out = await svc.file('t1', farmer, 'idem-h1', fileDto);
+    expect(out.claimantUserId).toBe('u1');
+    expect(repo.insert).toHaveBeenCalledWith(expect.anything(), expect.anything(), 'u1');
+    expect(audit.write).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ actorUserId: 'u1', action: 'insurance.claim.filed', newValue: { policyId: 'p1', assisted: false } }));
   });
-  it('is idempotent on the caller key (Law 3)', async () => {
-    const { svc, repo, idem } = harness();
-    (repo.getForUpdate as jest.Mock).mockResolvedValue(approvedClaim());
-    await svc.settle('t1', insurer, 'idem-s4', 'c1');
-    expect(idem.remember).toHaveBeenCalledWith('idem-s4', 'agent1', 'insurance.claim.settle', expect.any(Function));
+  it('a desk member files on the holder\'s policy: the claimant is STILL the holder; the filer is created_by and the audit actor, assisted true', async () => {
+    const { svc, repo, audit, outbox } = harness();
+    const out = await svc.file('t1', insurer, 'idem-h2', fileDto);
+    expect(out.claimantUserId).toBe('u1');
+    expect(repo.insert).toHaveBeenCalledWith(expect.anything(), expect.anything(), 'agent1');
+    expect(audit.write).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ actorUserId: 'agent1', newValue: { policyId: 'p1', assisted: true } }));
+    const filed = (outbox.write as jest.Mock).mock.calls.map((c) => c[1]).find((e) => e.eventType === 'insurance.claim_filed');
+    expect(filed.payload).toMatchObject({ claimantUserId: 'u1', eventTypeCode: 'flood' });
+  });
+  it('a non-holder without insurance.manage → 404 (no IDOR), nothing written', async () => {
+    const { svc, repo } = harness();
+    await expect(svc.file('t1', { userId: 'neighbour', canManage: false }, 'idem-h3', fileDto)).rejects.toBeInstanceOf(InsurancePolicyNotFoundError);
+    expect(repo.insert).not.toHaveBeenCalled();
+  });
+  it('a death claim on a person policy whose subject is the holder → INSURANCE_CLAIM_NEEDS_NOMINEE (422); an accident on it is the holder\'s own', async () => {
+    const { svc, policies, repo } = harness();
+    const person = () => InsurancePolicy.rehydrate({ ...freshActivePolicy().toProps(), subjectType: 'person', subjectId: 'u1' });
+    (policies.getById as jest.Mock).mockImplementation(async () => person());
+    await expect(svc.file('t1', insurer, 'idem-n1', { ...fileDto, eventTypeCode: 'death' })).rejects.toBeInstanceOf(InsuranceClaimNeedsNomineeError);
+    await expect(svc.file('t1', farmer, 'idem-n2', { ...fileDto, eventTypeCode: 'death' })).rejects.toMatchObject({ code: 'INSURANCE_CLAIM_NEEDS_NOMINEE', httpStatus: 422 });
+    expect(repo.insert).not.toHaveBeenCalled();
+    const out = await svc.file('t1', farmer, 'idem-n3', { ...fileDto, eventTypeCode: 'accident' });
+    expect(out.claimantUserId).toBe('u1');
+    expect([needsNominee({ subjectType: 'person', subjectId: null, holderUserId: 'u1' }, 'death'), needsNominee({ subjectType: 'person', subjectId: 'other', holderUserId: 'u1' }, 'death'),
+      needsNominee({ subjectType: 'animal', subjectId: 'a1', holderUserId: 'u1' }, 'death')]).toEqual([true, false, false]);
+  });
+});
+
+describe('PC-56 PARTNER-3a · founder Q2 — the decider is never the filer, the claimant or the surveyor (the desk still decides — Q3)', () => {
+  function surveyed() {
+    const c = InsuranceClaim.file({ id: 'c1', tenantId: 't1', policyId: 'p1', claimantUserId: 'u1', eventDate: '2026-06-30', eventTypeId: 'evt-flood', description: null });
+    c.pullEvents(); c.scheduleSurvey('surveyor-1'); c.recordSurvey({ damagePercent: 35 });
+    return c;
+  }
+  it('the surveyor → 409 INSURANCE_DECIDER_CONFLICT; the filer → 409; another manager decides', async () => {
+    const { svc, repo } = harness();
+    (repo.getForUpdate as jest.Mock).mockImplementation(async () => surveyed());
+    (repo.filerOf as jest.Mock).mockResolvedValue('agent1');
+    await expect(svc.decide('t1', { userId: 'surveyor-1', canManage: true }, 'c1', { decision: 'rejected' } as any)).rejects.toMatchObject({ code: 'INSURANCE_DECIDER_CONFLICT', httpStatus: 409, details: { claimId: 'c1', as: 'surveyor' } });
+    await expect(svc.decide('t1', insurer, 'c1', { decision: 'rejected' } as any)).rejects.toBeInstanceOf(InsuranceDeciderConflictError);
+    expect(repo.update).not.toHaveBeenCalled();
+    const out = await svc.decide('t1', { userId: 'admin2', canManage: true }, 'c1', { decision: 'approved', approvedMinor: '100' } as any);
+    expect(out.status).toBe('approved');
+    expect([decisionConflict('u1', { filer: null, claimant: 'u1', surveyor: null }), decisionConflict('x', { filer: null, claimant: 'u1', surveyor: null })]).toEqual(['claimant', null]);
+  });
+});
+
+describe('PC-56 PARTNER-3a · founder Q5 — the surveyor is an active member of the claim\'s organisation, never the claimant', () => {
+  function intimated() {
+    const c = InsuranceClaim.file({ id: 'c1', tenantId: 't1', policyId: 'p1', claimantUserId: 'u1', eventDate: '2026-06-30', eventTypeId: 'evt-flood', description: null });
+    c.pullEvents(); return c;
+  }
+  it('the claimant → 422 INSURANCE_SURVEYOR_INVALID; a non-member → 422; a member → scheduled', async () => {
+    const { svc, repo } = harness();
+    (repo.getForUpdate as jest.Mock).mockImplementation(async () => intimated());
+    await expect(svc.scheduleSurvey('t1', insurer, 'c1', { surveyorUserId: 'u1' } as any)).rejects.toMatchObject({ code: 'INSURANCE_SURVEYOR_INVALID', httpStatus: 422, details: { reason: 'claimant' } });
+    (repo.isActiveMember as jest.Mock).mockResolvedValueOnce(false);
+    await expect(svc.scheduleSurvey('t1', insurer, 'c1', { surveyorUserId: 'outsider' } as any)).rejects.toBeInstanceOf(InsuranceSurveyorInvalidError);
+    expect(repo.isActiveMember).toHaveBeenCalledWith(expect.anything(), 't1', 'outsider');
+    expect(repo.update).not.toHaveBeenCalled();
+    const out = await svc.scheduleSurvey('t1', insurer, 'c1', { surveyorUserId: 'member-1' } as any);
+    expect(out.status).toBe('survey_scheduled');
   });
 });
 

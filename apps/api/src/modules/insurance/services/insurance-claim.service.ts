@@ -1,17 +1,22 @@
 // modules/insurance/services/insurance-claim.service.ts · claims lifecycle use-cases (KV-BL-054, screens
 // 289-293, W255-264 canon reference for the insurer-side shape only). File -> evidence -> (docs) -> survey
-// -> decision -> settle -> close. Every write: one ACID tx (UoW), state via the machine (Law 5), outbox
+// -> decision -> close (settle REFUSED, PARTNER-3a). Every write: one ACID tx (UoW), state via the machine (Law 5), outbox
 // in-tx (Law 4), idempotent money mutations (Law 3), authz THROWS (Law 6). No version column on
 // insurance_claims -> the repo locks FOR UPDATE (mirrors insurance_policies).
 //
-// MONEY-PATH BOUNDARY (settle(), see spec_dev23.md for the full statement): settlement credits the
-// claimant's OWN wallet directly via the already-exported WALLET_SERVICE port (the SAME primitive
-// ambassador-earning.service.ts uses to pay a third party from a platform account) -- NOT a new money
-// primitive. `insurance_claims.payout_id` is left NULL: the payments module exposes no "system-initiated
-// third-party payout" hook this batch can call without inventing new payments-module money-movement code
-// (PayoutService.requestPayout is self-serve-only, debits the CALLER's own wallet first -- architecturally
-// the wrong direction for money the insurer owes the claimant). Recorded for founder arbitration, not
-// invented around.
+// PC-56 PARTNER-3a (survey F-1 / F-2 / F-7; founder Q1 / Q2 / Q3 / Q5, 2026-10-18) — THE TENANT REALM MOVES NO CLAIM MONEY:
+//   • settle() is REFUSED BY NAME (INSURANCE_SETTLEMENT_NOT_ON_PLATFORM, 403) before anything is read. The old posting —
+//     platform(Payouts) → userMain(claimant), the policy flipped active → claimed in the same tx — is REMOVED from this service (not
+//     merely unreachable): the platform's payouts clearing account was paying claims nobody funded (survey §1 rupee 1–3). Settlement
+//     returns with the insurer's funding leg as one founder-signed money wave (P2-B11 + P3-B5). The route stays so a caller gets the
+//     sentence; the entity's `settle()` transition stays in the state machine and no service calls it.
+//   • file() records the POLICY HOLDER as the claimant, never the filer. A desk member (`insurance.manage`) may file on another member's
+//     policy only ON BEHALF OF the holder: the filer is `created_by` on the row and the audit row's actor, with `assisted: true`. A death
+//     claim on a person's own cover (subject = holder) is refused by name until a nominee model exists (INSURANCE_CLAIM_NEEDS_NOMINEE).
+//   • decide() refuses a decider who filed the claim (`created_by`), is its claimant, or is its surveyor (INSURANCE_DECIDER_CONFLICT, 409).
+//     The FPO desk still decides (founder Q3: the insurer only READS in this wave).
+//   • scheduleSurvey() refuses a surveyor who is not an ACTIVE member of the claim's organisation (a live `user_tenant_roles` grant, not
+//     under a live `tenant_member_suspensions` row) or who is the claimant (INSURANCE_SURVEYOR_INVALID, 422).
 import { Inject, Injectable } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
@@ -19,8 +24,6 @@ import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../core/idempoten
 import { QUOTA_SERVICE, QuotaService } from '../../../core/quota/quota.service';
 import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { AuditWriter } from '../../../core/audit/audit.writer';
-import { WALLET_SERVICE, WalletPort } from '../../../core/wallet/wallet.port';
-import { userMain, platform, PlatformAccount } from '../../../core/wallet/account-codes';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { InsuranceClaim } from '../domain/insurance-claim.entity';
 import { DomainEvent, ClaimEventType } from '../domain/insurance.events';
@@ -28,7 +31,8 @@ import { isOnCover } from '../domain/insurance-policy.state';
 import {
   InsuranceClaimNotFoundError, InsuranceForbiddenError, PolicyNotOnCoverError, InvalidClaimEventTypeError,
   InvalidClaimDecisionError, ClaimNotAwaitingAcknowledgementError, ClaimEvidenceNotAttachableError,
-  InsurancePolicyNotFoundError, VetCertNotApplicableError,
+  InsurancePolicyNotFoundError, VetCertNotApplicableError, InsuranceSettlementNotOnPlatformError, InsuranceClaimNeedsNomineeError,
+  InsuranceDeciderConflictError, InsuranceSurveyorInvalidError,
 } from '../domain/insurance.errors';
 import { FlagsService } from '../../../core/feature-flags/flags.service';
 import { VET_CERT_PROVIDER, VetCertProvider } from '../gateway/vet-cert-provider.port';
@@ -49,7 +53,6 @@ export class InsuranceClaimService {
     @Inject(IDEMPOTENCY_SERVICE) private readonly idem: IdempotencyService,
     @Inject(QUOTA_SERVICE) private readonly quota: QuotaService,
     @Inject(METRICS) private readonly metrics: Metrics,
-    @Inject(WALLET_SERVICE) private readonly wallet: WalletPort,
     @Inject(VET_CERT_PROVIDER) private readonly vetCert: VetCertProvider,
     private readonly flags: FlagsService,
     private readonly audit: AuditWriter,
@@ -70,18 +73,22 @@ export class InsuranceClaimService {
         await this.quota.assertWithinLimit(tenantId, QUOTA_METRIC);
         const policy = await this.policies.getById(tenantId, dto.policyId);
         if (!policy) throw new InsurancePolicyNotFoundError(dto.policyId);
-        if (policy.holderUserId !== actor.userId && !actor.canManage) throw new InsurancePolicyNotFoundError(dto.policyId); // 404, no IDOR
+        const holder = policy.toProps();
+        // founder Q2: the claimant is ALWAYS the holder; anyone else filing is an assisted filing, allowed to a desk member only
+        const assisted = holder.holderUserId !== actor.userId;
+        if (assisted && !actor.canManage) throw new InsurancePolicyNotFoundError(dto.policyId); // 404, no IDOR
         if (!isOnCover(policy.status)) throw new PolicyNotOnCoverError(policy.id, policy.status);
+        if (needsNominee(holder, dto.eventTypeCode)) throw new InsuranceClaimNeedsNomineeError(policy.id);
 
         return this.uow.run(tenantId, async (tx) => {
           const eventTypeId = await this.repo.resolveEventTypeId(tx, dto.eventTypeCode);
           if (!eventTypeId) throw new InvalidClaimEventTypeError(dto.eventTypeCode);
           const id = uuidv7();
           const claim = InsuranceClaim.file({
-            id, tenantId, policyId: policy.id, claimantUserId: actor.userId,
-            eventDate: dto.eventDate, eventTypeId, description: dto.description ?? null,
+            id, tenantId, policyId: policy.id, claimantUserId: holder.holderUserId,
+            eventDate: dto.eventDate, eventTypeId, eventTypeCode: dto.eventTypeCode, description: dto.description ?? null,
           });
-          await this.repo.insert(tx, claim);
+          await this.repo.insert(tx, claim, actor.userId);   // created_by = the FILER (the decider-conflict check reads it)
           await this.quota.increment(tx, tenantId, QUOTA_METRIC, 1);
           if (dto.evidenceMediaIds?.length) {
             for (const mediaId of dto.evidenceMediaIds) {
@@ -90,7 +97,7 @@ export class InsuranceClaimService {
             await this.repo.attachEvidence(tx, id, dto.evidenceMediaIds);
           }
           await this.flush(tx, tenantId, id, claim.pullEvents());
-          await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'insurance.claim.filed', entityType: 'insurance_claim', entityId: id, newValue: { policyId: policy.id }, ip: null });
+          await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'insurance.claim.filed', entityType: 'insurance_claim', entityId: id, newValue: { policyId: policy.id, assisted }, ip: null });
           return claim.toJSON();
         }, { userId: actor.userId });
       }));
@@ -129,7 +136,7 @@ export class InsuranceClaimService {
     }, { userId: actor.userId });
   }
 
-  // ---- insurer-side (insurance.manage), mirrors the lender-partner RBAC pattern -------------------------
+  // ---- the FPO's insurance desk (insurance.manage — tenant staff, NOT an insurer: survey C-3 / C-4) ---------
 
   async requestDocuments(tenantId: string, actor: InsuranceActor, claimId: string) {
     if (!actor.canManage) throw new InsuranceForbiddenError('requires insurance.manage');
@@ -173,7 +180,12 @@ export class InsuranceClaimService {
 
   async scheduleSurvey(tenantId: string, actor: InsuranceActor, claimId: string, dto: ScheduleSurveyDto) {
     if (!actor.canManage) throw new InsuranceForbiddenError('requires insurance.manage');
-    return this.mutate(tenantId, actor, claimId, (c) => c.scheduleSurvey(dto.surveyorUserId), 'insurance.claim.survey_scheduled', { surveyorUserId: dto.surveyorUserId });
+    return this.mutate(tenantId, actor, claimId, (c) => c.scheduleSurvey(dto.surveyorUserId), 'insurance.claim.survey_scheduled', { surveyorUserId: dto.surveyorUserId },
+      async (tx, c) => {
+        // founder Q5: never the claimant; an ACTIVE member of the claim's organisation (user_tenant_roles + no live suspension)
+        if (dto.surveyorUserId === c.claimantUserId) throw new InsuranceSurveyorInvalidError(claimId, 'claimant');
+        if (!(await this.repo.isActiveMember(tx, tenantId, dto.surveyorUserId))) throw new InsuranceSurveyorInvalidError(claimId, 'not_member');
+      });
   }
 
   async recordSurvey(tenantId: string, actor: InsuranceActor, claimId: string, dto: RecordSurveyDto) {
@@ -188,6 +200,9 @@ export class InsuranceClaimService {
     if (!actor.canManage) throw new InsuranceForbiddenError('requires insurance.manage');
     return this.uow.run(tenantId, async (tx) => {
       const claim = await this.repo.getForUpdate(tx, tenantId, claimId);
+      // founder Q2: the decider is never the filer (`created_by`), the claimant or the claim's surveyor
+      const conflict = decisionConflict(actor.userId, { filer: await this.repo.filerOf(tx, tenantId, claimId), claimant: claim.claimantUserId, surveyor: claim.toProps().surveyorUserId });
+      if (conflict) throw new InsuranceDeciderConflictError(claimId, conflict);
       let approvedMinor: bigint | null = null;
       if (dto.decision !== 'rejected') {
         if (!dto.approvedMinor) throw new InvalidClaimDecisionError('approvedMinor is required for an approved/partially_approved decision');
@@ -207,38 +222,10 @@ export class InsuranceClaimService {
     }, { userId: actor.userId });
   }
 
-  /** SETTLE — money-out (screen 293). Idempotency-keyed (Law 3): the wallet credit is ALSO idempotent on
-   *  its own key (`insurance-claim-settle:<claimId>`), double safety against a double-credit even if the
-   *  outer idem wrapper is somehow bypassed. Also fires the underlying policy's active->claimed transition
-   *  in the SAME tx (both aggregates live in this module — no cross-module boundary crossed). */
-  async settle(tenantId: string, actor: InsuranceActor, idemKey: string, claimId: string) {
-    if (!actor.canManage) throw new InsuranceForbiddenError('requires insurance.manage');
-    return this.idem.remember(idemKey, actor.userId, 'insurance.claim.settle', () =>
-      timed(this.metrics, 'insurance.claim.settle', { tenant: tenantId }, () =>
-        this.uow.run(tenantId, async (tx) => {
-          const claim = await this.repo.getForUpdate(tx, tenantId, claimId);
-          claim.settle();   // throws ClaimNotApprovedError if not approved/partially_approved
-          const approvedMinor = claim.approvedMinor as bigint;
-
-          const txn = await this.wallet.post(tx, {
-            tenantId, txnType: 'insurance_claim_settlement', idempotencyKey: `insurance-claim-settle:${claimId}`,
-            referenceType: 'insurance_claim', referenceId: claimId, initiatedBy: actor.userId,
-            legs: [
-              { account: platform(PlatformAccount.Payouts), amountMinor: -approvedMinor },
-              { account: userMain(claim.claimantUserId), amountMinor: approvedMinor },
-            ],
-          });
-
-          const policy = await this.policies.getForUpdate(tx, tenantId, claim.policyId);
-          policy.markClaimed();
-          await this.policies.update(tx, policy);
-          await this.flush(tx, tenantId, policy.id, policy.pullEvents());
-
-          await this.repo.update(tx, claim);
-          await this.flush(tx, tenantId, claimId, claim.pullEvents());
-          await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'insurance.claim.settled', entityType: 'insurance_claim', entityId: claimId, newValue: { approvedMinor: approvedMinor.toString(), ledgerTxnId: txn.txnId }, ip: null });
-          return { id: claimId, status: claim.status, approvedMinor: approvedMinor.toString(), ledgerTxnId: txn.txnId };
-        }, { userId: actor.userId })));
+  /** SETTLE — REFUSED FROM THE TENANT REALM BY NAME (founder Q1, PC-56 PARTNER-3a). Thrown before any read, any idempotency record, any
+   *  ledger call: no posting exists in this service any more. The claim stays approved; the policy stays active. */
+  async settle(_tenantId: string, _actor: InsuranceActor, _claimId: string): Promise<never> {
+    throw new InsuranceSettlementNotOnPlatformError();
   }
 
   async close(tenantId: string, actor: InsuranceActor, claimId: string) {
@@ -265,9 +252,11 @@ export class InsuranceClaimService {
     return { items, nextCursor };
   }
 
-  private async mutate(tenantId: string, actor: InsuranceActor, claimId: string, fn: (c: InsuranceClaim) => void, action: string, auditValue: Record<string, unknown>) {
+  private async mutate(tenantId: string, actor: InsuranceActor, claimId: string, fn: (c: InsuranceClaim) => void, action: string, auditValue: Record<string, unknown>,
+    pre?: (tx: TxContext, c: InsuranceClaim) => Promise<void>) {
     return this.uow.run(tenantId, async (tx) => {
       const claim = await this.repo.getForUpdate(tx, tenantId, claimId);
+      if (pre) await pre(tx, claim);
       fn(claim);
       await this.repo.update(tx, claim);
       await this.flush(tx, tenantId, claimId, claim.pullEvents());
@@ -275,4 +264,19 @@ export class InsuranceClaimService {
       return claim.toJSON();
     }, { userId: actor.userId });
   }
+}
+
+/** Founder Q2 — a death claim on a person's OWN cover (a `person` policy whose subject is its holder, or names no subject: enrolment defaults
+ *  an omitted person subject to the holder) has nobody to receive it until a nominee model exists. Any other claim on a person policy (an
+ *  accident the holder survived) is the holder's own and is filed as usual. */
+export function needsNominee(policy: { subjectType: string; subjectId: string | null; holderUserId: string }, eventTypeCode: string): boolean {
+  return policy.subjectType === 'person' && (policy.subjectId === null || policy.subjectId === policy.holderUserId) && eventTypeCode === 'death';
+}
+
+/** Founder Q2 — who may NOT decide a claim: its filer (`created_by`), its claimant, its surveyor. Null = no conflict. */
+export function decisionConflict(deciderUserId: string, c: { filer: string | null; claimant: string; surveyor: string | null }): 'filer' | 'claimant' | 'surveyor' | null {
+  if (c.filer && c.filer === deciderUserId) return 'filer';
+  if (c.claimant === deciderUserId) return 'claimant';
+  if (c.surveyor && c.surveyor === deciderUserId) return 'surveyor';
+  return null;
 }

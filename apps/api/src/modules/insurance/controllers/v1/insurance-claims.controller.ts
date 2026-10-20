@@ -1,7 +1,8 @@
 // modules/insurance/controllers/v1/insurance-claims.controller.ts · claims lifecycle (KV-BL-054, screens
 // 289-293). `insurance` flag. file/add-evidence/acknowledge = claimant (insurance.enrol); request-docs/
-// schedule-survey/record-survey/decide/settle/close = insurer (insurance.manage) — mirrors fintech's
-// loan-applications controller's borrower-vs-lender RBAC split exactly (the "lender-partner RBAC pattern").
+// schedule-survey/record-survey/decide/close = the FPO's insurance desk (insurance.manage — tenant staff, NOT an insurer: survey C-3).
+// PC-56 PARTNER-3a (founder Q1): settle is REFUSED BY NAME (INSURANCE_SETTLEMENT_NOT_ON_PLATFORM, 403) — the route stays so a caller gets
+// the sentence; no money moves from the tenant realm. The insurer READS its own claims in the partner realm (modules/partner-console).
 import { Controller, Get, Headers, Param, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
@@ -86,11 +87,11 @@ export class InsuranceClaimsController {
     return this.svc.decide(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data }));
   }
 
-  /** SETTLE — money-out. Idempotency-Key required (Law 3). */
+  /** SETTLE — REFUSED BY NAME (founder Q1, PC-56 PARTNER-3a): answered with INSURANCE_SETTLEMENT_NOT_ON_PLATFORM before anything else (no
+   *  Idempotency-Key is read: nothing is written to key). */
   @Post(':id/settle') @RequirePermissions(InsurancePermissions.Manage)
-  settle(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @Headers('idempotency-key') key: string) {
-    if (!key) throw new BadRequestError('Idempotency-Key header required');
-    return this.svc.settle(ctx.tenantId, this.actor(ctx), key, id).then((data) => ({ data }));
+  settle(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    return this.svc.settle(ctx.tenantId, this.actor(ctx), id);
   }
 
   @Post(':id/close') @RequirePermissions(InsurancePermissions.Manage)

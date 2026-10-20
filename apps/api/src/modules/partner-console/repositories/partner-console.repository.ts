@@ -338,6 +338,36 @@ export class PartnerConsoleRepository {
     });
   }
 
+  // ═════════════════════════════════════ PC-56 PARTNER-3a · the claims on the insurer's own products (founder Q4) — on the axis, through 0230
+  // Claims carry their TENANT and live on that tenant's shard: the list and the counts SCATTER over every shard and merge in the service; the
+  // detail is searched shard by shard. 0230's definers return the claim FACTS only (never claimant_user_id, description, surveyor_user_id,
+  // survey_report beyond damagePercent, payout_id, created_by / updated_by) and kv_partner holds NO privilege on insurance_claims at all: the
+  // definers are the only way in, and nothing here could select an identity column.
+
+  /** ONE shard's page of the claims on this insurer's products, OLDEST first, µs keyset (0230 `partner_insurance_claims`). */
+  async insuranceClaimsShard(shardId: number, partnerId: string, q: { status?: string; cursor?: KeysetCursor; limit: number }):
+    Promise<Array<Record<string, unknown> & { id: string; created_us: string }>> {
+    return this.withAxis(shardId, partnerId, async (c) => (await c.query(
+      `SELECT k.*, ${US_SQL('k.created_at')} AS created_us FROM partner_insurance_claims($1::text, $2::timestamptz, $3::uuid, $4::int) k`,
+      [q.status ?? null, q.cursor?.ts ?? null, q.cursor?.id ?? null, q.limit])).rows);
+  }
+
+  /** ONE claim on this insurer's products (0230 `partner_insurance_claim`), searched shard by shard; null for another insurer's / an absent id. */
+  async insuranceClaim(partnerId: string, id: string): Promise<Record<string, unknown> | null> {
+    for (let s = 0; s < this.shardCount; s++) {
+      const row = await this.withAxis(s, partnerId, async (c) => (await c.query(
+        `SELECT k.*, ${US_SQL('k.created_at')} AS created_us FROM partner_insurance_claim($1::uuid) k`, [id])).rows[0] ?? null);
+      if (row) return row as Record<string, unknown>;
+    }
+    return null;
+  }
+
+  /** ONE shard's claim counts by product × status × platform event code, filed in [from, to) IST days (0230 `partner_insurance_claim_counts`). */
+  async insuranceClaimCountsShard(shardId: number, partnerId: string, from: string, to: string): Promise<Array<{ product_id: string; status: string; event_type_code: string | null; n: string }>> {
+    return this.withAxis(shardId, partnerId, async (c) => (await c.query(
+      `SELECT product_id::text, status, event_type_code, n::text FROM partner_insurance_claim_counts($1::date, $2::date)`, [from, to])).rows);
+  }
+
   // ═════════════════════════════════════ PC-56 PARTNER-2c · the lender's own shelf (founder Q7) — on the axis, through 0229 and 0225
   // Loan products are GLOBAL reference data (`loan_products`, no tenant): their terms are read on shard 0 through 0229's definer (kv_partner
   // holds no grant on the table — 0090's pricing-IP rule). The 30-day count reads `loan_applications` on EVERY shard inside the axis, where

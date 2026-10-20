@@ -57,8 +57,11 @@ describe('insurance_claims isolation — DEV-23 (KV-BL-054)', () => {
   it('insert binds tenant_id from the aggregate (never a client-supplied bare value)', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 }) };
     const claim = InsuranceClaim.file({ id: 'c1', tenantId: 'tA', policyId: 'p1', claimantUserId: 'u1', eventDate: '2026-06-30', eventTypeId: 'evt1', description: null });
-    await new InsuranceClaimRepository(fakeReplica().provider).insert(tx as any, claim);
+    await new InsuranceClaimRepository(fakeReplica().provider).insert(tx as any, claim, 'filer-1');
     expect(tx.query.mock.calls[0][1]).toContain('tA');
+    // PC-56 PARTNER-3a (founder Q2): created_by is the FILER ($10), the claimant is the holder ($4) — two binds, never the same placeholder
+    expect(tx.query.mock.calls[0][0]).toMatch(/VALUES \(\$1,\$2,\$3,\$4,\$5,\$6,\$7,\$8,\$9,\$10\)/);
+    expect(tx.query.mock.calls[0][1].slice(-1)).toEqual(['filer-1']);
   });
   it('update binds id+tenant_id in its WHERE clause (no cross-tenant write possible)', async () => {
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 }) };

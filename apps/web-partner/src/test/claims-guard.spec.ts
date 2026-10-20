@@ -8,6 +8,7 @@ import { hi } from '../i18n/hi';
 import { gu } from '../i18n/gu';
 import { PARTNER1_REFUSALS } from '../features/partner1/refusals';
 import { PARTNER2_REFUSALS } from '../features/partner2/refusals';
+import { PARTNER3_REFUSALS } from '../features/partner3/refusals';
 
 const CATS = { en, hi, gu } as const;
 const SCOPE = /^(dash\.|help\.|settings\.|partner\.|partner1\.)/;
@@ -228,3 +229,56 @@ describe('PC-56 PARTNER-2c · claims guard (the lender\'s shelf)', () => {
     for (const [k, v] of Object.entries(en).filter(([x]) => x.startsWith('partner2.loanProducts.'))) expect([k, /\d+(\.\d+)?\s*%|\{\w+\}\s*%/.test(v)]).toEqual([k, false]);
   });
 });
+
+// PC-56 PARTNER-3a · THE INSURER READS ITS OWN CLAIMS (survey E4) — every `partner3.` value (and every PARTNER-3 refusal) in en, hi and gu
+// carries none of the canon's claims words: nothing "paying", no 16:00 run, no settlement run, no voice, no second approver, no ₹1,00,000
+// threshold, no 94%, no appeal path, no 7 years, no clock, no geotag / EXIF / same device, nothing hash-sealed or watermarked, nothing
+// auto-verified, no duplicate signal, no confidence score, no re-shoot, no empanelment, no professional network, no paid-per-report, no
+// auto-recusal, no cluster, no slot, no quadrat, no field sheet, no indicated payout, no loss ratio, no median, no ombudsman, nothing jointly
+// funded, no risk desk, no FIR, no serial claimant, no canon person, no canon policy or claim number. Each regex is proven on its own canon
+// phrase. No `partner3.` value carries "%" at all — the only percentage a 3a page prints is the survey's recorded damage figure, composed in
+// features/partner3/figures.ts. M5 ("paying" planted on the queue's approved chip) kills here. The founder's decide sentence is pinned verbatim.
+const SCOPE_3A = /^partner3\./;
+const FORBIDDEN_3A: readonly [string, RegExp, string][] = [
+  ['paying', /paying/i, 'approved · paying'], ['16:00', /16:00/, 'approved 10:20 · 16:00 run'], ['settlement run', /settlement run/i, 'in 16:00 settlement run'],
+  ['voice', /\bvoice\b/i, 'one voice call, gu'], ['second approver', /second approver|2nd approver/i, 'decisions above ₹1,00,000 add a second approver'],
+  ['₹1,00,000', /₹\s*1,00,000|₹\s*1L|≥\s*₹/i, 'decisions above ₹1,00,000'], ['94%', /94\s*%/, '94% of surveyed claims pay'], ['appeal path', /appeal path/i, 'clause + evidence + appeal path'],
+  ['7 years', /\b7 years\b|seven years/i, 'full survey + decision record (7 years)'], ['clock', /clock/i, 'SLA clocks and survey schedules are server-side'],
+  ['geotag', /geo-?tag/i, 'geotag inside parcel ✓'], ['EXIF', /\bEXIF\b/i, 'EXIF fresh ✓'], ['same device', /same device/i, 'same device as her app registration'],
+  ['hash-sealed', /hash-?sealed/i, 'evidence board frozen into the claim file (hash-sealed)'], ['watermark', /watermark/i, 'media downloads are watermarked + recorded'],
+  ['auto-verified', /auto-?verified/i, 'Auto-verified today 9'], ['duplicate', /duplicat/i, 'duplicate-image signal'], ['confidence', /confidence/i, 'hints with confidence scores'],
+  ['re-shoot', /re-?shoot/i, 'Request re-shoot (guided)'], ['empanel', /empanel/i, 'Empanel surveyor'], ['professional network', /professional network/i, 'the platform\'s own professional network'],
+  ['paid per', /paid per/i, 'paid per completed report through platform rails'], ['auto-recuse', /auto-?recuse/i, 'conflicts auto-recuse'], ['cluster', /cluster/i, 'hail cluster — Wed 15 Jul'],
+  ['slot', /\bslots?\b/i, '2 slots this week'], ['quadrat', /quadrat/i, '5 sample quadrats per plot'], ['field sheet', /field sheet/i, 'signed the field sheet'],
+  ['indicated payout', /indicated payout|indicated =/i, 'Indicated payout'], ['loss ratio', /loss ratio/i, 'Loss ratio (FY, non-parametric) 61%'], ['median', /median/i, 'Median event → paid 9 days'],
+  ['ombudsman', /ombudsman/i, 'Repudiation complaints 0 to ombudsman'], ['jointly funded', /jointly funded/i, 'are now jointly funded'], ['risk desk', /risk desk/i, 'referred to platform risk desk'],
+  ['FIR', /\bFIR\b/, 'FIR guidance to us'], ['serial', /\bserial\b/i, 'serial claimants'],
+  ['Kesar', /Kesar/i, 'Kesar Ben V.'], ['Rathod', /Rathod/i, 'Dr. A. Rathod'], ['Shah', /\bShah\b/, 'R. Shah'], ['Iyer', /\bIyer\b/, 'M. Iyer'],
+  ['BKI-', /BKI-/i, 'BKI-CTL-…3319'], ['CLM-', /CLM-/i, 'CLM-2026-0084'],
+];
+const DECIDE_STATEMENT = 'Claim decisions are not made from the partner console yet: the organisation that serves the farmer records the decision today, and the insurer\'s own decision will arrive together with its funding leg.';
+
+describe('PC-56 PARTNER-3a · claims guard (the insurer\'s own claims)', () => {
+  it('every 3a forbidden word is caught when planted once (each regex proven on its own canon phrase); an honest sentence passes', () => {
+    for (const [name, re, planted] of FORBIDDEN_3A) expect([name, re.test(planted)]).toEqual([name, true]);
+    for (const [name, re] of FORBIDDEN_3A) expect([name, re.test(DECIDE_STATEMENT)]).toEqual([name, false]);
+  });
+  it.each(Object.entries(CATS))('%s: no 3a claim in any partner3. value, nor in any PARTNER-3 refusal; no "%" anywhere in the scope', (_l, cat) => {
+    const c = cat as Record<string, string>;
+    const keys = [...new Set([...Object.keys(c).filter((k) => SCOPE_3A.test(k)), ...PARTNER3_REFUSALS.map((r) => r.key)])];
+    expect(keys.length).toBeGreaterThan(150);
+    for (const k of keys) {
+      expect([k, typeof c[k]]).toEqual([k, 'string']);
+      for (const [name, re] of [...FORBIDDEN_3A.map(([n, r]) => [n, r] as const), ...FORBIDDEN]) expect([k, name, re.test(c[k])]).toEqual([k, name, false]);
+      expect([k, c[k].includes('%')]).toEqual([k, false]);
+    }
+  });
+  it('founder Q3\'s decide sentence, keyed exactly (en), present in hi and gu; the export line names the mailbox, never an address', () => {
+    expect(en['partner3.claim.decideStatement']).toBe(DECIDE_STATEMENT);
+    for (const cat of [hi, gu]) expect([typeof cat['partner3.claim.decideStatement'] === 'string', cat['partner3.claim.decideStatement'] !== DECIDE_STATEMENT, cat['partner3.claim.decideStatement'].length > 40]).toEqual([true, true, true]);
+    expect(en['partner3.export.notAvailable']).toBe('Exports are not available from the partner console yet; write to the partners mailbox.');
+    expect(en['partner3.claims.lateNote']).toMatch(/A late report is recorded; nothing rejects a claim for it\./);
+    expect(en['partner3.chip.approved']).toBe('Approved (incl. partially)');
+  });
+});
+

@@ -23,10 +23,12 @@ const codeOf = async (p: Promise<unknown> | (() => unknown)) => {
 describe('PC-56 PARTNER-0 · the permission matrix (founder D1)', () => {
   it('admin holds every partner permission; checker reads + decides; maker reads + reviews; viewer reads', () => {
     expect([...PARTNER_ROLE_MATRIX.partner_admin].sort()).toEqual([...PARTNER_PERMISSIONS].sort());
-    expect(PARTNER_PERMISSIONS).toHaveLength(9);
-    expect([...PARTNER_ROLE_MATRIX.partner_checker].sort()).toEqual(['partner.applications.decide', 'partner.applications.read', 'partner.insurance.read', 'partner.keys.read', 'partner.webhooks.read']);
-    expect([...PARTNER_ROLE_MATRIX.partner_maker].sort()).toEqual(['partner.applications.read', 'partner.applications.review', 'partner.insurance.read', 'partner.keys.read', 'partner.webhooks.read']);
-    expect([...PARTNER_ROLE_MATRIX.partner_viewer]).toEqual(['partner.applications.read', 'partner.keys.read', 'partner.webhooks.read', 'partner.insurance.read']);
+    expect(PARTNER_PERMISSIONS).toHaveLength(10);   // PC-56 PARTNER-3a: + partner.claims.read (0230)
+    expect([...PARTNER_ROLE_MATRIX.partner_checker].sort()).toEqual(['partner.applications.decide', 'partner.applications.read', 'partner.claims.read', 'partner.insurance.read', 'partner.keys.read', 'partner.webhooks.read']);
+    expect([...PARTNER_ROLE_MATRIX.partner_maker].sort()).toEqual(['partner.applications.read', 'partner.applications.review', 'partner.claims.read', 'partner.insurance.read', 'partner.keys.read', 'partner.webhooks.read']);
+    expect([...PARTNER_ROLE_MATRIX.partner_viewer]).toEqual(['partner.applications.read', 'partner.keys.read', 'partner.webhooks.read', 'partner.insurance.read', 'partner.claims.read']);
+    // PC-56 PARTNER-3a · 0230: every partner role reads its insurer's claims (claim facts only)
+    for (const r of ['partner_admin', 'partner_checker', 'partner_maker', 'partner_viewer'] as const) expect(PARTNER_ROLE_MATRIX[r]).toContain('partner.claims.read');
     // PC-56 PARTNER-2a (0228): every role reads its insurer organisation's own book — policy facts only (founder Q6)
     for (const r of ['partner_admin', 'partner_checker', 'partner_maker', 'partner_viewer'] as const) expect(PARTNER_ROLE_MATRIX[r]).toContain('partner.insurance.read');
     // PC-56 PARTNER-1b (0227): every role reads keys and webhooks; only the administrator revokes a key

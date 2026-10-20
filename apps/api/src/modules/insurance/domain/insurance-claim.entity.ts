@@ -32,7 +32,7 @@ export class InsuranceClaim {
   /** FILE (screen 289's intimation). Always starts 'intimated'. intimatedWithin72h is computed HERE, at
    *  filing time, from eventDate vs `now` -- never re-derived later (an honest, point-in-time fact, per the
    *  canon's own "you are well within the window" 72h banner). */
-  static file(input: Omit<InsuranceClaimProps, 'status' | 'intimatedWithin72h' | 'surveyorUserId' | 'surveyReport' | 'approvedMinor' | 'payoutId' | 'closedAt'> & { now?: Date }): InsuranceClaim {
+  static file(input: Omit<InsuranceClaimProps, 'status' | 'intimatedWithin72h' | 'surveyorUserId' | 'surveyReport' | 'approvedMinor' | 'payoutId' | 'closedAt'> & { now?: Date; eventTypeCode?: string | null }): InsuranceClaim {
     const now = input.now ?? new Date();
     const eventDateMs = new Date(input.eventDate + 'T00:00:00Z').getTime();
     const within72h = (now.getTime() - eventDateMs) <= 72 * 3600_000;
@@ -42,7 +42,10 @@ export class InsuranceClaim {
       status: 'intimated', intimatedWithin72h: within72h, surveyorUserId: null, surveyReport: null,
       approvedMinor: null, payoutId: null, closedAt: null, createdAt: now,
     });
-    c.events.push({ type: ClaimEventType.Filed, payload: { claimId: c.props.id, policyId: c.props.policyId, claimantUserId: c.props.claimantUserId, eventTypeId: c.props.eventTypeId } });
+    // PC-56 PARTNER-3a: + the `claim_event` CODE (the platform vocabulary), so a partner webhook can carry the event type without an id lookup —
+    // the partner projection (partner-api/domain/partner-webhook-projection.ts) never forwards `claimantUserId`.
+    c.events.push({ type: ClaimEventType.Filed, payload: { claimId: c.props.id, policyId: c.props.policyId, claimantUserId: c.props.claimantUserId, eventTypeId: c.props.eventTypeId,
+      ...(input.eventTypeCode ? { eventTypeCode: input.eventTypeCode } : {}) } });
     return c;
   }
   static rehydrate(props: InsuranceClaimProps): InsuranceClaim { return new InsuranceClaim(props); }

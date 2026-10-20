@@ -48,3 +48,23 @@ table, endpoint list, and state-machine text.
 - An insurer reads its OWN products and the policy facts written on them in the partner realm (`modules/partner-console`,
   `partner.insurance.read`, migration 0228) — never a policyholder's identity.
 - Stale above (survey C-9): premium collection + activation and claims settlement exist (see `insurance.module.ts`).
+
+## PC-56 PARTNER-3a (2026-10-20) — the tenant realm moves no claim money; the claimant is the holder
+
+- `POST /v1/insurance/claims/:id/settle` → 403 `INSURANCE_SETTLEMENT_NOT_ON_PLATFORM` (founder Q1: "Claim settlement is not made on the
+  platform yet: an insurer's funding leg does not exist. Nothing has been paid."). Thrown before any read; the wallet posting
+  (`platform(Payouts)` → the claimant) and the policy's active → claimed flip are REMOVED from `InsuranceClaimService` — the service holds no
+  wallet port. Settlement returns with the insurer's funding leg (P2-B11 + P3-B5, one founder-signed money wave). The entity's `settle()`
+  transition stays in the state machine; nothing calls it. The "claims settlement exist" line above is stale since this wave.
+- `file` records the policy's HOLDER as `claimant_user_id` (founder Q2). A desk member (`insurance.manage`) filing on another member's
+  policy files ON BEHALF OF the holder: `created_by` = the filer, the audit row's actor = the filer, `new_value.assisted = true`. A death
+  claim on a person's own cover (`subject_type = 'person'`, subject = the holder or none) → 422 `INSURANCE_CLAIM_NEEDS_NOMINEE` until a
+  nominee model exists (KV-BL-036).
+- `decide` refuses a decider who is the claim's filer (`created_by`), its claimant or its surveyor → 409 `INSURANCE_DECIDER_CONFLICT`.
+  The FPO desk still decides (founder Q3 — the insurer only reads its claims in the partner realm, `partner.claims.read`, migration 0230).
+- `schedule-survey` refuses a surveyor who is the claimant or not an ACTIVE member of the claim's organisation (a live `user_tenant_roles`
+  grant in that tenant, `is_active`, not deleted, and no live `tenant_member_suspensions` row) → 422 `INSURANCE_SURVEYOR_INVALID`.
+- Survey C-3 / C-4 corrected in the controller and service comments: `insurance.manage` is the FPO's own desk (tenant staff), not an insurer.
+- Survey C-5 (recorded here because a shipped migration's comment cannot be edited): 0079's note that `surveyor-dispatch.handler.ts` needs
+  SELECT + UPDATE on `insurance_claims` is stale — the handler reads with `claims.getById` and writes only an audit row; kv_relay's UPDATE
+  is unused (P3-B12, an S2-review item).

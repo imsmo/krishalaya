@@ -53,6 +53,41 @@ export class InsuranceIssueNotOnPlatformError extends AppError {
   }
 }
 
+// ---- PC-56 PARTNER-3a (survey F-1 / F-2 / F-7; founder Q1 / Q2 / Q3 / Q5, 2026-10-18): the tenant realm moves no claim money -------------
+
+/** Founder Q1: claim settlement is REFUSED from the tenant realm by name until an insurer's funding leg exists (P2-B11 + P3-B5, one
+ *  founder-signed money wave). The route stays so a caller gets THIS sentence (E6: a named refusal, not a 404); nothing is read, nothing is
+ *  posted — the claim stays `approved`, the policy stays `active`. */
+export class InsuranceSettlementNotOnPlatformError extends AppError {
+  constructor() {
+    super('INSURANCE_SETTLEMENT_NOT_ON_PLATFORM',
+      'Claim settlement is not made on the platform yet: an insurer\'s funding leg does not exist. Nothing has been paid.', 403);
+  }
+}
+/** Founder Q2: the claimant (and any future payee) is the policy's HOLDER. A claim on a `person` policy whose holder is its own subject — a
+ *  death claim on one's own cover — has nobody to receive it until a nominee model exists (INS README; KV-BL-036). Nothing is written. */
+export class InsuranceClaimNeedsNomineeError extends DomainError {
+  constructor(policyId: string) {
+    super('INSURANCE_CLAIM_NEEDS_NOMINEE',
+      'A death claim on a person\'s own cover cannot be filed yet: the platform has no nominee record to receive it. Nothing was filed.', 422, { policyId });
+  }
+}
+/** Founder Q2: the person who decides a claim is never the person who filed it, the claimant, or the claim's surveyor. */
+export class InsuranceDeciderConflictError extends DomainError {
+  constructor(claimId: string, as: 'filer' | 'claimant' | 'surveyor') {
+    super('INSURANCE_DECIDER_CONFLICT',
+      'This claim must be decided by someone other than the person who filed it, the claimant or its surveyor. Nothing was decided.', 409, { claimId, as });
+  }
+}
+/** Founder Q5: a surveyor must be an ACTIVE member of the claim's organisation (a live `user_tenant_roles` grant, not suspended) and never the
+ *  claimant. Nothing was scheduled. */
+export class InsuranceSurveyorInvalidError extends DomainError {
+  constructor(claimId: string, reason: 'not_member' | 'claimant') {
+    super('INSURANCE_SURVEYOR_INVALID',
+      'The surveyor must be an active member of the claim\'s organisation and cannot be the claimant. Nothing was scheduled.', 422, { claimId, reason });
+  }
+}
+
 // ---- DEV-23 (KV-BL-053/054): premium collection + claims ------------------------------------------------
 
 /** Premium payment can only be initiated while the policy is 'proposed' (screen 288's payment step; a

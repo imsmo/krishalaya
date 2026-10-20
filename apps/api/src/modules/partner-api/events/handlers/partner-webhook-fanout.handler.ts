@@ -25,11 +25,16 @@
 // the same way whatever the aggregate. Question 2 and the enqueue stay on the relay transaction, deliberately: kv_app holds NO
 // SELECT on `partner_webhook_endpoints` and NO INSERT on `webhook_deliveries` (TENANT-13a walls), kv_relay holds exactly those.
 // No grant was added to kv_relay.
+//
+// PC-56 PARTNER-3a (founder Q7; survey F-3 / C-7) — WHAT IS SENT: never the raw outbox payload. `data` is the per-event-type allow-list of
+// partner-webhook-projection.ts (ids, statuses, event type codes, minor-unit amounts, timestamps — never a user id, a note, a report, a
+// payment id); an event type with no projection sends `{}`. Projected ONCE per event, before any enqueue.
 import { OutboxEvent, OutboxHandler } from '../../../../core/outbox/event-envelope';
 import { TxContext, UnitOfWork } from '../../../../core/database/unit-of-work';
 import { WebhookRepository } from '../../../tenant-webhooks/repositories/webhook.repository';
 import { PartnerApiRepository } from '../../repositories/partner-api.repository';
 import { deliverable, ownershipKindFor } from '../../domain/partner-webhook.rules';
+import { projectPartnerPayload } from '../../domain/partner-webhook-projection';
 
 export class PartnerWebhookFanoutHandler implements OutboxHandler {
   constructor(
@@ -52,6 +57,7 @@ export class PartnerWebhookFanoutHandler implements OutboxHandler {
     if (!ownerPartnerId) return;             // unresolvable ownership ⇒ silence, never a broadcast
 
     const endpoints = await this.partners.activeEndpointsForPartner(tx, ownerPartnerId);
+    const data = projectPartnerPayload(event.eventType, event.payload);
     for (const endpoint of endpoints) {
       if (!deliverable(endpoint, event.eventType, ownerPartnerId)) continue;
       // PC-56 TENANT-13a (F-19): the delivery is marked as a PARTNER delivery. It still carries the originating tenant_id (the
@@ -59,7 +65,7 @@ export class PartnerWebhookFanoutHandler implements OutboxHandler {
       // endpoint_kind = 'tenant' rows — so a cooperative never reads what its bank or insurer was sent.
       await this.webhooks.enqueue(tx, {
         tenantId: event.tenantId, endpointId: endpoint.id, kind: 'partner', eventType: event.eventType, state: 'pending', internalType: event.eventType, sourceEventId: event.id,
-        payload: { id: event.id, type: event.eventType, aggregateType: event.aggregateType, aggregateId: event.aggregateId, partnerId: ownerPartnerId, data: event.payload },
+        payload: { id: event.id, type: event.eventType, aggregateType: event.aggregateType, aggregateId: event.aggregateId, partnerId: ownerPartnerId, data },
       });
     }
   }

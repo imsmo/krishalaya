@@ -22,13 +22,13 @@ describe('partner nav model (persona-aware)', () => {
     expect(soonNavForPartner(PARTNER_READS, 'bank')).toEqual([]);
   });
 
-  it('PC-56 PARTNER-2a/2b · an INSURER sees the insurer group\'s SIX — Dashboard · Products · Policies · Issuance · Premiums · Reports — common + account; never the lending group', () => {
+  it('PC-56 PARTNER-2a/2b/3a · an INSURER sees the insurer group\'s SEVEN — Dashboard · Products · Policies · Issuance · Premiums · Claims · Reports — common + account; never the lending group', () => {
     expect(visibleGroups(PARTNER_READS, 'insurer')).toEqual(['common', 'insurer', 'account']);
     expect(liveNavForPartner(PARTNER_READS, 'insurer').map((i) => i.href)).toEqual(['/insurer/dashboard', '/insurer/products', '/insurer/policies', '/insurer/issuance', '/insurer/premiums',
-      '/insurer/reports', '/notifications', '/settlements', '/consents', ...ACCOUNT]);
-    expect(liveNavForPartner(PARTNER_READS, 'insurer').map((i) => i.labelKey).slice(0, 6)).toEqual(['partner2.nav.dashboard', 'partner2.nav.products', 'partner2.nav.policies',
-      'partner2.nav.issuance', 'partner2.nav.premiums', 'partner2.nav.reports']);
-    expect(PARTNER_NAV.filter((i) => i.group === 'insurer').length).toBe(6);
+      '/insurer/claims', '/insurer/reports', '/notifications', '/settlements', '/consents', ...ACCOUNT]);
+    expect(liveNavForPartner(PARTNER_READS, 'insurer').map((i) => i.labelKey).slice(0, 7)).toEqual(['partner2.nav.dashboard', 'partner2.nav.products', 'partner2.nav.policies',
+      'partner2.nav.issuance', 'partner2.nav.premiums', 'partner3.nav.claims', 'partner2.nav.reports']);
+    expect(PARTNER_NAV.filter((i) => i.group === 'insurer').length).toBe(7);
     for (const lending of ['/dashboard', '/loan-queue', '/lender/products', '/products', '/portfolio', '/servicing']) expect(liveNavForPartner(PARTNER_READS, 'insurer').map((i) => i.href)).not.toContain(lending);
     // the insurer group opens on the PARTNER realm's read — the tenant permission a partner token never carries opens nothing
     expect(hasInsurer(set('partner.insurance.read'))).toBe(true);
@@ -44,6 +44,19 @@ describe('partner nav model (persona-aware)', () => {
     }
     // a lender never sees the three new insurer items
     for (const href of ['/insurer/issuance', '/insurer/premiums', '/insurer/reports']) expect(liveNavForPartner(PARTNER_READS, 'bank').map((i) => i.href)).not.toContain(href);
+  });
+
+  it('PC-56 PARTNER-3a · Claims sits between Premiums and Reports, ONE item (the claims pages carry their own sub-navigation); a lender, an asset manager and an unknown kind never see it', () => {
+    const claims = PARTNER_NAV.filter((i) => i.href.startsWith('/insurer/claims') || /claim/i.test(i.labelKey));
+    expect(claims).toEqual([{ href: '/insurer/claims', labelKey: 'partner3.nav.claims', group: 'insurer', live: true }]);
+    const hrefs = PARTNER_NAV.map((i) => i.href);
+    expect(hrefs.indexOf('/insurer/claims')).toBe(hrefs.indexOf('/insurer/premiums') + 1);
+    expect(hrefs.indexOf('/insurer/reports')).toBe(hrefs.indexOf('/insurer/claims') + 1);
+    for (const kind of ['bank', 'nbfc', 'mfi', 'gold_loan', 'amc', null]) {
+      expect([kind, [...liveNavForPartner(PARTNER_READS, kind), ...soonNavForPartner(PARTNER_READS, kind)].some((i) => i.href.startsWith('/insurer/claims'))]).toEqual([kind, false]);
+    }
+    // the canon's other claims screens (3b's) are not nav items: evidence, surveyors, surveys, fraud, insights live in the claims sub-navigation
+    for (const h of ['/insurer/claims/evidence', '/insurer/surveyors', '/insurer/surveys', '/insurer/claims/fraud', '/insurer/claims/insights']) expect(hrefs).not.toContain(h);
   });
 
   it('PC-56 PARTNER-2c · the lending group\'s Products item is the lender\'s shelf at `/lender/products` (never the retired `/products`); an insurer never sees it', () => {
@@ -87,7 +100,7 @@ describe('partner nav model (persona-aware)', () => {
   it('every nav item has an href + label key + valid group; the DEV-24 /insurance-* routes are gone from the nav', () => {
     for (const i of PARTNER_NAV) {
       expect(i.href).toMatch(/^\//);
-      expect(i.labelKey).toMatch(/^(nav|partner1\.nav|partner2\.nav)\./);
+      expect(i.labelKey).toMatch(/^(nav|partner1\.nav|partner2\.nav|partner3\.nav)\./);
       expect(['common', 'lending', 'fleet', 'insurer', 'account']).toContain(i.group);
     }
     expect(PARTNER_NAV.filter((i) => i.href.startsWith('/insurance-'))).toEqual([]);

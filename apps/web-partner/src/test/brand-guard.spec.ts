@@ -85,3 +85,24 @@ describe('PC-56 PARTNER-2c · brand guard over the lender\'s shelf (founder Q9: 
     }
   });
 });
+
+describe('PC-56 PARTNER-3a · brand guard over the claims console (founder Q8: the platform\'s mark + the insurer\'s own name)', () => {
+  const NEW = ['components/partner3/InsurerClaimsView.tsx', 'components/partner3/InsurerClaimView.tsx', 'components/partner3/InsurerClaimsInsightsView.tsx',
+    'components/partner3/ClaimsSubNav.tsx', 'components/partner3/InsurerClaimsChain.tsx', 'app/insurer/claims/page.tsx', 'app/insurer/claims/[id]/page.tsx',
+    'app/insurer/claims/insights/page.tsx', 'features/partner3/figures.ts', 'features/partner3/refusals.ts'];
+  it('they exist, are scanned, and none carries the platform\'s name, a mailbox, a domain, a helpline or a canon institution; the views carry no canon person, place, phone or number', () => {
+    const all = files().map((f) => path.relative(SRC, f));
+    for (const rel of NEW) {
+      expect([rel, all.includes(rel)]).toEqual([rel, true]);
+      const src = fs.readFileSync(path.join(SRC, rel), 'utf8').replace(/@krishalaya\/[a-z0-9-]+/g, '');
+      for (const lit of LITERALS) expect([rel, lit, src.includes(lit)]).toEqual([rel, lit, false]);
+      expect([rel, /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.(com|in|org|net|co)\b|krishalaya\.(in|com)|mailto:[a-z]|1800|Bharat Krishi|Saurashtra|Gramin/i.test(src)]).toEqual([rel, false]);
+    }
+    // the views, pages and figures carry no canon person, place, phone, claim / policy number or avatar (the registry NAMES the canon's claims
+    // to refuse them, so it is not scanned for these)
+    for (const rel of NEW.slice(0, 9)) {
+      const src = fs.readFileSync(path.join(SRC, rel), 'utf8');
+      expect([rel, /Kesar|Manju|Rathod|Vaghela|Chudasama|\bShah\b|\bIyer\b|Popat|Jashu|Karsan|Junagadh|Bhavnagar|Amreli|Bilkha|\+91|CLM-|BKI-|FRD-|\bPM\b/.test(src)]).toEqual([rel, false]);
+    }
+  });
+});

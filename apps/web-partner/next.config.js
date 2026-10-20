@@ -35,7 +35,7 @@ const nextConfig = {
   webpack: (config) => { config.resolve.symlinks = false; return config; },
   // PC-56 PARTNER-2a (survey E3): the four DEV-24 insurance routes moved to the canon's own `insurer/*` paths — a real HTTP 307
   // (permanent: false) answered before any page runs (a page-level redirect would stream behind app/loading.tsx as a 200). Mirrors
-  // src/features/partner2/refusals.ts INSURANCE_REDIRECTS + LENDER_REDIRECTS (pinned equal by test-render/not-yet.render.test.tsx). The claims pair stays not-yet.
+  // src/features/partner2/refusals.ts INSURANCE_REDIRECTS + LENDER_REDIRECTS (pinned equal by test-render/not-yet.render.test.tsx). PC-56 PARTNER-3a: the claims pair too (CLAIMS_REDIRECTS).
   async redirects() {
     return [
       { source: '/insurance-products', destination: '/insurer/products', permanent: false },
@@ -45,6 +45,9 @@ const nextConfig = {
       // PC-56 PARTNER-2c: the PARTNER-0 not-yet `/products` pair → the canon's `lender/products` (mirrors LENDER_REDIRECTS in src/features/partner2/refusals.ts)
       { source: '/products', destination: '/lender/products', permanent: false },
       { source: '/products/:id', destination: '/lender/products/:id', permanent: false },
+      // PC-56 PARTNER-3a: the DEV-24 claims pair (not-yet since PARTNER-0) → the canon's `insurer/claims` (mirrors CLAIMS_REDIRECTS in src/features/partner3/refusals.ts)
+      { source: '/insurance-claims', destination: '/insurer/claims', permanent: false },
+      { source: '/insurance-claims/:id', destination: '/insurer/claims/:id', permanent: false },
     ];
   },
   async headers() {
