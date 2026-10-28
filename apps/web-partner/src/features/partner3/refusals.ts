@@ -9,14 +9,21 @@
 // refusals are registered now (the founder's doors Q4 / Q5 / Q6 are answered); the chain surfaces `claims_act` / `claim_act` / `insights_act`
 // (the claim mutate chain W2857–W2859, PARITY-DECOR: Retry is a re-read; "Take next" is DECOR) and `insights_export` (the claim export chain
 // W2855–W2856, DECOR: no partner export plane — the mailbox line).
+//
+// PC-56 PARTNER-3b · WHAT THE INSURER DOES NOT HOLD adds the six 3b chain surfaces (`evidence_act` · `evidence_board_act` · `surveyors_act` ·
+// `surveys_act` · `survey_report_act` · `fraud_act` — all DECOR: ONE state, `?act=confirm`, whose sentence IS the refusal), the 3b refusals the
+// six honest pages print, and the 18 3b verdicts (26 of 26 decided, 0 pending).
 export type Partner3Surface =
   | 'claims' | 'claim' | 'claims_insights'
   | 'evidence' | 'evidence_board' | 'surveyors' | 'surveys' | 'survey_report' | 'fraud'
-  | 'claims_act' | 'claim_act' | 'insights_act' | 'insights_export';
+  | 'claims_act' | 'claim_act' | 'insights_act' | 'insights_export'
+  | 'evidence_act' | 'evidence_board_act' | 'surveyors_act' | 'surveys_act' | 'survey_report_act' | 'fraud_act';
 export interface Partner3Refusal { id: string; canon: string; surfaces: readonly Partner3Surface[]; key: string; why: string }
 
 const ACT: readonly Partner3Surface[] = ['claims_act', 'claim_act', 'insights_act'];
 const BUILT: readonly Partner3Surface[] = ['claims', 'claim', 'claims_insights'];
+/** PC-56 PARTNER-3b — the six DECOR act chains: nothing on any of them moves money, pages anyone or writes an audit trail either. */
+const ACT_3B: readonly Partner3Surface[] = ['evidence_act', 'evidence_board_act', 'surveyors_act', 'surveys_act', 'survey_report_act', 'fraud_act'];
 
 export const PARTNER3_REFUSALS: readonly Partner3Refusal[] = Object.freeze([
   // ── W252 · the claims queue ──
@@ -79,11 +86,11 @@ export const PARTNER3_REFUSALS: readonly Partner3Refusal[] = Object.freeze([
   // ── the claim export chain (W2855–W2856) and the claim mutate chain (W2857–W2859) ──
   { id: 'claims_file', canon: 'W2855 "audit-stamped, checksummed, delivered by signed URL" · W2856 "file name, row count, sha256 … 15-min signed URL, every fetch logged"', surfaces: ['claims_insights', 'insights_export'],
     key: 'partner3.refusal.claimsFile', why: 'founder 2b-1: no partner export plane in Phase 1 (P2-B6) — the mailbox line' },
-  { id: 'chain_zero_sum', canon: 'W2858 "Money-adjacent actions reconcile zero-sum before this page ever shows"', surfaces: ACT,
+  { id: 'chain_zero_sum', canon: 'W2858 / W2867 / W2905 / W2935 / W3015 "Money-adjacent actions reconcile zero-sum before this page ever shows"', surfaces: [...ACT, ...ACT_3B],
     key: 'partner3.refusal.chainZeroSum', why: 'nothing on these pages moves money' },
-  { id: 'chain_on_call', canon: 'W2859 "repeated failures page the on-call"', surfaces: ACT,
+  { id: 'chain_on_call', canon: 'W2859 / W2868 / W2906 / W2936 / W3016 "repeated failures page the on-call"', surfaces: [...ACT, ...ACT_3B],
     key: 'partner3.refusal.chainOnCall', why: 'no paging from a partner page exists' },
-  { id: 'chain_audit', canon: 'W2858 "View audit trail" · "the audit trail has the entry"', surfaces: ACT,
+  { id: 'chain_audit', canon: 'W2858 / W2867 / W2905 / W2935 / W3015 "View audit trail" · "the audit trail has the entry"', surfaces: [...ACT, ...ACT_3B],
     key: 'partner3.refusal.chainAudit', why: 'a re-read writes nothing but its own read row; the console has no audit-trail page' },
   // ── PARTNER-3b's surfaces (registered now; the pages are 3b's) ──
   { id: 'machine_checks', canon: 'W255 "Machines pre-check, humans decide" · "Auto-verified … geotag ✓ + EXIF fresh ✓ + tag match ✓" · "tag legible 0.9410" · W256 confidence scores', surfaces: ['evidence', 'evidence_board'],
@@ -124,6 +131,26 @@ export const PARTNER3_REFUSALS: readonly Partner3Refusal[] = Object.freeze([
     key: 'partner3.refusal.hiddenRecords', why: 'founder Q6: an adverse record a person never learns of is the opposite of the appeal precedent (appeals.controller.ts:1-7)' },
   { id: 'auto_flagging', canon: 'W263 "Suspicious claim patterns are flagged automatically for review" · "Signal evaluation is server-side"', surfaces: ['fraud'],
     key: 'partner3.refusal.autoFlagging', why: 'founder Q6: no signal engine exists' },
+  // ── PARTNER-3b's own additions (the claims the 3a registry did not already refuse by name) ──
+  { id: 'claim_places', canon: 'W255 rows "… Bhavnagar route" · "geotag matches parcel" · W258 "3 holders, Bilkha village" · W259 "Bilkha cluster surveyed"',
+    surfaces: ['evidence', 'evidence_board', 'surveys', 'survey_report'],
+    key: 'partner3.refusal.claimPlaces', why: 'founder Q4: a village, route or parcel is location data about a farmer — never shown to an insurer (survey F-5)' },
+  { id: 'evidence_arrival', canon: 'W255 empty state "New intimations land here within minutes of the farmer\'s voice call" · error "Media is stored durably; pre-checks re-run on retry"',
+    surfaces: ['evidence', 'evidence_act'],
+    key: 'partner3.refusal.evidenceArrival', why: 'no calling channel brings a claim in, and there is no pre-check to re-run (survey F-8, F-9)' },
+  { id: 'board_identity', canon: 'W256 "claimant Manju Ben R. · +91 96••• ••331" · "Registry cross-check — ANM record: … 6 yrs, vaccinated"', surfaces: ['evidence_board'],
+    key: 'partner3.refusal.boardIdentity', why: 'founder Q4: never a claimant, a phone, an animal registry entry or a health record — the claim\'s facts are the whole page' },
+  { id: 'survey_booking', canon: 'W256 "Verification books the survey slot (next screen picks the surveyor)" · W258 "reschedules notify instantly" · "Verified claims book automatically when a matching slot exists" · "surveyors have offline copies"',
+    surfaces: ['evidence_board', 'surveys', 'evidence_board_act', 'surveys_act'],
+    key: 'partner3.refusal.surveyBooking', why: 'founder Q5: scheduling a survey is the act of the organisation that serves the farmer (`scheduleSurvey`, the tenant realm); nothing books, confirms or reschedules itself' },
+  { id: 'report_holders', canon: 'W259 findings table "Popat Bhai K. (0087a) 2.0 acre 62% ₹1,04,000 ₹64,480" ×3 — a named holder and an area per plot', surfaces: ['survey_report'],
+    key: 'partner3.refusal.reportHolders', why: 'founder Q4: never a holder\'s name; the platform records no plot area in a survey (the report is `{damagePercent, notes, surveyedAt}`)' },
+  { id: 'report_filing', canon: 'W259 "the estimate was fear, the survey is measurement" · "survey_report hash-sealed" · "Reports land here the evening of the survey — surveyors file from the field"',
+    surfaces: ['survey_report', 'survey_report_act'],
+    key: 'partner3.refusal.reportFiling', why: 'no claim estimate is held to compare, no report is sealed, and the organisation\'s desk records the survey — not the surveyor from the field (survey F-7)' },
+  { id: 'evidence_board_queue', canon: 'W255 "Awaiting review 5 · oldest 6h · target same-day" · "Auto-verified today 9" · "Flagged for hard look 1" · "Re-shoot requests (7d) 4" — counts of MEDIA and of checks',
+    surfaces: ['evidence'],
+    key: 'partner3.refusal.evidenceBoardQueue', why: 'founder 3b-1: the counts on this page are counts of CLAIMS by status and nothing else — no photo, video, document or check is counted, and no target is promised' },
 ]);
 
 /** The refusal i18n keys printed on one surface (render tests read this). */
@@ -150,10 +177,23 @@ export const PARTNER3_DELTAS: readonly { id: string; canon: string; built: strin
   { id: 'claims_sub_nav', canon: 'the canon insurer sidebar has ONE claims item for nine screens; W255, W257, W258, W263 are reachable only from their own chains, W264 from nothing (F-17)',
     built: 'one nav item (Claims) between Premiums and Reports + a claims sub-navigation on the claims pages: Queue · Insights now; PARTNER-3b adds Evidence · Surveyors · Surveys · Fraud' },
   { id: 'subject_type_only', canon: 'W252 / W253 "cattle death", "hailstorm", the animal, the breed', built: 'the subject TYPE and the event type CODE only (founder Q4)' },
+  // ── PARTNER-3b (the 3a DELTAs `fm_numbering`, `fm_misclass` and `fm_omissions` already hold for W255 "2h", W257's "Empanel surveyor" ×3 and
+  //    surveyor-name cells, W259 "Query surveyor", W255's "Review" drill-ins and W257's "Actions for sv 1/2/3" — they are NOT duplicated) ──
+  { id: 'chain_returns_3b', canon: 'W2866–W2868 Cancel / Back → W255 even from W256; W3014–W3016 Cancel / Back → W258 even from W259 (F-17)',
+    built: 'every 3b chain state links back to the page it was opened FROM (the evidence board returns to the board, the report to the report)' },
+  { id: 'fm_omissions_3b', canon: 'FLOWMAP omits W255\'s "Actions for eq 2/3" row buttons; its 3b chain targets are W1439–W1441 (evidence), W1442–W1444 (surveyors), W1445–W1447 (survey), W1457–W1459 (fraud) (F-16, C-16)',
+    built: 'no row act is drawn on any 3b page; the chains are the canon\'s own W2866–W2868 / W2904–W2906 / W2934–W2936 / W3014–W3016 as query states' },
+  { id: 'evidence_counts_only', canon: 'W255 is a queue of MEDIA rows per claim (photos, a video and its length, an ear-tag close-up, each with checks and a score) under four media KPIs',
+    built: 'an honest page: the evidence statement plus COUNTS OF CLAIMS by survey status (founder 3b-1) with the FY label and an as-of — no row, no media, not even a count of media items' },
+  { id: 'surveys_tabs', canon: 'W258 is a day-by-day booking schedule (Tue / Wed, named surveyors, provisional holds, a village cluster, time windows)',
+    built: 'four tabs over 3a\'s claims read — survey scheduled (the default) · intimated · documents pending · surveyed — the same queue row model, keyset paging, each row linking to that claim\'s survey report' },
+  { id: 'report_one_claim', canon: 'W259 is one cluster\'s findings over three plots with areas, indicated payouts, a methodology and an acceptance step',
+    built: 'ONE claim\'s facts (the shared wall) plus the report block: the recorded damage percentage, or that no survey is recorded yet, or that the recorded report carries no damage percentage' },
 ]);
 
-/** Every canon file of PARTNER-3 (26): 3a's 8 decided, 3b's 18 pending their wave. */
-export type Partner3Verdict = 'BUILT' | 'BUILT (read)' | 'BUILT (honest)' | 'PARITY-DECOR' | 'DECOR' | 'pending_3b';
+/** Every canon file of PARTNER-3 (26), each with ONE verdict: 3a's 8 and 3b's 18 — **26 of 26 decided, 0 pending**. PARTNER-3a's placeholder
+ *  verdict for the files awaiting this wave is GONE from the type now that it has no user; a future wave would add its own value. */
+export type Partner3Verdict = 'BUILT' | 'BUILT (read)' | 'BUILT (honest)' | 'PARITY-DECOR' | 'DECOR';
 export const PARTNER3_CANON_FILES: readonly { file: string; wave: '3a' | '3b'; verdict: Partner3Verdict; note: string }[] = Object.freeze([
   // ── 3a · THE INSURER READS ITS OWN CLAIMS (8) ──
   { file: 'W252-partner-claims.html', wave: '3a', verdict: 'BUILT', note: '/insurer/claims over GET /v1/partner/insurance/claims + /counts: the counts by status in the FY window with as-of; the queue of claim facts OLDEST first (waiting days, reference, event code, subject type, sum insured, reported within 72 hours yes/no, status), the status filter, keyset; Take next DECOR; "paying", the run, names, villages, hours, timers, roles, the two-person rule refused' },
@@ -164,33 +204,37 @@ export const PARTNER3_CANON_FILES: readonly { file: string; wave: '3a' | '3b'; v
   { file: 'W2857-partner-claim-mutate-confirm.html', wave: '3a', verdict: 'PARITY-DECOR', note: '?act=confirm on the queue, the claim and the insights page — Retry is a re-read; "Take next" is DECOR (nothing to take)' },
   { file: 'W2858-partner-claim-mutate-success.html', wave: '3a', verdict: 'PARITY-DECOR', note: '?act=success — read again; nothing written' },
   { file: 'W2859-partner-claim-mutate-failure.html', wave: '3a', verdict: 'PARITY-DECOR', note: '?act=failure — nothing changed' },
-  // ── 3b · WHAT THE INSURER DOES NOT HOLD (18) — pending their wave ──
-  { file: 'W255-partner-evidence-review.html', wave: '3b', verdict: 'pending_3b', note: 'PARTNER-3b: an honest page (evidence stays with the farmer and the organisation that serves them)' },
-  { file: 'W256-partner-evidence-board.html', wave: '3b', verdict: 'pending_3b', note: 'PARTNER-3b: an honest page' },
-  { file: 'W257-partner-surveyors.html', wave: '3b', verdict: 'pending_3b', note: 'PARTNER-3b: an honest page (no surveyor roster on the platform)' },
-  { file: 'W258-partner-survey-scheduling.html', wave: '3b', verdict: 'pending_3b', note: 'PARTNER-3b: claim facts by survey status (0230\'s read); the act DECOR' },
-  { file: 'W259-partner-survey-report.html', wave: '3b', verdict: 'pending_3b', note: 'PARTNER-3b: an honest page (+ the recorded damage percentage); the [id] is a claim id' },
-  { file: 'W263-partner-fraud-flags.html', wave: '3b', verdict: 'pending_3b', note: 'PARTNER-3b: an honest page — refused by name (founder Q6)' },
-  { file: 'W2866-partner-evidence-mutate-confirm.html', wave: '3b', verdict: 'pending_3b', note: 'PARTNER-3b' },
-  { file: 'W2867-partner-evidence-mutate-success.html', wave: '3b', verdict: 'pending_3b', note: 'PARTNER-3b' },
-  { file: 'W2868-partner-evidence-mutate-failure.html', wave: '3b', verdict: 'pending_3b', note: 'PARTNER-3b' },
-  { file: 'W2904-partner-surveyors-mutate-confirm.html', wave: '3b', verdict: 'pending_3b', note: 'PARTNER-3b' },
-  { file: 'W2905-partner-surveyors-mutate-success.html', wave: '3b', verdict: 'pending_3b', note: 'PARTNER-3b' },
-  { file: 'W2906-partner-surveyors-mutate-failure.html', wave: '3b', verdict: 'pending_3b', note: 'PARTNER-3b' },
-  { file: 'W2934-partner-fraud-mutate-confirm.html', wave: '3b', verdict: 'pending_3b', note: 'PARTNER-3b' },
-  { file: 'W2935-partner-fraud-mutate-success.html', wave: '3b', verdict: 'pending_3b', note: 'PARTNER-3b' },
-  { file: 'W2936-partner-fraud-mutate-failure.html', wave: '3b', verdict: 'pending_3b', note: 'PARTNER-3b' },
-  { file: 'W3014-partner-survey-mutate-confirm.html', wave: '3b', verdict: 'pending_3b', note: 'PARTNER-3b' },
-  { file: 'W3015-partner-survey-mutate-success.html', wave: '3b', verdict: 'pending_3b', note: 'PARTNER-3b' },
-  { file: 'W3016-partner-survey-mutate-failure.html', wave: '3b', verdict: 'pending_3b', note: 'PARTNER-3b' },
+  // ── 3b · WHAT THE INSURER DOES NOT HOLD (18) — decided in their wave ──
+  { file: 'W255-partner-evidence-review.html', wave: '3b', verdict: 'BUILT (honest)', note: '/insurer/claims/evidence: the evidence statement (claim evidence stays with the farmer and the organisation that serves them; insurers do not see, review, verify or request it) + COUNTS OF CLAIMS by survey status from GET …/claims/counts with the FY label and an as-of (founder 3b-1); Take next and Retry DECOR; "View claims" real; the media rows, the machine pre-checks, the scores, the re-shoots, the places and the arrival promise refused by name' },
+  { file: 'W256-partner-evidence-board.html', wave: '3b', verdict: 'BUILT (honest)', note: '/insurer/claims/evidence/[id] over GET …/claims/:id: the claim\'s facts (the shared wall) + the evidence statement in place of the canon\'s media board; Request re-shoot and Verify — schedule survey ×2 DECOR; an unknown or another insurer\'s id → the not-found state; the name, phone, media, registry and health record, the metadata checks and the slot booking refused by name' },
+  { file: 'W257-partner-surveyors.html', wave: '3b', verdict: 'BUILT (honest)', note: '/insurer/surveyors: the surveyors statement (there is no surveyor roster on the platform and this console manages nobody\'s staff) — NO read, NO count, no row; Empanel surveyor ×3 and Retry DECOR; "View claims" real; the professional network, the named surveyors with phones and coverage, empanelment, the automatic balancing and recusal, the pay per report and the qualification checks refused by name' },
+  { file: 'W258-partner-survey-scheduling.html', wave: '3b', verdict: 'BUILT (read)', note: '/insurer/surveys over GET …/claims (status) + …/claims/counts: four tabs — survey scheduled (the default) · intimated · documents pending · surveyed — of 3a\'s queue rows, keyset, each row linking to that claim\'s survey report; the surveys statement; Confirm and Retry DECOR; the cluster and its rule, the slots and holds, the named surveyors and villages, the deadlines, the farmer\'s message and the automatic booking refused by name' },
+  { file: 'W259-partner-survey-report.html', wave: '3b', verdict: 'BUILT (honest)', note: '/insurer/surveys/[id]/report over GET …/claims/:id — the [id] is a CLAIM id (no survey entity exists): the claim\'s facts + the report block (the recorded damage percentage, or no survey recorded yet, or a recorded report with no damage percentage) + the report statement; Accept report, Query surveyor and Retry DECOR; the findings table, the holders, the areas, the indicated payout, the methodology and the acceptance step refused by name' },
+  { file: 'W263-partner-fraud-flags.html', wave: '3b', verdict: 'BUILT (honest)', note: '/insurer/claims/fraud: the fraud statement (there are no fraud flags on the platform and none is raised from this console) — NO read, NO count, no row (founder Q6); Retry DECOR; "View claims" real; every signal, flag row, rate, the marketplace cross-signal, the risk desk and the police referral refused by name' },
+  { file: 'W2866-partner-evidence-mutate-confirm.html', wave: '3b', verdict: 'DECOR', note: '/insurer/claims/evidence?act=confirm — the whole evidence chain: this action is not available from the partner console; nothing was changed' },
+  { file: 'W2867-partner-evidence-mutate-success.html', wave: '3b', verdict: 'DECOR', note: 'no success state exists: nothing is requested, verified or taken, so nothing can succeed' },
+  { file: 'W2868-partner-evidence-mutate-failure.html', wave: '3b', verdict: 'DECOR', note: 'no failure state exists: nothing is attempted' },
+  { file: 'W2904-partner-surveyors-mutate-confirm.html', wave: '3b', verdict: 'DECOR', note: '/insurer/surveyors?act=confirm — the whole surveyors chain: the console manages nobody\'s staff; nothing was changed' },
+  { file: 'W2905-partner-surveyors-mutate-success.html', wave: '3b', verdict: 'DECOR', note: 'no surveyor is empanelled, so nothing can succeed' },
+  { file: 'W2906-partner-surveyors-mutate-failure.html', wave: '3b', verdict: 'DECOR', note: 'nothing is attempted' },
+  { file: 'W2934-partner-fraud-mutate-confirm.html', wave: '3b', verdict: 'DECOR', note: '/insurer/claims/fraud?act=confirm — the whole fraud chain: no fraud flag exists on the platform; nothing was changed' },
+  { file: 'W2935-partner-fraud-mutate-success.html', wave: '3b', verdict: 'DECOR', note: 'no flag is raised, so nothing can succeed' },
+  { file: 'W2936-partner-fraud-mutate-failure.html', wave: '3b', verdict: 'DECOR', note: 'nothing is attempted' },
+  { file: 'W3014-partner-survey-mutate-confirm.html', wave: '3b', verdict: 'DECOR', note: '/insurer/surveys?act=confirm and /insurer/surveys/[id]/report?act=confirm — the whole survey chain: surveys are scheduled and recorded by the organisation that serves the farmer; nothing was changed' },
+  { file: 'W3015-partner-survey-mutate-success.html', wave: '3b', verdict: 'DECOR', note: 'nothing is confirmed or accepted, so nothing can succeed' },
+  { file: 'W3016-partner-survey-mutate-failure.html', wave: '3b', verdict: 'DECOR', note: 'nothing is attempted' },
 ]);
 
 // ── THE DECOR / PARITY-DECOR CHAINS: each is a query state of its parent page ──
-export type Chain3Id = 'claims_act' | 'claim_act' | 'insights_act' | 'insights_export';
+export type Chain3Id = 'claims_act' | 'claim_act' | 'insights_act' | 'insights_export'
+  | 'evidence_act' | 'evidence_board_act' | 'surveyors_act' | 'surveys_act' | 'survey_report_act' | 'fraud_act';
 export interface Chain3Def {
-  id: Chain3Id; wave: '3a'; param: string; page: string; surface: Partner3Surface; states: readonly string[]; key: (state: string) => string; files: readonly string[];
+  id: Chain3Id; wave: '3a' | '3b'; param: string; page: string; surface: Partner3Surface; states: readonly string[]; key: (state: string) => string; files: readonly string[];
   /** An export chain prints "exports are not available … write to the partners mailbox" + the mailbox FACT (founder 2b-1, Q8). */
   mailbox?: boolean;
+  /** PC-56 PARTNER-3b: the chain's ONE state is a STATEMENT, keyed exactly as the founder approved it — the chain page prints that sentence as
+   *  its body instead of a `<key>.body`, under the shared 3b chain title. */
+  statement?: boolean;
 }
 export const PARTNER3_CHAINS: readonly Chain3Def[] = Object.freeze([
   // the ONE canon claim mutate chain (W2857–W2859) serves three pages; its files are recorded once, on the queue (the canon's own return page)
@@ -202,6 +246,22 @@ export const PARTNER3_CHAINS: readonly Chain3Def[] = Object.freeze([
     key: (s: string) => `partner3.chain.act.${s}`, files: [] },
   { id: 'insights_export', wave: '3a', mailbox: true, param: 'export', page: '/insurer/claims/insights', surface: 'insights_export', states: ['queued', 'ready'],
     key: (s: string) => `partner3.chain.export.${s}`, files: ['W2855', 'W2856'] },
+  // PC-56 PARTNER-3b — the four canon act chains (W2866–W2868 evidence, W2904–W2906 surveyors, W2934–W2936 fraud, W3014–W3016 survey) over SIX
+  // triggering pages. Each is DECOR with ONE state: `?act=confirm`, whose sentence (`partner3.chain.act3b.confirm`, the founder's words of
+  // 2026-10-28) IS the whole chain — there is nothing to confirm, so there is no success and no failure to reach. The canon's three files per
+  // chain are recorded once, on the page the canon returns to (W255 for evidence, W257 for surveyors, W263 for fraud, W258 for survey).
+  { id: 'evidence_act', wave: '3b', statement: true, param: 'act', page: '/insurer/claims/evidence', surface: 'evidence_act', states: ['confirm'],
+    key: (s: string) => `partner3.chain.act3b.${s}`, files: ['W2866', 'W2867', 'W2868'] },
+  { id: 'evidence_board_act', wave: '3b', statement: true, param: 'act', page: '/insurer/claims/evidence/[id]', surface: 'evidence_board_act', states: ['confirm'],
+    key: (s: string) => `partner3.chain.act3b.${s}`, files: [] },
+  { id: 'surveyors_act', wave: '3b', statement: true, param: 'act', page: '/insurer/surveyors', surface: 'surveyors_act', states: ['confirm'],
+    key: (s: string) => `partner3.chain.act3b.${s}`, files: ['W2904', 'W2905', 'W2906'] },
+  { id: 'surveys_act', wave: '3b', statement: true, param: 'act', page: '/insurer/surveys', surface: 'surveys_act', states: ['confirm'],
+    key: (s: string) => `partner3.chain.act3b.${s}`, files: ['W3014', 'W3015', 'W3016'] },
+  { id: 'survey_report_act', wave: '3b', statement: true, param: 'act', page: '/insurer/surveys/[id]/report', surface: 'survey_report_act', states: ['confirm'],
+    key: (s: string) => `partner3.chain.act3b.${s}`, files: [] },
+  { id: 'fraud_act', wave: '3b', statement: true, param: 'act', page: '/insurer/claims/fraud', surface: 'fraud_act', states: ['confirm'],
+    key: (s: string) => `partner3.chain.act3b.${s}`, files: ['W2934', 'W2935', 'W2936'] },
 ]);
 export function chain3ById(id: Chain3Id): Chain3Def { return PARTNER3_CHAINS.find((c) => c.id === id) as Chain3Def; }
 /** The chain state a page was opened in (`?act=confirm` …), or null for the page itself / an unknown state. */
@@ -219,13 +279,16 @@ export const CLAIMS_REDIRECTS: Readonly<Record<string, string>> = Object.freeze(
   '/insurance-claims/:id': '/insurer/claims/:id',
 });
 
-/** The claims sub-navigation (survey E3 / F-17): one nav item, and the claims pages' own tabs. 3a: Queue · Insights. PARTNER-3b adds Evidence ·
- *  Surveyors · Surveys · Fraud — they are NOT drawn until their pages exist (built routes only). */
+/** The claims sub-navigation (survey E3 / F-17): ONE nav item for nine canon screens, and the claims pages' own tabs. 3a built Queue ·
+ *  Insights; PARTNER-3b's four pages are now live, so all six rows are drawn. The four 3b routes appear in NO nav group for any kind or
+ *  permission set (`nav-model.spec` pins it) — they are reached from here only, which is exactly the canon's own orphan problem (F-17). */
 export const CLAIMS_SUBNAV: readonly { href: string; key: string; wave: '3a' | '3b'; live: boolean }[] = Object.freeze([
   { href: '/insurer/claims', key: 'partner3.subnav.queue', wave: '3a', live: true },
   { href: '/insurer/claims/insights', key: 'partner3.subnav.insights', wave: '3a', live: true },
-  { href: '/insurer/claims/evidence', key: 'partner3.subnav.evidence', wave: '3b', live: false },
-  { href: '/insurer/surveyors', key: 'partner3.subnav.surveyors', wave: '3b', live: false },
-  { href: '/insurer/surveys', key: 'partner3.subnav.surveys', wave: '3b', live: false },
-  { href: '/insurer/claims/fraud', key: 'partner3.subnav.fraud', wave: '3b', live: false },
+  { href: '/insurer/claims/evidence', key: 'partner3.subnav.evidence', wave: '3b', live: true },
+  { href: '/insurer/surveyors', key: 'partner3.subnav.surveyors', wave: '3b', live: true },
+  { href: '/insurer/surveys', key: 'partner3.subnav.surveys', wave: '3b', live: true },
+  { href: '/insurer/claims/fraud', key: 'partner3.subnav.fraud', wave: '3b', live: true },
 ]);
+/** The sub-navigation row a page is on (`aria-current="page"`), or null for a page outside the tabs (a claim, an evidence board, a report). */
+export type ClaimsSubNavHref = (typeof CLAIMS_SUBNAV)[number]['href'];

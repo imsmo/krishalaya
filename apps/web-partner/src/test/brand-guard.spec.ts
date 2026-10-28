@@ -106,3 +106,24 @@ describe('PC-56 PARTNER-3a · brand guard over the claims console (founder Q8: t
     }
   });
 });
+
+describe('PC-56 PARTNER-3b · brand guard over the six honest pages (founder Q8: the platform\'s mark + the insurer\'s own name)', () => {
+  const NEW = ['components/partner3/ClaimFacts.tsx', 'components/partner3/InsurerEvidenceView.tsx', 'components/partner3/InsurerEvidenceBoardView.tsx',
+    'components/partner3/InsurerSurveyorsView.tsx', 'components/partner3/InsurerSurveysView.tsx', 'components/partner3/InsurerSurveyReportView.tsx',
+    'components/partner3/InsurerFraudView.tsx', 'app/insurer/claims/evidence/page.tsx', 'app/insurer/claims/evidence/[id]/page.tsx',
+    'app/insurer/surveyors/page.tsx', 'app/insurer/surveys/page.tsx', 'app/insurer/surveys/[id]/report/page.tsx', 'app/insurer/claims/fraud/page.tsx'];
+  it('all thirteen exist, are scanned, and none carries the platform\'s name, a mailbox, a domain, a helpline, a canon institution, person, place, phone, series or avatar', () => {
+    const all = files().map((f) => path.relative(SRC, f));
+    expect(NEW.length).toBe(13);
+    for (const rel of NEW) {
+      expect([rel, all.includes(rel)]).toEqual([rel, true]);
+      const src = fs.readFileSync(path.join(SRC, rel), 'utf8').replace(/@krishalaya\/[a-z0-9-]+/g, '');
+      for (const lit of LITERALS) expect([rel, lit, src.includes(lit)]).toEqual([rel, lit, false]);
+      expect([rel, /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.(com|in|org|net|co)\b|krishalaya\.(in|com)|mailto:[a-z]|1800|Bharat Krishi|Saurashtra|Gramin/i.test(src)]).toEqual([rel, false]);
+      // no canon person, honorific, place, phone, claim / policy / flag series, scheme, breed or avatar anywhere in a 3b view or page
+      expect([rel, /Kesar|Manju|Rathod|Vaghela|Chudasama|\bShah\b|\bIyer\b|Popat|Jashu|Karsan|\bBen\s|Bhai|\bDr\.|Junagadh|Bhavnagar|Amreli|Bilkha|\+91|CLM-|BKI-|FRD-|WBCIS|\bCCE\b|Jaffarabadi|\bPM\b/.test(src)]).toEqual([rel, false]);
+      // and none of them prints a media reference of any kind (a URL, a file extension, a media field name)
+      expect([rel, /\.jpe?g|\.png|\.mp4|mediaUrl|media_url|photoCount|videoCount|signedUrl|https?:\/\//i.test(src)]).toEqual([rel, false]);
+    }
+  });
+});

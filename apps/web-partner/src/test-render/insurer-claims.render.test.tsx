@@ -54,10 +54,13 @@ describe('PC-56 PARTNER-3a · W252 the claims queue (render)', () => {
     expect(render('ok', en, CLAIMS, 'surveyed')).toContain('href="/insurer/claims?status=surveyed&amp;cursor=Y3Vyc29y"');
     expect(render('ok', en, CLAIMS, undefined, null)).not.toContain('data-kv-next');
   });
-  it('the sub-navigation: Queue (current) · Insights — and none of 3b\'s pages yet', () => {
+  it('the sub-navigation: Queue (current) · Insights · and — since PC-56 PARTNER-3b — Evidence · Surveyors · Surveys · Fraud, all six live', () => {
     expect(html).toContain('data-kv-subnav="claims"');
     expect(html).toContain('href="/insurer/claims/insights"'); expect(html).toMatch(/aria-current="page"[^>]*data-kv-subnav-item="\/insurer\/claims"/);
-    expect(html).not.toMatch(/\/insurer\/(claims\/evidence|surveyors|surveys|claims\/fraud)/);
+    for (const h of ['/insurer/claims', '/insurer/claims/insights', '/insurer/claims/evidence', '/insurer/surveyors', '/insurer/surveys', '/insurer/claims/fraud']) {
+      expect([h, html.includes(`data-kv-subnav-item="${h}"`)]).toEqual([h, true]);
+    }
+    expect([...html.matchAll(/data-kv-subnav-item="/g)].length).toBe(6);
   });
   it('empty: no claim is open on your products (+ a filtered empty); error: nothing is broken + Retry = the W2857 re-read; never "unavailable"', () => {
     const e = render('empty', en, []);

@@ -282,3 +282,91 @@ describe('PC-56 PARTNER-3a · claims guard (the insurer\'s own claims)', () => {
   });
 });
 
+// PC-56 PARTNER-3b · WHAT THE INSURER DOES NOT HOLD — EVIDENCE, SURVEYORS, SURVEYS, FLAGS (survey E4, the founder's doors Q4 / Q5 / Q6 and the
+// 3b door of 2026-10-28). The 3a list above already bans geotag, EXIF, same device, hash-sealed, watermark, auto-verified, duplicate,
+// confidence, re-shoot, empanel, professional network, paid per, auto-recuse, cluster, slot, quadrat, field sheet, indicated payout, risk desk,
+// FIR, serial and the 3a names — which is why none of the six statements uses those words, and why the canon's own button labels ("Empanel
+// surveyor", "Request re-shoot (guided)", "Confirm Wednesday cluster") are NOT shipped as copy. This block adds the rest of the 3b canon: the
+// remaining named people (and the honorifics the canon uses), the four places, the flag series and its rates, the two confidence scores, the
+// breed, the health-record and scheme acronyms, the methodology words and the marketplace cross-signal. Each regex is proven on its own canon
+// phrase, and the six founder-approved statements are pinned VERBATIM in en (present, different and non-trivial in hi and gu). M4 (the canon's
+// "flagged automatically" planted in the fraud statement) kills here.
+const FORBIDDEN_3B: readonly [string, RegExp, string][] = [
+  ['Vaghela', /Vaghela/i, 'Dr. S. Vaghela — rides her Tuesday vaccination loop'],
+  ['Chudasama', /Chudasama/i, 'H. Chudasama · agri (crop/CCE)'],
+  ['Manju', /Manju/i, 'claimant Manju Ben R.'],
+  ['Popat', /Popat/i, 'Popat Bhai K. (0087a) 2.0 acre'],
+  ['Jashu', /Jashu/i, 'Jashu Ben P.'],
+  ['Karsan', /Karsan/i, 'Karsan Bhai T.'],
+  ['Ben ', /\bBen\s/, 'Kesar Ben V. · cattle death'],
+  ['Bhai', /Bhai/i, 'Popat Bhai K.'],
+  ['Dr.', /\bDr\./, 'Surveyor: Dr. A. Rathod (vet desk, independent)'],
+  ['Bhavnagar', /Bhavnagar/i, 'CLM-…0093 cattle death · Bhavnagar route'],
+  ['Junagadh', /Junagadh/i, 'vet (livestock) · Junagadh belt'],
+  ['Amreli', /Amreli/i, 'agri (crop/CCE) · Junagadh + Amreli'],
+  ['Bilkha', /Bilkha/i, '3 holders, Bilkha village'],
+  ['FRD-', /FRD-/i, 'FRD-0713-01 · CLM-…0095'],
+  ['flag rate', /flag rate/i, '3 of 3 flags (90d) · flag rate 4.1%'],
+  ['false-flag', /false-?flag/i, 'false-flag rate 33% — watched, because flags have human cost'],
+  ['0.9410', /0\.9410/, 'tag legible 0.9410'],
+  ['0.8830', /0\.8830/, 'hail pattern consistent 0.8830'],
+  ['4.1%', /4\.1\s*%/, 'flag rate 4.1%'],
+  ['33%', /\b33\s*%/, 'false-flag rate 33%'],
+  ['Jaffarabadi', /Jaffarabadi/i, 'ANM record: Jaffarabadi buffalo, 6 yrs, vaccinated'],
+  ['ANM', /\bANM\b/, 'Registry cross-check — ANM record'],
+  ['WBCIS', /WBCIS/i, 'repeat-hail villages offered WBCIS add-on'],
+  ['CCE', /\bCCE\b/, 'agri (crop/CCE) · Junagadh + Amreli'],
+  ['reference plot', /reference (undamaged )?plot/i, 'Reference undamaged plot photographed'],
+  ['GPS', /\bGPS\b/i, '5 sample quadrats per plot, GPS-pinned'],
+  ['theft-then-listing', /theft-?then-?listing/i, 'The theft-then-listing catch is the platform advantage'],
+  ['flagged automatically', /flagged automatically/i, 'Suspicious claim patterns are flagged automatically for review'],
+  ['server-side', /server-?side/i, 'Signal evaluation is server-side'],
+  ['ear-tag', /ear[- ]?tag/i, 'Ear-tag ••2764 verified on-site'],
+  ['vaccinated', /vaccinat/i, 'Health file coherent: vaccinated'],
+  ['same-day', /\bsame[- ]day\b/i, 'Awaiting review 5 · oldest 6h · target same-day'],
+  ['acre', /\bacres?\b/i, 'Popat Bhai K. (0087a) 2.0 acre 62%'],
+];
+/** The six statements of PARTNER-3b, keyed exactly as the founder approved them on 2026-10-28. */
+const STATEMENTS_3B: Readonly<Record<string, string>> = Object.freeze({
+  'partner3.evidence.statement': 'Claim evidence — photos, videos and documents — stays with the farmer and the organisation that serves them. Insurers do not see, review, verify or request evidence on the platform.',
+  'partner3.surveyors.statement': 'There is no surveyor roster on the platform and this console manages nobody\'s staff. Surveys are arranged by the organisation that serves the farmer.',
+  'partner3.surveys.statement': 'Surveys are scheduled and recorded by the organisation that serves the farmer, not from this console. Shown here are the claims on your products by survey status, as recorded.',
+  'partner3.report.statement': 'The survey report is recorded by the organisation that serves the farmer. The insurer sees the recorded damage percentage and nothing else of the report; there is no report-acceptance step on the platform.',
+  'partner3.fraud.statement': 'There are no fraud flags on the platform and none is raised from this console.',
+  'partner3.chain.act3b.confirm': 'This action is not available from the partner console: evidence, surveys and surveyors are handled by the organisation that serves the farmer, and no fraud flag exists on the platform. Nothing was changed.',
+});
+
+describe('PC-56 PARTNER-3b · claims guard (what the insurer does not hold)', () => {
+  it('every 3b forbidden word is caught when planted once (each regex proven on its own canon phrase); each of the six statements passes all of them', () => {
+    for (const [name, re, planted] of FORBIDDEN_3B) expect([name, re.test(planted)]).toEqual([name, true]);
+    for (const [name, re] of FORBIDDEN_3B) for (const [k, v] of Object.entries(STATEMENTS_3B)) expect([k, name, re.test(v)]).toEqual([k, name, false]);
+  });
+  it.each(Object.entries(CATS))('%s: no 3a or 3b claim in any partner3. value, nor in any PARTNER-3 refusal; still no "%" anywhere in the scope', (_l, cat) => {
+    const c = cat as Record<string, string>;
+    const keys = [...new Set([...Object.keys(c).filter((k) => SCOPE_3A.test(k)), ...PARTNER3_REFUSALS.map((r) => r.key)])];
+    expect(keys.length).toBeGreaterThan(220);
+    for (const k of keys) {
+      expect([k, typeof c[k]]).toEqual([k, 'string']);
+      for (const [name, re] of FORBIDDEN_3B) expect([k, name, re.test(c[k])]).toEqual([k, name, false]);
+      expect([k, c[k].includes('%')]).toEqual([k, false]);
+    }
+  });
+  it('the six founder-approved statements, keyed exactly (en), present in hi and gu and not an English copy', () => {
+    for (const [k, v] of Object.entries(STATEMENTS_3B)) {
+      expect([k, en[k]]).toEqual([k, v]);
+      for (const cat of [hi, gu]) expect([k, typeof cat[k] === 'string' && cat[k].length > 20 && cat[k] !== v]).toEqual([k, true]);
+    }
+    expect(Object.keys(STATEMENTS_3B).length).toBe(6);
+  });
+  it('the DECOR controls are worded honestly, never with the canon\'s own labels; the counts line says CLAIMS, and the report block has its three branches', () => {
+    for (const k of ['partner3.surveyors.empanel', 'partner3.board.reshoot', 'partner3.surveys.confirm', 'partner3.report.accept', 'partner3.report.query'])
+      for (const [name, re] of [...FORBIDDEN_3A.map(([n, r]) => [n, r] as const), ...FORBIDDEN_3B.map(([n, r]) => [n, r] as const)]) expect([k, name, re.test(en[k])]).toEqual([k, name, false]);
+    expect(en['partner3.surveys.countsOnlyClaims']).toMatch(/counts of CLAIMS/);
+    expect(en['partner3.surveys.countsOnlyClaims']).toMatch(/no photo, video or document is counted anywhere on the platform/);
+    expect(en['partner3.report.damage']).toBe('Recorded damage: {value}');
+    expect(en['partner3.report.noSurveyYet']).toBe('No survey is recorded on this claim yet.');
+    expect(en['partner3.report.noDamageRecorded']).toBe('The recorded report carries no damage percentage.');
+    expect(en['partner3.evidence.empty.title']).toBe('No claim on your products is awaiting a survey');
+  });
+});
+

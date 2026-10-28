@@ -3,8 +3,8 @@
 // number 0–100), the count chips (approved = approved + partially approved; paid or closed together), the insights rows (eight codes + any
 // other + not recorded), the FY label from the server's window, the links (only the status and the cursor enter the URL).
 import {
-  CLAIM_EVENT_CODES, CLAIM_STATUSES, chipCounts, claimRef, claimStatusKey, claimsHref, claimsQuery, countsState, damageText, decidedRows, eventLabel, eventRows, reportedKey, statusRows,
-  waitingText, windowLabel,
+  CLAIM_EVENT_CODES, CLAIM_STATUSES, SURVEY_STAGES, chipCounts, claimRef, claimStatusKey, claimsHref, claimsQuery, countsState, damageText, decidedRows, eventLabel, eventRows,
+  isSurveyStage, reportText, reportedKey, stageCountsState, stageTabCount, statusRows, surveyStage, surveyStageCounts, surveysHref, waitingText, windowLabel,
 } from '../features/partner3/figures';
 
 describe('PC-56 PARTNER-3a · the claims figures', () => {
@@ -46,6 +46,47 @@ describe('PC-56 PARTNER-3a · the claims figures', () => {
     expect(windowLabel({ from: '2025-11-01', to: '2026-11-01', fy: null })).toEqual({ key: 'partner3.insights.window', vars: { from: '2025-11-01', to: '2026-11-01' } });
     expect(windowLabel(null)).toBeNull();
     expect([countsState({ total: 3 }, null), countsState({ total: 0 }, null), countsState(null, null), countsState(null, 'insurance_off')]).toEqual(['ok', 'empty', 'error', 'insurance_off']);
+  });
+  // ── PC-56 PARTNER-3b · the survey stages, their counts of CLAIMS, the surveys links and W259's report block ──
+  it('the four survey stages, in tab order, with `survey_scheduled` the DEFAULT — the whitelist is STRICT (M3 kills here)', () => {
+    expect([...SURVEY_STAGES]).toEqual(['survey_scheduled', 'intimated', 'docs_pending', 'surveyed']);
+    for (const s of SURVEY_STAGES) expect([s, surveyStage({ status: s })]).toEqual([s, s]);
+    // anything else — including a real claim status outside the four, a list, a wrong case, nothing at all — is the default
+    for (const bad of ['approved', 'partially_approved', 'rejected', 'paid', 'closed', 'paying', '', 'SURVEYED', 'surveyed ', 'survey_scheduled;drop'])
+      expect([bad, surveyStage({ status: bad })]).toEqual([bad, 'survey_scheduled']);
+    expect([surveyStage({}), surveyStage(undefined), surveyStage({ status: undefined })]).toEqual(['survey_scheduled', 'survey_scheduled', 'survey_scheduled']);
+    expect(surveyStage({ status: ['surveyed', 'approved'] })).toBe('surveyed');
+    expect([isSurveyStage('surveyed'), isSurveyStage('approved'), isSurveyStage(7)]).toEqual([true, false, false]);
+  });
+  it('the stage counts are counts of CLAIMS: awaiting = intimated + documents pending; scheduled; surveyed — integers, nonsense as 0', () => {
+    const c = surveyStageCounts({ intimated: 2, docs_pending: 3, survey_scheduled: 1, surveyed: 4, approved: 9, paid: 7, bogus: 5 });
+    expect(c.map((x) => [x.id, x.n])).toEqual([['awaiting', 5], ['scheduled', 1], ['surveyed', 4]]);
+    expect(c.map((x) => x.key)).toEqual(['partner3.surveys.countAwaiting', 'partner3.surveys.countScheduled', 'partner3.surveys.countSurveyed']);
+    expect(surveyStageCounts({ intimated: -4, docs_pending: 1.5, surveyed: Number.NaN } as never).every((x) => x.n === 0)).toBe(true);
+    expect(surveyStageCounts(null).map((x) => x.n)).toEqual([0, 0, 0]);
+    expect([stageTabCount({ surveyed: 4 }, 'surveyed'), stageTabCount({ surveyed: 4 }, 'intimated'), stageTabCount(null, 'survey_scheduled')]).toEqual([4, 0, 0]);
+    // the page is EMPTY only when no claim is in any of the three stages, whatever else was filed in the window
+    expect([stageCountsState({ byStatus: { surveyed: 1 } }, null), stageCountsState({ byStatus: { approved: 9, paid: 3 } }, null),
+      stageCountsState(null, null), stageCountsState({ byStatus: {} }, 'off')]).toEqual(['ok', 'empty', 'error', 'off']);
+  });
+  it('the surveys links carry only a whitelisted stage and an opaque cursor', () => {
+    expect([surveysHref('surveyed'), surveysHref('paying'), surveysHref('survey_scheduled', 'Y3Vy'), surveysHref('intimated', 'bad cursor!')]).toEqual([
+      '/insurer/surveys?status=surveyed', '/insurer/surveys?status=survey_scheduled', '/insurer/surveys?status=survey_scheduled&cursor=Y3Vy', '/insurer/surveys?status=intimated']);
+  });
+  it('W259\'s report block has exactly three branches, and the ONLY "%" in the whole file comes from damageText', () => {
+    expect(reportText({ status: 'surveyed', damagePercent: 62 })).toEqual({ key: 'partner3.report.damage', vars: { value: '62%' } });
+    expect(reportText({ status: 'approved', damagePercent: 0 })).toEqual({ key: 'partner3.report.damage', vars: { value: '0%' } });
+    for (const s of ['intimated', 'docs_pending', 'survey_scheduled']) expect([s, reportText({ status: s, damagePercent: null })]).toEqual([s, { key: 'partner3.report.noSurveyYet' }]);
+    for (const s of ['surveyed', 'approved', 'partially_approved', 'rejected', 'paid', 'closed']) expect([s, reportText({ status: s, damagePercent: null })]).toEqual([s, { key: 'partner3.report.noDamageRecorded' }]);
+    // a figure the survey did not record as a whole 0–100 is not a figure: the branch falls to the status rule
+    expect([reportText({ status: 'surveyed', damagePercent: 62.5 }), reportText({ status: 'surveyed', damagePercent: 101 })])
+      .toEqual([{ key: 'partner3.report.noDamageRecorded' }, { key: 'partner3.report.noDamageRecorded' }]);
+    expect([reportText({ status: 'unknown_status', damagePercent: null }), reportText(null)]).toEqual([{ key: 'partner3.report.noSurveyYet' }, null]);
+    // the source scan: `damageText` is the only producer of a "%" in the whole figures module (M2's neighbourhood)
+    const src = require('node:fs').readFileSync(`${__dirname}/../features/partner3/figures.ts`, 'utf8') as string;
+    const body = src.split('\n').filter((l: string) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
+    expect([...body.matchAll(/%/g)].length).toBe(1);
+    expect(body).toMatch(/return Number\.isInteger\(v\)[^\n]*\$\{v\}%/);
   });
   it('the queue links carry only the status (of the machine) and an opaque cursor', () => {
     expect([claimsHref(), claimsHref('surveyed'), claimsHref('paying'), claimsHref('approved', 'Y3Vy')]).toEqual(['/insurer/claims', '/insurer/claims?status=surveyed', '/insurer/claims',

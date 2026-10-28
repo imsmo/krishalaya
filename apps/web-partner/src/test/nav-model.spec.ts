@@ -59,6 +59,21 @@ describe('partner nav model (persona-aware)', () => {
     for (const h of ['/insurer/claims/evidence', '/insurer/surveyors', '/insurer/surveys', '/insurer/claims/fraud', '/insurer/claims/insights']) expect(hrefs).not.toContain(h);
   });
 
+  // PC-56 PARTNER-3b · the four new pages are reached from the claims SUB-NAVIGATION only. They are in NO nav group, for ANY kind and ANY
+  // permission set — including the wildcard — and the insurer group still holds exactly SEVEN items. M5 (`/insurer/claims/fraud` added to the
+  // insurer nav group) kills here.
+  it('PC-56 PARTNER-3b · /insurer/claims/evidence, /insurer/surveyors, /insurer/surveys and /insurer/claims/fraud are in NO nav, for any kind or permission set; the insurer group is still seven', () => {
+    const THREE_B = ['/insurer/claims/evidence', '/insurer/claims/evidence/', '/insurer/surveyors', '/insurer/surveys', '/insurer/surveys/', '/insurer/claims/fraud'];
+    expect(PARTNER_NAV.filter((i) => THREE_B.includes(i.href))).toEqual([]);
+    expect(PARTNER_NAV.filter((i) => /evidence|surveyor|survey|fraud/i.test(i.href) || /evidence|surveyor|survey|fraud/i.test(i.labelKey))).toEqual([]);
+    expect(PARTNER_NAV.filter((i) => i.group === 'insurer').length).toBe(7);
+    for (const [perms, kind] of [[PARTNER_READS, 'insurer'], [set(WILDCARD_PERM), 'insurer'], [set(WILDCARD_PERM), null], [set(WILDCARD_PERM), 'bank'],
+      [PARTNER_READS, 'bank'], [PARTNER_READS, 'amc'], [PARTNER_READS, null], [set(), 'insurer']] as const) {
+      const all = [...navForPartner(perms, kind), ...liveNavForPartner(perms, kind), ...soonNavForPartner(perms, kind)].map((i) => i.href);
+      for (const h of THREE_B) expect([kind, h, all.includes(h)]).toEqual([kind, h, false]);
+    }
+  });
+
   it('PC-56 PARTNER-2c · the lending group\'s Products item is the lender\'s shelf at `/lender/products` (never the retired `/products`); an insurer never sees it', () => {
     const products = PARTNER_NAV.filter((i) => i.labelKey === 'partner2.nav.loanProducts');
     expect(products.map((i) => [i.href, i.group, i.live])).toEqual([['/lender/products', 'lending', true]]);

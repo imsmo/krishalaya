@@ -17,11 +17,12 @@ const MAILBOX = { kind: 'published', address: 'partners@example.org' } as const;
 const CLAIM_PAGE = '/insurer/claims/0192d2c4-c001-7000-8000-000000000001';
 
 describe('PC-56 PARTNER-3a · the claim chains (render)', () => {
-  it('four chains, five canon pages (W2857–W2859 recorded once on the queue; the claim and insights reuse them)', () => {
-    expect(PARTNER3_CHAINS.map((c) => c.id)).toEqual(['claims_act', 'claim_act', 'insights_act', 'insights_export']);
-    expect(PARTNER3_CHAINS.flatMap((c) => c.files)).toEqual(['W2857', 'W2858', 'W2859', 'W2855', 'W2856']);
+  it('four 3a chains, five canon pages (W2857–W2859 recorded once on the queue; the claim and insights reuse them) — PARTNER-3b\'s six are its own file', () => {
+    expect(PARTNER3_CHAINS.filter((c) => c.wave === '3a').map((c) => c.id)).toEqual(['claims_act', 'claim_act', 'insights_act', 'insights_export']);
+    expect(PARTNER3_CHAINS.filter((c) => c.wave === '3a').flatMap((c) => c.files)).toEqual(['W2857', 'W2858', 'W2859', 'W2855', 'W2856']);
+    expect(PARTNER3_CHAINS.length).toBe(10);
   });
-  for (const c of PARTNER3_CHAINS) {
+  for (const c of PARTNER3_CHAINS.filter((x) => x.wave === '3a')) {
     it.each(c.states.map((s) => [s]))(`${c.id} · %s: its sentence, its refusals, the way back to its own page — nothing written`, (state) => {
       const back = c.id === 'claim_act' ? CLAIM_PAGE : undefined;
       const html = renderToStaticMarkup(<InsurerClaimsChain t={tr(en)} chain={c.id} state={state} back={back} mailbox={MAILBOX} />); const w = text(html);

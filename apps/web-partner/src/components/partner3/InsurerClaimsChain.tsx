@@ -4,6 +4,10 @@
 // partner console yet — write to the partners mailbox — and prints the mailbox FACT (lib/partners-mailbox.ts; never a literal). Each state prints
 // its refusals by name and links back to ITS OWN page (never the canon's "Back → W252" from W253 / W264 — DELTA chain_returns). No form, no act.
 // Also the claims surfaces' refusal list (`ClaimsRefusals`), printed BY NAME from features/partner3/refusals.ts.
+//
+// PC-56 PARTNER-3b — the six 3b act chains (W2866–W2868, W2904–W2906, W2934–W2936, W3014–W3016) are DECOR with ONE state: `?act=confirm`,
+// whose body is the founder's own sentence, keyed exactly `partner3.chain.act3b.confirm` (`statement: true` on the chain), under the shared 3b
+// chain title. There is no success and no failure state to reach, because nothing is ever attempted.
 import Link from 'next/link';
 import type { Tr } from '../NotYet';
 import type { Mailbox } from '../partner1/HelpView';
@@ -28,8 +32,10 @@ export function InsurerClaimsChain({ t, chain, state, back, mailbox }: { t: Tr; 
   const href = back ?? (c.page.includes('[id]') ? c.page.slice(0, c.page.indexOf('/[id]')) : c.page);
   return (
     <section className="kv-card kv-chain" data-kv-chain={chain} data-kv-chain-state={state} role="status">
-      <h1>{t.t(`${k}.title`)}</h1>
-      <p>{t.t(`${k}.body`)}</p>
+      <h1>{t.t(c.statement ? 'partner3.chain.act3b.title' : `${k}.title`)}</h1>
+      {c.statement
+        ? <p className="kv-statement" data-kv-statement={k}>{t.t(k)}</p>
+        : <p>{t.t(`${k}.body`)}</p>}
       {c.mailbox && (
         <div data-kv-export-note="true">
           <p>{t.t('partner3.export.notAvailable')}</p>
