@@ -97,6 +97,22 @@ describe('partner nav model (persona-aware)', () => {
     // and no lending item is reachable by an insurer, whatever it holds
     for (const i of lending) expect([i.href, liveNavForPartner(PARTNER_READS, 'insurer').map((x) => x.href).includes(i.href)]).toEqual([i.href, false]);
   });
+  // PC-56 PARTNER-4c · the two KCC pages are reached from the lending SUB-NAVIGATION (its KCC row, drawn against the loan in scope) and from
+  // the loan page — never from the nav. They are in NO nav group, for ANY kind and ANY permission set, including the wildcard; the lending
+  // group is still the same SIX items. M6 (`/lender/kcc/[id]` added to the lending nav group) kills here.
+  it('PC-56 PARTNER-4c · /lender/kcc/[id] and /lender/kcc/[id]/drawls are in NO nav, for any kind or permission set; the lending group is still six', () => {
+    const FOUR_C = ['/lender/kcc', '/lender/kcc/', '/lender/kcc/[id]', '/lender/kcc/[id]/drawls', '/lender/kcc/pending', '/lender/kcc/pending/drawls'];
+    expect(PARTNER_NAV.filter((i) => FOUR_C.includes(i.href))).toEqual([]);
+    expect(PARTNER_NAV.filter((i) => /kcc/i.test(i.href) || /kcc/i.test(i.labelKey))).toEqual([]);
+    expect(PARTNER_NAV.filter((i) => i.group === 'lending').length).toBe(6);
+    for (const [perms, kind] of [[PARTNER_READS, 'bank'], [PARTNER_READS, 'nbfc'], [PARTNER_READS, 'mfi'], [PARTNER_READS, 'gold_loan'],
+      [set(WILDCARD_PERM), 'bank'], [set(WILDCARD_PERM), null], [PARTNER_READS, 'insurer'], [PARTNER_READS, 'amc'], [PARTNER_READS, null], [set(), 'bank']] as const) {
+      const all = [...navForPartner(perms, kind), ...liveNavForPartner(perms, kind), ...soonNavForPartner(perms, kind)].map((i) => i.href);
+      for (const h of FOUR_C) expect([kind, h, all.includes(h)]).toEqual([kind, h, false]);
+    }
+    // and no nav href is a route pattern at all (the KCC row lives in the sub-navigation, which resolves it against a loan)
+    expect(PARTNER_NAV.filter((i) => i.href.includes('['))).toEqual([]);
+  });
   it('PC-56 PARTNER-2a · an asset manager sees neither vertical; an unknown kind keeps the lending group and never opens the insurer group', () => {
     expect(visibleGroups(PARTNER_READS, 'amc')).toEqual(['common', 'account']);
     expect(visibleGroups(PARTNER_READS, null)).toEqual(['common', 'lending', 'account']);

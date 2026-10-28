@@ -5,8 +5,14 @@
 //     own forms on the application page, where the Idempotency-Key is minted at render. The chain never pretends to be them;
 //   • the two export chains (`?export=`) are DECOR — exports are not available from the partner console yet; write to the partners mailbox,
 //     and the mailbox FACT is read at runtime (lib/partners-mailbox.ts; never a literal, the brand guard scans for one).
-// Each state prints its refusals BY NAME and links back to ITS OWN page — never the canon's "Back → W206" from W207 and W215, and never the
-// loan export chain's crumb, which names W206 although W215's button is its only trigger (DELTA `chain_returns`). No form, no act.
+// PC-56 PARTNER-4c adds the three KCC chains: the export chain (W2951–W2952, DECOR + the mailbox line), THE PANEL'S FIRST FOUR-STATE FORM
+// chain (W2953–W2956, DECOR — with its OWN mailbox line in place of the export sentence, the 2c `lender_form` precedent; no state claims a
+// confirm page and none carries the mutate chain's body) and the KCC mutate chain (W2957–W2959, DECOR — not PARITY-DECOR: W217 reads nothing
+// and W216's error state asks for its own page again, so there is nothing to re-read). A chain of an HONEST page prints that page's
+// founder-approved statement first (the 2b precedent).
+// Each state prints its refusals BY NAME and links back to ITS OWN page — never the canon's "Back → W206" from W207 and W215, never the
+// loan export chain's crumb, which names W206 although W215's button is its only trigger, and never the KCC chains' "Back → W216" from W217
+// (DELTA `chain_returns`, `kcc_chains_return_w216`). No form, no act.
 // Also the lending surfaces' refusal list (`LenderRefusals`), printed BY NAME from features/partner4/refusals.ts.
 import Link from 'next/link';
 import type { Tr } from '../NotYet';
@@ -34,10 +40,11 @@ export function LenderChain({ t, chain, state, back, mailbox }: { t: Tr; chain: 
   return (
     <section className="kv-card kv-chain" data-kv-chain={chain} data-kv-chain-state={state} role="status">
       <h1>{t.t(`${k}.title`)}</h1>
+      {c.statement && <p className="kv-statement" data-kv-statement={c.statement}>{t.t(c.statement)}</p>}
       <p>{t.t(`${k}.body`)}</p>
       {c.mailbox && (
         <div data-kv-export-note="true">
-          <p>{t.t('partner4.export.notAvailable')}</p>
+          <p>{t.t(c.mailboxKey ?? 'partner4.export.notAvailable')}</p>
           {mailbox && <MailboxLine t={t} mailbox={mailbox} />}
         </div>
       )}

@@ -466,6 +466,57 @@ const FORBIDDEN_4B: readonly [string, RegExp, string][] = [
 const PERMITTED_4B = ['Disbursed', 'Paid in this window', 'the borrower’s waiting period', '1 to 30 days past a recorded due date',
   'No due date is recorded at all', 'A loan that repays itself from the dairy cycle never becomes a knock on the door.'];
 
+// PC-56 PARTNER-4c · THE KCC ACCOUNT THE PLATFORM DOES NOT KEEP (founder 4c-1 … 4c-6) — the words of an account that exists in no table:
+// its ceiling, its unused remainder, the thing that revolves, the yearly re-opening, the crop-finance sheet with its land and its yearly
+// uplift, the yearly review, the share of a ceiling, the interest that is said to build up, the subsidy said to be paid for repaying early,
+// the check on what a farmer does with her own loan, the promise that the record cannot be altered — and the canon's person, crops and
+// account number. Each regex is PROVEN on its own canon phrase below, and each is applied to EVERY `partner4.` and `loan.` value in all
+// three languages (the same scope as 4a's and 4b's). M3 (the accrual sentence restored into a partner4. value) kills here.
+//
+// FOUR of them are deliberately NARROWED to the canon's affirmative shape, because the bare word is the honest content of a sentence this
+// console already ships — exactly as 4a's `disburse` regex bans the act and spares the state (recorded in the wave report, §6):
+//   • `available`  — `partner4.export.notAvailable` says "Exports are not available …" (4a / 2b-1), so the canon's FIGURE form is banned;
+//   • `subvention` — `partner4.application.aprLine` carries the PLACEHOLDER `{subvention}` (the 2c integer-bps rule), so the canon's
+//                    "credited … for repaying promptly" form is banned (and `effective` already bans the rest of that claim outright);
+//   • `escalation` — `partner4.refusal.bankLimitDelegation` truthfully says "no escalation exists on this platform" (4b);
+//   • `append-only`— `partner4.loan.noRepayments.body` truthfully says the REPAYMENT record is append-only (it has a real trigger, 0079),
+//                    while the KCC ledger has only a grant (founder 4c-5), so the canon's reassurance about THE LEDGER is what is banned.
+const FORBIDDEN_4C: readonly [string, RegExp, string][] = [
+  ['revolving', /revolving/i, 'KCC account — active · revolving'],
+  ['credit limit', /credit limit|\blimit ₹|unused limit/i, 'Annual reviews of this account’s credit limit'],
+  // the brief's own words for the thing W216 says is absent (founder 4c-3): "no credit limit, drawing power, renewal date or limit review"
+  ['drawing power', /drawing power/i, 'no credit limit, drawing power, renewal date or limit review is recorded here'],
+  ['scale of finance', /scale[- ]?of[- ]?finance/i, 'Limit set from scale-of-finance × acreage'],
+  ['escalation (affirmative)', /escalation\s*\/\s*yr|escalation per year|annual escalation|\+\s*\d+\s*escalation/i, '+ 10% escalation/yr — worksheet attached'],
+  ['worksheet', /worksheet/i, 'borrower notified in Gujarati with the worksheet'],
+  ['renewal', /renewal/i, 'renewal due Feb 2027'],
+  ['limit review', /limit review|review of this account/i, 'Record limit review'],
+  ['utilisation', /utilisation|utilization/i, 'Utilisation 55% healthy'],
+  ['headroom', /headroom/i, 'healthy — headroom for emergencies'],
+  ['available (figure)', /available ₹|available headroom|available balance|available limit/i, 'available ₹1,80,000'],
+  ['accrual', /accrual/i, 'daily accrual on drawn balance'],
+  ['accrues', /accrue/i, 'July accrues daily on drawn balance only'],
+  ['interest applied', /interest applied|interest accrued/i, 'Interest applied on drawn balance only, monthly'],
+  ['subvention credited', /subvention credited|credited on prompt|preserves the subvention/i, 'subvention credited on prompt seasonal repayment'],
+  ['prompt repayment', /prompt[- ]?repayment|prompt seasonal/i, '4% effective with prompt-repayment subvention'],
+  ['purpose check', /purpose check/i, 'Drawls above ₹50,000 … get a purpose check'],
+  ['moneylender', /moneylender/i, 'input finance that leaks to moneylender repayment'],
+  ['append-only (the ledger)', /ledger is append-?only|append-?only and safe/i, 'The ledger is append-only and safe.'],
+  ['one truth, two languages', /one truth, two languages/i, 'He sees this same ledger in Gujarati — one truth, two languages'],
+  ['cotton', /cotton/i, '3.5 acre cotton + 1.0 acre summer cumin'],
+  ['cumin', /cumin/i, '1.0 acre summer cumin'],
+  ['KCC-', /KCC-/i, 'KCC-2026-0031'],
+  ['Jayesh', /Jayesh/i, 'KCC account — Jayesh D.'],
+];
+/** The canon words 4c must NOT ban, because each is the honest content of one of its own pages or of an earlier wave's. */
+const PERMITTED_4C = ['A fresh KCC sits at zero until the season starts — no drawl, no interest, no cost.',
+  'Kisan Credit Card loan', 'Exports are not available from the partner console yet; write to the partners mailbox.',
+  'The record is append-only: a repayment is never edited or removed.',
+  'No limit, no delegated authority and no escalation exists on this platform.',
+  '{apr} bps APR − {subvention} bps subsidy = {net} bps net of subsidy',
+  'there is no ceiling on it, no power to draw against one',
+  'Nothing on this platform charges interest, on any basis at all.'];
+
 describe('PC-56 PARTNER-4a · claims guard (the lender\'s own book)', () => {
   it('every 4a forbidden word is caught when planted once (each regex proven on its own canon phrase); an honest sentence passes all of them', () => {
     for (const [name, re, planted] of FORBIDDEN_4A) expect([name, re.test(planted)]).toEqual([name, true]);
@@ -503,17 +554,50 @@ describe('PC-56 PARTNER-4a · claims guard (the lender\'s own book)', () => {
       expect([k, hi[k] !== en[k] && hi[k].length > 20, gu[k] !== en[k] && gu[k].length > 20]).toEqual([k, true, true]);
     }
   });
-  it.each(Object.entries(CATS))('%s: no 4a or 4b claim in any partner4. or loan. value, nor in any PARTNER-4 refusal; and no "%" anywhere in the scope', (_l, cat) => {
+  it('PC-56 PARTNER-4c · every 4c forbidden word is caught when planted once (each regex on its own canon phrase), and none of this wave\'s own honest sentences — nor an earlier wave\'s — trips one', () => {
+    for (const [name, re, planted] of FORBIDDEN_4C) expect([name, re.test(planted)]).toEqual([name, true]);
+    for (const ok of PERMITTED_4C) for (const [name, re] of FORBIDDEN_4C) expect([ok, name, re.test(ok)]).toEqual([ok, name, false]);
+    // the four NARROWED regexes spare the sentences this console already ships, and still catch the canon's own form
+    expect(FORBIDDEN_4C.find(([n]) => n === 'available (figure)')?.[1].test(en['partner4.export.notAvailable'])).toBe(false);
+    expect(FORBIDDEN_4C.find(([n]) => n === 'append-only (the ledger)')?.[1].test(en['partner4.loan.noRepayments.body'])).toBe(false);
+    expect(FORBIDDEN_4C.find(([n]) => n === 'append-only (the ledger)')?.[1].test('The ledger is append-only and safe.')).toBe(true);
+    expect(FORBIDDEN_4C.find(([n]) => n === 'escalation (affirmative)')?.[1].test(en['partner4.refusal.bankLimitDelegation'])).toBe(false);
+    expect(FORBIDDEN_4C.find(([n]) => n === 'subvention credited')?.[1].test(en['partner4.application.aprLine'])).toBe(false);
+    // and the sentences this wave KEEPS from the canon pass every regex of all three waves
+    for (const k of ['partner4.kcc.zeroTruth', 'partner4.drawls.zeroTruth']) {
+      for (const cat of [en, hi, gu]) {
+        for (const [name, re] of [...FORBIDDEN_4A.map(([n, r]) => [n, r] as const), ...FORBIDDEN_4B.map(([n, r]) => [n, r] as const), ...FORBIDDEN_4C.map(([n, r]) => [n, r] as const)]) {
+          expect([k, name, re.test(cat[k])]).toEqual([k, name, false]);
+        }
+      }
+    }
+  });
+  it.each(Object.entries(CATS))('%s: no 4a, 4b or 4c claim in any partner4. or loan. value, nor in any PARTNER-4 refusal; and no "%" anywhere in the scope', (_l, cat) => {
     const c = cat as Record<string, string>;
     const keys = [...new Set([...Object.keys(c).filter((k) => SCOPE_4A.test(k)), ...PARTNER4_REFUSALS.map((r) => r.key)])];
     expect(keys.length).toBeGreaterThan(200);
     for (const k of keys) {
       expect([k, typeof c[k]]).toEqual([k, 'string']);
-      for (const [name, re] of [...FORBIDDEN_4A.map(([n, r]) => [n, r] as const), ...FORBIDDEN_4B.map(([n, r]) => [n, r] as const), ...FORBIDDEN]) {
+      for (const [name, re] of [...FORBIDDEN_4A.map(([n, r]) => [n, r] as const), ...FORBIDDEN_4B.map(([n, r]) => [n, r] as const),
+        ...FORBIDDEN_4C.map(([n, r]) => [n, r] as const), ...FORBIDDEN]) {
         expect([k, name, re.test(c[k])]).toEqual([k, name, false]);
       }
       expect([k, c[k].includes('%')]).toEqual([k, false]);
     }
+  });
+  it('PC-56 PARTNER-4c · founder 4c-1 / 4c-2 / 4c-3 / 4c-5 (en, verbatim): the account that is not there, the ledger that moves no money, and the guarantee not yet earned', () => {
+    expect(en['partner4.kcc.statement']).toMatch(/^There is no KCC account on this platform\. A Kisan Credit Card loan is an ordinary loan whose product kind is recorded as kcc/);
+    expect(en['partner4.kcc.notSetHere']).toMatch(/None of them is set from this console either/);
+    expect(en['partner4.drawls.statement']).toMatch(/^The drawl ledger is the organisation’s own record of what it advanced and recovered against this loan\./);
+    expect(en['partner4.drawls.statement']).toMatch(/It is not a money movement on this platform, and it is not shown here\.$/);
+    expect(en['partner4.drawls.notMoney']).toMatch(/no posting to any wallet, no key that makes a repeat safe, no second person, and no switch that could stop it/);
+    expect(en['partner4.drawls.integrityOwed']).toMatch(/protected by a privilege, not by the database itself/);
+    expect(en['partner4.kcc.zeroTruth']).toBe('A fresh KCC sits at zero until the season starts — no drawl, no interest, no cost.');
+    for (const k of ['partner4.kcc.statement', 'partner4.drawls.statement', 'partner4.drawls.notMoney', 'partner4.drawls.integrityOwed']) {
+      expect([k, typeof hi[k] === 'string' && hi[k] !== en[k] && hi[k].length > 20, typeof gu[k] === 'string' && gu[k] !== en[k] && gu[k].length > 20]).toEqual([k, true, true]);
+    }
+    // the canon's stale backend banner is NOWHERE in any catalogue (founder 4c-4)
+    for (const cat of [en, hi, gu]) for (const [k, v] of Object.entries(cat)) expect([k, /DELTA-032|Backend pending|Design leads/i.test(v)]).toEqual([k, false]);
   });
   it('the `loan.` prefix is IN scope now, and the three sentences that OFFERED disbursal are gone from every catalogue (survey C-19)', () => {
     for (const cat of [en, hi, gu]) {
@@ -546,10 +630,17 @@ describe('PC-56 PARTNER-4a · claims guard (the lender\'s own book)', () => {
       'components/partner4/LenderLoanView.tsx', 'components/partner4/LenderChain.tsx', 'components/partner4/LendingSubNav.tsx',
       'components/partner4/LenderPayoutsView.tsx', 'components/partner4/LenderRepaymentsView.tsx', 'components/partner4/LenderBatchView.tsx',
       'app/lender/queue/page.tsx', 'app/lender/queue/[id]/page.tsx', 'app/lender/portfolio/page.tsx', 'app/lender/portfolio/[id]/page.tsx',
-      'app/lender/disbursements/page.tsx', 'app/lender/disbursements/[id]/page.tsx', 'app/lender/repayments/page.tsx']) {
+      'app/lender/disbursements/page.tsx', 'app/lender/disbursements/[id]/page.tsx', 'app/lender/repayments/page.tsx',
+      // PC-56 PARTNER-4c · the two KCC views and the two KCC pages
+      'components/partner4/LenderKccView.tsx', 'components/partner4/LenderKccDrawlsView.tsx',
+      'app/lender/kcc/[id]/page.tsx', 'app/lender/kcc/[id]/drawls/page.tsx']) {
       const code = fs2.readFileSync(path2.join(SRC, rel), 'utf8').split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
       for (const [name, re] of [['%', /%/], ['toFixed', /toFixed/], ['percent', /percent/i], ['borrowerUserId', /borrowerUserId/], ['channel', /channel/i],
-        ['ledgerTxn', /ledgerTxn|ledger_txn/i], ['originationFee', /originationFee|origination_fee/i], ['narrative', /narrative/i]] as const) {
+        ['ledgerTxn', /ledgerTxn|ledger_txn/i], ['originationFee', /originationFee|origination_fee/i], ['narrative', /narrative/i],
+        // PC-56 PARTNER-4c · not one field of the drawl ledger may be named in a lending view or page
+        ['balanceAfter', /balanceAfter|balance_after/i], ['entryKind', /entryKind|entry_kind/i], ['accrualBasis', /accrualBasis|accrual_basis/i],
+        ['purposeCheck', /purposeCheck|purpose_check/i], ['destinationKind', /destinationKind|destination_kind/i],
+        ['amountMinor (a ledger entry)', /drawlAmount|amount_minor/i]] as const) {
         expect([rel, name, re.test(code)]).toEqual([rel, name, false]);
       }
     }

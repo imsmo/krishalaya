@@ -291,3 +291,9 @@ export function lenderSwitchState(map: Record<string, boolean> | null | undefine
  *  and EVERY id prints the same honest page because there is nothing to look up (recorded as a DELTA). */
 export const PENDING_BATCH = 'pending';
 export const batchHref = (id: string = PENDING_BATCH) => `/lender/disbursements/${encodeURIComponent(id)}`;
+
+/** PC-56 PARTNER-4c — the two KCC addresses (W216, W217). The canon draws the `[id]` as a KCC ACCOUNT reference; there
+ *  is no such entity on this platform, so it is a LOAN id (a DELTA, as 3b recorded W259's being a claim id). W216 reads
+ *  that loan through PARTNER-4a's audited `partner_loan` read; W217 reads nothing at all. */
+export const kccHref = (loanId: string) => `/lender/kcc/${encodeURIComponent(loanId)}`;
+export const kccDrawlsHref = (loanId: string) => `/lender/kcc/${encodeURIComponent(loanId)}/drawls`;

@@ -17,26 +17,39 @@
 // (W218, an HONEST PAGE about whose money moves and who signs) — with their four chain surfaces:
 // `disbursements_act` (W2863–W2865, DECOR — the plural chain, donor W210), `disbursement_act` (W2860–W2862, DECOR —
 // the singular chain, donor W218), `repayments_export` (W2994–W2995, DECOR + the mailbox line) and `repayments_act`
-// (W2996–W2998, PARITY-DECOR — Retry is a re-read). 4c's `kcc` / `kcc_drawls` / `kcc_form` are NOT registered here:
-// their founder door (Q4) is not answered.
+// (W2996–W2998, PARITY-DECOR — Retry is a re-read).
+// PARTNER-4c closes PARTNER-4 with THE KCC ACCOUNT THE PLATFORM DOES NOT KEEP (founder 4c-1 … 4c-7): `kcc` (W216, an
+// HONEST PAGE beside that loan's own facts — there is no KCC account on this platform) and `kcc_drawls` (W217, an
+// HONEST PAGE with NOTHING of the ledger on it, because a drawl entry moves no money), with three chain surfaces —
+// `kcc_export` (W2951–W2952, DECOR + the mailbox line, triggered from W217), `kcc_form` (W2953–W2956, the panel's
+// first FOUR-STATE FORM chain, DECOR + the mailbox line) and `kcc_act` (W2957–W2959, DECOR — W217 reads nothing and
+// W216's own retry is a plain re-request of its page, so there is no act and nothing to re-read here).
 export type Partner4Surface =
   | 'queue' | 'application' | 'portfolio' | 'loan' | 'disbursements' | 'repayments' | 'disbursement_batch'
+  | 'kcc' | 'kcc_drawls'
   | 'queue_act' | 'application_act' | 'loan_act' | 'loan_export' | 'portfolio_export' | 'portfolio_act'
-  | 'disbursements_act' | 'disbursement_act' | 'repayments_export' | 'repayments_act';
+  | 'disbursements_act' | 'disbursement_act' | 'repayments_export' | 'repayments_act'
+  | 'kcc_export' | 'kcc_form' | 'kcc_act';
 export interface Partner4Refusal { id: string; canon: string; surfaces: readonly Partner4Surface[]; key: string; why: string }
 
 /** The three pages the loan mutate chain (W2878–W2880) is triggered from. */
 const ACT: readonly Partner4Surface[] = ['queue_act', 'application_act', 'loan_act'];
-/** The three export chains (W2876–W2877, W2891–W2892, W2994–W2995): all DECOR, all with the partners-mailbox line. */
-const EXPORT: readonly Partner4Surface[] = ['loan_export', 'portfolio_export', 'repayments_export'];
+/** The four export chains (W2876–W2877, W2891–W2892, W2994–W2995, W2951–W2952): all DECOR, all with the partners-mailbox line. */
+const EXPORT: readonly Partner4Surface[] = ['loan_export', 'portfolio_export', 'repayments_export', 'kcc_export'];
 /** The two DECOR chains of the one act this console refuses by name (W2860–W2862 singular, W2863–W2865 plural). */
 const PAY: readonly Partner4Surface[] = ['disbursements_act', 'disbursement_act'];
-/** Every chain surface of PARTNER-4a and PARTNER-4b. */
-const CHAINS: readonly Partner4Surface[] = [...ACT, ...EXPORT, ...PAY, 'portfolio_act', 'repayments_act'];
+/** PC-56 PARTNER-4c — the three chains of the KCC pair: the export chain, the FORM chain and the mutate chain. */
+const KCC_CHAINS: readonly Partner4Surface[] = ['kcc_export', 'kcc_form', 'kcc_act'];
+/** Every chain surface of PARTNER-4 (4a, 4b and 4c). */
+const CHAINS: readonly Partner4Surface[] = [...ACT, ...EXPORT, ...PAY, 'portfolio_act', 'repayments_act', 'kcc_form', 'kcc_act'];
 /** The four real screens of PARTNER-4a. */
 const BUILT: readonly Partner4Surface[] = ['queue', 'application', 'portfolio', 'loan'];
 /** Every page of the lending console after PARTNER-4b — the seven screens a lender can open. */
 const ALL_PAGES: readonly Partner4Surface[] = [...BUILT, 'disbursements', 'repayments', 'disbursement_batch'];
+/** PC-56 PARTNER-4c — every page of the lending console at the close of PARTNER-4: the nine screens a lender can open. */
+const ALL_PAGES_4C: readonly Partner4Surface[] = [...ALL_PAGES, 'kcc', 'kcc_drawls'];
+/** The KCC pair (W216, W217) and the three chains they carry. */
+const KCC_ALL: readonly Partner4Surface[] = ['kcc', 'kcc_drawls', ...KCC_CHAINS];
 
 export const PARTNER4_REFUSALS: readonly Partner4Refusal[] = Object.freeze([
   // ── W206 · the loan queue ──
@@ -50,19 +63,19 @@ export const PARTNER4_REFUSALS: readonly Partner4Refusal[] = Object.freeze([
     key: 'partner4.refusal.creditScore', why: 'founder 4a-4: refused by name in Phase 1 — `credit_scores` has NO writer anywhere, zero rows, and `loan_applications.credit_score_id` is never set; scoring is listed as deferred (survey F-7, C-21)' },
   { id: 'score_factors', canon: 'W207 the four weighted factors (income consistency "24 on-time dairy cycles", sales history "42 orders, 20 months", dispute record "4/4 resolved clean", existing debt "utilisation data via consent") and "Base 400 + … = 742 — the arithmetic closes"', surfaces: ['application'],
     key: 'partner4.refusal.scoreFactors', why: 'founder 4a-4: no score exists, and the factors would disclose a farmer\'s whole platform life to a lender — the same cross-module reuse refused by name for claims (PARTNER-3 Q6)' },
-  { id: 'platform_income', canon: 'W207 "Verified platform income (12mo) ₹4,73,460 — crops + dairy, from settlement statements, not self-declared" · W216 "His consented platform income supports it"', surfaces: ['application'],
+  { id: 'platform_income', canon: 'W207 "Verified platform income (12mo) ₹4,73,460 — crops + dairy, from settlement statements, not self-declared" · W216 "His consented platform income supports it"', surfaces: ['application', 'kcc'],
     key: 'partner4.refusal.platformIncome', why: 'founder 4a-2 / 4a-4: no such aggregate exists on any axis, and a farmer\'s settlement history across modules is not a lender\'s to read' },
   { id: 'score_explained', canon: 'W207 "The farmer sees this same breakdown in Gujarati (right-to-explanation). You never see raw transactions — only the score and factors the consent covers."', surfaces: ['application'],
     key: 'partner4.refusal.scoreExplained', why: 'the principle is right and is the shape any future score must take; the claim is false — there is no score and no farmer-facing breakdown of one (founder 4a-4)' },
   { id: 'collateral_column', canon: 'W206 column "Collateral" and the cells "none (KCC)" / "nwr (wheat, LTV 68%)" / "group_guarantee" · W215 "The cow is the collateral logic"', surfaces: ['queue', 'loan'],
     key: 'partner4.refusal.collateralColumn', why: '`collateral_kind` is a field of the PRODUCT, not of an application or a loan (0011:69); the commodity, the live loan-to-value figure and the guarantee instrument are stored nowhere' },
-  { id: 'borrower_identity', canon: 'W206 rows "<reference> <a person> · <an organisation>" · W207 header "<product> ₹3,00,000 — <a person>" · W215 header "Dairy cattle loan — <a person>" · W206 "group · 14 members" · W210 and W218 rows naming a person beside an amount · W211 rows "<a person> · ₹4,180"', surfaces: ALL_PAGES,
+  { id: 'borrower_identity', canon: 'W206 rows "<reference> <a person> · <an organisation>" · W207 header "<product> ₹3,00,000 — <a person>" · W215 header "Dairy cattle loan — <a person>" · W206 "group · 14 members" · W210 and W218 rows naming a person beside an amount · W211 rows "<a person> · ₹4,180"', surfaces: ALL_PAGES_4C,
     key: 'partner4.refusal.borrowerIdentity', why: 'founder 4a-2: loan facts only — never the borrower\'s user id or name, and never a group\'s member count (no partner policy reaches `finance_group_members`). The cooperative appears by its PUBLIC name, never its id (survey F-5, F-10)' },
   { id: 'document_rows', canon: 'W207 the documents table — a masked identity-number tail "verified", a land record "4.2 acre · 2 parcels · <a district>", "8 settlement statements (signed exports — verify offline anytime)", "via account-aggregator rails, purpose-bound"', surfaces: ['application'],
     key: 'partner4.refusal.documentRows', why: 'there is no per-application document table, no verification status, no identity-number tail, no land record and no account-aggregator integration anywhere; the product\'s required document TYPES are the only honest content (2c\'s shape)' },
   { id: 'voice_consent', canon: 'W207 "Granted 10 Jul 14:20 by <a person> — voice consent in Gujarati, recording on file" · "banker-desk pre-filled, member confirmed by voice"', surfaces: ['application'],
     key: 'partner4.refusal.voiceConsent', why: 'no consent artefact exists: no recording column, no media link, no assisted-application flow and no voice record — and nothing in the product writes the consent row at all (founder 4a-3, survey F-6)' },
-  { id: 'effective_rate', canon: 'W207 "7.0% APR − 3.0% subvention = 4.0% effective (prompt-repayment)" · W215 "@ 10.5% APR" · W216 "7% APR (4% effective with prompt-repayment subvention)"', surfaces: ['application', 'loan', 'portfolio'],
+  { id: 'effective_rate', canon: 'W207 "7.0% APR − 3.0% subvention = 4.0% effective (prompt-repayment)" · W215 "@ 10.5% APR" · W216 "7% APR (4% effective with prompt-repayment subvention)"', surfaces: ['application', 'loan', 'portfolio', 'kcc'],
     key: 'partner4.refusal.effectiveRate', why: 'founder 4a-7 (the 2c rule): rates are the lender\'s own stored INTEGERS in basis points, never a float; and no subvention condition is evaluated anywhere, so no net rate is earned by anything a borrower does' },
   { id: 'note_mandatory', canon: 'W207 "Decision recorded (`decision_note` mandatory)"', surfaces: ['application', 'application_act'],
     key: 'partner4.refusal.noteMandatory', why: 'the reject note is `.optional()` in the DTO and approve stores no note at all (create-loan-application.dto.ts); this wave prints the truth rather than changing a live tenant-plane contract — the DTO change is a question for the founder and the fintech owner (survey E7)' },
@@ -78,11 +91,11 @@ export const PARTNER4_REFUSALS: readonly Partner4Refusal[] = Object.freeze([
     key: 'partner4.refusal.documentsAwaited', why: 'no document surface exists for an application, so nothing will ever appear there' },
   { id: 'routed', canon: 'W206 empty state "Queue clear — Every routed application is decided" · the queue lead "Applications routed to your institution"', surfaces: ['queue'],
     key: 'partner4.refusal.routed', why: 'nothing routes an application to a lender: the oracle admits what the APPLICANT consented to share with this lender for this application (0225) — a different thing, and the honest one' },
-  { id: 'platform_roles', canon: 'W206 "Deciding needs credit-officer role" · W212 "Risk analytics need your bank\'s credit-risk role" · W215 "Needs servicing role" · W210/W218 "disbursal officer role" · W211 "collections role"', surfaces: ALL_PAGES,
+  { id: 'platform_roles', canon: 'W206 "Deciding needs credit-officer role" · W212 "Risk analytics need your bank\'s credit-risk role" · W215 "Needs servicing role" · W210/W218 "disbursal officer role" · W211 "collections role"', surfaces: ALL_PAGES_4C,
     key: 'partner4.refusal.platformRoles', why: 'the partner realm has FOUR roles (0225) — administrator, checker, maker, viewer — and none of the canon\'s role names is one of them' },
   { id: 'bulk_select', canon: 'W206 footer "3 highlighted of 14 under_review" (FM:57, classed `bulkbar`) and the row kebabs "Actions for lq 2" / "Actions for lq 3"', surfaces: ['queue'],
     key: 'partner4.refusal.bulkSelect', why: 'the footer is a static line of text, not a selection bar: nothing on this screen can be selected and no bulk route exists on any realm of the platform (survey §1A, F-21)' },
-  { id: 'plan_settings', canon: 'W206–W215 flagged-off state "This module is switched off for this tenant/plan (feature flag) … See plan settings."', surfaces: ALL_PAGES,
+  { id: 'plan_settings', canon: 'W206–W215 flagged-off state "This module is switched off for this tenant/plan (feature flag) … See plan settings."', surfaces: ALL_PAGES_4C,
     key: 'partner4.refusal.planSettings', why: 'no plan-settings surface exists for a partner organisation (the 2a / 2c / 3a precedent); the console says it is switched off and that nothing is broken' },
   { id: 'terms_snapshot', canon: 'W207 "Product: <kind> · <rate> · limit ₹3,00,000 of ₹5,00,000 product max · repayment harvest_aligned" printed as the terms of the day she applied', surfaces: ['application'],
     key: 'partner4.refusal.termsSnapshot', why: 'founder 4a-6: a filed application stores NO rate or term — only a disbursed loan stamps its rate — so a re-priced product silently re-prices every open application\'s displayed terms (survey C-14). The page says the terms are the product\'s today, not a snapshot' },
@@ -208,6 +221,56 @@ export const PARTNER4_REFUSALS: readonly Partner4Refusal[] = Object.freeze([
     key: 'partner4.refusal.autoRetries', why: 'the second half is TRUE and is kept in the platform\'s own words (a line that cannot be written is listed and the rest continues); the first is not — the retry belongs to a payment pipeline that has never run, and nothing on this platform retries anything today' },
   { id: 'batch_added_to', canon: 'W218 empty state "No disbursements in this batch yet — Approved loans queued for disbursal will appear here as they\'re added to the batch."', surfaces: ['disbursement_batch'],
     key: 'partner4.refusal.batchAddedTo', why: 'a batch is never added to: it is written whole, in one transaction, or not at all — and if its totals disagree it is abandoned before a single row is written (survey §1I)' },
+  // ══ PC-56 PARTNER-4c · W216 · THE KCC ACCOUNT THE PLATFORM DOES NOT KEEP (founder 4c-2 / 4c-3 / 4c-6) ═══════════════════════════════════
+  { id: 'kcc_account_entity', canon: 'W216 header "KCC account — <a person> · active · **revolving**" and the reference "KCC-2026-0031" printed as an account number', surfaces: KCC_ALL,
+    key: 'partner4.refusal.kccAccountEntity', why: 'founder 4c-2: there is NO KCC account on this platform — no table, no column and no line of code. A "KCC loan" is an ordinary `loans` row whose product\'s `loan_kind` code is `kcc`; there is no account reference anywhere (survey §1G, C-6)' },
+  { id: 'credit_limit', canon: 'W216 "limit ₹4,00,000" · "Limit set from scale-of-finance …" · W217 "never on the unused limit"', surfaces: ['kcc', 'kcc_drawls', 'kcc_form', 'kcc_act'],
+    key: 'partner4.refusal.creditLimit', why: 'founder 4c-2: `grep -rn \'kcc_limit|limit_review|credit_limit\' krishalaya` → 0. The nearest things are a PRODUCT ceiling (`loan_products.max_amount_minor`) and what a loan was opened with (`loans.principal_minor`) — neither is an account limit (survey §1G)' },
+  { id: 'available_headroom', canon: 'W216 "available ₹1,80,000" · "Utilisation 55% healthy — headroom for emergencies"', surfaces: ['kcc'],
+    key: 'partner4.refusal.availableHeadroom', why: 'the figure is limit − drawn, so it falls with the limit: there is nothing to subtract from and nothing to subtract (survey §1G)' },
+  { id: 'renewal_concept', canon: 'W216 "renewal due Feb 2027" and lifecycle 4 "Annual renewal — one visit or fully remote if platform income data is consented; limit re-based on actual cropping"', surfaces: ['kcc'],
+    key: 'partner4.refusal.renewalConcept', why: 'founder 4c-2: no renewal date, no renewal concept and no re-basing exists in any table, migration or line of code; a loan runs until its outstanding reaches zero and then closes (loan.entity.ts:38-41)' },
+  { id: 'scale_of_finance', canon: 'W216 lifecycle 1 "Limit set from scale-of-finance × acreage (3.5 acre cotton + 1.0 acre summer cumin) + 10% escalation/yr — worksheet attached"', surfaces: ['kcc', 'kcc_form'],
+    key: 'partner4.refusal.scaleOfFinance', why: 'founder 4c-2 and the WALL: no scale-of-finance table, no acreage input, no yearly escalation rule and no worksheet document exists — and a farmer\'s crops and land are not a lender\'s to read (survey §1G)' },
+  { id: 'seasonal_drawls', canon: 'W216 lifecycle 2 "Seasonal drawls — kharif inputs drawn Jun–Jul (current ₹2,20,000), repaid at harvest sale via `harvest_settlement`"', surfaces: ['kcc'],
+    key: 'partner4.refusal.seasonalDrawls', why: 'nothing on this platform marks a loan or a ledger entry as belonging to a season, and `harvest_settlement` is a bare string no code ever writes (survey §1D, F-24)' },
+  { id: 'interest_engine', canon: 'W216 lifecycle 3 "Interest applied on drawn balance only, monthly" · "Interest accrued ₹917 June applied · July accrues daily on drawn balance only" · the error state "Drawl and interest engines run server-side"', surfaces: ['kcc', 'kcc_drawls'],
+    key: 'partner4.refusal.interestEngine', why: 'founder 4c-1: NOTHING computes or applies interest. An `interest` entry is whatever amount a desk member types (servicing.service.ts:28-41) and `accrual_basis` — the jsonb column 0069:30-32 created so the arithmetic would be STORED — is never written (survey F-4)' },
+  { id: 'subvention_credited', canon: 'W216 lifecycle 3 "subvention credited on prompt seasonal repayment" · "Repay-by for subvention 31 Jan 2027" · "Prompt seasonal repayment keeps him at 4% effective"', surfaces: ['kcc'],
+    key: 'partner4.refusal.subventionCredited', why: 'founder 4c-6 (MONEY): nothing credits anything to anybody, and no condition about repaying early is evaluated anywhere. A product\'s subsidy figure is stored data in integer basis points and nothing acts on it (survey §1G)' },
+  { id: 'utilisation_ratio', canon: 'W216 "Utilisation 55% healthy — headroom for emergencies"', surfaces: ['kcc'],
+    key: 'partner4.refusal.utilisationRatio', why: 'founder 4c-6 / survey E9: no limit ⇒ no utilisation, and this console prints counts and bigint sums, never a share — and never a float percentage' },
+  { id: 'limit_review_block', canon: 'W216 "Limit review (annual, maker-checker) — Proposed FY27: ₹4,40,000 (+10% escalation, cropping unchanged). His consented platform income supports it (12mo verified sales cover 1.4× the limit)."', surfaces: ['kcc', 'kcc_form'],
+    key: 'partner4.refusal.limitReviewBlock', why: 'founder 4c-2: there is no limit, no review of one, no table, no route, no permission and no maker-checker for it — and the income claim is the same fabrication the application screen was refused for (survey F-7, §1G)' },
+  { id: 'limit_change_notice', canon: 'W216 "Limit changes recorded · borrower notified in Gujarati with the worksheet · never reduced mid-season"', surfaces: ['kcc', 'kcc_form'],
+    key: 'partner4.refusal.limitChangeNotice', why: 'three claims, none true: nothing is recorded, nobody is notified in any language (no consumer of any lending event exists — survey F-19), and no rule protects anything mid-season' },
+  { id: 'limit_review_act', canon: 'W216 "Record limit review" (FM:138, `chain-form` → W2953–W2956)', surfaces: ['kcc', 'kcc_form'],
+    key: 'partner4.refusal.limitReviewAct', why: 'founder 4c-6: DECOR, refused by name. There is no limit, so there is no review; there is no table, no route, no permission and no form — the four canon form pages carry no input, label or select at all (survey C-8, §1S)' },
+  { id: 'kcc_accounts_opened', canon: 'W216 empty state "No KCC accounts — KCC applications approved in the queue open revolving accounts here." + "View queue"', surfaces: ['kcc'],
+    key: 'partner4.refusal.kccAccountsOpened', why: 'an approved application opens an ordinary `loans` row when the money is paid, exactly like any other product (loan-application.service.ts:120-124); nothing opens an account of this kind (survey §1G)' },
+  { id: 'drawn_balance', canon: 'W216 "drawn ₹2,20,000" and "This season — Drawn (kharif) ₹2,20,000"', surfaces: ['kcc', 'kcc_drawls'],
+    key: 'partner4.refusal.drawnBalance', why: 'founder 4c-1: the drawn balance is the only REAL figure of the canon\'s KCC account — and it is the running balance of a ledger that moves no money, so no drawn amount and no balance reaches a lender in this wave (survey F-4, §1 rupee 6)' },
+  { id: 'borrower_ledger_mirror', canon: 'W216 "the console shows HIM this too, in Gujarati, with the exact date and amount that preserves the subvention" · W217 "He sees this same ledger in Gujarati — one truth, two languages"', surfaces: ['kcc', 'kcc_drawls'],
+    key: 'partner4.refusal.borrowerLedgerMirror', why: 'there is NO borrower-facing KCC surface anywhere: `grep -rn \'kcc\' apps/mobile/src` → nothing, and the only `kcc` in the tenant console is an i18n key. The promise is made to a farmer who would never be told (survey §1H, F-19)' },
+  { id: 'no_limit_reviews_state', canon: 'W216 empty state "No limit reviews yet — Annual reviews of this account\'s credit limit will appear here once the first one is recorded."', surfaces: ['kcc', 'kcc_form'],
+    key: 'partner4.refusal.noLimitReviewsState', why: 'DECOR: there is nothing to record a first one of, so the page says the thing is ABSENT rather than awaited (the 3b rule for an empty state with no table behind it)' },
+  // ══ PC-56 PARTNER-4c · W217 · THE LEDGER THAT MOVES NO MONEY (founder 4c-1 — the drawl stays off the console) ═══════════════════════════
+  { id: 'drawl_ledger_rows', canon: 'W217 the whole table — Date ▾ · Entry · Drawl · Repaid · Interest · Balance — and its four rows', surfaces: ['kcc_drawls', 'kcc_export', 'kcc_act'],
+    key: 'partner4.refusal.drawlLedgerRows', why: 'founder 4c-1, taken under standing authority: a drawl entry records a farmer\'s DEBT and moves no money — no wallet posting, no `ledger_txn_id`, no idempotency key, no second person, no flag — so no entry kind, date, amount or running balance reaches a lender until it does (survey F-4)' },
+  { id: 'drawl_narrative', canon: 'W217 rows "Drawl — drip top-up (supplier-direct)" / "Drawl — seed + fertiliser (kharif kit)" / "Repayment — rabi wheat sale (`harvest_settlement`)"', surfaces: ['kcc_drawls', 'kcc_export'],
+    key: 'partner4.refusal.drawlNarrative', why: 'founder 4c-1 and the WALL: the narrative is free text about what a farmer bought and sold, written by the cooperative\'s desk — her business and the cooperative\'s, never a lender\'s (survey §1H)' },
+  { id: 'accrual_arithmetic', canon: 'W217 row "Interest applied (Jun — daily accrual on drawn balance: ₹1,60,000 × 12d + ₹2,20,000 × 13d @ 7%)"', surfaces: ['kcc_drawls'],
+    key: 'partner4.refusal.accrualArithmetic', why: 'the arithmetic is NOT stored: `accrual_basis` jsonb exists for exactly this and `insertKccEntry` writes nine columns and not that one — so the sum in the canon is free text a desk member typed (survey F-4, §1H)' },
+  { id: 'interest_on_drawn_only', canon: 'W217 footer "interest accrues on drawn balance only — never on the unused limit"', surfaces: ['kcc_drawls', 'kcc'],
+    key: 'partner4.refusal.interestOnDrawnOnly', why: 'nothing on this platform charges interest on any basis at all, and there is no unused remainder either because there is no limit (survey F-4, §1G)' },
+  { id: 'drawl_purpose_check', canon: 'W217 "Drawls above ₹50,000 to non-supplier destinations get a purpose check — input finance that leaks to moneylender repayment helps no one. Supplier-direct drawls skip the friction entirely."', surfaces: ['kcc_drawls'],
+    key: 'partner4.refusal.drawlPurposeCheck', why: 'refused BY NAME and FOR ITS REASONING. `purpose_check_status` is only ever written as its default `not_required`, no threshold is evaluated (0069 deliberately left the figure out of a CHECK) and no code reads the column; and the sentence makes an adverse inference about what a farmer might do with her own loan — the W263 lesson (survey §1H)' },
+  { id: 'append_only_safe', canon: 'W217 error state "Couldn\'t load ledger — The ledger is append-only and safe."', surfaces: ['kcc_drawls'],
+    key: 'partner4.refusal.appendOnlySafe', why: 'founder 4c-5 (F-13): the ledger cannot be mutated BY GRANT (0069:211, re-asserted 0078:259) but carries NO trigger, unlike `loan_repayments` (0079:227-230) — so a privileged connection could still change it, and the reassuring sentence becomes available only when P4-B7 adds the trigger' },
+  { id: 'borrower_sees_always', canon: 'W217 restricted state "Needs servicing role; the borrower sees his own ledger always."', surfaces: ['kcc_drawls'],
+    key: 'partner4.refusal.borrowerSeesAlways', why: 'there is no borrower-facing ledger on this platform at any time, so no promise of the kind is made (survey §1H)' },
+  { id: 'entries_since_opening', canon: 'W217 footer "4 highlighted of 9 entries since opening"', surfaces: ['kcc_drawls'],
+    key: 'partner4.refusal.entriesSinceOpening', why: 'nothing of this ledger reaches this console, so there is no count to print and nothing to highlight — and the canon\'s footer is a static line of text in any case (survey F-21)' },
 ]);
 
 /** The refusal i18n keys printed on one surface (render tests read this). */
@@ -254,12 +317,36 @@ export const PARTNER4_DELTAS: readonly { id: string; canon: string; built: strin
     built: 'the four counts, server-computed on the consent-gated application axis, with an as-of — and NO table at all: the canon\'s two row columns are the borrower and her bank account, which are the wall. "Ready" and "in cooling-off" are counted over every approved application of this book (an approval waits for its window wherever it was made); "disbursed" is counted inside the window' },
   { id: 'disbursal_word', canon: 'W210 is titled "Disbursements" and W218 "Disbursement batch"; the canon\'s sidebar item is "Disbursements"',
     built: 'the pages are named for what a lender can actually see — the pay-outs its approvals lead to, and what happens when a batch is prepared — because the claims guard bans the verb and the noun of the one act this console refuses by name in every `partner4.` value, and the past participle ("disbursed", a real state of an application) is deliberately still printable. 4a set this rule with the sub-navigation label; 4b keeps it' },
+  // ── PC-56 PARTNER-4c ──
+  { id: 'two_4c_routes', canon: 'W216 `lender/kcc/[id]` · W217 `lender/kcc/[id]/drawls` — and the canon\'s own lender sidebar cannot reach either (the two form a CLOSED TWO-CYCLE with no entry point, survey F-22)',
+    built: 'the canon\'s own paths, inside 4a\'s lending shell. The inbound edge the canon never drew is the lending sub-navigation\'s KCC row, drawn wherever a LOAN ID is in scope — on the loan page (W215) and on the two KCC pages themselves; neither page is a nav item, because its route needs a loan id' },
+  { id: 'w217_id_is_a_loan', canon: 'W216\'s and W217\'s `[id]` is drawn as a KCC ACCOUNT reference ("KCC-2026-0031") in the heading and the crumb',
+    built: 'the `[id]` is a LOAN id — there is no KCC account entity to have an id — exactly as PARTNER-3b recorded W259\'s `[id]` being a claim id. W216 reads that loan through PARTNER-4a\'s own audited `partner_loan` read; W217 reads nothing at all' },
+  { id: 'w217_stale_banner', canon: 'W217 prints its own backend banner: "Backend pending (DELTA-032): `kcc_drawl_ledger` table (drawl/repay/interest rows per revolving account) — today KCC servicing rides the loans + repayments tables awkwardly. Design leads." (survey C-7)',
+    built: 'NEVER COPIED, and recorded as a correction: the table was built by 0069 with exactly the shape the note asks for — its header cites this very screen — and it is partitioned, under FORCE RLS and append-only by grant. The live gap is the OPPOSITE one: no partner grant, no definer, and no money behind an entry' },
+  { id: 'fm_omits_kcc_links', canon: 'FLOWMAP omits W216\'s "Drawl ledger" → W217 and W217\'s "KCC-2026-0031" crumb → W216 — the only two real cross-links either screen has, and the only inbound edges between them; it registers the dead `data-decor` buttons "View queue" (:140) and "Back to account" (:142) instead (survey F-21)',
+    built: 'both real links are built — the ledger link from the KCC page and the crumb back from the drawls page — and the two dead buttons are not drawn at all' },
+  { id: 'kcc_form_without_form', canon: 'W2953–W2956 is a FOUR-STATE FORM chain whose four pages carry no `<input>`, no `<label>` and no `<select>` — and the act behind it ("Record limit review") has no table, route, permission or form (survey C-8)',
+    built: 'ONE registry entry on the 2c `lender_form` precedent — `param: \'form\'`, four states, the four canon files listed ONCE on the triggering page, `mailbox: true` with its own mailbox line — and four states that each print the refusal. The partner panel has never built a form chain as a real form, and this one has nothing to put in one' },
+  { id: 'w2956_two_defects', canon: 'W2956 (the form chain\'s failure page) links "Retry — back to confirm" → W216: a form chain has no CONFIRM page to go back to (the wording is the mutate chain\'s), and the link skips the review page entirely. 2c recorded the identical pair on W2983',
+    built: 'the failure state claims no confirm page and offers no earlier step, because there is none: it says nothing was attempted and links back to the page it was opened from' },
+  { id: 'w2954_back_to_edit', canon: 'W2954 (the form chain\'s review page) links "Back to edit" → W216, never to W2953, so the error page is unreachable from the chain it belongs to',
+    built: 'every state of the chain is reached by its own query value and links back to the triggering page; no state claims an edit step, because there is no form to edit' },
+  { id: 'kcc_chains_return_w216', canon: 'the KCC export chain is triggered from W217 and its donor, crumb and Back all name W216; the KCC mutate chain is triggered from W216 AND W217 and returns to W216 from both (survey F-22)',
+    built: 'Back goes to the TRIGGERING page — the export chain to the drawls page, whose button is its only trigger. The export chain\'s files are recorded on the drawls page for the same reason (the 4a `loan_export` precedent)' },
+  { id: 'kcc_mutate_no_trigger', canon: 'W2957–W2959 (`chain-mutate:kcc`) is wired to W216\'s "Retry" and W217\'s "Retry" (FM:139, FM:144)',
+    built: 'DECOR, and reached from NO control: W217 makes no read, so it has no error state and no retry; and W216\'s error state asks for its own page again rather than opening a chain. The three canon files answer as query states with the truth — there is no act here and nothing to read again — which is why the chain is DECOR and not PARITY-DECOR' },
+  { id: 'kcc_act_words', canon: 'W216\'s control is labelled "Record limit review" and W216 / W217 print "limit", "available", "renewal", "utilisation", "headroom", "accrual" and "subvention … effective" as figures of an account',
+    built: 'the control is named for what a lender can honestly ask for, because the claims guard bans the canon\'s own noun in every `partner4.` value — the rule 4a set with the sub-navigation label and 4b kept for the pay-outs page. The refusals NAME the canon\'s words; no page value carries them' },
   { id: 'dead_lending_console', canon: '— (not a canon claim: the repository\'s own residue, survey F-14)',
     built: 'the dead lending console is deleted: `app/servicing/**` (a `\'use server\'` file imported by nothing, whose four server actions called TENANT fintech routes with a partner token), `features/lending/{servicing,loan,product}.ts`, their three specs, `canDisburse`, the dead i18n families and the two dead `NotYetSurface` members. Its absence is pinned' },
 ]);
 
-/** Every canon file of PARTNER-4 (39), each with ONE verdict. PARTNER-4a decides its 14; the other 25 are flipped by their own waves. */
-export type Partner4Verdict = 'BUILT' | 'BUILT (read)' | 'BUILT (honest)' | 'PARITY-DECOR' | 'DECOR' | 'pending_4b' | 'pending_4c';
+/** Every canon file of PARTNER-4 (39), each with ONE verdict. 4a decided its 14, 4b its 14 and PARTNER-4c the last 11 —
+ *  so PARTNER-4 CLOSES AT 39 DECIDED, 0 PENDING. The two verdict values that carried the waiting for 4b and for 4c are
+ *  DELETED from the type with their last user (the 4a precedent: a verdict value with no users goes), and the registry's
+ *  own spec asserts that neither string survives anywhere in THIS FILE — a comment naming them would pass for one. */
+export type Partner4Verdict = 'BUILT' | 'BUILT (read)' | 'BUILT (honest)' | 'PARITY-DECOR' | 'DECOR';
 export const PARTNER4_CANON_FILES: readonly { file: string; wave: '4a' | '4b' | '4c'; verdict: Partner4Verdict; note: string }[] = Object.freeze([
   // ── 4a · THE LENDER READS ITS OWN BOOK (14) ──
   { file: 'W206-partner-loan-queue.html', wave: '4a', verdict: 'BUILT', note: '/lender/queue over GET /v1/partner/applications + GET /v1/partner/loans/counts: the consented applications newest first (reference, product, requested amount, purpose category, status, applied), the seven statuses the machine can produce as filters, keyset paging, and the FY counts of the lender\'s own book beside them with an as-of; "View portfolio" is a real link. The SLA column, the Score column, the Collateral column, "Take next", docs_pending, "routed", the borrower\'s name, the canon\'s role names and "plan settings" are refused by name' },
@@ -291,27 +378,32 @@ export const PARTNER4_CANON_FILES: readonly { file: string; wave: '4a' | '4b' | 
   { file: 'W2996-partner-repayments-mutate-confirm.html', wave: '4b', verdict: 'PARITY-DECOR', note: '/lender/repayments?act=confirm — the module\'s only trigger is Retry, a re-read of the counts: no confirm step, no audit row beyond the read\'s own, no money' },
   { file: 'W2997-partner-repayments-mutate-success.html', wave: '4b', verdict: 'PARITY-DECOR', note: '?act=success — the figures were read again' },
   { file: 'W2998-partner-repayments-mutate-failure.html', wave: '4b', verdict: 'PARITY-DECOR', note: '?act=failure — nothing changed, and the auto-deduction channels run regardless' },
-  // ── 4c · THE KCC ACCOUNT THE PLATFORM DOES NOT KEEP (11) — decided in its own wave ──
-  { file: 'W216-partner-kcc-account.html', wave: '4c', verdict: 'pending_4c', note: 'there is no KCC account on this platform — an honest page; founder door Q4' },
-  { file: 'W217-partner-kcc-drawls.html', wave: '4c', verdict: 'pending_4c', note: 'the drawl ledger records debt with no money moving — an honest page by default; founder doors Q4 / Q6' },
-  { file: 'W2951-partner-kcc-export-queued.html', wave: '4c', verdict: 'pending_4c', note: 'the kcc export chain, donor W216, triggered from W217' },
-  { file: 'W2952-partner-kcc-export-ready.html', wave: '4c', verdict: 'pending_4c', note: 'as above' },
-  { file: 'W2953-partner-kcc-form-form-error.html', wave: '4c', verdict: 'pending_4c', note: 'the kcc FORM chain, donor W216 — four states and, in the canon, no form at all' },
-  { file: 'W2954-partner-kcc-form-review.html', wave: '4c', verdict: 'pending_4c', note: 'as above' },
-  { file: 'W2955-partner-kcc-form-success.html', wave: '4c', verdict: 'pending_4c', note: 'as above' },
-  { file: 'W2956-partner-kcc-form-failure.html', wave: '4c', verdict: 'pending_4c', note: 'as above' },
-  { file: 'W2957-partner-kcc-mutate-confirm.html', wave: '4c', verdict: 'pending_4c', note: 'the kcc mutate chain, donor W216, triggered from W216 and W217' },
-  { file: 'W2958-partner-kcc-mutate-success.html', wave: '4c', verdict: 'pending_4c', note: 'as above' },
-  { file: 'W2959-partner-kcc-mutate-failure.html', wave: '4c', verdict: 'pending_4c', note: 'as above' },
+  // ── 4c · THE KCC ACCOUNT THE PLATFORM DOES NOT KEEP (11) — PARTNER-4 CLOSES HERE, 39 of 39 ──
+  { file: 'W216-partner-kcc-account.html', wave: '4c', verdict: 'BUILT (honest)', note: '/lender/kcc/[id] — an HONEST PAGE: there is no KCC account on this platform, and a Kisan Credit Card loan is an ordinary loan whose product kind is recorded as `kcc` (founder 4c-2 / 4c-3). Beside the statement the page prints THAT LOAN\'S OWN FACTS through PARTNER-4a\'s existing audited `partner_loan` read — the same wall, the same projection, ONE audit row — because the canon\'s `[id]` is a loan id; nothing is added to the API and no migration is made. "Drawl ledger" is a real link to W217 (the canon\'s own edge, which FLOWMAP omits); "Record limit review" is DECOR → the W2953–W2956 form chain. The account itself, the limit, the headroom, the renewal, the scale-of-finance worksheet, the seasonal drawls, the interest engine, the subsidy, the utilisation, the whole annual-review block, its notice promise and the canon\'s role names are refused by name. An unknown or another lender\'s id answers the 4a "not found" shape, never a 403' },
+  { file: 'W217-partner-kcc-drawls.html', wave: '4c', verdict: 'BUILT (honest)', note: '/lender/kcc/[id]/drawls — an HONEST PAGE with NO READ (so no audit row and no error state of its own, the 3b rule): the drawl ledger is the organisation\'s own record of what it advanced and recovered against this loan, it is not a money movement on this platform, and it is not shown here (founder 4c-1, taken under the founder\'s standing authority). NOT ONE figure of the ledger is printed — no entry, no amount, no running balance, no narrative, no destination, no purpose-check status, no interest — and the canon\'s one TRUE sentence is kept ("a fresh KCC sits at zero until the season starts — no drawl, no interest, no cost"). The stale DELTA-032 banner is recorded as a correction and never printed; "the ledger is append-only and safe" is refused until P4-B7 adds the trigger (founder 4c-4 / 4c-5). "Export (signed)" is DECOR → W2951–W2952 + the mailbox line; the crumb back to W216 is the canon\'s own edge that FLOWMAP omits' },
+  { file: 'W2951-partner-kcc-export-queued.html', wave: '4c', verdict: 'DECOR', note: '/lender/kcc/[id]/drawls?export=queued — no partner export plane (P2-B6): exports are not available, write to the partners mailbox. Its ONLY trigger is W217\'s button, though the canon\'s donor, crumb and Back all name W216 — the built chain returns to the DRAWLS page (recorded as a DELTA)' },
+  { file: 'W2952-partner-kcc-export-ready.html', wave: '4c', verdict: 'DECOR', note: '?export=ready — no file, no row count, no checksum, no signed link; and nothing of this ledger could be exported in any case' },
+  { file: 'W2953-partner-kcc-form-form-error.html', wave: '4c', verdict: 'DECOR', note: '/lender/kcc/[id]?form=error — the panel\'s FIRST four-state FORM chain, recorded as ONE entry on the 2c `lender_form` precedent with its four files listed once and its own mailbox line. There are no fields to put right: the act behind the chain has no table, no route, no permission and no form' },
+  { file: 'W2954-partner-kcc-form-review.html', wave: '4c', verdict: 'DECOR', note: '?form=review — nothing was entered, so nothing is shown back and there is nothing to compare against; and no second person waits to check it. The canon\'s "Back to edit" skips its own error page (a DELTA)' },
+  { file: 'W2955-partner-kcc-form-success.html', wave: '4c', verdict: 'DECOR', note: '?form=success — nothing was recorded. The canon\'s body here is the MUTATE chain\'s ("the audit trail has the entry … Money-adjacent actions reconcile zero-sum"), which is refused twice over: it is the wrong chain\'s wording and neither claim is true of a non-act' },
+  { file: 'W2956-partner-kcc-form-failure.html', wave: '4c', verdict: 'DECOR', note: '?form=failure — nothing was attempted. The canon page carries TWO defects in one link ("Retry — back to confirm" → W216): a form chain has no confirm page, and the link skips the review page. The built state claims no confirm page and offers no earlier step (a DELTA)' },
+  { file: 'W2957-partner-kcc-mutate-confirm.html', wave: '4c', verdict: 'DECOR', note: '/lender/kcc/[id]?act=confirm — DECOR, not PARITY-DECOR: W217 reads nothing at all, so there is nothing to re-read, and W216\'s error state asks for its own page again rather than opening a chain. No control on either page leads here (recorded as a DELTA)' },
+  { file: 'W2958-partner-kcc-mutate-success.html', wave: '4c', verdict: 'DECOR', note: '?act=success — nothing happened, so nothing succeeded, and nothing was read again' },
+  { file: 'W2959-partner-kcc-mutate-failure.html', wave: '4c', verdict: 'DECOR', note: '?act=failure — nothing was attempted and nothing changed' },
 ]);
 
 // ── THE DECOR / PARITY-DECOR CHAINS: each is a query state of its parent page ──
 export type Chain4Id = 'queue_act' | 'application_act' | 'loan_act' | 'loan_export' | 'portfolio_export' | 'portfolio_act'
-  | 'disbursements_act' | 'disbursement_act' | 'repayments_export' | 'repayments_act';
+  | 'disbursements_act' | 'disbursement_act' | 'repayments_export' | 'repayments_act'
+  | 'kcc_export' | 'kcc_form' | 'kcc_act';
 export interface Chain4Def {
-  id: Chain4Id; wave: '4a' | '4b'; param: string; page: string; surface: Partner4Surface; states: readonly string[]; key: (state: string) => string; files: readonly string[];
+  id: Chain4Id; wave: '4a' | '4b' | '4c'; param: string; page: string; surface: Partner4Surface; states: readonly string[]; key: (state: string) => string; files: readonly string[];
   /** An export chain prints "exports are not available … write to the partners mailbox" + the mailbox FACT (founder 4a-7, 2b-1). */
   mailbox?: boolean;
+  /** PC-56 PARTNER-4c (the 2c `lender_form` precedent): a chain whose own line replaces the export sentence above the mailbox FACT. */
+  mailboxKey?: string;
+  /** PC-56 PARTNER-4c (the 2b precedent): a chain of an HONEST page prints that page's founder-approved statement first. */
+  statement?: string;
 }
 export const PARTNER4_CHAINS: readonly Chain4Def[] = Object.freeze([
   // the ONE canon loan mutate chain (W2878–W2880) serves three pages; its files are recorded once, on the queue (the canon's own return page)
@@ -342,6 +434,20 @@ export const PARTNER4_CHAINS: readonly Chain4Def[] = Object.freeze([
     key: (s: string) => `partner4.chain.export.${s}`, files: ['W2994', 'W2995'] },
   { id: 'repayments_act', wave: '4b', param: 'act', page: '/lender/repayments', surface: 'repayments_act', states: ['confirm', 'success', 'failure'],
     key: (s: string) => `partner4.chain.act.${s}`, files: ['W2996', 'W2997', 'W2998'] },
+  // PC-56 PARTNER-4c · the three chains of the KCC pair. The EXPORT chain's files sit on the DRAWLS page, whose "Export (signed)" button is
+  // its only trigger, though the canon's donor, crumb and Back all name W216 (the 4a `loan_export` precedent for the same canon defect).
+  { id: 'kcc_export', wave: '4c', mailbox: true, param: 'export', page: '/lender/kcc/[id]/drawls', surface: 'kcc_export', states: ['queued', 'ready'],
+    key: (s: string) => `partner4.chain.export.${s}`, files: ['W2951', 'W2952'], statement: 'partner4.drawls.statement' },
+  // THE PARTNER PANEL'S FIRST FOUR-STATE FORM CHAIN, recorded exactly as the 2c `lender_form` entry does it (survey §1S / C-8): one entry,
+  // `param: 'form'`, four states, the four canon files listed ONCE on the triggering page, `mailbox: true` with its own line. No state claims
+  // a confirm page (W2956's wording is the mutate chain's — a canon defect) and none carries the mutate chain's body (W2955's — refused).
+  { id: 'kcc_form', wave: '4c', mailbox: true, mailboxKey: 'partner4.kcc.proposeLimitChange', param: 'form', page: '/lender/kcc/[id]', surface: 'kcc_form',
+    states: ['error', 'review', 'success', 'failure'], key: (s: string) => `partner4.chain.kccForm.${s}`, files: ['W2953', 'W2954', 'W2955', 'W2956'],
+    statement: 'partner4.kcc.statement' },
+  // DECOR, NOT PARITY-DECOR (founder 4c-1): W217 reads nothing, so there is nothing to re-read; and W216's error state asks for its own page
+  // again rather than opening a chain, so no control on either page leads here at all (recorded as the DELTA `kcc_mutate_no_trigger`).
+  { id: 'kcc_act', wave: '4c', param: 'act', page: '/lender/kcc/[id]', surface: 'kcc_act', states: ['confirm', 'success', 'failure'],
+    key: (s: string) => `partner4.chain.kccAct.${s}`, files: ['W2957', 'W2958', 'W2959'], statement: 'partner4.kcc.statement' },
 ]);
 export function chain4ById(id: Chain4Id): Chain4Def { return PARTNER4_CHAINS.find((c) => c.id === id) as Chain4Def; }
 /** The chain state a page was opened in (`?act=confirm` …), or null for the page itself / an unknown state. */
@@ -367,15 +473,18 @@ export const LENDER_BOOK_REDIRECTS: Readonly<Record<string, string>> = Object.fr
 /** The lending sub-navigation (survey E2 / F-22): the canon's own lender sidebar has FIVE lending items for NINE lending screens and cannot
  *  reach W215, W216, W217 or W218 at all, so the lending pages carry their own tabs — the 3b `CLAIMS_SUBNAV` shape. 4a draws Queue ·
  *  Portfolio; the two PARTNER-4b rows are `live: false` until that wave builds them (a route that does not exist is never linked).
- *  PARTNER-4c's W216 / W217 CANNOT be sub-navigation rows at all — their canon routes are `lender/kcc/[id]` and `lender/kcc/[id]/drawls`,
- *  which need a loan id, so 4c must create its own inbound edge from the loan page. Recorded here so the next wave reads it. */
-export const LENDING_SUBNAV: readonly { href: string; key: string; wave: '4a' | '4b'; live: boolean }[] = Object.freeze([
+ *  PC-56 PARTNER-4c · W216 / W217 cannot be ORDINARY rows — their canon routes are `lender/kcc/[id]` and `lender/kcc/[id]/drawls`, which
+ *  need a loan id — so the KCC row carries `needsLoanId` and is drawn ONLY where a loan id is in scope: on the loan page (W215), which is
+ *  the inbound edge the canon never drew, and on the two KCC pages themselves. Everywhere else it is absent rather than dead. */
+export const LENDING_SUBNAV: readonly { href: string; key: string; wave: '4a' | '4b' | '4c'; live: boolean; needsLoanId?: boolean }[] = Object.freeze([
   { href: '/lender/queue', key: 'partner4.subnav.queue', wave: '4a', live: true },
   { href: '/lender/portfolio', key: 'partner4.subnav.portfolio', wave: '4a', live: true },
   // PC-56 PARTNER-4b built both of these, so both are LIVE from this wave. `/lender/disbursements/[id]` (W218) is NOT a row: it is reached
   // from the pay-outs page and the sub-navigation only, which is the inbound edge the canon never drew (survey F-22).
   { href: '/lender/disbursements', key: 'partner4.subnav.disbursements', wave: '4b', live: true },
   { href: '/lender/repayments', key: 'partner4.subnav.repayments', wave: '4b', live: true },
+  // PC-56 PARTNER-4c · LIVE, and drawn against the loan whose page you are on (`/lender/kcc/<that loan>`).
+  { href: '/lender/kcc/[id]', key: 'partner4.subnav.kcc', wave: '4c', live: true, needsLoanId: true },
 ]);
 /** The sub-navigation row a page is on (`aria-current="page"`), or null for a page outside the tabs (an application, a loan). */
 export type LendingSubNavHref = (typeof LENDING_SUBNAV)[number]['href'];

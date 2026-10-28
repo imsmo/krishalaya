@@ -155,6 +155,22 @@ describe('PC-56 PARTNER-4a · brand guard over the lender\'s own book (founder 4
       expect([rel, /borrowerUserId|borrower_user_id|repaymentChannel|repayment_channel|bankAccount|bank_account|narrative|ledgerTxnId|ledger_txn_id|originationFeeTxnId|origination_fee_txn_id/i.test(src)]).toEqual([rel, false]);
     }
   });
+  // PC-56 PARTNER-4c · the two KCC views and the two KCC pages, scanned the same way — plus the canon's person, her crops, her account
+  // number and every field of the drawl ledger, none of which may appear in a view or a page.
+  it('PC-56 PARTNER-4c · the four KCC files exist, are scanned, and carry no platform name, mailbox, domain, canon institution, person, crop, account number or ledger field', () => {
+    const NEW_4C = ['components/partner4/LenderKccView.tsx', 'components/partner4/LenderKccDrawlsView.tsx',
+      'app/lender/kcc/[id]/page.tsx', 'app/lender/kcc/[id]/drawls/page.tsx'];
+    const all = files().map((f) => path.relative(SRC, f));
+    expect(NEW_4C.length).toBe(4);
+    for (const rel of NEW_4C) {
+      expect([rel, all.includes(rel)]).toEqual([rel, true]);
+      const src = fs.readFileSync(path.join(SRC, rel), 'utf8').replace(/@krishalaya\/[a-z0-9-]+/g, '');
+      for (const lit of LITERALS) expect([rel, lit, src.includes(lit)]).toEqual([rel, lit, false]);
+      expect([rel, /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.(com|in|org|net|co)\b|krishalaya\.(in|com)|mailto:[a-z]|1800|Saurashtra|Gramin|Bharat Krishi/i.test(src)]).toEqual([rel, false]);
+      expect([rel, /Jayesh|Ramesh|Hetal|Suresh|Popat|Vithal|Meera|Savita|\bBen\s|Bhai|Kotak|\bSBI\b|Anand|Mehsana|Junagadh|KCC-2026|LA-2026|LN-2026|LTX-|XXXX-XXXX|\bAJ\b|RBI ref|\+91|cotton|cumin|\bacres?\b/i.test(src)]).toEqual([rel, false]);
+      expect([rel, /borrowerUserId|borrower_user_id|narrative|destinationKind|destination_kind|purposeCheck|purpose_check|balanceAfter|balance_after|accrualBasis|accrual_basis|entryKind|entry_kind|ledgerTxnId|ledger_txn_id/i.test(src)]).toEqual([rel, false]);
+    }
+  });
   it('the lending group\'s items read their labels from i18n, never a literal — and the nav never names the canon\'s institution', () => {
     const nav = fs.readFileSync(path.join(SRC, 'features', 'nav', 'nav-model.ts'), 'utf8');
     expect(nav).toContain("labelKey: 'partner4.nav.loanQueue'");

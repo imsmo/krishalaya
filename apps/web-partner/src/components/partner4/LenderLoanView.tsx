@@ -65,7 +65,9 @@ export function LenderLoanView({ t, lang, l, repayments, failure, notFound, comp
   return (
     <section data-kv-lender="loan" data-kv-state="ok">
       {back}
-      <LendingSubNav t={t} current={null} />
+      {/* PC-56 PARTNER-4c: passing this loan's id draws the sub-navigation's KCC row against THIS loan — the inbound edge to W216 that the
+          canon never drew (its sidebar cannot reach W216 or W217 at all, survey F-22). */}
+      <LendingSubNav t={t} current={null} loanId={l.id} />
       <h1>{t.t('partner4.loan.title')} {loanRef(l.id)}</h1>
       <p><span className={`kv-status kv-status--${loanStatusTone(l.status)}`}>{t.t(loanStatusKey(l.status))}</span></p>
 
