@@ -438,6 +438,34 @@ const FORBIDDEN_4A: readonly [string, RegExp, string][] = [
   ['Bhai', /Bhai/i, 'Popat Bhai K.'],
 ];
 
+// PC-56 PARTNER-4b · WHAT A LENDER DOES NOT DISBURSE (founder 4b-3 / 4b-4 / 4b-5 / 4b-6) — the words of the two screens that promise a lender
+// things this platform does not do: a second signature it never gave, a collections regime nobody enforces, a contact engine that does not
+// exist, a destination model, a verified account tail, an instalment letter and the acronyms of arrears. Each regex is PROVEN on its own canon
+// phrase below, and each is applied to EVERY `partner4.` and `loan.` value in all three languages (the same scope as 4a's).
+const FORBIDDEN_4B: readonly [string, RegExp, string][] = [
+  ['disbursal officer', /disbursal[- ]?officer/i, 'checker: your disbursal officer'],
+  ['collections role', /collections role/i, 'Collections view needs collections role'],
+  ['code of conduct', /code of conduct/i, 'Collections code of conduct (platform-enforced)'],
+  ['contact hours window', /contact hours \d|contact hours only|hours 08:00/i, 'contact hours 08:00–19:00 only'],
+  ['third-party agent', /third[- ]?party agents?/i, 'no third-party agents on platform-originated loans'],
+  // the AFFIRMATIVE shapes only, as the `disburse` regex does: the word must stay printable in the sentence that DENIES the claim
+  // (4a's own `contactTools` refusal says "no suspension exists", and this wave's says "no suspension of a partner organisation")
+  ['suspension claim', /violation|partner suspension/i, 'Violation = partner suspension.'],
+  ['penny-drop', /penny[- ]?drop/i, '8/8 destination accounts verified · penny-drop confirmed'],
+  ['supplier-direct', /supplier[- ]?direct/i, 'supplier-direct (cattle purchase, dairy loan)'],
+  ['auto-retries', /auto[- ]?retr/i, 'A failed transfer auto-retries and never blocks its batch-mates'],
+  ['gentle-nudge', /gentle[- ]?nudge/i, 'gentle-nudge stage (Gujarati voice)'],
+  ['T-3', /\bT-3\b/, 'reminder T-3 sent'],
+  ['mediation promised', /mediation scheduled|mediated restructure|mediation before/i, 'FPO mediation scheduled 16 Jul'],
+  ['••', /••/, 'Kotak ••7726 (verified)'],
+  ['co-approval', /co-?approval/i, 'Co-approval recorded both sides'],
+  ['both sides', /both sides/i, 'every rupee traceable both sides'],
+  ['auto-assembled', /auto[- ]?assembl/i, 'maker: platform (auto-assembled)'],
+];
+/** The canon words 4b must NOT ban, because each is the honest content of one of its own pages. */
+const PERMITTED_4B = ['Disbursed', 'Paid in this window', 'the borrower’s waiting period', '1 to 30 days past a recorded due date',
+  'No due date is recorded at all', 'A loan that repays itself from the dairy cycle never becomes a knock on the door.'];
+
 describe('PC-56 PARTNER-4a · claims guard (the lender\'s own book)', () => {
   it('every 4a forbidden word is caught when planted once (each regex proven on its own canon phrase); an honest sentence passes all of them', () => {
     for (const [name, re, planted] of FORBIDDEN_4A) expect([name, re.test(planted)]).toEqual([name, true]);
@@ -453,13 +481,37 @@ describe('PC-56 PARTNER-4a · claims guard (the lender\'s own book)', () => {
       expect([allowed, DISBURSE.test(allowed)]).toEqual([allowed, false]);
     }
   });
-  it.each(Object.entries(CATS))('%s: no 4a claim in any partner4. or loan. value, nor in any PARTNER-4 refusal; and no "%" anywhere in the scope', (_l, cat) => {
+  it('PC-56 PARTNER-4b · every 4b forbidden word is caught when planted once (each regex on its own canon phrase), and none of this wave\'s own honest sentences trips one', () => {
+    for (const [name, re, planted] of FORBIDDEN_4B) expect([name, re.test(planted)]).toEqual([name, true]);
+    for (const ok of PERMITTED_4B) for (const [name, re] of FORBIDDEN_4B) expect([ok, name, re.test(ok)]).toEqual([ok, name, false]);
+    // and the sentences this wave KEEPS from the canon pass every regex of both waves
+    for (const k of ['partner4.repayments.dairyCycleTruth', 'partner4.repayments.autoDeduction', 'partner4.payouts.coolingOffServerSide',
+      'partner4.batch.true.total', 'partner4.batch.true.preflight', 'partner4.batch.true.allOrNothing']) {
+      for (const cat of [en, hi, gu]) {
+        expect([k, typeof cat[k]]).toEqual([k, 'string']);
+        for (const [name, re] of [...FORBIDDEN_4A.map(([n, r]) => [n, r] as const), ...FORBIDDEN_4B.map(([n, r]) => [n, r] as const)]) {
+          expect([k, name, re.test(cat[k])]).toEqual([k, name, false]);
+        }
+      }
+    }
+    // the hardest one: the whole collections regime is refused WITHOUT quoting the canon's own words back
+    expect(en['partner4.refusal.codeOfConduct']).toMatch(/^The platform enforces no rules of collection at all/);
+    expect(en['partner4.refusal.secondSignature']).toMatch(/user id typed into the same request/);
+    expect(en['partner4.batch.whoseMoney']).toMatch(/prepared and confirmed by the organisation that serves the farmer/);
+    expect(en['partner4.batch.neverYours']).toMatch(/never moves a lender’s money, and a lender never moves the organisation’s/);
+    for (const k of ['partner4.refusal.codeOfConduct', 'partner4.refusal.secondSignature', 'partner4.batch.whoseMoney']) {
+      expect([k, hi[k] !== en[k] && hi[k].length > 20, gu[k] !== en[k] && gu[k].length > 20]).toEqual([k, true, true]);
+    }
+  });
+  it.each(Object.entries(CATS))('%s: no 4a or 4b claim in any partner4. or loan. value, nor in any PARTNER-4 refusal; and no "%" anywhere in the scope', (_l, cat) => {
     const c = cat as Record<string, string>;
     const keys = [...new Set([...Object.keys(c).filter((k) => SCOPE_4A.test(k)), ...PARTNER4_REFUSALS.map((r) => r.key)])];
     expect(keys.length).toBeGreaterThan(200);
     for (const k of keys) {
       expect([k, typeof c[k]]).toEqual([k, 'string']);
-      for (const [name, re] of [...FORBIDDEN_4A.map(([n, r]) => [n, r] as const), ...FORBIDDEN]) expect([k, name, re.test(c[k])]).toEqual([k, name, false]);
+      for (const [name, re] of [...FORBIDDEN_4A.map(([n, r]) => [n, r] as const), ...FORBIDDEN_4B.map(([n, r]) => [n, r] as const), ...FORBIDDEN]) {
+        expect([k, name, re.test(c[k])]).toEqual([k, name, false]);
+      }
       expect([k, c[k].includes('%')]).toEqual([k, false]);
     }
   });
@@ -492,7 +544,9 @@ describe('PC-56 PARTNER-4a · claims guard (the lender\'s own book)', () => {
     const SRC = path2.join(__dirname, '..');
     for (const rel of ['components/partner4/LenderQueueView.tsx', 'components/partner4/LenderApplicationView.tsx', 'components/partner4/LenderPortfolioView.tsx',
       'components/partner4/LenderLoanView.tsx', 'components/partner4/LenderChain.tsx', 'components/partner4/LendingSubNav.tsx',
-      'app/lender/queue/page.tsx', 'app/lender/queue/[id]/page.tsx', 'app/lender/portfolio/page.tsx', 'app/lender/portfolio/[id]/page.tsx']) {
+      'components/partner4/LenderPayoutsView.tsx', 'components/partner4/LenderRepaymentsView.tsx', 'components/partner4/LenderBatchView.tsx',
+      'app/lender/queue/page.tsx', 'app/lender/queue/[id]/page.tsx', 'app/lender/portfolio/page.tsx', 'app/lender/portfolio/[id]/page.tsx',
+      'app/lender/disbursements/page.tsx', 'app/lender/disbursements/[id]/page.tsx', 'app/lender/repayments/page.tsx']) {
       const code = fs2.readFileSync(path2.join(SRC, rel), 'utf8').split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
       for (const [name, re] of [['%', /%/], ['toFixed', /toFixed/], ['percent', /percent/i], ['borrowerUserId', /borrowerUserId/], ['channel', /channel/i],
         ['ledgerTxn', /ledgerTxn|ledger_txn/i], ['originationFee', /originationFee|origination_fee/i], ['narrative', /narrative/i]] as const) {

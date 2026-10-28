@@ -12,19 +12,31 @@
 // W2878–W2880, PARITY-DECOR: Retry is a re-read, and the two REAL acts — approve and reject — keep their own forms on W207),
 // `loan_export` (the loan export chain W2876–W2877, DECOR: no partner export plane — the mailbox line), `portfolio_export`
 // (W2891–W2892, DECOR) and `portfolio_act` (W2893–W2895, PARITY-DECOR).
+// PARTNER-4b adds the three surfaces of WHAT A LENDER DOES NOT DISBURSE — `disbursements` (W210, the cooling-off
+// pipeline as counts), `repayments` (W211, the collected window and the arrears buckets) and `disbursement_batch`
+// (W218, an HONEST PAGE about whose money moves and who signs) — with their four chain surfaces:
+// `disbursements_act` (W2863–W2865, DECOR — the plural chain, donor W210), `disbursement_act` (W2860–W2862, DECOR —
+// the singular chain, donor W218), `repayments_export` (W2994–W2995, DECOR + the mailbox line) and `repayments_act`
+// (W2996–W2998, PARITY-DECOR — Retry is a re-read). 4c's `kcc` / `kcc_drawls` / `kcc_form` are NOT registered here:
+// their founder door (Q4) is not answered.
 export type Partner4Surface =
-  | 'queue' | 'application' | 'portfolio' | 'loan'
-  | 'queue_act' | 'application_act' | 'loan_act' | 'loan_export' | 'portfolio_export' | 'portfolio_act';
+  | 'queue' | 'application' | 'portfolio' | 'loan' | 'disbursements' | 'repayments' | 'disbursement_batch'
+  | 'queue_act' | 'application_act' | 'loan_act' | 'loan_export' | 'portfolio_export' | 'portfolio_act'
+  | 'disbursements_act' | 'disbursement_act' | 'repayments_export' | 'repayments_act';
 export interface Partner4Refusal { id: string; canon: string; surfaces: readonly Partner4Surface[]; key: string; why: string }
 
 /** The three pages the loan mutate chain (W2878–W2880) is triggered from. */
 const ACT: readonly Partner4Surface[] = ['queue_act', 'application_act', 'loan_act'];
-/** The two export chains (W2876–W2877, W2891–W2892): both DECOR, both with the partners-mailbox line. */
-const EXPORT: readonly Partner4Surface[] = ['loan_export', 'portfolio_export'];
-/** Every chain surface of this wave. */
-const CHAINS: readonly Partner4Surface[] = [...ACT, ...EXPORT, 'portfolio_act'];
+/** The three export chains (W2876–W2877, W2891–W2892, W2994–W2995): all DECOR, all with the partners-mailbox line. */
+const EXPORT: readonly Partner4Surface[] = ['loan_export', 'portfolio_export', 'repayments_export'];
+/** The two DECOR chains of the one act this console refuses by name (W2860–W2862 singular, W2863–W2865 plural). */
+const PAY: readonly Partner4Surface[] = ['disbursements_act', 'disbursement_act'];
+/** Every chain surface of PARTNER-4a and PARTNER-4b. */
+const CHAINS: readonly Partner4Surface[] = [...ACT, ...EXPORT, ...PAY, 'portfolio_act', 'repayments_act'];
 /** The four real screens of PARTNER-4a. */
 const BUILT: readonly Partner4Surface[] = ['queue', 'application', 'portfolio', 'loan'];
+/** Every page of the lending console after PARTNER-4b — the seven screens a lender can open. */
+const ALL_PAGES: readonly Partner4Surface[] = [...BUILT, 'disbursements', 'repayments', 'disbursement_batch'];
 
 export const PARTNER4_REFUSALS: readonly Partner4Refusal[] = Object.freeze([
   // ── W206 · the loan queue ──
@@ -44,7 +56,7 @@ export const PARTNER4_REFUSALS: readonly Partner4Refusal[] = Object.freeze([
     key: 'partner4.refusal.scoreExplained', why: 'the principle is right and is the shape any future score must take; the claim is false — there is no score and no farmer-facing breakdown of one (founder 4a-4)' },
   { id: 'collateral_column', canon: 'W206 column "Collateral" and the cells "none (KCC)" / "nwr (wheat, LTV 68%)" / "group_guarantee" · W215 "The cow is the collateral logic"', surfaces: ['queue', 'loan'],
     key: 'partner4.refusal.collateralColumn', why: '`collateral_kind` is a field of the PRODUCT, not of an application or a loan (0011:69); the commodity, the live loan-to-value figure and the guarantee instrument are stored nowhere' },
-  { id: 'borrower_identity', canon: 'W206 rows "<reference> <a person> · <an organisation>" · W207 header "<product> ₹3,00,000 — <a person>" · W215 header "Dairy cattle loan — <a person>" · W206 "group · 14 members"', surfaces: BUILT,
+  { id: 'borrower_identity', canon: 'W206 rows "<reference> <a person> · <an organisation>" · W207 header "<product> ₹3,00,000 — <a person>" · W215 header "Dairy cattle loan — <a person>" · W206 "group · 14 members" · W210 and W218 rows naming a person beside an amount · W211 rows "<a person> · ₹4,180"', surfaces: ALL_PAGES,
     key: 'partner4.refusal.borrowerIdentity', why: 'founder 4a-2: loan facts only — never the borrower\'s user id or name, and never a group\'s member count (no partner policy reaches `finance_group_members`). The cooperative appears by its PUBLIC name, never its id (survey F-5, F-10)' },
   { id: 'document_rows', canon: 'W207 the documents table — a masked identity-number tail "verified", a land record "4.2 acre · 2 parcels · <a district>", "8 settlement statements (signed exports — verify offline anytime)", "via account-aggregator rails, purpose-bound"', surfaces: ['application'],
     key: 'partner4.refusal.documentRows', why: 'there is no per-application document table, no verification status, no identity-number tail, no land record and no account-aggregator integration anywhere; the product\'s required document TYPES are the only honest content (2c\'s shape)' },
@@ -66,11 +78,11 @@ export const PARTNER4_REFUSALS: readonly Partner4Refusal[] = Object.freeze([
     key: 'partner4.refusal.documentsAwaited', why: 'no document surface exists for an application, so nothing will ever appear there' },
   { id: 'routed', canon: 'W206 empty state "Queue clear — Every routed application is decided" · the queue lead "Applications routed to your institution"', surfaces: ['queue'],
     key: 'partner4.refusal.routed', why: 'nothing routes an application to a lender: the oracle admits what the APPLICANT consented to share with this lender for this application (0225) — a different thing, and the honest one' },
-  { id: 'platform_roles', canon: 'W206 "Deciding needs credit-officer role" · W212 "Risk analytics need your bank\'s credit-risk role" · W215 "Needs servicing role" · W210/W218 "disbursal officer role" · W211 "collections role"', surfaces: BUILT,
+  { id: 'platform_roles', canon: 'W206 "Deciding needs credit-officer role" · W212 "Risk analytics need your bank\'s credit-risk role" · W215 "Needs servicing role" · W210/W218 "disbursal officer role" · W211 "collections role"', surfaces: ALL_PAGES,
     key: 'partner4.refusal.platformRoles', why: 'the partner realm has FOUR roles (0225) — administrator, checker, maker, viewer — and none of the canon\'s role names is one of them' },
   { id: 'bulk_select', canon: 'W206 footer "3 highlighted of 14 under_review" (FM:57, classed `bulkbar`) and the row kebabs "Actions for lq 2" / "Actions for lq 3"', surfaces: ['queue'],
     key: 'partner4.refusal.bulkSelect', why: 'the footer is a static line of text, not a selection bar: nothing on this screen can be selected and no bulk route exists on any realm of the platform (survey §1A, F-21)' },
-  { id: 'plan_settings', canon: 'W206–W215 flagged-off state "This module is switched off for this tenant/plan (feature flag) … See plan settings."', surfaces: BUILT,
+  { id: 'plan_settings', canon: 'W206–W215 flagged-off state "This module is switched off for this tenant/plan (feature flag) … See plan settings."', surfaces: ALL_PAGES,
     key: 'partner4.refusal.planSettings', why: 'no plan-settings surface exists for a partner organisation (the 2a / 2c / 3a precedent); the console says it is switched off and that nothing is broken' },
   { id: 'terms_snapshot', canon: 'W207 "Product: <kind> · <rate> · limit ₹3,00,000 of ₹5,00,000 product max · repayment harvest_aligned" printed as the terms of the day she applied', surfaces: ['application'],
     key: 'partner4.refusal.termsSnapshot', why: 'founder 4a-6: a filed application stores NO rate or term — only a disbursed loan stamps its rate — so a re-priced product silently re-prices every open application\'s displayed terms (survey C-14). The page says the terms are the product\'s today, not a snapshot' },
@@ -81,7 +93,7 @@ export const PARTNER4_REFUSALS: readonly Partner4Refusal[] = Object.freeze([
     key: 'partner4.refusal.transferredState', why: '`transferred` is in the enum and NOTHING writes it; who owns a transferred loan is an open question (SEC §5 residual 5), so the console does not offer it as a state this platform supports' },
   { id: 'off_platform_book', canon: 'W212 "PAR > 30 1.9% … vs 4.8% your off-platform agri book"', surfaces: ['portfolio'],
     key: 'partner4.refusal.offPlatformBook', why: 'a figure about the lender\'s own business away from this platform, which the platform cannot know and will not invent' },
-  { id: 'par_rate', canon: 'W212 "PAR > 30 1.9% outstanding basis (≈ ₹13,00,000), not arrears" · W211 "outstanding at risk ≈ ₹13,00,000 (PAR basis, see Portfolio)"', surfaces: ['portfolio', 'loan'],
+  { id: 'par_rate', canon: 'W212 "PAR > 30 1.9% outstanding basis (≈ ₹13,00,000), not arrears" · W211 "outstanding at risk ≈ ₹13,00,000 (PAR basis, see Portfolio)"', surfaces: ['portfolio', 'loan', 'repayments'],
     key: 'partner4.refusal.parRate', why: 'founder 4a-5: the numerator needs loans past a due date, and EVERY loan both rails open has its due date NULL (survey F-8) — so the figure is structurally zero and a rate over it would mislead either way. The console prints counts and bigint sums, never a share of the book' },
   { id: 'kind_chart', canon: 'W212 chart "Book by product kind" with five buckets and the aria "KCC 42%, crop 24%, WHR 14%, dairy 12%, SHG and others 8%"', surfaces: ['portfolio'],
     key: 'partner4.refusal.kindChart', why: 'the five buckets are a designer\'s grouping, not a vocabulary: the platform holds NINE `loan_kind` codes (and the schema comment\'s four extra are never seeded). The console prints the nine, an unresolved kind as "not recorded", and counts and sums rather than shares' },
@@ -94,30 +106,30 @@ export const PARTNER4_REFUSALS: readonly Partner4Refusal[] = Object.freeze([
   // ── W215 · one loan ──
   { id: 'maturity_term', canon: 'W215 "principal ₹1,60,000 @ <rate> · disbursed 09 Feb 2026 · 36 months" and "Maturity Feb 2029 · early-closure allowed"', surfaces: ['loan'],
     key: 'partner4.refusal.maturityTerm', why: 'founder 4a-5: `maturity_date` is NULL on every loan both rails open and a tenure is a RANGE on the product, not a term on a loan — so the page says no maturity date is recorded rather than printing a month it computed' },
-  { id: 'next_due', canon: 'W215 "next due Fri 17 Jul" · W211 "Due this week ₹18,42,000 · 312 instalments"', surfaces: ['loan', 'portfolio'],
+  { id: 'next_due', canon: 'W215 "next due Fri 17 Jul" · W211 "Due this week ₹18,42,000 · 312 instalments"', surfaces: ['loan', 'portfolio', 'repayments'],
     key: 'partner4.refusal.nextDue', why: 'founder 4a-5: `next_due_date` is NULL on every loan, and there is no instalment plan anywhere — a repayment row is created AT PAYMENT (loan-repayment.entity.ts:2-3)' },
-  { id: 'repayment_plan', canon: 'W215 section "Schedule & repayment history" with four future rows · "4 highlighted of 11 instalments to date"', surfaces: ['loan'],
+  { id: 'repayment_plan', canon: 'W215 section "Schedule & repayment history" with four future rows · "4 highlighted of 11 instalments to date"', surfaces: ['loan', 'repayments'],
     key: 'partner4.refusal.repaymentPlan', why: 'founder 4a-5: there is no pre-generated plan on this platform — the page prints the RECORDED history and nothing it has not been told' },
-  { id: 'on_time', canon: 'W215 "11/11 on time" and the rows "paid on time" · W211 "Collected (7d) … 96.4% on-time"', surfaces: ['loan', 'portfolio'],
+  { id: 'on_time', canon: 'W215 "11/11 on time" and the rows "paid on time" · W211 "Collected (7d) … 96.4% on-time"', surfaces: ['loan', 'portfolio', 'repayments'],
     key: 'partner4.refusal.onTime', why: 'a repayment row\'s due date IS the moment it was paid (loan.service.ts:51), so every repayment would be trivially punctual and the figure would mean nothing (survey §1D, E9)' },
   { id: 'milk_bill_figure', canon: 'W215 "deduction ₹4,180 ≈ 23% of her avg fortnightly milk bill (cap 25%)" · "The cow is the collateral logic: milk volume up 18% since purchase — the asset performs"', surfaces: ['loan'],
     key: 'partner4.refusal.milkBillFigure', why: 'founder 4a-2: a farmer\'s milk income, her animals and her production are on the other side of the wall — and the same screen\'s own consent block promises a lender does not see them (survey F-5)' },
-  { id: 'destination', canon: 'W215 "disbursed 09 Feb 2026 (supplier-direct, cattle purchase)" · W210 column "Destination" and the bank / account strings · W216 "Drawl — drip top-up (supplier-direct)"', surfaces: ['loan'],
+  { id: 'destination', canon: 'W215 "disbursed 09 Feb 2026 (supplier-direct, cattle purchase)" · W210 column "Destination" and the bank / account strings · W216 "Drawl — drip top-up (supplier-direct)"', surfaces: ['loan', 'disbursements', 'disbursement_batch'],
     key: 'partner4.refusal.destination', why: 'a loan has no destination on this platform: the wallet rail credits the borrower\'s platform wallet and the payout rail never executes; a bank account is a table this console holds NO privilege on (0231 asserts it)' },
   { id: 'ledger_anchors', canon: 'W215 "Ledger anchors — disbursal LTX-…71204 · fee LTX-…71205 · 11 repayment txns — every rupee traceable both sides"', surfaces: ['loan'],
     key: 'partner4.refusal.ledgerAnchors', why: 'a ledger transaction id is the PLATFORM\'s own money record — `ledger_entries`, `ledger_transactions` and `wallet_accounts` are excluded from every RLS pass and this console holds nothing on them. And there is no fee transaction at all' },
-  { id: 'origination_fee', canon: 'W215 "fee LTX-…71205" · W210 "Platform origination fee posts to ledger (origination_fee_txn_id) — your bank pays it, itemised" · W218 "Origination fees pre-computed: ₹4,600 total (charged to bank)"', surfaces: ['loan', 'portfolio'],
+  { id: 'origination_fee', canon: 'W215 "fee LTX-…71205" · W210 "Platform origination fee posts to ledger (origination_fee_txn_id) — your bank pays it, itemised" · W218 "Origination fees pre-computed: ₹4,600 total (charged to bank)"', surfaces: ['loan', 'portfolio', 'disbursements', 'disbursement_batch'],
     key: 'partner4.refusal.originationFee', why: 'founder 4a-5: `loans.origination_fee_txn_id` is written by NOTHING, the revenue leg is listed as deferred, and no fee posting exists on either rail — so nothing is charged to a lender today and the console does not say it is (survey F-8)' },
   { id: 'foreclosure_fee', canon: 'W215 "early-closure allowed, zero foreclosure fee (anti-predatory)"', surfaces: ['loan'],
     key: 'partner4.refusal.foreclosureFee', why: 'TRUE BY ABSENCE, and printed as the absence it is: nothing on this platform charges a fee for closing a loan early — a loan simply closes when its outstanding reaches zero (loan.entity.ts:38-41)' },
   { id: 'retention_promise', canon: 'W215 "Loan not found — Closed loans stay viewable for 7 years."', surfaces: ['loan'],
     key: 'partner4.refusal.retentionPromise', why: 'founder 4a-7 (carried from 2a / 2b / 3b): no retention promise is printed until a policy is set' },
-  { id: 'contact_tools', canon: 'W215 "borrower contact tools live in Collections with their own logging" · W211 "every borrower contact is logged" and the whole collections code of conduct', surfaces: ['loan', 'portfolio'],
+  { id: 'contact_tools', canon: 'W215 "borrower contact tools live in Collections with their own logging" · W211 "every borrower contact is logged" and the whole collections code of conduct', surfaces: ['loan', 'portfolio', 'repayments'],
     key: 'partner4.refusal.contactTools', why: 'there is no contact engine, no contact log, no contact-hours window, no mediation gate and no suspension mechanism anywhere on this platform (survey F-22)' },
-  { id: 'disbursal_act', canon: 'W206 / W207 the disbursal path after approval · W210 "Disburse ready batch" · W218 "Co-approve — disburse now" and "funds leave YOUR bank rails"', surfaces: ['queue', 'application', 'portfolio', 'loan'],
+  { id: 'disbursal_act', canon: 'W206 / W207 the disbursal path after approval · W210 "Disburse ready batch" · W218 "Co-approve — disburse now" and "funds leave YOUR bank rails"', surfaces: [...ALL_PAGES, ...PAY],
     key: 'partner4.refusal.disbursalAct', why: 'founder 4a-1 and the PARTNER-0 rule: the money is the cooperative\'s own, it is the lender of record, and it acts from its own console — the API refuses a partner\'s attempt by name and there is no route here that could try' },
   // ── the chains (W2876–W2877 export, W2878–W2880 mutate, W2891–W2892 export, W2893–W2895 mutate) ──
-  { id: 'export_file', canon: 'W2876 / W2891 "audit-stamped, checksummed, delivered by signed URL" · W2877 / W2892 "file name, row count, sha256, generated-at, requester — delivery via 15-min signed URL, every fetch logged"', surfaces: [...EXPORT, 'loan', 'portfolio'],
+  { id: 'export_file', canon: 'W2876 / W2891 "audit-stamped, checksummed, delivered by signed URL" · W2877 / W2892 "file name, row count, sha256, generated-at, requester — delivery via 15-min signed URL, every fetch logged"', surfaces: [...EXPORT, 'loan', 'portfolio', 'repayments'],
     key: 'partner4.refusal.exportFile', why: 'founder 4a-7 (2b-1): there is no partner export plane in Phase 1 (P2-B6) — the receipt is true only of the tenant exports plane. The console names the partners mailbox instead' },
   { id: 'chain_zero_sum', canon: 'W2878 / W2893 "Money-adjacent actions reconcile zero-sum before this page ever shows"', surfaces: CHAINS,
     key: 'partner4.refusal.chainZeroSum', why: 'nothing reached from these pages moves a rupee, so there is nothing to reconcile' },
@@ -125,6 +137,77 @@ export const PARTNER4_REFUSALS: readonly Partner4Refusal[] = Object.freeze([
     key: 'partner4.refusal.chainOnCall', why: 'no paging from a partner page exists' },
   { id: 'chain_audit', canon: 'W2879 / W2894 "View audit trail" · "the audit trail has the entry (actor · time · reason · before/after)"', surfaces: CHAINS,
     key: 'partner4.refusal.chainAudit', why: 'a re-read writes nothing but its own read row, and the console has no audit-trail page; the two REAL acts (approve, reject) do write a trail, and they are on the application page, not here' },
+  // ══ PC-56 PARTNER-4b · W210 · the cooling-off pipeline (founder 4b-4 / 4b-6 / 4b-7) ══════════════════════════════════════════════════════
+  { id: 'money_destination', canon: 'W210 "Approved → cooling-off lapsed → disburse. Money goes to the borrower\'s verified account (or supplier-direct for input loans) — never to intermediaries."', surfaces: ['disbursements', 'disbursement_batch', ...PAY],
+    key: 'partner4.refusal.moneyDestination', why: 'founder 4b-4 (MONEY): whichever of the two rails is used, the money is the cooperative\'s own. The wallet rail credits the borrower\'s PLATFORM WALLET, not a bank account (loan-application.service.ts:127); the bank rail queues a payout that nothing executes (jobs/loan-disbursement-execute.handler.ts:33-38); and "supplier-direct" exists only as a label on a KCC drawl entry with no money attached (survey §1C)' },
+  { id: 'ready_batch_act', canon: 'W210 "Disburse ready batch (8 · ₹9,20,000)" (FM:92, classed `filter` — the worst mis-class in the register, because a `filter` is licensed to stay a dead button)', surfaces: ['disbursements', 'disbursements_act'],
+    key: 'partner4.refusal.readyBatchAct', why: 'founder 4b-4 and the PARTNER-0 rule: there is no partner route that pays anybody, and the one a partner could reach is refused by name by the API itself (PARTNER_CANNOT_DISBURSE). The control on this page leads to a sentence, never to money' },
+  { id: 'borrower_destination_columns', canon: 'W210 columns "Borrower" and "Destination" and the cells "<a bank> ••<four digits> (verified)" / "supplier-direct (cattle purchase, dairy loan)" · W218 the same two columns', surfaces: ['disbursements', 'disbursement_batch'],
+    key: 'partner4.refusal.borrowerDestinationColumns', why: 'founder 4b-6: the borrower is the wall, and a bank account is a table this console holds NOTHING on — not a table privilege, not one column (0232 asserts it over nine tables). There is no destination model for a payment on this platform at all' },
+  { id: 'auto_moves_to_ready', canon: 'W210 row "lapses today 17:05 / auto-moves to ready" · W218 state "Batches assemble automatically as cooling-off windows lapse"', surfaces: ['disbursements', 'disbursement_batch'],
+    key: 'partner4.refusal.autoMovesToReady', why: 'nothing moves and nothing assembles: the cooling-off instant is a stored timestamp that a QUERY compares with now(), and a batch is written only when a person at the cooperative calls for one (survey §1C, §1I)' },
+  { id: 'loan_with_schedule', canon: 'W210 "On disbursal (atomic) 1 Application → disbursed ; servicing loan record created (loans) with schedule"', surfaces: ['disbursements', 'repayments'],
+    key: 'partner4.refusal.loanWithSchedule', why: 'the flip and the servicing row are real and happen in ONE transaction; "with schedule" is not — there is no instalment plan on this platform and the new loan is opened with its next due date and its maturity date both empty (survey F-8, founder 4b-7)' },
+  { id: 'sanction_letter', canon: 'W210 "Borrower gets the sanction letter PDF + first-due date, in Gujarati, same minute (outbox)" · W218 "sanction letters + first-due dates go out in Gujarati per confirmation"', surfaces: ['disbursements', 'disbursement_batch', ...PAY],
+    key: 'partner4.refusal.sanctionLetter', why: 'three claims, none true: there is no such document anywhere on the platform, there is no first due date (it is empty on every loan), and NOTHING consumes the lending events to tell a borrower anything (survey F-19)' },
+  { id: 'double_funding_absolute', canon: 'W210 "Idempotency — Batch disbursal is idempotent per application — a retried batch skips already-disbursed loans. Double-funding is impossible, not just unlikely." · W218 "double-funding impossible by idempotency, not by care"', surfaces: ['disbursements', 'disbursement_batch'],
+    key: 'partner4.refusal.doubleFundingAbsolute', why: 'founder 4b-2: it was NOT impossible and idempotency was never what made it so. One rail refused an application the other had taken; the other consulted nothing, so a borrower could be paid twice and owe once. THIS WAVE shut that second door by name in the tenant plane — and the console still does not print an absolute, because what is guaranteed is one application, one rail, refused by name (survey F-3)' },
+  { id: 'bank_maker_checker', canon: 'W210 "Disbursals recorded · maker-checker at your bank\'s side honoured via partner API"', surfaces: ['disbursements', 'disbursement_batch'],
+    key: 'partner4.refusal.bankMakerChecker', why: 'the machine interface has NOT ONE mutation by design (partner-api.controller.ts:8-10), so there is no route by which a lender\'s own approval could reach this platform or be honoured by it (survey F-2)' },
+  { id: 'preflight_not_yours', canon: 'W210 empty state "Approved loans awaiting disbursal will appear here as a batch once they clear pre-flight checks"', surfaces: ['disbursements', 'disbursement_batch'],
+    key: 'partner4.refusal.preflightNotYours', why: 'the pre-flight is REAL and it is the cooperative\'s, run on its own plane when it prepares a batch: not approved, still cooling off, no approved amount, no verified account, already taken. A lender\'s console cannot run it and does not pretend to (survey §1C, §1I)' },
+  { id: 'bank_limit_delegation', canon: 'W210 "batches over your bank\'s limit need co-approval" · W218 "amounts over your delegation escalate automatically"', surfaces: ['disbursements', 'disbursement_batch'],
+    key: 'partner4.refusal.bankLimitDelegation', why: 'no limit, no delegation and no escalation exists anywhere on this platform — not per organisation, not per person, not per amount' },
+  { id: 'pipeline_bulk_select', canon: 'W210 footer "3 highlighted of 14 in pipeline" and the row kebabs "Actions for db 1" / "Actions for db 2" (both omitted by FLOWMAP)', surfaces: ['disbursements'],
+    key: 'partner4.refusal.pipelineBulkSelect', why: 'nothing on this page can be selected and there is no bulk route on any realm of the platform: the canon\'s footer is a static line of text (survey F-21)' },
+  // ══ PC-56 PARTNER-4b · W211 · the repayments a lender is told about (founder 4b-5 / 4b-6 / 4b-7) ═════════════════════════════════════════
+  { id: 'channel_vocabulary', canon: 'W211 lead "Channels that match farm cash flow: upi · milk_bill_deduction · harvest_settlement · cash_partner" and the per-row channel cells', surfaces: ['repayments'],
+    key: 'partner4.refusal.channelVocabulary', why: 'founder 4b-6: HOW a repayment was taken is not on this axis at all — the column was revoked from the lending grant in 0231 and 0232 re-asserts it, because it alone would say that this borrower is a dairy member of a cooperative and that her cheque was tapped. And the vocabulary is not one: the column has no constraint and no registered set, and two of the canon\'s four values are written by nothing (survey F-5, F-24)' },
+  { id: 'due_this_week', canon: 'W211 KPI "Due this week ₹18,42,000 · 312 instalments" and the column "Due ▴" with a per-row instalment', surfaces: ['repayments'],
+    key: 'partner4.refusal.dueThisWeek', why: 'founder 4b-7: nothing on this platform is due, ever, because no loan carries a next due date and no instalment plan exists. The honest figure is what was RECORDED as paid in a window, and that is what this page prints (survey F-8)' },
+  { id: 'auto_deduction_share', canon: 'W211 "68% via auto-deduction channels" · W212 "Cash-flow-matched repayment (68% auto-deduction) — design, not luck"', surfaces: ['repayments'],
+    key: 'partner4.refusal.autoDeductionShare', why: 'founder 4b-7 / survey E9: a share needs a plan to be a share OF, and the way each repayment was taken is off this axis — so the figure has neither a numerator nor a denominator here' },
+  { id: 'nudge_stage', canon: 'W211 KPI "Overdue 1–30 · 31 loans · ₹4,86,000 · gentle-nudge stage (Gujarati voice)"', surfaces: ['repayments'],
+    key: 'partner4.refusal.nudgeStage', why: 'founder 4b-5: there is no contact engine, no stage, no voice call and no message of any kind on this platform — nobody is nudged, gently or otherwise' },
+  { id: 'mediation_first', canon: 'W211 "FPO-mediated restructure talks first" and the row "FPO mediation scheduled 16 Jul" · W212 "Monsoon clause + FPO mediation keep temporary distress from becoming permanent default"', surfaces: ['repayments'],
+    key: 'partner4.refusal.mediationFirst', why: 'a restructure can carry a mediation STATUS and nothing requires it before anything else, and nothing schedules a meeting with anybody (0069:152; survey §1D)' },
+  { id: 'collections_privacy_rule', canon: 'W211 row "(name withheld — collections privacy applies beyond 15 DPD)"', surfaces: ['repayments'],
+    key: 'partner4.refusal.collectionsPrivacyRule', why: 'founder 4b-6: there is no such rule, and the canon breaks its own on the next two rows by naming two borrowers. The rule here is the opposite and it is absolute: a borrower is never named on a lender\'s screen, on any day, at any number of days late' },
+  { id: 'reminder_sent', canon: 'W211 row "reminder T-3 sent" · empty state "Between cycles the book breathes — reminders are already scheduled"', surfaces: ['repayments', 'repayments_act'],
+    key: 'partner4.refusal.reminderSent', why: 'founder 4b-5: no reminder is sent and none is scheduled — there is no reminder job, no template and no consumer of any lending event that would notify a borrower (survey F-19)' },
+  { id: 'code_of_conduct', canon: 'W211 "Collections code of conduct (platform-enforced)" — the block as a whole, printed to a lender as a thing the platform ENFORCES', surfaces: ['repayments', 'repayments_act', 'repayments_export'],
+    key: 'partner4.refusal.codeOfConduct', why: 'founder 4b-5, and this is the P0 trust line of the wave: the platform enforces NONE of it. There is no contact engine, no log, no hours window, no mediation gate, no prohibition and no suspension anywhere in the codebase. It is a promise made to the FARMER through the lender\'s screen, so it is refused by name and recorded as something the platform intends to build rather than something it claims (survey F-22)' },
+  { id: 'contact_hours', canon: 'W211 code of conduct: "contact hours 08:00–19:00 only · Gujarati first"', surfaces: ['repayments'],
+    key: 'partner4.refusal.contactHours', why: 'founder 4b-5: no hours window is evaluated anywhere because no contact of any kind happens through this platform — there is nothing for a window to govern' },
+  { id: 'contact_log', canon: 'W211 code of conduct: "every borrower contact is logged" · W215 "borrower contact tools live in Collections with their own logging"', surfaces: ['repayments'],
+    key: 'partner4.refusal.contactLog', why: 'founder 4b-5: there is no contact log table, no contact record and no contact tool — so nothing is logged, and a lender must not be told that its conduct is being watched when it is not' },
+  { id: 'third_party_agents', canon: 'W211 code of conduct: "no third-party agents on platform-originated loans"', surfaces: ['repayments'],
+    key: 'partner4.refusal.thirdPartyAgents', why: 'founder 4b-5: nothing on this platform knows who collects a debt, so nothing can prohibit anybody from doing it — the prohibition the canon prints does not exist as code, as a term or as a check' },
+  { id: 'partner_suspension', canon: 'W211 code of conduct: "Violation = partner suspension."', surfaces: ['repayments'],
+    key: 'partner4.refusal.partnerSuspension', why: 'founder 4b-5: there is no suspension mechanism for a partner organisation on this platform, no violation record to trigger one and no process behind it' },
+  { id: 'rides_dairy_cycle', canon: 'W211 row "<a person> · ₹4,180 · milk_bill_deduction · rides Friday cycle"', surfaces: ['repayments'],
+    key: 'partner4.refusal.ridesDairyCycle', why: 'the dairy cycle genuinely does take an instalment inside its own transaction — but WHICH borrower was tapped and on which day is exactly what a lender is not shown (founder 4b-6). The truth it rests on is printed as a statement about the platform, never as a row about a family' },
+  { id: 'repayments_bulk_select', canon: 'W211 footer "3 highlighted of 312 due this week" (FM:105, classed `bulkbar`) and the three row kebabs "Actions for rp 1/2/3" (all omitted by FLOWMAP)', surfaces: ['repayments'],
+    key: 'partner4.refusal.repaymentsBulkSelect', why: 'a static line of text in the canon; nothing is selectable here and no bulk route exists on any realm (survey F-21)' },
+  // ══ PC-56 PARTNER-4b · W218 · whose money moves and who signs (founder 4b-3 / 4b-4 / 4b-6) ═══════════════════════════════════════════════
+  { id: 'awaiting_coapproval', canon: 'W218 header "Disbursement batch — 13 Jul awaiting your co-approval"', surfaces: ['disbursement_batch', ...PAY],
+    key: 'partner4.refusal.awaitingCoApproval', why: 'nothing on this platform waits for a lender: a batch is prepared and confirmed in the SAME request, by the cooperative, on its own plane (survey §1I, F-2)' },
+  { id: 'maker_checker_claim', canon: 'W218 "maker: platform (auto-assembled) · checker: your disbursal officer · funds leave YOUR bank rails, the platform orchestrates"', surfaces: ['disbursement_batch', 'disbursements'],
+    key: 'partner4.refusal.makerCheckerClaim', why: 'founder 4b-3 / 4b-4: three claims, none true. Nothing assembles a batch; there is no such role and no lender person signs anything here; and the money that moves is the cooperative\'s own — this platform never moves a lender\'s money and a lender never moves the cooperative\'s' },
+  { id: 'second_signature', canon: 'W218 "Co-approval recorded both sides" and the whole maker-checker claim of W210 and W218', surfaces: ['disbursement_batch', 'disbursements', ...PAY],
+    key: 'partner4.refusal.secondSignature', why: 'founder 4b-3, and it is the hardest sentence in this wave: the "second signature" on a batch today is a user id TYPED INTO THE REQUEST by the one person making it, and the only check is that the id differs from their own. Nothing verifies that the colleague exists in that organisation, holds the permission, or was ever asked — and the audit row then records the name that was typed. A real two-session maker-checker is named as still owed (P4-B5), and until it ships this console says so rather than showing a signature nobody gave (survey F-2)' },
+  { id: 'coapprove_act', canon: 'W218 "Co-approve — disburse now" (FM:146, classed `nav-detail` with the placeholder target "sibling detail by context")', surfaces: ['disbursement_batch', 'disbursement_act'],
+    key: 'partner4.refusal.coApproveAct', why: 'founder 4b-4: there is nothing to co-approve, nobody to co-approve it with and no route that would accept it. The control leads to a sentence' },
+  { id: 'batch_contents_table', canon: 'W218 "Batch contents" (Application · Borrower · Amount ▾ · Destination) and the rows "+ 6 more · all verified accounts · ₹5,60,000 · 4 bank · 2 supplier-direct"', surfaces: ['disbursement_batch'],
+    key: 'partner4.refusal.batchContentsTable', why: 'founder 4b-6: the items of a batch carry the BORROWER\'S USER ID, which is precisely what the wall removes — and this console holds no privilege on the batch tables at all (0232 asserts it over nine tables). Counts and sentences are printed here; never a row of people' },
+  { id: 'product_rule_engine', canon: 'W218 row "(2nd cattle loan — dairy product allows 2 active, herd-size-based)"', surfaces: ['disbursement_batch'],
+    key: 'partner4.refusal.productRuleEngine', why: 'there is no product-rule engine: a product\'s eligibility rules are a JSON field that NOTHING evaluates (it is only ever selected and returned), and no rule about a family\'s animals exists anywhere' },
+  { id: 'cattle_insurance_rule', canon: 'W218 pre-flight "2/2 livestock loans carry active cattle insurance (product rule since Apr 2026 — the write-off lesson, enforced)"', surfaces: ['disbursement_batch'],
+    key: 'partner4.refusal.cattleInsuranceRule', why: 'nothing joins a loan to a policy when money moves, and no rule is evaluated at all — "enforced" is the word that turns an aspiration into a trust breach (survey §1I)' },
+  { id: 'auto_retries', canon: 'W218 "A failed transfer auto-retries and never blocks its batch-mates."', surfaces: ['disbursement_batch', ...PAY],
+    key: 'partner4.refusal.autoRetries', why: 'the second half is TRUE and is kept in the platform\'s own words (a line that cannot be written is listed and the rest continues); the first is not — the retry belongs to a payment pipeline that has never run, and nothing on this platform retries anything today' },
+  { id: 'batch_added_to', canon: 'W218 empty state "No disbursements in this batch yet — Approved loans queued for disbursal will appear here as they\'re added to the batch."', surfaces: ['disbursement_batch'],
+    key: 'partner4.refusal.batchAddedTo', why: 'a batch is never added to: it is written whole, in one transaction, or not at all — and if its totals disagree it is abandoned before a single row is written (survey §1I)' },
 ]);
 
 /** The refusal i18n keys printed on one surface (render tests read this). */
@@ -158,6 +241,19 @@ export const PARTNER4_DELTAS: readonly { id: string; canon: string; built: strin
     built: 'the NINE platform `loan_kind` codes + "not recorded", each with its count and its two bigint sums — no chart, no bucket, no share' },
   { id: 'lending_sub_nav', canon: 'the canon\'s own lender sidebar has FIVE lending items for NINE lending screens, and cannot reach W215, W216, W217 or W218 at all (survey F-22)',
     built: 'the lending group becomes Dashboard · Loan queue · Products · Portfolio, and the portfolio pages carry a lending sub-navigation: Queue · Portfolio now, with Disbursements and Repayments drawn only once PARTNER-4b builds them' },
+  // ── PC-56 PARTNER-4b ──
+  { id: 'three_4b_routes', canon: 'W210 `lender/disbursements` · W211 `lender/repayments` · W218 `lender/disbursements/[id]`',
+    built: 'the canon\'s own paths, inside 4a\'s lending shell: both list pages are sub-navigation rows (live from this wave) and nav items, and the batch page is in NO nav — it is reached from the pay-outs page and the tabs only' },
+  { id: 'w218_id_is_a_run', canon: 'W218\'s `[id]` is a disbursement BATCH id, and the screen is reachable in the canon from nothing but its own three chain pages (W210, its logical parent, links to nothing) — survey F-22',
+    built: 'the inbound edge W210 → W218 the canon never drew, at `/lender/disbursements/pending`: a batch is a RUN on the tenant plane, this console holds no privilege on the run tables at all (0232 asserts nine of them), and the page makes NO read — so every id prints the same honest page, because there is nothing to look up' },
+  { id: 'arrears_six_buckets', canon: 'W211 KPIs "Overdue 1–30 DPD · 31 loans · ₹4,86,000" and "Overdue > 30 DPD · 7 loans · ₹1,84,000 missed instalments · outstanding at risk ≈ ₹13,00,000 (PAR basis)"',
+    built: 'SIX disjoint buckets over this lender\'s serviced loans — 1–30, 31–60, 61–90 and over 90 days past a recorded due date, plus the loans not yet due and THE LOANS WITH NO DUE DATE RECORDED — each as a count and a bigint sum, with the days spelled out instead of the canon\'s acronym. The four arrears buckets are ZERO on this platform and the page says why, with the count of loans that have no due date; no rate, no share and no portfolio-at-risk figure is printed (founder 4b-7)' },
+  { id: 'collected_recorded_window', canon: 'W211 KPI "Collected (7d) ₹16,88,400 · 96.4% on-time" and "Due this week ₹18,42,000 · 312 instalments · 68% via auto-deduction channels"',
+    built: 'what was RECORDED against this book in a window of IST days — a count of repayments, a bigint sum and the number of loans that paid — labelled as recorded rather than due, because a repayment row is written AT PAYMENT and no instalment plan exists. No punctuality figure and no channel share (survey F-8, E9)' },
+  { id: 'pipeline_four_counts', canon: 'W210 chips "pipeline (all) 14 · ready (cooling-off lapsed) 8 · in cooling-off 6 · disbursed (30d) 61" and the table of named borrowers with their banks',
+    built: 'the four counts, server-computed on the consent-gated application axis, with an as-of — and NO table at all: the canon\'s two row columns are the borrower and her bank account, which are the wall. "Ready" and "in cooling-off" are counted over every approved application of this book (an approval waits for its window wherever it was made); "disbursed" is counted inside the window' },
+  { id: 'disbursal_word', canon: 'W210 is titled "Disbursements" and W218 "Disbursement batch"; the canon\'s sidebar item is "Disbursements"',
+    built: 'the pages are named for what a lender can actually see — the pay-outs its approvals lead to, and what happens when a batch is prepared — because the claims guard bans the verb and the noun of the one act this console refuses by name in every `partner4.` value, and the past participle ("disbursed", a real state of an application) is deliberately still printable. 4a set this rule with the sub-navigation label; 4b keeps it' },
   { id: 'dead_lending_console', canon: '— (not a canon claim: the repository\'s own residue, survey F-14)',
     built: 'the dead lending console is deleted: `app/servicing/**` (a `\'use server\'` file imported by nothing, whose four server actions called TENANT fintech routes with a partner token), `features/lending/{servicing,loan,product}.ts`, their three specs, `canDisburse`, the dead i18n families and the two dead `NotYetSurface` members. Its absence is pinned' },
 ]);
@@ -180,21 +276,21 @@ export const PARTNER4_CANON_FILES: readonly { file: string; wave: '4a' | '4b' | 
   { file: 'W2893-partner-portfolio-mutate-confirm.html', wave: '4a', verdict: 'PARITY-DECOR', note: '/lender/portfolio?act=confirm — the module\'s only trigger is Retry, a re-read of the counts: no confirm step, no audit row, no money' },
   { file: 'W2894-partner-portfolio-mutate-success.html', wave: '4a', verdict: 'PARITY-DECOR', note: '?act=success — the counts were read again' },
   { file: 'W2895-partner-portfolio-mutate-failure.html', wave: '4a', verdict: 'PARITY-DECOR', note: '?act=failure — nothing changed; the servicing data is intact' },
-  // ── 4b · WHAT A LENDER DOES NOT DISBURSE (14) — decided in its own wave ──
-  { file: 'W210-partner-disbursements.html', wave: '4b', verdict: 'pending_4b', note: 'the cooling-off pipeline as counts; every act DECOR with PARTNER_CANNOT_DISBURSE — founder doors Q3 / Q5 / Q9' },
-  { file: 'W211-partner-repayments.html', wave: '4b', verdict: 'pending_4b', note: 'collected-in-window sums and the DPD buckets as counts and bigint sums (P4-B2); the collections code of conduct refused — founder door Q10' },
-  { file: 'W218-partner-disbursement-batch.html', wave: '4b', verdict: 'pending_4b', note: 'an honest page about whose money moves and who signs — founder doors Q2 / Q3 / Q9' },
-  { file: 'W2860-partner-disbursement-mutate-confirm.html', wave: '4b', verdict: 'pending_4b', note: 'the singular disbursement mutate chain, donor W218' },
-  { file: 'W2861-partner-disbursement-mutate-success.html', wave: '4b', verdict: 'pending_4b', note: 'as above' },
-  { file: 'W2862-partner-disbursement-mutate-failure.html', wave: '4b', verdict: 'pending_4b', note: 'as above' },
-  { file: 'W2863-partner-disbursements-mutate-confirm.html', wave: '4b', verdict: 'pending_4b', note: 'the plural disbursements mutate chain, donor W210' },
-  { file: 'W2864-partner-disbursements-mutate-success.html', wave: '4b', verdict: 'pending_4b', note: 'as above' },
-  { file: 'W2865-partner-disbursements-mutate-failure.html', wave: '4b', verdict: 'pending_4b', note: 'as above' },
-  { file: 'W2994-partner-repayments-export-queued.html', wave: '4b', verdict: 'pending_4b', note: 'the repayments export chain, donor W211' },
-  { file: 'W2995-partner-repayments-export-ready.html', wave: '4b', verdict: 'pending_4b', note: 'as above' },
-  { file: 'W2996-partner-repayments-mutate-confirm.html', wave: '4b', verdict: 'pending_4b', note: 'the repayments mutate chain, donor W211' },
-  { file: 'W2997-partner-repayments-mutate-success.html', wave: '4b', verdict: 'pending_4b', note: 'as above' },
-  { file: 'W2998-partner-repayments-mutate-failure.html', wave: '4b', verdict: 'pending_4b', note: 'as above' },
+  // ── 4b · WHAT A LENDER DOES NOT DISBURSE (14) ──
+  { file: 'W210-partner-disbursements.html', wave: '4b', verdict: 'BUILT (read)', note: '/lender/disbursements over GET /v1/partner/loans/pipeline: the cooling-off pipeline as FOUR server-computed counts (every approved application of this book, the ones whose cooling-off instant has passed, the ones still inside it, and the ones disbursed in the window) with an as-of, and "the cooling-off window is held by the server" KEPT because it is true. "Disburse ready batch" is DECOR → the W2863–W2865 chain, refused by name. The Borrower and Destination columns, the destination model, the fee, the sanction letter, "auto-moves to ready", "with schedule", the absolute double-funding promise, the bank-side maker-checker, the bank limit and the canon\'s role names are refused by name. "View queue" and the batch page are real links — the second is the inbound edge W210 → W218 the canon never drew' },
+  { file: 'W211-partner-repayments.html', wave: '4b', verdict: 'BUILT (read)', note: '/lender/repayments over GET /v1/partner/loans/collected + GET /v1/partner/loans/dpd: what was RECORDED against this book in the window (a count, a bigint sum, the number of loans) and the SIX arrears buckets as counts and bigint sums — the four arrears buckets, the loans not yet due, and the loans with NO next due date recorded, which is the honest reason the first four are zero and is printed as a sentence with its own count. "A loan that repays itself from the dairy cycle never becomes a knock on the door" and "auto-deduction channels run regardless" are KEPT. Every borrower name, every due figure, every punctuality figure, the channel vocabulary, the share by channel, the nudge stage, the mediation promise, the reminders, the collections-privacy rule and THE WHOLE COLLECTIONS CODE OF CONDUCT — its hours, its log, its ban on third-party agents and its suspension — are refused by name (founder 4b-5). Export is DECOR → W2994–W2995 + the mailbox line; "View portfolio" is a real link' },
+  { file: 'W218-partner-disbursement-batch.html', wave: '4b', verdict: 'BUILT (honest)', note: '/lender/disbursements/[id] — an HONEST PAGE with NO READ (and so no audit row and no error state of its own): a batch is prepared and confirmed by the organisation that serves the farmer, not from this console; this platform never moves a lender\'s money and a lender never moves the organisation\'s; and no second signature worth the name exists on the platform today (founder 4b-3). The three things that are TRUE are kept in the platform\'s own words: the total is verified before a single row is written, the pre-flight asks about the cooling-off window BEFORE the account so a protected borrower is told the real reason, and nothing was disbursed — a batch is written whole or not at all, never partial-mystery. "Co-approve — disburse now" is DECOR → W2860–W2862. The batch-contents table, the fee, the cattle-insurance product rule, "both sides", "funds leave YOUR bank rails", "awaiting your co-approval" and "batches assemble automatically" are refused by name' },
+  { file: 'W2860-partner-disbursement-mutate-confirm.html', wave: '4b', verdict: 'DECOR', note: '/lender/disbursements/[id]?act=confirm — the singular chain, donor W218: no money is moved from this console and no control here could move any' },
+  { file: 'W2861-partner-disbursement-mutate-success.html', wave: '4b', verdict: 'DECOR', note: '?act=success — nothing happened, so nothing succeeded' },
+  { file: 'W2862-partner-disbursement-mutate-failure.html', wave: '4b', verdict: 'DECOR', note: '?act=failure — nothing was attempted and nothing changed' },
+  { file: 'W2863-partner-disbursements-mutate-confirm.html', wave: '4b', verdict: 'DECOR', note: '/lender/disbursements?act=confirm — the plural chain, donor W210, whose trigger is the canon\'s primary money act (FLOWMAP classed it `filter`): refused by name' },
+  { file: 'W2864-partner-disbursements-mutate-success.html', wave: '4b', verdict: 'DECOR', note: '?act=success — nothing happened' },
+  { file: 'W2865-partner-disbursements-mutate-failure.html', wave: '4b', verdict: 'DECOR', note: '?act=failure — nothing was attempted' },
+  { file: 'W2994-partner-repayments-export-queued.html', wave: '4b', verdict: 'DECOR', note: '/lender/repayments?export=queued — no partner export plane (P2-B6): exports are not available, write to the partners mailbox' },
+  { file: 'W2995-partner-repayments-export-ready.html', wave: '4b', verdict: 'DECOR', note: '?export=ready — no file, no row count, no checksum, no signed link' },
+  { file: 'W2996-partner-repayments-mutate-confirm.html', wave: '4b', verdict: 'PARITY-DECOR', note: '/lender/repayments?act=confirm — the module\'s only trigger is Retry, a re-read of the counts: no confirm step, no audit row beyond the read\'s own, no money' },
+  { file: 'W2997-partner-repayments-mutate-success.html', wave: '4b', verdict: 'PARITY-DECOR', note: '?act=success — the figures were read again' },
+  { file: 'W2998-partner-repayments-mutate-failure.html', wave: '4b', verdict: 'PARITY-DECOR', note: '?act=failure — nothing changed, and the auto-deduction channels run regardless' },
   // ── 4c · THE KCC ACCOUNT THE PLATFORM DOES NOT KEEP (11) — decided in its own wave ──
   { file: 'W216-partner-kcc-account.html', wave: '4c', verdict: 'pending_4c', note: 'there is no KCC account on this platform — an honest page; founder door Q4' },
   { file: 'W217-partner-kcc-drawls.html', wave: '4c', verdict: 'pending_4c', note: 'the drawl ledger records debt with no money moving — an honest page by default; founder doors Q4 / Q6' },
@@ -210,9 +306,10 @@ export const PARTNER4_CANON_FILES: readonly { file: string; wave: '4a' | '4b' | 
 ]);
 
 // ── THE DECOR / PARITY-DECOR CHAINS: each is a query state of its parent page ──
-export type Chain4Id = 'queue_act' | 'application_act' | 'loan_act' | 'loan_export' | 'portfolio_export' | 'portfolio_act';
+export type Chain4Id = 'queue_act' | 'application_act' | 'loan_act' | 'loan_export' | 'portfolio_export' | 'portfolio_act'
+  | 'disbursements_act' | 'disbursement_act' | 'repayments_export' | 'repayments_act';
 export interface Chain4Def {
-  id: Chain4Id; wave: '4a'; param: string; page: string; surface: Partner4Surface; states: readonly string[]; key: (state: string) => string; files: readonly string[];
+  id: Chain4Id; wave: '4a' | '4b'; param: string; page: string; surface: Partner4Surface; states: readonly string[]; key: (state: string) => string; files: readonly string[];
   /** An export chain prints "exports are not available … write to the partners mailbox" + the mailbox FACT (founder 4a-7, 2b-1). */
   mailbox?: boolean;
 }
@@ -232,6 +329,19 @@ export const PARTNER4_CHAINS: readonly Chain4Def[] = Object.freeze([
     key: (s: string) => `partner4.chain.export.${s}`, files: ['W2891', 'W2892'] },
   { id: 'portfolio_act', wave: '4a', param: 'act', page: '/lender/portfolio', surface: 'portfolio_act', states: ['confirm', 'success', 'failure'],
     key: (s: string) => `partner4.chain.act.${s}`, files: ['W2893', 'W2894', 'W2895'] },
+  // PC-56 PARTNER-4b · the two chains of the one act this console refuses by name. The canon keeps them SEPARATE (W2860–W2862 singular from
+  // W218, W2863–W2865 plural from W210) and so does this registry; both are DECOR, and both print the refusal rather than a confirm step —
+  // their `partner4.chain.pay.*` sentences are not the PARITY-DECOR "we read it again" of the `act` chains, because nothing was ever going to
+  // happen here. FLOWMAP classed the two triggers `filter` and `nav-detail` (survey F-21); they are a money act, and it is not a partner's.
+  { id: 'disbursements_act', wave: '4b', param: 'act', page: '/lender/disbursements', surface: 'disbursements_act', states: ['confirm', 'success', 'failure'],
+    key: (s: string) => `partner4.chain.pay.${s}`, files: ['W2863', 'W2864', 'W2865'] },
+  { id: 'disbursement_act', wave: '4b', param: 'act', page: '/lender/disbursements/[id]', surface: 'disbursement_act', states: ['confirm', 'success', 'failure'],
+    key: (s: string) => `partner4.chain.pay.${s}`, files: ['W2860', 'W2861', 'W2862'] },
+  // the repayments export chain (DECOR + the mailbox line) and the repayments mutate chain (PARITY-DECOR: Retry is a re-read of the counts)
+  { id: 'repayments_export', wave: '4b', mailbox: true, param: 'export', page: '/lender/repayments', surface: 'repayments_export', states: ['queued', 'ready'],
+    key: (s: string) => `partner4.chain.export.${s}`, files: ['W2994', 'W2995'] },
+  { id: 'repayments_act', wave: '4b', param: 'act', page: '/lender/repayments', surface: 'repayments_act', states: ['confirm', 'success', 'failure'],
+    key: (s: string) => `partner4.chain.act.${s}`, files: ['W2996', 'W2997', 'W2998'] },
 ]);
 export function chain4ById(id: Chain4Id): Chain4Def { return PARTNER4_CHAINS.find((c) => c.id === id) as Chain4Def; }
 /** The chain state a page was opened in (`?act=confirm` …), or null for the page itself / an unknown state. */
@@ -262,8 +372,10 @@ export const LENDER_BOOK_REDIRECTS: Readonly<Record<string, string>> = Object.fr
 export const LENDING_SUBNAV: readonly { href: string; key: string; wave: '4a' | '4b'; live: boolean }[] = Object.freeze([
   { href: '/lender/queue', key: 'partner4.subnav.queue', wave: '4a', live: true },
   { href: '/lender/portfolio', key: 'partner4.subnav.portfolio', wave: '4a', live: true },
-  { href: '/lender/disbursements', key: 'partner4.subnav.disbursements', wave: '4b', live: false },
-  { href: '/lender/repayments', key: 'partner4.subnav.repayments', wave: '4b', live: false },
+  // PC-56 PARTNER-4b built both of these, so both are LIVE from this wave. `/lender/disbursements/[id]` (W218) is NOT a row: it is reached
+  // from the pay-outs page and the sub-navigation only, which is the inbound edge the canon never drew (survey F-22).
+  { href: '/lender/disbursements', key: 'partner4.subnav.disbursements', wave: '4b', live: true },
+  { href: '/lender/repayments', key: 'partner4.subnav.repayments', wave: '4b', live: true },
 ]);
 /** The sub-navigation row a page is on (`aria-current="page"`), or null for a page outside the tabs (an application, a loan). */
 export type LendingSubNavHref = (typeof LENDING_SUBNAV)[number]['href'];

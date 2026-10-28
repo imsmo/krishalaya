@@ -12,9 +12,10 @@
 //       invisible, not forbidden), and NO `payouts`, `payout_batches`, `loan_disbursement_runs`, `loan_disbursement_run_items`,
 //       `kcc_drawl_ledger` or `loan_restructures` row is written; `loans.status` is unchanged.                              [M1, M2]
 //   (2) `fintech` ON: the same thirteen behave exactly as they do today — the preview, the maker-checker refusal, a run with a DISTINCT
-//       `confirmedBy`, a KCC entry, the ledger read, a restructure, its list, a transition, the runs list, and a write-off. **The run with a
-//       distinct `confirmedBy` pins a PRE-EXISTING DEFECT found in this wave: the run writes its items before their parent run row, so
-//       0089:58's non-deferrable FK makes it a 23503 and a 500, always, on every database. Read the comment at the assertion.**
+//       `confirmedBy`, a KCC entry, the ledger read, a restructure, its list, a transition, the runs list, and a write-off. **UPDATED BY
+//       PARTNER-4b (founder 4b-1): the run with a distinct `confirmedBy` used to pin the write-ordering defect this spec found (a 23503 and
+//       a 500 on every database); 4b fixed the ordering, so the run now SUCCEEDS and its queued money-plane rows are asserted. Read the
+//       comment at the assertion.**
 //   (3) a missing `Idempotency-Key` on the four writes (KCC entry, restructure, transition, write-off) → 400; and the SAME key replayed
 //       writes exactly ONE row (a second drawl of ₹1 on the same key leaves `balance_after_minor` unchanged).
 //   (4) the other three fintech controllers are unaffected: they 404 with the flag off and answer with it on, as they always did.
@@ -166,29 +167,37 @@ run('PC-56 PARTNER-4a · the lending servicing plane is behind the `fintech` fla
     // A disbursement run with a DISTINCT confirmedBy — the route that writes into the MONEY PLANE, which is exactly why the flag had to
     // reach it. The maker-checker guard is proven first (the preparer cannot confirm his own run), and then the run is fired for real.
     //
-    // *** WHAT THIS PINS IS A PRE-EXISTING DEFECT, NOT THIS WAVE'S BEHAVIOUR (found 2026-10-28, PARTNER-4a; outside this wave's
-    // scope — a money-plane write-path edit the founder has not signed; carried for the fintech owner as a HOTFIX candidate): ***
-    // `LoanDisbursementService.run` writes the run's CHILDREN before their PARENT —
-    //   loan-disbursement.service.ts:72-78  insertPayout + insertItem, inside the per-application loop
-    //   loan-disbursement.service.ts:82     insertRun, AFTER the loop
-    // and `loan_disbursement_run_items.run_id` is `NOT NULL REFERENCES loan_disbursement_runs(id)`, NOT DEFERRABLE (0089:58). So the
-    // FIRST item insert is always `23503 loan_disbursement_run_items_run_id_fkey` ("Key is not present in table
-    // loan_disbursement_runs") and the whole transaction rolls back. `POST /v1/fintech/servicing/disbursement-batches` has therefore
-    // NEVER completed on any database carrying 0089's FK — it answers 500 INTERNAL and writes nothing.
-    // Two consequences worth stating plainly:
-    //   • the money-plane row counts this spec's case (1) asserts unchanged would be unchanged ANYWAY for this one route — the flag is
-    //     still the thing being proven, because the other eleven routes do write (case (3) shows a KCC entry landing);
-    //   • the founder's F-1 exposure was NARROWER than the survey feared for the BATCH route specifically, and exactly as feared for
-    //     the KCC ledger, the restructure, the transition and the write-off, which all wrote happily with lending switched off.
-    // This spec pins the CURRENT truth so that the day the ordering is fixed, this assertion turns red and must be updated with it.
-    const payoutsBefore = await n('payouts'); const runsBefore = await n('loan_disbursement_runs');
+    // *** UPDATED BY PC-56 PARTNER-4b (founder 4b-1, 2026-10-28): THIS ROUTE NOW WORKS FOR THE FIRST TIME. ***
+    // PARTNER-4a's build found that `LoanDisbursementService.run` wrote the run's CHILDREN before their PARENT (insertPayout +
+    // insertItem inside the per-application loop; insertRun after it) against `loan_disbursement_run_items.run_id`, which is
+    // `NOT NULL REFERENCES loan_disbursement_runs(id)` and NOT DEFERRABLE (0089:58) — so the FIRST item insert always raised
+    // `23503 loan_disbursement_run_items_run_id_fkey` and the whole transaction rolled back. The route had NEVER completed on any
+    // database, and this spec pinned that truth so the fix would turn it red. PARTNER-4b fixes the ordering (the batch, then the
+    // RUN as a shell of zeros, then its payouts and items, then `finalizeRun` with the WRITTEN figures), and this assertion is
+    // updated with it: the run now SUCCEEDS and its rows are real — one `payout_batches` row and one `payouts` row per borrower, both
+    // at status `queued`, nothing executed. See `partner4b-disbursal-refusal.integration.spec.ts` case (3) for the full proof
+    // (the written total, `totalsAgree`, `uq_loan_disb_item_once`, the retried batch) and the Law 9 note in the wave report.
+    // every count here is THIS TENANT's: the group run shares one database with PARTNER-4b's own money spec, and an absolute count would
+    // then be asserting that spec's fixture as well as this one's
+    const mine = async (table: string) => Number((await admin.query(`SELECT count(*)::int AS n FROM ${table} WHERE tenant_id = $1`, [T])).rows[0].n);
+    const payoutsBefore = await mine('payouts'); const runsBefore = await mine('loan_disbursement_runs');
+    const itemsBefore = await mine('loan_disbursement_run_items'); const batchesBefore = await mine('payout_batches');
     const sameMan = await request(http).post('/v1/fintech/servicing/disbursement-batches').set(H()).set('idempotency-key', randomUUID()).send({ confirmedBy: banker });
     expect([sameMan.status, JSON.stringify(sameMan.body)]).toEqual([403, JSON.stringify(sameMan.body)]);
     const runR = await request(http).post('/v1/fintech/servicing/disbursement-batches').set(H()).set('idempotency-key', randomUUID()).send({ confirmedBy: checker });
-    expect([runR.status, runR.body?.error?.code]).toEqual([500, 'INTERNAL']);
-    // and because the write is one transaction, the rollback is total: not a payout, not a batch, not a run, not an item
-    expect([await n('payouts'), await n('loan_disbursement_runs'), await n('loan_disbursement_run_items'), await n('payout_batches')])
-      .toEqual([payoutsBefore, runsBefore, 0, 0]);
+    expect([runR.status, runR.body?.error?.code ?? null]).toEqual([201, null]);
+    expect(runR.body?.data?.queuedCount).toBeGreaterThanOrEqual(1);
+    expect(runR.body?.data?.execution?.executed).toBe(false);
+    // the parent run exists, its items exist, and the money-plane rows are real and `queued` — this is the first time they ever were
+    const queued = Number(runR.body.data.queuedCount);
+    expect([await mine('payouts'), await mine('loan_disbursement_runs'), await mine('loan_disbursement_run_items'), await mine('payout_batches')])
+      .toEqual([payoutsBefore + queued, runsBefore + 1, itemsBefore + queued, batchesBefore + 1]);
+    expect((await admin.query(`SELECT count(*)::int AS n FROM payouts WHERE tenant_id = $1 AND status <> 'queued'`, [T])).rows[0].n).toBe(0);
+    // and the run records what was WRITTEN, with its items' parent present (the FK that used to break it)
+    const runRow = (await admin.query(
+      `SELECT r.total_minor::text AS t, r.loan_count AS c, (SELECT count(*)::int FROM loan_disbursement_run_items i WHERE i.run_id = r.id) AS items
+         FROM loan_disbursement_runs r WHERE r.id = $1`, [runR.body.data.id])).rows[0];
+    expect([runRow.c, runRow.items, runRow.t]).toEqual([queued, queued, String(runR.body.data.queuedTotalMinor)]);
     // the listing and the single-run read still answer (the run that does not exist is a 404, not a 500)
     expect((await request(http).get('/v1/fintech/servicing/disbursement-batches').set(H())).status).toBe(200);
     expect((await request(http).get(`/v1/fintech/servicing/disbursement-batches/${randomUUID()}`).set(H())).status).toBe(404);

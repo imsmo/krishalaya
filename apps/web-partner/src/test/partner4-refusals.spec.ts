@@ -31,12 +31,13 @@ const SURVEY_C = [
   'W2994-partner-repayments-export-queued.html', 'W2995-partner-repayments-export-ready.html',
   'W2996-partner-repayments-mutate-confirm.html', 'W2997-partner-repayments-mutate-success.html', 'W2998-partner-repayments-mutate-failure.html',
 ];
-const SURFACES: readonly Partner4Surface[] = ['queue', 'application', 'portfolio', 'loan',
-  'queue_act', 'application_act', 'loan_act', 'loan_export', 'portfolio_export', 'portfolio_act'];
+const SURFACES: readonly Partner4Surface[] = ['queue', 'application', 'portfolio', 'loan', 'disbursements', 'repayments', 'disbursement_batch',
+  'queue_act', 'application_act', 'loan_act', 'loan_export', 'portfolio_export', 'portfolio_act',
+  'disbursements_act', 'disbursement_act', 'repayments_export', 'repayments_act'];
 const chainKeys = (c: { states: readonly string[]; key: (s: string) => string }) => c.states.flatMap((s) => [`${c.key(s)}.title`, `${c.key(s)}.body`]);
 
 describe('PC-56 PARTNER-4a · the PARTNER-4 canon registry', () => {
-  it('39 files — the survey §C list exactly — each with ONE verdict: 4a = 14 (4 BUILT, 4 DECOR, 6 PARITY-DECOR); 4b = 14 pending; 4c = 11 pending', () => {
+  it('39 files — the survey §C list exactly — each with ONE verdict: 4a = 14 decided, 4b = 14 decided (2 BUILT (read), 1 BUILT (honest), 8 DECOR, 3 PARITY-DECOR), 4c = 11 pending — 28 decided, 0 pending_4b', () => {
     const files = PARTNER4_CANON_FILES.map((f) => f.file);
     expect(files.length).toBe(39); expect(new Set(files).size).toBe(39);
     expect([...files].sort()).toEqual([...SURVEY_C].sort());
@@ -48,13 +49,20 @@ describe('PC-56 PARTNER-4a · the PARTNER-4 canon registry', () => {
     expect(PARTNER4_CANON_FILES.filter((f) => f.wave === '4b').length).toBe(14);
     expect(PARTNER4_CANON_FILES.filter((f) => f.wave === '4c').length).toBe(11);
     // the other 25 are PENDING, by their own wave, and are flipped there — never here
-    expect(PARTNER4_CANON_FILES.filter((f) => f.verdict === 'pending_4b').map((f) => f.wave)).toEqual(Array(14).fill('4b'));
+    // PC-56 PARTNER-4b decides its own 14: W210 and W211 are READS, W218 is an HONEST page, the two pay chains and the export chain are
+    // DECOR, and only the repayments mutate chain is PARITY-DECOR (a Retry that re-reads). `pending_4b` is GONE from the registry.
+    for (const f of ['W210', 'W211']) expect([f, v(f)]).toEqual([f, 'BUILT (read)']);
+    expect(['W218', v('W218')]).toEqual(['W218', 'BUILT (honest)']);
+    for (const f of ['W2860', 'W2861', 'W2862', 'W2863', 'W2864', 'W2865', 'W2994', 'W2995']) expect([f, v(f)]).toEqual([f, 'DECOR']);
+    for (const f of ['W2996', 'W2997', 'W2998']) expect([f, v(f)]).toEqual([f, 'PARITY-DECOR']);
+    expect(PARTNER4_CANON_FILES.filter((f) => f.verdict === 'pending_4b')).toEqual([]);
+    expect(PARTNER4_CANON_FILES.filter((f) => !/pending/.test(f.verdict)).length).toBe(28);
     expect(PARTNER4_CANON_FILES.filter((f) => f.verdict === 'pending_4c').map((f) => f.wave)).toEqual(Array(11).fill('4c'));
-    expect(PARTNER4_CANON_FILES.filter((f) => f.wave === '4a' && /pending/.test(f.verdict))).toEqual([]);
+    expect(PARTNER4_CANON_FILES.filter((f) => (f.wave === '4a' || f.wave === '4b') && /pending/.test(f.verdict))).toEqual([]);
     for (const f of PARTNER4_CANON_FILES) expect([f.file, /^W\d{3,4}-partner-[a-z0-9-]+\.html$/.test(f.file), f.note.length > 0]).toEqual([f.file, true, true]);
     if (fs.existsSync(CANON)) for (const f of files) expect([f, fs.existsSync(`${CANON}/${f}`)]).toEqual([f, true]);
   });
-  it('SIX chain entries over FOUR canon chains, all query states of their pages; this wave\'s ten chain files recorded exactly once', () => {
+  it('TEN chain entries over EIGHT canon chains, all query states of their pages; the TWENTY-ONE chain files of 4a (10) and 4b (11) recorded exactly once', () => {
     expect(PARTNER4_CHAINS.map((c) => [c.id, c.wave, c.page, c.param, c.files])).toEqual([
       ['queue_act', '4a', '/lender/queue', 'act', ['W2878', 'W2879', 'W2880']],
       ['application_act', '4a', '/lender/queue/[id]', 'act', []],
@@ -62,13 +70,26 @@ describe('PC-56 PARTNER-4a · the PARTNER-4 canon registry', () => {
       ['loan_export', '4a', '/lender/portfolio/[id]', 'export', ['W2876', 'W2877']],
       ['portfolio_export', '4a', '/lender/portfolio', 'export', ['W2891', 'W2892']],
       ['portfolio_act', '4a', '/lender/portfolio', 'act', ['W2893', 'W2894', 'W2895']],
+      // PC-56 PARTNER-4b: the canon keeps the singular and the plural pay chains SEPARATE, and so does this registry
+      ['disbursements_act', '4b', '/lender/disbursements', 'act', ['W2863', 'W2864', 'W2865']],
+      ['disbursement_act', '4b', '/lender/disbursements/[id]', 'act', ['W2860', 'W2861', 'W2862']],
+      ['repayments_export', '4b', '/lender/repayments', 'export', ['W2994', 'W2995']],
+      ['repayments_act', '4b', '/lender/repayments', 'act', ['W2996', 'W2997', 'W2998']],
     ]);
-    // the two EXPORT chains carry the mailbox line; the four act chains do not
-    expect(PARTNER4_CHAINS.filter((c) => c.mailbox).map((c) => c.id)).toEqual(['loan_export', 'portfolio_export']);
+    // the three EXPORT chains carry the mailbox line; no act chain does
+    expect(PARTNER4_CHAINS.filter((c) => c.mailbox).map((c) => c.id)).toEqual(['loan_export', 'portfolio_export', 'repayments_export']);
+    // the two pay chains print the REFUSAL, not the `act` chains' "we read it again"
+    expect(PARTNER4_CHAINS.filter((c) => c.key('confirm') === 'partner4.chain.pay.confirm').map((c) => c.id)).toEqual(['disbursements_act', 'disbursement_act']);
     // the loan export chain's files sit on the LOAN page, which is its only trigger — not on the queue, where the canon's own crumb points
     expect(PARTNER4_CHAINS.find((c) => c.id === 'loan_export')?.page).toBe('/lender/portfolio/[id]');
-    expect(PARTNER4_CHAINS.flatMap((c) => c.files).length).toBe(10);
-    expect(new Set(PARTNER4_CHAINS.flatMap((c) => c.files)).size).toBe(10);
+    expect(PARTNER4_CHAINS.flatMap((c) => c.files).length).toBe(21);         // 4a's ten + 4b's eleven
+    expect(new Set(PARTNER4_CHAINS.flatMap((c) => c.files)).size).toBe(21);
+    expect(PARTNER4_CHAINS.filter((c) => c.wave === '4b').flatMap((c) => c.files).length).toBe(11);
+    // each 4b chain's files sit on the page the canon returns to — the singular chain on the BATCH page, the plural one on the pay-outs page
+    expect(PARTNER4_CHAINS.find((c) => c.id === 'disbursement_act')?.page).toBe('/lender/disbursements/[id]');
+    expect(chain4State('disbursements_act', { act: 'confirm' })).toBe('confirm');
+    expect(chain4State('repayments_export', { export: 'queued' })).toBe('queued');
+    expect(chain4State('disbursement_act', { act: 'pay' })).toBeNull();
     for (const c of PARTNER4_CHAINS) for (const id of c.files) {
       expect([id, PARTNER4_CANON_FILES.some((f) => f.file.startsWith(`${id}-`) && (f.verdict === 'DECOR' || f.verdict === 'PARITY-DECOR'))]).toEqual([id, true]);
     }
@@ -110,6 +131,29 @@ describe('PC-56 PARTNER-4a · the PARTNER-4 canon registry', () => {
       // the chains
       'export_file', 'chain_zero_sum', 'chain_on_call', 'chain_audit',
     ]));
+    // PC-56 PARTNER-4b · the brief's counts: W210 11, W211 15, W218 12 (the registry carries more, because the shared refusals of 4a name
+    // these screens' canon too — every one of them is printed on the page)
+    expect(ids).toEqual(expect.arrayContaining([
+      // W210
+      'money_destination', 'ready_batch_act', 'borrower_destination_columns', 'auto_moves_to_ready', 'loan_with_schedule', 'sanction_letter',
+      'double_funding_absolute', 'bank_maker_checker', 'preflight_not_yours', 'bank_limit_delegation', 'pipeline_bulk_select',
+      // W211
+      'channel_vocabulary', 'due_this_week', 'auto_deduction_share', 'nudge_stage', 'mediation_first', 'collections_privacy_rule',
+      'reminder_sent', 'code_of_conduct', 'contact_hours', 'contact_log', 'third_party_agents', 'partner_suspension', 'rides_dairy_cycle',
+      'repayments_bulk_select',
+      // W218
+      'awaiting_coapproval', 'maker_checker_claim', 'second_signature', 'coapprove_act', 'batch_contents_table', 'product_rule_engine',
+      'cattle_insurance_rule', 'auto_retries', 'batch_added_to',
+    ]));
+    expect(partner4RefusalKeys('disbursements').length).toBeGreaterThanOrEqual(11);
+    expect(partner4RefusalKeys('repayments').length).toBeGreaterThanOrEqual(15);
+    expect(partner4RefusalKeys('disbursement_batch').length).toBeGreaterThanOrEqual(12);
+    expect(partner4RefusalKeys('repayments')).toEqual(expect.arrayContaining(['partner4.refusal.codeOfConduct', 'partner4.refusal.contactHours',
+      'partner4.refusal.contactLog', 'partner4.refusal.thirdPartyAgents', 'partner4.refusal.partnerSuspension', 'partner4.refusal.channelVocabulary']));
+    expect(partner4RefusalKeys('disbursements')).toEqual(expect.arrayContaining(['partner4.refusal.readyBatchAct', 'partner4.refusal.moneyDestination',
+      'partner4.refusal.borrowerDestinationColumns', 'partner4.refusal.disbursalAct']));
+    expect(partner4RefusalKeys('disbursement_batch')).toEqual(expect.arrayContaining(['partner4.refusal.secondSignature', 'partner4.refusal.coApproveAct',
+      'partner4.refusal.batchContentsTable', 'partner4.refusal.cattleInsuranceRule']));
     expect(partner4RefusalKeys('queue').length).toBeGreaterThanOrEqual(12);
     expect(partner4RefusalKeys('application').length).toBeGreaterThanOrEqual(19);
     expect(partner4RefusalKeys('portfolio').length).toBeGreaterThanOrEqual(10);
@@ -121,18 +165,22 @@ describe('PC-56 PARTNER-4a · the PARTNER-4 canon registry', () => {
   });
   it('the DELTAs: the four routes, the chains as query states, the chain returns, W215\'s orphanhood, the FM numbering / mis-classes / omissions, the FY caveat, the nine kinds, the sub-navigation, the dead console', () => {
     expect(PARTNER4_DELTAS.map((d) => d.id)).toEqual(expect.arrayContaining(['four_routes', 'loan_chain_routes', 'chain_returns', 'w215_orphan',
-      'fm_numbering', 'fm_misclass', 'fm_omissions', 'loan_reference', 'status_chips_seven', 'counts_window', 'kind_mix_nine', 'lending_sub_nav', 'dead_lending_console']));
+      'fm_numbering', 'fm_misclass', 'fm_omissions', 'loan_reference', 'status_chips_seven', 'counts_window', 'kind_mix_nine', 'lending_sub_nav', 'dead_lending_console',
+      // PC-56 PARTNER-4b
+      'three_4b_routes', 'w218_id_is_a_run', 'arrears_six_buckets', 'collected_recorded_window', 'pipeline_four_counts', 'disbursal_word']));
+    expect(PARTNER4_DELTAS.find((d) => d.id === 'w218_id_is_a_run')?.built).toMatch(/\/lender\/disbursements\/pending/);
+    expect(PARTNER4_DELTAS.find((d) => d.id === 'arrears_six_buckets')?.built).toMatch(/NO DUE DATE RECORDED/);
     expect(new Set(PARTNER4_DELTAS.map((d) => d.id)).size).toBe(PARTNER4_DELTAS.length);
     for (const d of PARTNER4_DELTAS) expect([d.id, d.canon.length > 0, d.built.length > 0]).toEqual([d.id, true, true]);
     expect(PARTNER4_DELTAS.find((d) => d.id === 'fm_numbering')?.canon).toMatch(/W14xx/);
     expect(PARTNER4_DELTAS.find((d) => d.id === 'w215_orphan')?.canon).toMatch(/ZERO inbound references/);
     expect(PARTNER4_DELTAS.find((d) => d.id === 'counts_window')?.built).toMatch(/OPENED in the FY window/);
   });
-  it('the lending sub-navigation: FOUR rows, the two 4a ones live, PARTNER-4b\'s two dark until that wave builds them', () => {
+  it('the lending sub-navigation: FOUR rows, ALL FOUR live now that PARTNER-4b has built its two', () => {
     expect(LENDING_SUBNAV.map((i) => [i.href, i.wave, i.live])).toEqual([
       ['/lender/queue', '4a', true], ['/lender/portfolio', '4a', true],
-      ['/lender/disbursements', '4b', false], ['/lender/repayments', '4b', false]]);
-    expect(LENDING_SUBNAV.filter((i) => i.live).length).toBe(2);
+      ['/lender/disbursements', '4b', true], ['/lender/repayments', '4b', true]]);
+    expect(LENDING_SUBNAV.filter((i) => i.live).length).toBe(4);
     expect(new Set(LENDING_SUBNAV.map((i) => i.key)).size).toBe(4);
   });
   it('the five 307s of the lender\'s book', () => {
@@ -145,7 +193,7 @@ describe('PC-56 PARTNER-4a · the PARTNER-4 canon registry', () => {
   });
   it('i18n parity: every partner4.* key of en is in hi AND gu, non-empty, placeholders kept, not an English copy; and no value carries "%"', () => {
     const fresh = Object.keys(en).filter((k) => k.startsWith('partner4.'));
-    expect(fresh.length).toBe(225);
+    expect(fresh.length).toBe(327);   // 4a's 225 + PARTNER-4b's 102, at parity in all three catalogues
     for (const k of fresh) {
       expect([k, typeof hi[k] === 'string' && hi[k].length > 0, typeof gu[k] === 'string' && gu[k].length > 0]).toEqual([k, true, true]);
       expect([k, vars(hi[k])]).toEqual([k, vars(en[k])]); expect([k, vars(gu[k])]).toEqual([k, vars(en[k])]);

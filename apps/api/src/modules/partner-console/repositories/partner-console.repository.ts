@@ -436,6 +436,46 @@ export class PartnerConsoleRepository {
       [from, to])).rows);
   }
 
+  // ═════════════════════════════════════ PC-56 PARTNER-4b · what a lender does NOT disburse (founder 4b-4 … 4b-7) — the same axis, three
+  // aggregates and nothing else. The arrears buckets and the collected window go through 0232's two definers (counts and bigint sums only,
+  // never the repayment channel); the application pipeline needs NO definer — kv_partner already holds `status`, `cooling_off_until`,
+  // `decision_at` and `created_at` on `loan_applications` (0225:319) under the consent-gated policy `partner_own_book_loan_applications`,
+  // and this is the 2c 30-day-count shape above with `partner_owns_application(a.id)` repeated as defence in depth. NO row of people is read
+  // on any of the three: a count and a sum leave these methods, never an application id, a borrower, an amount per person or a destination.
+
+  /** ONE shard's arrears buckets for this lender's own servicing book (0232 `partner_loan_dpd`). */
+  async partnerLoanDpdShard(shardId: number, partnerId: string): Promise<Array<{ bucket: string | null; n: string; outstanding_minor: string }>> {
+    return this.withAxis(shardId, partnerId, async (c) => (await c.query(
+      `SELECT bucket, n::text, outstanding_minor::text FROM partner_loan_dpd()`)).rows);
+  }
+
+  /** ONE shard's collected-in-window figures (0232 `partner_loan_collected`) — repayments RECORDED in [from, to) IST days. */
+  async partnerLoanCollectedShard(shardId: number, partnerId: string, from: string, to: string):
+    Promise<Array<{ n: string; amount_paid_minor: string; loans: string }>> {
+    return this.withAxis(shardId, partnerId, async (c) => (await c.query(
+      `SELECT n::text, amount_paid_minor::text, loans::text FROM partner_loan_collected($1::date, $2::date)`, [from, to])).rows);
+  }
+
+  /**
+   * ONE shard's APPLICATION PIPELINE by cooling-off state (W210's four chips), on 0225's consent-gated axis.
+   * `ready` / `cooling_off` are counted over EVERY approved application of this book, not only the window's: an approval waits for its
+   * window wherever it was made, and a lender asking "what is ready" is not asking a question about April. `disbursed` is counted inside
+   * the window on `decision_at`. The cooling-off instant is compared by the DATABASE to `now()` — never by an application clock, and never
+   * rounded in the lender's favour (the `coolingOffOpen` rule, fintech/domain/loan-disbursement.rules.ts:22-26).
+   */
+  async partnerApplicationPipelineShard(shardId: number, partnerId: string, from: string, to: string):
+    Promise<Array<{ ready: string; cooling_off: string; disbursed: string; approved: string }>> {
+    return this.withAxis(shardId, partnerId, async (c) => (await c.query(`
+      SELECT count(*) FILTER (WHERE a.status = 'approved' AND (a.cooling_off_until IS NULL OR a.cooling_off_until <= now()))::text AS ready,
+             count(*) FILTER (WHERE a.status = 'approved' AND a.cooling_off_until > now())::text AS cooling_off,
+             count(*) FILTER (WHERE a.status = 'disbursed'
+                                AND a.decision_at >= ($1::date::timestamp AT TIME ZONE 'Asia/Kolkata')
+                                AND a.decision_at <  ($2::date::timestamp AT TIME ZONE 'Asia/Kolkata'))::text AS disbursed,
+             count(*) FILTER (WHERE a.status = 'approved')::text AS approved
+        FROM loan_applications a
+       WHERE a.deleted_at IS NULL AND partner_owns_application(a.id)`, [from, to])).rows);
+  }
+
   // ═════════════════════════════════════ control plane (kv_app, the caller's partner-realm transaction)
   /** The distinct ACTIVE partners a person belongs to (active partner rows only), with names for the chooser. Needs app.user_id = userId. */
   async membershipsOfUserTx(tx: TxContext, userId: string): Promise<Array<{ partnerId: string; name: string }>> {

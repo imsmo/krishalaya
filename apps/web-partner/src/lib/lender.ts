@@ -5,15 +5,29 @@
 import 'server-only';
 import { redirect } from 'next/navigation';
 import { SdkError } from '@krishalaya/sdk-js';
-import { partnerClient } from './api-client';
+import { anonClient, partnerClient } from './api-client';
 import { partnerConsoleSwitch } from './console-flag';
 import { failureOf } from '../features/partner1/dashboard';
 import { wrongConsole } from '../features/partner2/figures';
+import { lenderSwitchState, type LenderHonestState } from '../features/partner4/figures';
 
 /** Read `/me`; send an insurer to its own dashboard. A failed `/me` opens or closes nothing by a guess (the page's own read answers). */
 export async function lenderGate(): Promise<void> {
   const me = await partnerClient().partner.me().catch(() => null);
   if (wrongConsole(me?.organisation?.kind, 'lender')) redirect('/insurer/dashboard');
+}
+
+/**
+ * PC-56 PARTNER-4b — the state of a lending page that makes NO READ (W218, the honest page about whose money moves and
+ * who signs): the platform's public, client-safe flag map. `partner_console` OFF prints as OFF ("nothing is broken");
+ * an unreadable map prints the ordinary notice, never a guess. There is NO `lending_off`: the `fintech` flag is a
+ * TENANT module switch the partner realm deliberately does not consult (survey F-20 / E5).
+ */
+export async function lenderSwitches(): Promise<LenderHonestState> {
+  try {
+    const r = await anonClient().request<Record<string, boolean>>('GET', 'config/flags', { anonymous: true });
+    return lenderSwitchState(r.data ?? null);
+  } catch { return lenderSwitchState(null); }
 }
 
 /** A failed shelf read → 'off' (the console is switched off) or 'error'. */

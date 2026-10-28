@@ -15,7 +15,8 @@ describe('partner nav model (persona-aware)', () => {
   it('a lender (bank / nbfc / mfi / gold_loan) sees its dashboard, common + lending — never the insurer group', () => {
     for (const kind of ['bank', 'nbfc', 'mfi', 'gold_loan']) {
       expect([kind, visibleGroups(PARTNER_READS, kind)]).toEqual([kind, ['common', 'lending', 'account']]);
-      expect(liveNavForPartner(PARTNER_READS, kind).map((i) => i.href)).toEqual(['/dashboard', '/notifications', '/settlements', '/consents', '/lender/queue', '/lender/products', '/lender/portfolio', ...ACCOUNT]);
+      expect(liveNavForPartner(PARTNER_READS, kind).map((i) => i.href)).toEqual(['/dashboard', '/notifications', '/settlements', '/consents', '/lender/queue', '/lender/products',
+        '/lender/disbursements', '/lender/repayments', '/lender/portfolio', ...ACCOUNT]);   // PC-56 PARTNER-4b added the last two
       expect(liveNavForPartner(PARTNER_READS, kind).some((i) => i.href.startsWith('/insurer/'))).toBe(false);
     }
     expect(hasLending(set('partner.applications.read'))).toBe(true);
@@ -82,13 +83,17 @@ describe('partner nav model (persona-aware)', () => {
     for (const kind of ['insurer', 'amc']) expect([kind, liveNavForPartner(PARTNER_READS, kind).some((i) => i.href.startsWith('/lender/'))]).toEqual([kind, false]);
   });
 
-  it('PC-56 PARTNER-4a · the lending group is FOUR items — Dashboard · Loan queue · Products · Portfolio — all at the canon\'s addresses; `/profile` and `/servicing` are gone', () => {
+  it('PC-56 PARTNER-4b · the lending group is SIX items — Dashboard · Loan queue · Products · Pay-outs · Repayments · Portfolio — in the canon\'s own sidebar order; `/profile` and `/servicing` are gone and the batch page is in NO nav', () => {
     const lending = PARTNER_NAV.filter((i) => i.group === 'lending');
-    expect(lending.map((i) => [i.href, i.live])).toEqual([['/dashboard', true], ['/lender/queue', true], ['/lender/products', true], ['/lender/portfolio', true]]);
+    expect(lending.map((i) => [i.href, i.live])).toEqual([['/dashboard', true], ['/lender/queue', true], ['/lender/products', true],
+      ['/lender/disbursements', true], ['/lender/repayments', true], ['/lender/portfolio', true]]);
     // the three routes the nav used to mark `live: true` while they rendered "not yet available" (survey C-18) are not in the map at all
     for (const gone of ['/profile', '/portfolio', '/servicing', '/loan-queue']) expect([gone, PARTNER_NAV.some((i) => i.href === gone)]).toEqual([gone, false]);
-    // PARTNER-4b's two pages are NOT nav items: the lending sub-navigation carries them, dark, until that wave builds them
-    for (const next of ['/lender/disbursements', '/lender/repayments']) expect([next, PARTNER_NAV.some((i) => i.href === next)]).toEqual([next, false]);
+    // W218 is reached from the pay-outs page and the lending sub-navigation only — it is in NO nav, and neither is a route pattern
+    for (const notNav of ['/lender/disbursements/[id]', '/lender/disbursements/pending', '/lender/queue/[id]', '/lender/portfolio/[id]']) {
+      expect([notNav, PARTNER_NAV.some((i) => i.href === notNav)]).toEqual([notNav, false]);
+    }
+    expect(PARTNER_NAV.filter((i) => i.href.includes('[')).length).toBe(0);
     // and no lending item is reachable by an insurer, whatever it holds
     for (const i of lending) expect([i.href, liveNavForPartner(PARTNER_READS, 'insurer').map((x) => x.href).includes(i.href)]).toEqual([i.href, false]);
   });

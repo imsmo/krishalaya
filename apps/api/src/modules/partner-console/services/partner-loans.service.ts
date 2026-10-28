@@ -21,8 +21,9 @@ import { METRICS, Metrics } from '../../../core/observability/metrics';
 import { decodeKeyset, encodeKeyset, UUID_RE } from '../../../shared/pagination/us-keyset';
 import { PartnerConsoleRepository } from '../repositories/partner-console.repository';
 import {
-  FY_WINDOW_SQL, isPartnerLoanStatus, mergeLoanCounts, projectLoan, projectRepayment, validWindow,
-  type PartnerLoanCounts, type PartnerLoanView, type PartnerRepaymentView,
+  FY_WINDOW_SQL, isPartnerLoanStatus, mergeCollected, mergeDpd, mergeLoanCounts, mergePipeline, projectLoan, projectRepayment, validWindow,
+  type PartnerApplicationPipeline, type PartnerLoanCollected, type PartnerLoanCounts, type PartnerLoanDpd, type PartnerLoanView,
+  type PartnerRepaymentView,
 } from '../domain/partner-loans.rules';
 import { clampPartnerLimit } from '../domain/partner-console.rules';
 import { partnerRefused } from '../domain/partner-console.errors';
@@ -49,7 +50,7 @@ export class PartnerLoansService {
   ) {}
 
   /** ONE partner-realm audit row for one read — counts only; never an amount, never a person. */
-  private async trail(s: PartnerSession, surface: 'loans' | 'loan' | 'loan_repayments' | 'loans_counts', counts: Record<string, unknown>, entity?: { type: string; id: string }): Promise<void> {
+  private async trail(s: PartnerSession, surface: 'loans' | 'loan' | 'loan_repayments' | 'loans_counts' | 'loans_dpd' | 'loans_collected' | 'applications_pipeline', counts: Record<string, unknown>, entity?: { type: string; id: string }): Promise<void> {
     await this.uow.run(s.partnerId, (tx) => this.audit.write(tx, {
       tenantId: null, actorUserId: s.userId, actorRole: actorRole(s), action: 'partner.loans.read',
       entityType: entity?.type ?? 'financial_partner', entityId: entity?.id ?? s.partnerId,
@@ -111,6 +112,48 @@ export class PartnerLoansService {
     const out = mergeLoanCounts(rows, window, new Date().toISOString());
     await this.trail(s, 'loans_counts', { from: out.from, to: out.to, loans: out.total });
     return out;
+  }
+
+  // ── PC-56 PARTNER-4b · what a lender does NOT disburse (founder 4b-4 … 4b-7) ──────────────────────────────────────────────────────────
+  // Three more reads of the SAME book, each ONE audit row, each counts and bigint sums only:
+  //   dpd       — the arrears buckets (0232 `partner_loan_dpd`), with `no_due_date` as the honest reason the four arrears buckets are 0;
+  //   collected — what was RECORDED against this book in [from, to) IST days (0232 `partner_loan_collected`), never the channel;
+  //   pipeline  — the approved applications by cooling-off state and the disbursed ones in the window (0225's consent-gated axis).
+  // NOTHING here disburses or co-approves anything: the partner realm has no such route, by construction (founder 4b-3 / 4b-4).
+
+  async dpd(s: PartnerSession): Promise<PartnerLoanDpd> {
+    const rows: Array<{ bucket: string | null; n: string; outstanding_minor: string }> = [];
+    for (let i = 0; i < this.repo.shards; i++) rows.push(...(await this.repo.partnerLoanDpdShard(i, s.partnerId)));
+    const out = mergeDpd(rows, new Date().toISOString());
+    await this.trail(s, 'loans_dpd', { servicing: out.servicing.count, arrears: out.arrears.count, noDueDate: out.noDueDate.count });
+    return out;
+  }
+
+  async collected(s: PartnerSession, q: { from?: string; to?: string }): Promise<PartnerLoanCollected> {
+    const window = await this.window(s, q);
+    const rows: Array<{ n: string; amount_paid_minor: string; loans: string }> = [];
+    for (let i = 0; i < this.repo.shards; i++) rows.push(...(await this.repo.partnerLoanCollectedShard(i, s.partnerId, window.from, window.to)));
+    const out = mergeCollected(rows, window, new Date().toISOString());
+    await this.trail(s, 'loans_collected', { from: out.from, to: out.to, repayments: out.repayments, loans: out.loans });
+    return out;
+  }
+
+  async pipeline(s: PartnerSession, q: { from?: string; to?: string }): Promise<PartnerApplicationPipeline> {
+    const window = await this.window(s, q);
+    const rows: Array<{ ready: string; cooling_off: string; disbursed: string; approved: string }> = [];
+    for (let i = 0; i < this.repo.shards; i++) rows.push(...(await this.repo.partnerApplicationPipelineShard(i, s.partnerId, window.from, window.to)));
+    const out = mergePipeline(rows, window, new Date().toISOString());
+    await this.trail(s, 'applications_pipeline', { from: out.from, to: out.to, pipeline: out.pipeline, ready: out.ready, coolingOff: out.coolingOff });
+    return out;
+  }
+
+  /** Either the caller's two IST days or the current FY — the SAME rule `counts` uses (refused by name when malformed). */
+  private async window(s: PartnerSession, q: { from?: string; to?: string }): Promise<{ from: string; to: string }> {
+    if (q.from && q.to) {
+      if (!validWindow(q.from, q.to)) throw partnerRefused('PARTNER_LOAN_WINDOW_INVALID');
+      return { from: q.from, to: q.to };
+    }
+    return this.currentFy(s);
   }
 
   /** The current FY (April–March, Asia/Kolkata) as IST calendar days — answered by the DATABASE from now(), no application clock. */

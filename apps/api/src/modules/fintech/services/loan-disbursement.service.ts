@@ -9,6 +9,14 @@
 //  4. TOTALS AGREE before anything is written; otherwise abort rather than write a partial ledger.
 //  5. NOTHING EXECUTES — payouts land 'queued'; flipping applications → disbursed and creating the `loans`
 //     servicing mirror is the separate, KEY-GATED execute step (jobs/loan-disbursement-execute.handler.ts).
+// PC-56 PARTNER-4b · founder 4b-1 — WRITE ORDER: payout_batches → the RUN (a shell of zeros; its items' `run_id`
+// FK is not deferrable) → one payout + one item per borrower → `finalizeRun` with the WRITTEN figures → the audit
+// row. Before this wave the items were written first and the run last, so every call raised 23503 and rolled back:
+// `POST /v1/fintech/servicing/disbursement-batches` had never once succeeded (survey D-1 of PARTNER-4a's report).
+// This is the FIRST time a money-plane write on this route lands: `payout_batches` + one `payouts` row per
+// borrower, status 'queued', provider 'razorpayx'. NOTHING EXECUTES THEM (no worker, no credentials), and the
+// whole controller is behind the `fintech` flag, which is OFF — but the rows are real, so the founder's Law 9
+// review applies to this commit.
 import { Inject, Injectable } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork } from '../../../core/database/unit-of-work';
 import { uuidv7 } from '../../../core/database/uuid.util';
@@ -62,6 +70,17 @@ export class LoanDisbursementService {
       if (!totalsAgree(split)) throw new ConflictError('run totals did not agree — refusing to write a partial batch');
 
       await this.repo.insertBatch(tx, { id: batchId, tenantId, totalMinor: split.totalMinor, count: split.queued.length });
+      // PC-56 PARTNER-4b · founder 4b-1 (D-1) — THE PARENT RUN IS WRITTEN FIRST, AS A SHELL (zeros), because
+      // `loan_disbursement_run_items.run_id` is NOT NULL REFERENCES loan_disbursement_runs(id) and NOT DEFERRABLE
+      // (0089:58). Until this wave the items were written inside the loop and the run only afterwards, so the FIRST
+      // item insert always raised 23503 and the whole transaction rolled back: this route had answered 500 and
+      // written nothing on every database since PC-55 A9. The idempotency-key replay is caught HERE, before a payout
+      // row exists; `finalizeRun` below closes the run with the WRITTEN figures (never the planned ones).
+      const ins = await this.repo.insertRun(tx, {
+        id: runId, tenantId, batchId, totalMinor: '0', loanCount: 0, skippedCount: 0, skippedDetail: [],
+        currencyCode: 'INR', preparedBy: a.userId, confirmedBy: dto.confirmedBy, idempotencyKey: key,
+      });
+      if (!ins.ok) throw new ConflictError('this disbursement run was already recorded (idempotency-key replay)');
       const written: typeof split.queued = [];
       const raced: Array<{ applicationId: string; reason: 'already_disbursed' }> = [];
       for (const q of split.queued) {
@@ -80,13 +99,11 @@ export class LoanDisbursementService {
       if (written.length === 0) throw new ConflictError('every application in this run was already disbursed by another run');
       const writtenTotal = written.reduce((s, w) => s + BigInt(w.amountMinor), 0n).toString();
 
-      const ins = await this.repo.insertRun(tx, {
-        id: runId, tenantId, batchId, totalMinor: writtenTotal, loanCount: written.length,
-        skippedCount: split.skipped.length + raced.length,
-        skippedDetail: [...split.skipped, ...raced], currencyCode: 'INR',
-        preparedBy: a.userId, confirmedBy: dto.confirmedBy, idempotencyKey: key,
+      // the run records what was WRITTEN, not what was planned (0089's `total_minor` / `loan_count` / `skipped_*`)
+      await this.repo.finalizeRun(tx, {
+        id: runId, tenantId, totalMinor: writtenTotal, loanCount: written.length,
+        skippedCount: split.skipped.length + raced.length, skippedDetail: [...split.skipped, ...raced],
       });
-      if (!ins.ok) throw new ConflictError('this disbursement run was already recorded (idempotency-key replay)');
 
       await this.audit.write(tx, {
         tenantId, actorUserId: a.userId, action: 'fintech.loan_disbursement_run_created',

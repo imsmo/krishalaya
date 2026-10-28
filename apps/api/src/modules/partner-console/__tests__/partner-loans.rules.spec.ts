@@ -6,8 +6,9 @@
 // `borrower_user_id`, `channel`, `narrative`, `created_by`, `purpose_text`, `phone` and `name`, plus 200 generated rows carrying every
 // banned spelling, must leave NOTHING behind. Mutants M3 (the definer regains `borrower_user_id`) and M7 (the channel comes back) kill here.
 import {
-  LOAN_KIND_CODES, LOAN_PERSON_FIELDS, NOT_RECORDED, PARTNER_LOAN_STATUSES, REFUSED_LOAN_STATUS, SERVICING_LOAN_STATUSES,
-  fyLabel, fyWindow, isPartnerLoanStatus, mergeLoanCounts, projectLoan, projectRepayment, validWindow, type LoanCountRow,
+  ARREARS_BUCKETS, DPD_BUCKETS, LOAN_KIND_CODES, LOAN_PERSON_FIELDS, NOT_RECORDED, PARTNER_LOAN_STATUSES, REFUSED_LOAN_STATUS,
+  SERVICING_LOAN_STATUSES, fyLabel, fyWindow, isDpdBucket, isPartnerLoanStatus, mergeCollected, mergeDpd, mergeLoanCounts, mergePipeline,
+  projectLoan, projectRepayment, validWindow, type CollectedRow, type DpdRow, type LoanCountRow, type PipelineRow,
 } from '../domain/partner-loans.rules';
 
 /** Every key of an object, at any depth, including array elements. */
@@ -214,5 +215,106 @@ describe('PC-56 PARTNER-4a · the counts merge — integers and bigint sums, nev
     expect(validWindow('2026-04-01', '2027-04-01')).toBe(true);
     expect(validWindow('2026-04-01', '2026-04-01')).toBe(false);
     expect(validWindow('2026-02-30', '2026-04-01')).toBe(false);
+  });
+});
+
+// ══ PC-56 PARTNER-4b · WHAT A LENDER DOES NOT DISBURSE — the three AGGREGATES (0232's two definers + 0225's axis read) ═════════════════════
+// No new ROW SHAPE enters the realm with this wave: all three answers are counts and bigint sums, so `LOAN_PERSON_FIELDS` needs no new
+// member. The merges are still built field by field from an allow-list, and a POISONED row — one carrying `borrower_user_id`, `channel`,
+// `destination`, `narrative`, `phone` and `name` beside the figures — must leave nothing of itself behind. Mutant M4 (the channel put back
+// into a new projection) kills here.
+const POISON = {
+  borrower_user_id: '0192d2c4-u001-7000-8000-000000000001', borrowerUserId: '0192d2c4-u001-7000-8000-000000000001',
+  channel: 'milk_bill_deduction', repayment_channel: 'milk_bill_deduction', destination: 'a bank account',
+  destination_kind: 'supplier_direct', narrative: 'seed + fertiliser (kharif kit)', phone: '+919900000001',
+  name: 'a borrower', created_by: '0192d2c4-u002-7000-8000-000000000001', bank_account: '••7726',
+  ledger_txn_id: '0192d2c4-t001-7000-8000-000000000001', tenant_id: '0192d2c4-7001-7000-8000-000000000001',
+};
+const banned = (json: string) => ['milk_bill_deduction', 'supplier_direct', 'kharif', '919900000001', 'a borrower', '••7726', 'u001-7000']
+  .filter((v) => json.includes(v));
+
+describe('PC-56 PARTNER-4b · the arrears buckets, the collected window and the application pipeline', () => {
+  it('SIX disjoint buckets; counts and bigint sums ADD across shards; an unknown bucket is DROPPED, never bucketed blindly', () => {
+    expect(DPD_BUCKETS).toEqual(['1-30', '31-60', '61-90', '90+', 'not_due', 'no_due_date']);
+    expect(ARREARS_BUCKETS).toEqual(['1-30', '31-60', '61-90', '90+']);
+    expect([isDpdBucket('90+'), isDpdBucket('no_due_date'), isDpdBucket('15-45'), isDpdBucket(null), isDpdBucket(90)]).toEqual([true, true, false, false, false]);
+    const rows: DpdRow[] = [
+      { bucket: '1-30', n: '2', outstanding_minor: '9007199254740993' },      // shard 0
+      { bucket: '1-30', n: 1, outstanding_minor: 1 },                          // shard 1 — the bigint sum must stay exact
+      { bucket: 'no_due_date', n: '7', outstanding_minor: '700000' },
+      { bucket: 'kharif', n: '99', outstanding_minor: '99' },                  // not a bucket: dropped
+      { bucket: null, n: '5', outstanding_minor: '5' },                        // likewise
+      { bucket: '90+', n: '-1', outstanding_minor: '1' },                      // a negative count is not a count
+      { bucket: '90+', n: '1.5', outstanding_minor: '1' },                     // nor is a float
+    ];
+    const out = mergeDpd(rows, '2026-10-28T06:00:00.000Z');
+    expect(Object.keys(out.buckets)).toEqual([...DPD_BUCKETS]);
+    expect(out.buckets['1-30']).toEqual({ count: 3, outstandingMinor: '9007199254740994' });
+    // a row whose count is not a count contributes NOTHING — not the count and not the sum: a nonsense row is dropped whole
+    expect(out.buckets['90+']).toEqual({ count: 0, outstandingMinor: '0' });
+    expect(out.arrears).toEqual({ count: 3, outstandingMinor: '9007199254740994' });
+    expect(out.noDueDate).toEqual({ count: 7, outstandingMinor: '700000' });
+    expect(out.servicing.count).toBe(10);
+    expect(out.computedAt).toBe('2026-10-28T06:00:00.000Z');
+    // `not_due` and `no_due_date` are NOT arrears
+    expect(out.arrears.count + out.buckets.not_due.count + out.noDueDate.count).toBe(out.servicing.count);
+    expect(JSON.stringify(out)).not.toMatch(/%|percent|ratio|rate/i);
+  });
+  it('THE ALL-ZERO TRUTH is a FLAG the server sets, not a guess the page makes', () => {
+    const allNull = mergeDpd([{ bucket: 'no_due_date', n: '7', outstanding_minor: '700000' }], 'now');
+    expect([allNull.arrears.count, allNull.noDueDate.count, allNull.noScheduleOnPlatform]).toEqual([0, 7, true]);
+    const some = mergeDpd([{ bucket: 'no_due_date', n: '3', outstanding_minor: '0' }, { bucket: '1-30', n: '1', outstanding_minor: '0' }], 'now');
+    expect(some.noScheduleOnPlatform).toBe(false);
+    expect(mergeDpd([], 'now').noScheduleOnPlatform).toBe(false);              // nothing serviced is not "no schedule"
+    expect(mergeDpd([], 'now').servicing).toEqual({ count: 0, outstandingMinor: '0' });
+  });
+  it('the collected window adds across shards and keeps the window the server answered; a poisoned row leaves NOTHING behind', () => {
+    const rows = [
+      { ...POISON, n: '2', amount_paid_minor: '9007199254740993', loans: '2' },
+      { ...POISON, n: 1, amount_paid_minor: 7, loans: 1 },
+    ] as unknown as CollectedRow[];
+    const out = mergeCollected(rows, { from: '2026-04-01', to: '2027-04-01' }, 'now');
+    expect(out).toEqual({ from: '2026-04-01', to: '2027-04-01', timeZone: 'Asia/Kolkata', fy: '2026-27',
+      repayments: 3, amountPaidMinor: '9007199254741000', loans: 3, computedAt: 'now' });
+    const json = JSON.stringify(out);
+    expect(banned(json)).toEqual([]);
+    expect(deepKeys(out).filter((k) => (LOAN_PERSON_FIELDS as readonly string[]).includes(k))).toEqual([]);
+    // a window that is not an FY has no label, and a malformed figure is 0 rather than NaN
+    expect(mergeCollected([{ n: 'oops', amount_paid_minor: 'oops', loans: 'oops' }], { from: '2026-04-02', to: '2027-04-02' }, 'now'))
+      .toMatchObject({ fy: null, repayments: 0, amountPaidMinor: '0', loans: 0 });
+  });
+  it('the application pipeline adds across shards, and `pipeline` is approved + disbursed-in-window — never a share', () => {
+    const rows = [
+      { ...POISON, ready: '5', cooling_off: '4', disbursed: '30', approved: '9' },
+      { ...POISON, ready: 3, cooling_off: 2, disbursed: 31, approved: 5 },
+      { ready: -1, cooling_off: 1.5, disbursed: 'oops', approved: null },
+    ] as unknown as PipelineRow[];
+    const out = mergePipeline(rows, { from: '2026-04-01', to: '2027-04-01' }, 'now');
+    expect(out).toEqual({ from: '2026-04-01', to: '2027-04-01', timeZone: 'Asia/Kolkata', fy: '2026-27',
+      ready: 8, coolingOff: 6, disbursed: 61, approved: 14, pipeline: 75, computedAt: 'now' });
+    expect(banned(JSON.stringify(out))).toEqual([]);
+    expect(deepKeys(out).filter((k) => (LOAN_PERSON_FIELDS as readonly string[]).includes(k))).toEqual([]);
+    expect(mergePipeline([], { from: '2026-04-01', to: '2027-04-01' }, 'now')).toMatchObject({ ready: 0, coolingOff: 0, disbursed: 0, pipeline: 0 });
+  });
+  it('200 generated poisoned rows of all three shapes survive nothing: no key and no value of a person reaches an answer', () => {
+    const dpd: DpdRow[] = []; const col: CollectedRow[] = []; const pipe: PipelineRow[] = [];
+    for (let i = 0; i < 200; i++) {
+      const poison = { ...POISON, phone: `+9199000000${String(i).padStart(2, '0')}`, narrative: `kharif kit ${i}` };
+      dpd.push({ ...poison, bucket: DPD_BUCKETS[i % DPD_BUCKETS.length], n: '1', outstanding_minor: '100' } as unknown as DpdRow);
+      col.push({ ...poison, n: '1', amount_paid_minor: '100', loans: '1' } as unknown as CollectedRow);
+      pipe.push({ ...poison, ready: '1', cooling_off: '1', disbursed: '1', approved: '1' } as unknown as PipelineRow);
+    }
+    const answers = [mergeDpd(dpd, 'now'), mergeCollected(col, { from: '2026-04-01', to: '2027-04-01' }, 'now'),
+      mergePipeline(pipe, { from: '2026-04-01', to: '2027-04-01' }, 'now')];
+    for (const a of answers) {
+      const json = JSON.stringify(a);
+      expect(banned(json)).toEqual([]);
+      expect(json).not.toMatch(/kharif|9199|borrower|channel|destination|narrative|phone|name/i);
+      expect(deepKeys(a).filter((k) => (LOAN_PERSON_FIELDS as readonly string[]).includes(k))).toEqual([]);
+    }
+    // and the figures are still exactly right: 200 rows, one each
+    expect((answers[0] as { servicing: { count: number } }).servicing.count).toBe(200);
+    expect((answers[1] as { repayments: number }).repayments).toBe(200);
+    expect((answers[2] as { pipeline: number }).pipeline).toBe(400);
   });
 });

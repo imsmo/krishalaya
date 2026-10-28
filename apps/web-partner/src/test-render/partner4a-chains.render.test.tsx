@@ -25,11 +25,12 @@ const BACK: Readonly<Record<string, string | undefined>> = {
 };
 
 describe('PC-56 PARTNER-4a · the lending chains (render)', () => {
-  it('SIX chain entries over FOUR canon chains, ten canon pages — each file recorded once, on the page the chain is triggered from', () => {
-    expect(PARTNER4_CHAINS.map((c) => c.id)).toEqual(['queue_act', 'application_act', 'loan_act', 'loan_export', 'portfolio_export', 'portfolio_act']);
-    expect(PARTNER4_CHAINS.flatMap((c) => c.files)).toEqual(['W2878', 'W2879', 'W2880', 'W2876', 'W2877', 'W2891', 'W2892', 'W2893', 'W2894', 'W2895']);
+  it('4a\'s SIX chain entries over FOUR canon chains, ten canon pages — each file recorded once, on the page the chain is triggered from', () => {
+    // PC-56 PARTNER-4b appended four more chains to the shared registry; THIS file owns 4a's six, and `partner4b-chains.render` owns the rest
+    expect(PARTNER4_CHAINS.filter((c) => c.wave === '4a').map((c) => c.id)).toEqual(['queue_act', 'application_act', 'loan_act', 'loan_export', 'portfolio_export', 'portfolio_act']);
+    expect(PARTNER4_CHAINS.filter((c) => c.wave === '4a').flatMap((c) => c.files)).toEqual(['W2878', 'W2879', 'W2880', 'W2876', 'W2877', 'W2891', 'W2892', 'W2893', 'W2894', 'W2895']);
   });
-  for (const c of PARTNER4_CHAINS) {
+  for (const c of PARTNER4_CHAINS.filter((x) => x.wave === '4a')) {
     it.each(c.states.map((s) => [s]))(`${c.id} · %s: its sentence, its refusals, the way back to its OWN page — nothing written`, (state) => {
       const back = BACK[c.id];
       const html = renderToStaticMarkup(<LenderChain t={tr(en)} chain={c.id} state={state} back={back} mailbox={MAILBOX} />);

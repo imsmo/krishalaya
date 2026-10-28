@@ -23,7 +23,7 @@ import { LoanApplicationRepository } from '../repositories/loan-application.repo
 import { LoanRepository } from '../repositories/loan.repository';
 import { LoanProductRepository } from '../repositories/loan-product.repository';
 import { ApplyLoanDto, ApproveLoanDto, RejectLoanDto } from '../dto/create-loan-application.dto';
-import { LoanApplicationNotFoundError, LoanProductNotFoundError, AmountOutOfRangeError, FintechForbiddenError, LoanDecidedByPartnerError } from '../domain/fintech.errors';
+import { LoanApplicationNotFoundError, LoanProductNotFoundError, AmountOutOfRangeError, FintechForbiddenError, LoanDecidedByPartnerError, LoanAlreadyQueuedForDisbursalError } from '../domain/fintech.errors';
 import { decisionVerdict } from '../domain/loan-decision.rules';
 
 const QUOTA_METRIC = 'loan_applications';
@@ -106,7 +106,9 @@ export class LoanApplicationService {
     }, { userId: actor.userId });
   }
 
-  /** Lender disburses an approved application: creates the loan + credits the borrower's wallet. */
+  /** Lender disburses an approved application: creates the loan + credits the borrower's wallet.
+   *  PC-56 PARTNER-4b · founder 4b-2: REFUSED BY NAME if a bank-payout run already claims this application
+   *  (`LOAN_ALREADY_QUEUED_FOR_DISBURSAL`, 409) — the two rails now know about each other in both directions. */
   async disburse(tenantId: string, actor: FintechActor, id: string, idemKey: string, ip: string | null) {
     if (!actor.canManage) throw new FintechForbiddenError('requires loan.manage');
     return this.idem.remember(idemKey, actor.userId, 'fintech.loan.disburse', () =>
@@ -114,6 +116,11 @@ export class LoanApplicationService {
         this.uow.run(tenantId, async (tx) => {
           const app = await this.repo.getForUpdate(tx, tenantId, id);
           if (!app) throw new LoanApplicationNotFoundError(id);
+          // PC-56 PARTNER-4b · founder 4b-2 (survey F-3) — THE OTHER RAIL FIRST, BY NAME. Checked before the state
+          // machine, exactly as the run rail checks `already_disbursed` before everything else
+          // (domain/loan-disbursement.rules.ts:29): an application a bank payout already claims is not a
+          // cooling-off question or a status question, it is simply spoken for.
+          if (await this.repo.queuedForDisbursal(tx, tenantId, id)) throw new LoanAlreadyQueuedForDisbursalError(id);
           const principal = app.markDisbursed(new Date());   // throws if not approved / cooling-off still open
           const product = await this.products.getById(tenantId, app.productId, tx);
           if (!product) throw new LoanProductNotFoundError(app.productId);

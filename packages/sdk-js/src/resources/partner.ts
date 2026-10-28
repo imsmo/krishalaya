@@ -337,6 +337,30 @@ export interface PartnerBookCounts {
   computedAt: string;
 }
 
+/**
+ * PC-56 PARTNER-4b — the ARREARS BUCKETS of this lender's own servicing book: count + Σ outstanding per bucket, the four arrears buckets
+ * added, the loans with NO next due date recorded, and every serviced loan. **No rate and no share of the book, ever** — and because this
+ * platform opens every loan with its next due date NULL, the four arrears buckets are 0 and `noDueDate` is the reason.
+ */
+export interface PartnerBookArrears {
+  buckets: Record<string, { count: number; outstandingMinor: string }>;
+  arrears: { count: number; outstandingMinor: string };
+  noDueDate: { count: number; outstandingMinor: string };
+  servicing: { count: number; outstandingMinor: string };
+  noScheduleOnPlatform: boolean;
+  computedAt: string;
+}
+/** PC-56 PARTNER-4b — the repayments RECORDED against this book in [from, to) IST days. Never DUE, never by channel. */
+export interface PartnerBookCollected {
+  from: string; to: string; timeZone: string; fy: string | null;
+  repayments: number; amountPaidMinor: string; loans: number; computedAt: string;
+}
+/** PC-56 PARTNER-4b — the application pipeline by cooling-off state. Nothing here moves an application: these are queries. */
+export interface PartnerBookPipeline {
+  from: string; to: string; timeZone: string; fy: string | null;
+  ready: number; coolingOff: number; disbursed: number; approved: number; pipeline: number; computedAt: string;
+}
+
 class PartnerBookApi {
   constructor(private readonly http: HttpClient) {}
   /** This lender's own book, NEWEST first. Loop while `nextCursor` is non-null. */
@@ -358,6 +382,18 @@ class PartnerBookApi {
   /** The counts and bigint sums in a window of IST days; omit both dates for the current FY (the database answers it). */
   async counts(q: { from?: string; to?: string } = {}, signal?: AbortSignal): Promise<PartnerBookCounts> {
     return (await this.http.request<PartnerBookCounts>('GET', 'partner/loans/counts', { query: { from: q.from, to: q.to }, signal })).data;
+  }
+  /** PC-56 PARTNER-4b — the arrears buckets of this lender's own servicing book, as counts and bigint sums. No rate, ever. */
+  async dpd(signal?: AbortSignal): Promise<PartnerBookArrears> {
+    return (await this.http.request<PartnerBookArrears>('GET', 'partner/loans/dpd', { signal })).data;
+  }
+  /** PC-56 PARTNER-4b — what was RECORDED against this book in a window of IST days (never DUE, never by channel). */
+  async collected(q: { from?: string; to?: string } = {}, signal?: AbortSignal): Promise<PartnerBookCollected> {
+    return (await this.http.request<PartnerBookCollected>('GET', 'partner/loans/collected', { query: { from: q.from, to: q.to }, signal })).data;
+  }
+  /** PC-56 PARTNER-4b — the approved applications of this book by cooling-off state, and the disbursed ones in the window. */
+  async pipeline(q: { from?: string; to?: string } = {}, signal?: AbortSignal): Promise<PartnerBookPipeline> {
+    return (await this.http.request<PartnerBookPipeline>('GET', 'partner/loans/pipeline', { query: { from: q.from, to: q.to }, signal })).data;
   }
 }
 

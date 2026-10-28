@@ -4,7 +4,7 @@
 import { LoanApplicationService } from '../services/loan-application.service';
 import { LoanApplication } from '../domain/loan-application.entity';
 import { LoanProduct } from '../domain/loan-product.entity';
-import { CoolingOffActiveError } from '../domain/fintech.errors';
+import { CoolingOffActiveError, LoanAlreadyQueuedForDisbursalError } from '../domain/fintech.errors';
 
 const product = LoanProduct.rehydrate({ id: 'pr1', partnerId: 'pn1', productKindId: 'k1', defaultName: 'Crop', currencyCode: 'INR', minAmountMinor: 100000n, maxAmountMinor: 50000000n, interestAprBps: 1100, tenureMonthsMin: 3, tenureMonthsMax: 12, collateralKind: 'none', repaymentStyle: 'harvest_aligned', isActive: true });
 function approvedApp(coolingOffUntil: Date) {
@@ -12,17 +12,18 @@ function approvedApp(coolingOffUntil: Date) {
   a.startReview(); a.approve(5000000n, coolingOffUntil, new Date()); a.pullEvents();
   return a;
 }
-function harness(app: LoanApplication) {
+/** PC-56 PARTNER-4b · founder 4b-2: `queued` answers the new run-item question — false by default, true for the one case below. */
+function harness(app: LoanApplication, queued = false) {
   const tx = { query: jest.fn() };
   const uow = { run: jest.fn(async (_t: string, fn: any) => fn(tx)) };
   const outbox = { write: jest.fn() }; const idem = { remember: jest.fn(async (_k: string, _u: string, _e: string, fn: any) => fn()) };
   const quota = { assertWithinLimit: jest.fn(), increment: jest.fn() }; const metrics = { inc: jest.fn(), observe: jest.fn() }; const audit = { write: jest.fn() };
   const wallet = { post: jest.fn(async () => ({ txnId: 't', alreadyApplied: false })), balanceMinor: jest.fn() };
-  const repo = { getForUpdate: jest.fn(async () => app), update: jest.fn() };
+  const repo = { getForUpdate: jest.fn(async () => app), update: jest.fn(), queuedForDisbursal: jest.fn(async () => queued) };
   const loans = { insert: jest.fn() };
   const products = { getById: jest.fn(async () => product) };
   const svc = new LoanApplicationService(uow as any, outbox as any, idem as any, quota as any, metrics as any, audit as any, wallet as any, repo as any, loans as any, products as any);
-  return { svc, wallet, loans };
+  return { svc, wallet, loans, repo };
 }
 const lender = { userId: 'lender1', canBorrow: false, canManage: true };
 
@@ -43,5 +44,18 @@ describe('disburse — the money path', () => {
     const { svc, wallet } = harness(approvedApp(new Date(Date.now() + 3600_000)));    // window open
     await expect(svc.disburse('t1', lender, 'a1', 'idem-d2', null)).rejects.toBeInstanceOf(CoolingOffActiveError);
     expect(wallet.post).not.toHaveBeenCalled();
+  });
+  // PC-56 PARTNER-4b · founder 4b-2 (survey F-3) — THE SECOND DOOR: an application a bank-payout run already claims is refused BY NAME
+  // before the state machine and before the wallet, so a borrower cannot be paid twice and owe once.
+  it('REFUSES BY NAME an application a disbursement run already claims — nothing is posted and no loan is opened', async () => {
+    const { svc, wallet, loans, repo } = harness(approvedApp(new Date(Date.now() - 1000)), true);   // cooling-off elapsed AND claimed
+    await expect(svc.disburse('t1', lender, 'a1', 'idem-d3', null)).rejects.toBeInstanceOf(LoanAlreadyQueuedForDisbursalError);
+    expect(repo.queuedForDisbursal).toHaveBeenCalledTimes(1);
+    expect(wallet.post).not.toHaveBeenCalled();
+    expect(loans.insert).not.toHaveBeenCalled();
+    // and the refusal is a 409 with a stable code a console can print
+    await svc.disburse('t1', lender, 'a1', 'idem-d4', null).catch((e: { code: string; httpStatus: number }) => {
+      expect([e.code, e.httpStatus]).toEqual(['LOAN_ALREADY_QUEUED_FOR_DISBURSAL', 409]);
+    });
   });
 });

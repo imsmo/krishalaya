@@ -33,6 +33,19 @@ export class LoanApplicationRepository {
     const r = await this.replica.forTenant(tenantId).query(`SELECT a.*, lp.partner_id AS _partner_id FROM loan_applications a JOIN loan_products lp ON lp.id = a.product_id WHERE a.id=$1 AND a.tenant_id=$2 AND a.deleted_at IS NULL`, [id, tenantId]);
     return r.rows[0] ? toDomain(r.rows[0], r.rows[0]._partner_id) : null;
   }
+  /**
+   * PC-56 PARTNER-4b · founder 4b-2 (survey F-3): is this application already claimed by a bank-payout
+   * disbursement run? The run rail's own candidate query asks the same question of the same table
+   * (`loan-disbursement.repository.ts:24` → the `already_disbursed` skip reason); the wallet rail asked nothing,
+   * which is the one-way double-pay hole. Read INSIDE the caller's transaction, after the application row is
+   * locked, so a run cannot claim it between the check and the wallet posting.
+   */
+  async queuedForDisbursal(tx: TxContext, tenantId: string, applicationId: string): Promise<boolean> {
+    const r = await tx.query<{ v: boolean }>(
+      `SELECT EXISTS (SELECT 1 FROM loan_disbursement_run_items i WHERE i.application_id=$1 AND i.tenant_id=$2) AS v`,
+      [applicationId, tenantId]);
+    return r.rows[0]?.v === true;
+  }
   /** PC-56 PARTNER-0 (founder D3): does this financial partner decide its own applications (≥ 1 active partner-console member)? A DEFINER
    *  oracle (0225) — the tenant transaction holds no read on partner_memberships, so a plain SELECT would answer "no" and fail OPEN. */
   async partnerHasConsoleMembers(tx: TxContext, partnerId: string): Promise<boolean> {

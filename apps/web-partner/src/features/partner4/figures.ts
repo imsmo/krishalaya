@@ -184,3 +184,110 @@ export function countsState(c: { total: number } | null, failure: LenderFailure 
   if (!c) return 'error';
   return c.total === 0 ? 'empty' : 'ok';
 }
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+// PC-56 PARTNER-4b · WHAT A LENDER DOES NOT DISBURSE (founder 4b-4 … 4b-7) — W210's pipeline counts, W211's collected
+// window and arrears buckets, and W218's honest-page state. Still **NO FUNCTION HERE CAN EMIT A `%`**: no arrears
+// rate, no portfolio-at-risk share, no channel mix, no punctuality figure (survey E9). Counts are integers; money is
+// a bigint minor-unit string the view formats; every figure arrives server-computed with its own `computedAt`.
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+/** W210's four chips, in the canon's own order. Each is a COUNT the server answered — nothing here is an act. */
+export const PIPELINE_CHIPS = ['pipeline', 'ready', 'coolingOff', 'disbursed'] as const;
+export type PipelineChip = (typeof PIPELINE_CHIPS)[number];
+
+export interface PipelineShape { from: string; to: string; fy: string | null; ready: number; coolingOff: number; disbursed: number; approved: number; pipeline: number; computedAt: string }
+
+/** The four chips as rows: id, key, count. No share, no ratio, no "of N" arithmetic beyond the counts themselves. */
+export function pipelineRows(p: PipelineShape | null | undefined): Array<{ id: PipelineChip; key: string; n: number }> {
+  return PIPELINE_CHIPS.map((id) => ({ id, key: `partner4.pipeline.${id}`, n: int(p?.[id]) }));
+}
+
+/** The SIX arrears buckets the server answers, in the order the page prints them: the four arrears, then the two that
+ *  say why those four are zero on this platform. `not_due` and `no_due_date` are not arrears and are never added in. */
+export const ARREARS_ROWS = ['1-30', '31-60', '61-90', '90+', 'not_due', 'no_due_date'] as const;
+export type ArrearsBucket = (typeof ARREARS_ROWS)[number];
+/** The i18n key of a bucket. The acronym the canon uses for days-past-due is never printed: the page says the days. */
+export const arrearsKey = (b: string) => `partner4.arrears.bucket.${b.replace('+', 'plus').replace('-', '_')}`;
+
+export interface ArrearsShape {
+  buckets: Record<string, { count: number; outstandingMinor: string }>;
+  arrears: { count: number; outstandingMinor: string };
+  noDueDate: { count: number; outstandingMinor: string };
+  servicing: { count: number; outstandingMinor: string };
+  noScheduleOnPlatform: boolean;
+  computedAt: string;
+}
+
+export function arrearsRows(a: ArrearsShape | null | undefined): Array<{ bucket: ArrearsBucket; key: string; arrears: boolean; n: number; outstandingMinor: string }> {
+  return ARREARS_ROWS.map((bucket) => ({
+    bucket,
+    key: arrearsKey(bucket),
+    arrears: bucket !== 'not_due' && bucket !== 'no_due_date',
+    n: int(a?.buckets?.[bucket]?.count),
+    outstandingMinor: bigintStr(a?.buckets?.[bucket]?.outstandingMinor),
+  }));
+}
+
+/**
+ * THE HONEST REASON THE ARREARS BUCKETS ARE ZERO (founder 4b-7, survey F-8). Which sentence the page prints is decided
+ * HERE, from the server's own counts, never from a guess:
+ *   `none`     — nothing is being serviced yet, so there is nothing to be late;
+ *   `noDates`  — loans are being serviced and NOT ONE has a next due date recorded: no loan can be counted late;
+ *   `someDates`— some loans have a date and some do not: the buckets cover only the ones that do, and the page says how many do not;
+ *   `dates`    — every serviced loan has a date, so the buckets are the whole truth about this book.
+ * No percentage in any of the four.
+ */
+export type ArrearsReason = 'none' | 'noDates' | 'someDates' | 'dates';
+export function arrearsReason(a: ArrearsShape | null | undefined): ArrearsReason {
+  const serviced = int(a?.servicing?.count);
+  const without = int(a?.noDueDate?.count);
+  if (serviced === 0) return 'none';
+  if (without === serviced) return 'noDates';
+  return without > 0 ? 'someDates' : 'dates';
+}
+export const arrearsReasonKey = (r: ArrearsReason) => `partner4.arrears.why.${r}`;
+
+export interface CollectedShape { from: string; to: string; fy: string | null; repayments: number; amountPaidMinor: string; loans: number; computedAt: string }
+
+/** The collected window's figures: a count, a bigint sum and a count of loans. Never a rate, never an average. */
+export function collectedFigures(c: CollectedShape | null | undefined): Array<{ id: string; key: string; count: number; minor: string | null }> {
+  return [
+    { id: 'collected', key: 'partner4.repayments.collected', count: int(c?.repayments), minor: bigintStr(c?.amountPaidMinor) },
+    { id: 'loans', key: 'partner4.repayments.loansPaying', count: int(c?.loans), minor: null },
+  ];
+}
+
+/** W211's state: EMPTY when nothing is being serviced and nothing was recorded in the window. */
+export function servicingState(a: ArrearsShape | null, c: CollectedShape | null, failure: LenderFailure | null): LenderCountsState {
+  if (failure) return failure;
+  if (!a || !c) return 'error';
+  return a.servicing.count === 0 && c.repayments === 0 ? 'empty' : 'ok';
+}
+/** W210's state: EMPTY when no application of this book is approved or was disbursed in the window. */
+export function pipelineState(p: PipelineShape | null, failure: LenderFailure | null): LenderCountsState {
+  if (failure) return failure;
+  if (!p) return 'error';
+  return p.pipeline === 0 ? 'empty' : 'ok';
+}
+
+/**
+ * W218's state. The page makes NO READ (it is an honest page about whose money moves and who signs, so it writes no
+ * audit row and has NO error state of its own — the 3b rule), so its state is the platform's public, client-safe flag
+ * map: `partner_console` OFF is printed as OFF, an unreadable map as the ordinary error notice, and NEVER
+ * "lending is switched off" — the `fintech` flag is a TENANT module switch the partner realm does not consult
+ * (survey F-20 / E5). The asymmetry with the insurer's pages is recorded, not fixed.
+ */
+export type LenderHonestState = 'ok' | 'off' | 'error';
+export function lenderSwitchState(map: Record<string, boolean> | null | undefined): LenderHonestState {
+  if (!map) return 'error';
+  if (map.partner_console === false) return 'off';
+  return map.partner_console === true ? 'ok' : 'error';
+}
+
+/** `/lender/disbursements` and `/lender/repayments` hrefs (the two 4b sub-navigation rows), and W218's address.
+ *  W218's `[id]` is a disbursement-RUN id, which the partner axis never holds and this console never reads — so the
+ *  inbound edge W210 → W218 that the canon never drew is built at the one address a lender can honestly be sent to,
+ *  and EVERY id prints the same honest page because there is nothing to look up (recorded as a DELTA). */
+export const PENDING_BATCH = 'pending';
+export const batchHref = (id: string = PENDING_BATCH) => `/lender/disbursements/${encodeURIComponent(id)}`;

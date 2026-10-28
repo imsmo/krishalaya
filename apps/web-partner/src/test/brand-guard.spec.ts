@@ -129,14 +129,17 @@ describe('PC-56 PARTNER-3b · brand guard over the six honest pages (founder Q8:
 });
 
 describe('PC-56 PARTNER-4a · brand guard over the lender\'s own book (founder 4a-7: the platform\'s mark + the lender\'s own name)', () => {
+  // PC-56 PARTNER-4b adds its three views and its three pages to the same block (the registry and the figures module are shared).
   const NEW = ['components/partner4/LenderQueueView.tsx', 'components/partner4/LenderApplicationView.tsx', 'components/partner4/LenderPortfolioView.tsx',
     'components/partner4/LenderLoanView.tsx', 'components/partner4/LenderChain.tsx', 'components/partner4/LendingSubNav.tsx',
+    'components/partner4/LenderPayoutsView.tsx', 'components/partner4/LenderRepaymentsView.tsx', 'components/partner4/LenderBatchView.tsx',
     'app/lender/queue/page.tsx', 'app/lender/queue/actions.ts', 'app/lender/queue/[id]/page.tsx',
     'app/lender/portfolio/page.tsx', 'app/lender/portfolio/[id]/page.tsx',
+    'app/lender/disbursements/page.tsx', 'app/lender/disbursements/[id]/page.tsx', 'app/lender/repayments/page.tsx',
     'features/partner4/figures.ts', 'features/partner4/refusals.ts'];
-  it('all thirteen exist, are scanned, and none carries the platform\'s name, a mailbox, a domain, a helpline or a canon institution', () => {
+  it('all nineteen exist, are scanned, and none carries the platform\'s name, a mailbox, a domain, a helpline or a canon institution', () => {
     const all = files().map((f) => path.relative(SRC, f));
-    expect(NEW.length).toBe(13);
+    expect(NEW.length).toBe(19);
     for (const rel of NEW) {
       expect([rel, all.includes(rel)]).toEqual([rel, true]);
       const src = fs.readFileSync(path.join(SRC, rel), 'utf8').replace(/@krishalaya\/[a-z0-9-]+/g, '');
@@ -145,7 +148,7 @@ describe('PC-56 PARTNER-4a · brand guard over the lender\'s own book (founder 4
     }
     // the views, pages and figures carry no canon person, bank, place, loan / application / account id or avatar (the registry NAMES the
     // canon's claims in order to refuse them, so it is not scanned for these)
-    for (const rel of NEW.slice(0, 12)) {
+    for (const rel of NEW.slice(0, 17)) {
       const src = fs.readFileSync(path.join(SRC, rel), 'utf8');
       expect([rel, /Ramesh|Hetal|Suresh|Popat|Vithal|Jayesh|Meera|Savita|\bBen\s|Bhai|Kotak|\bSBI\b|Anand|Mehsana|Junagadh|LA-2026|LN-2026|KCC-2026|LTX-|CASE-0041|XXXX-XXXX|\bAJ\b|RBI ref|\+91/.test(src)]).toEqual([rel, false]);
       // and none of them prints a borrower, a repayment channel, a bank account, a drawl narrative or a money-record anchor
@@ -156,6 +159,8 @@ describe('PC-56 PARTNER-4a · brand guard over the lender\'s own book (founder 4
     const nav = fs.readFileSync(path.join(SRC, 'features', 'nav', 'nav-model.ts'), 'utf8');
     expect(nav).toContain("labelKey: 'partner4.nav.loanQueue'");
     expect(nav).toContain("labelKey: 'partner4.nav.portfolio'");
+    expect(nav).toContain("labelKey: 'partner4.nav.payouts'");
+    expect(nav).toContain("labelKey: 'partner4.nav.repayments'");
     expect(/Saurashtra|Gramin|\bAJ\b|RBI ref/.test(nav)).toBe(false);
   });
 });

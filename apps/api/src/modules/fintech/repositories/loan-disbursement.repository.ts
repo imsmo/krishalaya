@@ -63,6 +63,19 @@ export class LoanDisbursementRepository {
       throw e;
     }
   }
+  /**
+   * PC-56 PARTNER-4b · founder 4b-1 (D-1) — the run row is now written FIRST (its items carry a NON-DEFERRABLE
+   * `run_id` FK, 0089:58), so what it can record at that moment is a SHELL: zeros. This closes it with the
+   * figures of the rows that were actually WRITTEN — never the planned ones. Nothing outside the transaction
+   * ever sees the shell; and if a run could not close, it reads 0, which understates rather than overstates.
+   */
+  async finalizeRun(tx: TxContext, r0: { id: string; tenantId: string; totalMinor: string; loanCount: number; skippedCount: number; skippedDetail: unknown[] }): Promise<void> {
+    await tx.query(
+      `UPDATE loan_disbursement_runs
+          SET total_minor=$3, loan_count=$4, skipped_count=$5, skipped_detail=$6::jsonb, updated_at=now()
+        WHERE id=$1 AND tenant_id=$2`,
+      [r0.id, r0.tenantId, r0.totalMinor, r0.loanCount, r0.skippedCount, JSON.stringify(r0.skippedDetail)]);
+  }
   /** Returns false if ANOTHER run already claimed this application (uq_loan_disb_item_once) — the guard that
    *  makes a double disbursal impossible even under a concurrent request. */
   async insertItem(tx: TxContext, i: { runId: string; applicationId: string; tenantId: string; borrowerUserId: string; amountMinor: string; payoutId: string }): Promise<boolean> {

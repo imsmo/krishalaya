@@ -65,6 +65,8 @@ import {
   APPLICATION_STATUSES, APPLICATION_STATUSES_VISIBLE, LOAN_KIND_CODES, LOAN_STATUSES, NOT_RECORDED, REFUSED_APPLICATION_STATUSES,
   aprLine, countsState, headlineFigures, isLoanStatus, kindLabel, kindRows, listState, loanRef, loanStatusKey, loanStatusTone,
   maturityText, netAprLine, nextDueText, portfolioHref, portfolioQuery, queueHref, queueQuery, statusRows, windowLabel,
+  arrearsKey, arrearsReason, arrearsReasonKey, arrearsRows, batchHref, collectedFigures, lenderSwitchState, pipelineRows,
+  pipelineState, servicingState, ARREARS_ROWS, PENDING_BATCH, PIPELINE_CHIPS,
 } from '../features/partner4/figures';
 
 const COUNTS = {
@@ -212,5 +214,88 @@ describe('PC-56 PARTNER-4a · NO function in features/partner4/figures.ts can em
       queueHref('all', 'approved', 'Y3Vyc29y'), portfolioHref('overdue', 'Y3Vyc29y'), loanRef('0192d2c4-c001-7000-8000-000000000001'),
     ]);
     expect(emitted).not.toContain('%');
+  });
+});
+
+// ══ PC-56 PARTNER-4b · WHAT A LENDER DOES NOT DISBURSE — the pipeline counts, the collected window and the arrears buckets ══════════════════
+const ARREARS = {
+  buckets: {
+    '1-30': { count: 0, outstandingMinor: '0' }, '31-60': { count: 0, outstandingMinor: '0' },
+    '61-90': { count: 0, outstandingMinor: '0' }, '90+': { count: 0, outstandingMinor: '0' },
+    not_due: { count: 0, outstandingMinor: '0' }, no_due_date: { count: 7, outstandingMinor: '9007199254740993' },
+  },
+  arrears: { count: 0, outstandingMinor: '0' },
+  noDueDate: { count: 7, outstandingMinor: '9007199254740993' },
+  servicing: { count: 7, outstandingMinor: '9007199254740993' },
+  noScheduleOnPlatform: true,
+  computedAt: '2026-10-28T06:00:00.000Z',
+};
+const COLLECTED = { from: '2026-04-01', to: '2027-04-01', timeZone: 'Asia/Kolkata', fy: '2026-27', repayments: 3, amountPaidMinor: '150000', loans: 2, computedAt: '2026-10-28T06:00:00.000Z' };
+const PIPE = { from: '2026-04-01', to: '2027-04-01', timeZone: 'Asia/Kolkata', fy: '2026-27', ready: 8, coolingOff: 6, disbursed: 61, approved: 14, pipeline: 75, computedAt: '2026-10-28T06:00:00.000Z' };
+
+describe('PC-56 PARTNER-4b · the pipeline, the collected window and the arrears buckets', () => {
+  it('the four pipeline chips are the server\'s own integers, in the canon\'s order, and a missing figure is 0 — never a share', () => {
+    expect(PIPELINE_CHIPS).toEqual(['pipeline', 'ready', 'coolingOff', 'disbursed']);
+    expect(pipelineRows(PIPE).map((r) => [r.id, r.key, r.n])).toEqual([
+      ['pipeline', 'partner4.pipeline.pipeline', 75], ['ready', 'partner4.pipeline.ready', 8],
+      ['coolingOff', 'partner4.pipeline.coolingOff', 6], ['disbursed', 'partner4.pipeline.disbursed', 61]]);
+    expect(pipelineRows(null).map((r) => r.n)).toEqual([0, 0, 0, 0]);
+    // a float, a negative or a string never reaches the page as itself
+    expect(pipelineRows({ ...PIPE, ready: 1.5, coolingOff: -3, disbursed: '61' as unknown as number }).map((r) => r.n)).toEqual([75, 0, 0, 0]);
+    expect([pipelineState(PIPE, null), pipelineState({ ...PIPE, pipeline: 0 }, null), pipelineState(null, null), pipelineState(PIPE, 'off'), pipelineState(null, 'error')])
+      .toEqual(['ok', 'empty', 'error', 'off', 'error']);
+  });
+  it('the SIX arrears buckets are disjoint and in order, with bigint sums kept exact; `not_due` and `no_due_date` are NOT arrears', () => {
+    expect(ARREARS_ROWS).toEqual(['1-30', '31-60', '61-90', '90+', 'not_due', 'no_due_date']);
+    const rows = arrearsRows(ARREARS);
+    expect(rows.map((r) => [r.bucket, r.key, r.arrears, r.n, r.outstandingMinor])).toEqual([
+      ['1-30', 'partner4.arrears.bucket.1_30', true, 0, '0'],
+      ['31-60', 'partner4.arrears.bucket.31_60', true, 0, '0'],
+      ['61-90', 'partner4.arrears.bucket.61_90', true, 0, '0'],
+      ['90+', 'partner4.arrears.bucket.90plus', true, 0, '0'],
+      ['not_due', 'partner4.arrears.bucket.not_due', false, 0, '0'],
+      ['no_due_date', 'partner4.arrears.bucket.no_due_date', false, 7, '9007199254740993'],
+    ]);
+    // the sum is a bigint STRING all the way to the view: beyond Number.MAX_SAFE_INTEGER it is still exact
+    expect(rows[5].outstandingMinor).toBe('9007199254740993');
+    expect(String(Number(rows[5].outstandingMinor))).not.toBe(rows[5].outstandingMinor);   // a float would lose the last rupee
+    expect(arrearsRows(null).map((r) => [r.n, r.outstandingMinor])).toEqual(Array(6).fill([0, '0']));
+    expect([arrearsKey('1-30'), arrearsKey('90+'), arrearsKey('no_due_date')])
+      .toEqual(['partner4.arrears.bucket.1_30', 'partner4.arrears.bucket.90plus', 'partner4.arrears.bucket.no_due_date']);
+  });
+  it('THE ALL-ZERO TRUTH: when no loan has a due date the page says WHY, and it says something different in each of the four cases', () => {
+    expect(arrearsReason(ARREARS)).toBe('noDates');
+    expect(arrearsReason({ ...ARREARS, servicing: { count: 0, outstandingMinor: '0' }, noDueDate: { count: 0, outstandingMinor: '0' } })).toBe('none');
+    expect(arrearsReason({ ...ARREARS, noDueDate: { count: 3, outstandingMinor: '0' } })).toBe('someDates');
+    expect(arrearsReason({ ...ARREARS, noDueDate: { count: 0, outstandingMinor: '0' } })).toBe('dates');
+    expect(arrearsReason(null)).toBe('none');
+    expect(new Set((['none', 'noDates', 'someDates', 'dates'] as const).map(arrearsReasonKey)).size).toBe(4);
+    for (const r of ['none', 'noDates', 'someDates', 'dates'] as const) expect(arrearsReasonKey(r)).toBe(`partner4.arrears.why.${r}`);
+  });
+  it('the collected window is a count, a bigint sum and a count of loans — never an average and never a rate', () => {
+    expect(collectedFigures(COLLECTED).map((f) => [f.id, f.count, f.minor])).toEqual([
+      ['collected', 3, '150000'], ['loans', 2, null]]);
+    expect(collectedFigures({ ...COLLECTED, amountPaidMinor: '9007199254740993' })[0].minor).toBe('9007199254740993');
+    expect(collectedFigures({ ...COLLECTED, amountPaidMinor: 'oops' as string })[0].minor).toBe('0');
+    expect(collectedFigures(null).map((f) => [f.count, f.minor])).toEqual([[0, '0'], [0, null]]);
+    // the window label is the server's FY or its two IST days — never computed here
+    expect(windowLabel(COLLECTED)).toEqual({ key: 'partner4.portfolio.fy', vars: { fy: '2026-27' } });
+    expect(windowLabel({ ...COLLECTED, fy: null })).toEqual({ key: 'partner4.portfolio.window', vars: { from: '2026-04-01', to: '2027-04-01' } });
+    expect([servicingState(ARREARS, COLLECTED, null), servicingState({ ...ARREARS, servicing: { count: 0, outstandingMinor: '0' } }, { ...COLLECTED, repayments: 0 }, null),
+      servicingState(null, COLLECTED, null), servicingState(ARREARS, COLLECTED, 'off')]).toEqual(['ok', 'empty', 'error', 'off']);
+  });
+  it('W218 has no read, so its state is the platform\'s flag map — and NEVER "lending is switched off"', () => {
+    expect([lenderSwitchState({ partner_console: true }), lenderSwitchState({ partner_console: false }), lenderSwitchState({}), lenderSwitchState(null)])
+      .toEqual(['ok', 'off', 'error', 'error']);
+    // the `fintech` flag is a TENANT module switch this realm does not consult: it changes nothing here
+    expect(lenderSwitchState({ partner_console: true, fintech: false })).toBe('ok');
+    expect([PENDING_BATCH, batchHref(), batchHref('0192d2c4-c001-7000-8000-000000000001'), batchHref('a b/c')])
+      .toEqual(['pending', '/lender/disbursements/pending', '/lender/disbursements/0192d2c4-c001-7000-8000-000000000001', '/lender/disbursements/a%20b%2Fc']);
+  });
+  it('and no 4b figure can emit a percentage, over every shape these three pages print', () => {
+    const emitted = JSON.stringify([pipelineRows(PIPE), arrearsRows(ARREARS), collectedFigures(COLLECTED),
+      arrearsReason(ARREARS), windowLabel(COLLECTED), batchHref()]);
+    expect(emitted).not.toContain('%');
+    expect(emitted).not.toMatch(/percent|ratio|average|onTime|dpd/i);
   });
 });

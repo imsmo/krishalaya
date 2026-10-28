@@ -307,6 +307,24 @@ export class PartnerLoansController {
     return this.loans.counts(s, q).then((data) => ({ data }));
   }
 
+  // PC-56 PARTNER-4b (founder 4b-4 … 4b-7) — three more READS of the same book, all declared BEFORE `:id`:
+  //   `dpd`       the arrears buckets, with the count of loans that have no next due date recorded (the honest reason the buckets are 0);
+  //   `collected` what was RECORDED against this book in an IST window — never the repayment channel;
+  //   `pipeline`  the approved applications by cooling-off state (0225's consent axis) — W210's four chips.
+  // There is still NO route that disburses, co-approves, prepares or confirms anything: the live spec pins them absent.
+  @PartnerPermissions('partner.loans.read') @Get('dpd')
+  dpd(@CurrentPartnerSession() s: PartnerSession) { return this.loans.dpd(s).then((data) => ({ data })); }
+
+  @PartnerPermissions('partner.loans.read') @Get('collected')
+  collected(@CurrentPartnerSession() s: PartnerSession, @ZodQuery(PartnerLoanCountsQuerySchema) q: PartnerLoanCountsQueryDto) {
+    return this.loans.collected(s, q).then((data) => ({ data }));
+  }
+
+  @PartnerPermissions('partner.loans.read') @Get('pipeline')
+  pipeline(@CurrentPartnerSession() s: PartnerSession, @ZodQuery(PartnerLoanCountsQuerySchema) q: PartnerLoanCountsQueryDto) {
+    return this.loans.pipeline(s, q).then((data) => ({ data }));
+  }
+
   @PartnerPermissions('partner.loans.read') @Get(':id')
   get(@CurrentPartnerSession() s: PartnerSession, @Param('id') id: string) { return this.loans.get(s, id).then((data) => ({ data })); }
 

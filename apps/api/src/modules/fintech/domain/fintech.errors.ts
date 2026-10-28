@@ -16,6 +16,22 @@ export class CoolingOffActiveError extends DomainError { constructor(until: Date
 export class OverRepaymentError extends DomainError { constructor(outstandingMinor: bigint) { super('OVER_REPAYMENT', 'Repayment exceeds the outstanding balance', 422, { outstandingMinor: outstandingMinor.toString() }); } }
 export class InvalidLoanError extends DomainError { constructor(message: string) { super('LOAN_INVALID', message, 422); } }
 export class FintechForbiddenError extends AppError { constructor(message = 'Not allowed on this fintech resource') { super('FINTECH_FORBIDDEN', message, 403); } }
+/**
+ * PC-56 PARTNER-4b · founder 4b-2 (survey F-3, P4-B4) — THE SECOND DOOR TO THE SAME MONEY IS SHUT BY NAME.
+ * Two rails disburse one loan: the FPO wallet (immediate, `LoanApplicationService.disburse`) and a bank payout
+ * (queued by a disbursement run, never executed). The run rail already refuses an application the wallet rail has
+ * paid (`already_disbursed`, 0089's `uq_loan_disb_item_once`); the wallet rail consulted NOTHING, so a borrower
+ * whose payout was queued could also be credited from the wallet — paid twice, owing once, on two screens that
+ * promise "double-funding is impossible, not just unlikely". The wallet rail now refuses it here.
+ * WHICH RAIL IS THE REAL ONE REMAINS THE FOUNDER'S CALL (4b-2): neither rail is removed.
+ */
+export class LoanAlreadyQueuedForDisbursalError extends DomainError {
+  constructor(applicationId: string) {
+    super('LOAN_ALREADY_QUEUED_FOR_DISBURSAL',
+      'This application is already claimed by a bank-payout disbursement run, so it cannot also be disbursed from the wallet — one application is disbursed once, by one rail.',
+      409, { applicationId });
+  }
+}
 /** PC-56 PARTNER-0 · founder D3: the product's partner decides its own applications in its partner console — tenant staff are refused by name. */
 export class LoanDecidedByPartnerError extends AppError {
   constructor(partnerId: string) {

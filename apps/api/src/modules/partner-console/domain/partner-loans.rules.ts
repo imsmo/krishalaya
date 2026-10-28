@@ -205,3 +205,120 @@ export function mergeLoanCounts(rows: readonly LoanCountRow[], window: { from: s
     computedAt,
   };
 }
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+// PC-56 PARTNER-4b · WHAT A LENDER DOES NOT DISBURSE (founder 4b-4 / 4b-5 / 4b-6 / 4b-7, 2026-10-28)
+// Three more figures of the SAME book, each a COUNT or a bigint SUM, each built FIELD BY FIELD from an allow-list so
+// that a definer or an axis query widened by mistake still cannot reach a response (the third wall, survey E3):
+//   • the ARREARS BUCKETS (0232 `partner_loan_dpd`)                    — W211
+//   • WHAT WAS COLLECTED in an IST window (0232 `partner_loan_collected`) — W211
+//   • the APPLICATION PIPELINE by cooling-off state (0225's axis read)  — W210
+// NO RATIO ANYWHERE: no portfolio-at-risk rate, no punctuality figure, no channel mix, no share of the book
+// (founder 4b-7, survey E9). NEVER a borrower, a bank account, a destination, a repayment channel or a narrative:
+// every one of these three answers is an aggregate, so no new ROW SHAPE enters the realm and `LOAN_PERSON_FIELDS`
+// needs no new member — but the merges below still drop every unknown key they are handed, and the unit spec proves
+// it with poisoned rows.
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+/** The SIX arrears buckets 0232 answers — disjoint and exhaustive over the servicing statuses (active + overdue). */
+export const DPD_BUCKETS = ['1-30', '31-60', '61-90', '90+', 'not_due', 'no_due_date'] as const;
+export type DpdBucket = (typeof DPD_BUCKETS)[number];
+export const isDpdBucket = (v: unknown): v is DpdBucket => typeof v === 'string' && (DPD_BUCKETS as readonly string[]).includes(v);
+/** The four buckets that are ARREARS. The other two are the honest reason these four are zero today. */
+export const ARREARS_BUCKETS: readonly DpdBucket[] = ['1-30', '31-60', '61-90', '90+'];
+
+/** One row of `partner_loan_dpd()` on one shard. */
+export interface DpdRow { bucket: string | null; n: string | number; outstanding_minor: string | number }
+
+export interface PartnerLoanDpd {
+  /** Every bucket present, 0 when none: count + Σ outstanding as a bigint minor-unit string. */
+  buckets: Record<string, { count: number; outstandingMinor: string }>;
+  /** The four arrears buckets added together — the figure the canon prints as a rate, printed as the two it is made of. */
+  arrears: { count: number; outstandingMinor: string };
+  /** The loans with NO next due date recorded: why every arrears bucket is 0 on this platform (survey F-8). */
+  noDueDate: { count: number; outstandingMinor: string };
+  /** Every loan still being serviced — the denominator a rate would have used, printed as a count instead. */
+  servicing: { count: number; outstandingMinor: string };
+  /** TRUE when no loan on this book has a next due date recorded at all: the page says so in its own words. */
+  noScheduleOnPlatform: boolean;
+  computedAt: string;
+}
+
+/** Merge the shards' arrears rows. Counts and bigint sums add; an unknown bucket is dropped, never bucketed blindly. */
+export function mergeDpd(rows: readonly DpdRow[], computedAt: string): PartnerLoanDpd {
+  const buckets: Record<string, { count: number; outstandingMinor: string }> =
+    Object.fromEntries(DPD_BUCKETS.map((b) => [b, { count: 0, outstandingMinor: '0' }]));
+  for (const r of rows) {
+    if (!isDpdBucket(r?.bucket)) continue;
+    const n = Number(r.n);
+    if (!Number.isInteger(n) || n < 0) continue;
+    const b = buckets[r.bucket];
+    b.count += n;
+    b.outstandingMinor = addMinor(b.outstandingMinor, r.outstanding_minor);
+  }
+  const sum = (keys: readonly string[]) => keys.reduce(
+    (acc, k) => ({ count: acc.count + buckets[k].count, outstandingMinor: addMinor(acc.outstandingMinor, buckets[k].outstandingMinor) }),
+    { count: 0, outstandingMinor: '0' });
+  const arrears = sum(ARREARS_BUCKETS);
+  const servicing = sum(DPD_BUCKETS);
+  return {
+    buckets, arrears, noDueDate: buckets.no_due_date, servicing,
+    noScheduleOnPlatform: servicing.count > 0 && buckets.no_due_date.count === servicing.count,
+    computedAt,
+  };
+}
+
+/** One row of `partner_loan_collected(from, to)` on one shard. */
+export interface CollectedRow { n: string | number; amount_paid_minor: string | number; loans: string | number }
+
+export interface PartnerLoanCollected {
+  from: string; to: string; timeZone: string; fy: string | null;
+  /** How many repayments were RECORDED in the window — never how many were DUE (there is no instalment schedule). */
+  repayments: number;
+  /** Σ amount_paid_minor as a bigint minor-unit string. */
+  amountPaidMinor: string;
+  /** How many distinct loans of this book they were recorded against. */
+  loans: number;
+  computedAt: string;
+}
+
+export function mergeCollected(rows: readonly CollectedRow[], window: { from: string; to: string }, computedAt: string): PartnerLoanCollected {
+  let repayments = 0; let amountPaidMinor = '0'; let loans = 0;
+  for (const r of rows) {
+    const n = Number(r?.n); const l = Number(r?.loans);
+    if (Number.isInteger(n) && n >= 0) repayments += n;
+    if (Number.isInteger(l) && l >= 0) loans += l;      // a loan lives on ONE shard, so the distinct counts add
+    amountPaidMinor = addMinor(amountPaidMinor, r?.amount_paid_minor);
+  }
+  return { from: window.from, to: window.to, timeZone: FY_TIME_ZONE, fy: fyLabel(window.from, window.to), repayments, amountPaidMinor, loans, computedAt };
+}
+
+/** One row of the application-pipeline axis read on one shard (0225's consent-gated policy does the admitting). */
+export interface PipelineRow { ready: string | number; cooling_off: string | number; disbursed: string | number; approved: string | number }
+
+export interface PartnerApplicationPipeline {
+  from: string; to: string; timeZone: string; fy: string | null;
+  /** `approved` with the cooling-off instant PASSED — what the canon calls "ready". Nothing moves it: it is a query. */
+  ready: number;
+  /** `approved` with the cooling-off instant still AHEAD — the window is a server timestamp, never rounded in the lender's favour. */
+  coolingOff: number;
+  /** `disbursed` with a decision inside the window. */
+  disbursed: number;
+  /** Every approved application, whichever side of its cooling-off window. */
+  approved: number;
+  /** approved + disbursed-in-window — the canon's "pipeline (all)". */
+  pipeline: number;
+  computedAt: string;
+}
+
+export function mergePipeline(rows: readonly PipelineRow[], window: { from: string; to: string }, computedAt: string): PartnerApplicationPipeline {
+  let ready = 0; let coolingOff = 0; let disbursed = 0; let approved = 0;
+  const add = (v: unknown) => { const n = Number(v); return Number.isInteger(n) && n >= 0 ? n : 0; };
+  for (const r of rows) {
+    ready += add(r?.ready); coolingOff += add(r?.cooling_off); disbursed += add(r?.disbursed); approved += add(r?.approved);
+  }
+  return {
+    from: window.from, to: window.to, timeZone: FY_TIME_ZONE, fy: fyLabel(window.from, window.to),
+    ready, coolingOff, disbursed, approved, pipeline: approved + disbursed, computedAt,
+  };
+}

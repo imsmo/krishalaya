@@ -55,11 +55,15 @@ export const PARTNER_NAV: readonly PartnerNavItem[] = [
   // lending vertical (financial partners)
   // PC-56 PARTNER-4a (survey C-18 / F-15): the group is Dashboard · Loan queue · Products · Portfolio — FOUR items, all four of them real
   // pages at the canon's own addresses. `/profile` and `/servicing` are GONE: `/profile` rendered <NotYet> while the nav marked it
-  // `live: true` (three real links that landed on "not yet available"), and the dead servicing console is deleted. PARTNER-4b's
-  // Disbursements and Repayments are NOT added here — the lending pages' own sub-navigation carries them, dark, until they exist.
+  // `live: true` (three real links that landed on "not yet available"), and the dead servicing console is deleted.
+  // PC-56 PARTNER-4b: + Pay-outs (W210 `lender/disbursements`) and Repayments (W211 `lender/repayments`), in the canon's own sidebar order
+  // — so a lender sees Dashboard · Loan queue · Products · Pay-outs · Repayments · Portfolio. `/lender/disbursements/[id]` (W218) is in NO
+  // nav: it is reached from the pay-outs page and the lending sub-navigation only (the inbound edge the canon never drew).
   { href: '/lender/queue', labelKey: 'partner4.nav.loanQueue', group: 'lending', live: true },
   // PC-56 PARTNER-2c: the lender's own shelf at the canon's `lender/products` (the old `/products` answers 307 there)
   { href: '/lender/products', labelKey: 'partner2.nav.loanProducts', group: 'lending', live: true },
+  { href: '/lender/disbursements', labelKey: 'partner4.nav.payouts', group: 'lending', live: true },
+  { href: '/lender/repayments', labelKey: 'partner4.nav.repayments', group: 'lending', live: true },
   { href: '/lender/portfolio', labelKey: 'partner4.nav.portfolio', group: 'lending', live: true },
   // logistics vertical (3PL partners)
   { href: '/shipments', labelKey: 'nav.shipments', group: 'fleet', live: true },
