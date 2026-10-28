@@ -24,6 +24,7 @@ import { PartnerReadinessService } from '../../services/partner-readiness.servic
 import { PartnerInsuranceService } from '../../services/partner-insurance.service';
 import { PartnerLoanProductsService } from '../../services/partner-loan-products.service';
 import { PartnerClaimsService } from '../../services/partner-claims.service';
+import { PartnerLoansService } from '../../services/partner-loans.service';
 import {
   PartnerAcceptInviteDto, PartnerAcceptInviteSchema, PartnerApplicationsQueryDto, PartnerApplicationsQuerySchema, PartnerApproveDto, PartnerApproveSchema,
   PartnerInviteDto, PartnerInviteSchema, PartnerOtpDto, PartnerOtpSchema, PartnerReasonDto, PartnerReasonSchema, PartnerRefreshDto, PartnerRefreshSchema,
@@ -31,6 +32,8 @@ import {
   PartnerVerifyDto, PartnerVerifySchema, PartnerInviteLookupDto, PartnerInviteLookupSchema, PartnerKeyRevokeDto, PartnerKeyRevokeSchema,
   PartnerDeliveriesQueryDto, PartnerDeliveriesQuerySchema, PartnerPoliciesQueryDto, PartnerPoliciesQuerySchema, PartnerIssuanceQueryDto, PartnerIssuanceQuerySchema,
   PartnerClaimsQueryDto, PartnerClaimsQuerySchema, PartnerClaimCountsQueryDto, PartnerClaimCountsQuerySchema,
+  PartnerLoansQueryDto, PartnerLoansQuerySchema, PartnerLoanCountsQueryDto, PartnerLoanCountsQuerySchema,
+  PartnerLoanRepaymentsQueryDto, PartnerLoanRepaymentsQuerySchema,
 } from '../../dto/partner-console.dto';
 
 const ipOf = (req: Request) => clientIpOf(req);
@@ -281,6 +284,38 @@ export class PartnerClaimsController {
   get(@CurrentPartnerSession() s: PartnerSession, @Param('id') id: string) { return this.claims.get(s, id).then((data) => ({ data })); }
 }
 
+/** PC-56 PARTNER-4a · founder 4a-2 — THE LENDER READS ITS OWN BOOK: the loan FACTS on this lender's own book (0231's definers — never a
+ *  borrower, a repayment channel, a bank account, a drawl narrative or a ledger anchor), the book NEWEST first, one loan's recorded
+ *  repayment history, and the counts + bigint sums in an FY window; every read audited (`partner.loans.read`, counts only).
+ *  Behind `partner_console` ONLY: the platform's `fintech` flag is a TENANT-scoped module switch the partner realm deliberately does not
+ *  consult (the 2c ruling, survey F-20 / E5), so there is no lending equivalent of `PartnerInsuranceFlagGuard`.
+ *  READ-ONLY, and more than that — there is NO route to disburse, write off, restructure, queue a disbursement batch, write a KCC entry,
+ *  record a limit review, read a KCC ledger, or filter repayments by channel. The live spec pins all nine absences at 404. */
+@Controller({ path: 'partner/loans', version: '1' })
+@UseGuards(PartnerConsoleFlagGuard, PartnerSessionGuard, PartnerPermissionsGuard)
+export class PartnerLoansController {
+  constructor(private readonly loans: PartnerLoansService) {}
+
+  @PartnerPermissions('partner.loans.read') @Get()
+  list(@CurrentPartnerSession() s: PartnerSession, @ZodQuery(PartnerLoansQuerySchema) q: PartnerLoansQueryDto) {
+    return this.loans.list(s, q).then((r) => ({ data: r.items, meta: { nextCursor: r.nextCursor, limit: r.limit, computedAt: r.computedAt } }));
+  }
+
+  // `counts` is declared BEFORE `:id`, or Nest would match it as a loan id.
+  @PartnerPermissions('partner.loans.read') @Get('counts')
+  counts(@CurrentPartnerSession() s: PartnerSession, @ZodQuery(PartnerLoanCountsQuerySchema) q: PartnerLoanCountsQueryDto) {
+    return this.loans.counts(s, q).then((data) => ({ data }));
+  }
+
+  @PartnerPermissions('partner.loans.read') @Get(':id')
+  get(@CurrentPartnerSession() s: PartnerSession, @Param('id') id: string) { return this.loans.get(s, id).then((data) => ({ data })); }
+
+  @PartnerPermissions('partner.loans.read') @Get(':id/repayments')
+  repayments(@CurrentPartnerSession() s: PartnerSession, @Param('id') id: string, @ZodQuery(PartnerLoanRepaymentsQuerySchema) q: PartnerLoanRepaymentsQueryDto) {
+    return this.loans.repayments(s, id, q).then((r) => ({ data: r.items, meta: { limit: r.limit, computedAt: r.computedAt } }));
+  }
+}
+
 /** For the route-uniqueness spec and the module: every controller of the realm. */
 export const PARTNER_CONSOLE_CONTROLLERS = [PartnerAuthController, PartnerMeController, PartnerApplicationsController, PartnerTeamController, PartnerInvitesController, PartnerDashboardController,
-  PartnerKeysController, PartnerWebhooksController, PartnerReadinessController, PartnerInsuranceController, PartnerLoanProductsController, PartnerClaimsController];
+  PartnerKeysController, PartnerWebhooksController, PartnerReadinessController, PartnerInsuranceController, PartnerLoanProductsController, PartnerClaimsController, PartnerLoansController];

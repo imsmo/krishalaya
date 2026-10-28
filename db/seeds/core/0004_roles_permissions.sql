@@ -358,7 +358,10 @@ BEGIN
       -- [PC-56 PARTNER-2a · founder Q6] migration 0228 grants it to every partner role (bound by scope); here the row, inserted where missing
       ('partner.insurance.read',      'Partner console: read this insurer''s own products and the policies written on them — policy facts only, never a policyholder''s identity', 'M19'),
       -- [PC-56 PARTNER-3a · founder Q4] migration 0230 grants it to every partner role (bound by scope); here the row, inserted where missing
-      ('partner.claims.read',         'Partner console: read the claims on this insurer''s own products — claim facts only, never a claimant', 'M19')
+      ('partner.claims.read',         'Partner console: read the claims on this insurer''s own products — claim facts only, never a claimant', 'M19'),
+      -- [PC-56 PARTNER-4a · founder 4a-2] migration 0231 grants it to every partner role (bound by scope); here the row, inserted where
+      -- missing. NAMED EXPLICITLY, never left to the `LIKE 'partner.%'` line below — that line grants partner_admin ALONE.
+      ('partner.loans.read',          'Partner console: read the loans on this lender''s own book — loan facts only, never a borrower', 'M19')
     ON CONFLICT (code) DO NOTHING;
     INSERT INTO role_permissions (role_id, permission_code)
     SELECT r.id, p.code FROM roles r JOIN permissions p ON

@@ -20,6 +20,10 @@
 //   • PC-56 PARTNER-3a: + `insurance.claims.{list, get, counts}` — the claim FACTS on the insurer's own products (oldest first) and their COUNTS
 //     in an FY window; the types carry no claimant, description, surveyor, report, note, payout or tenant field. Read-only: no decide /
 //     settle / assign / flag method exists.
+//   • PC-56 PARTNER-4a: + `loans.{list, get, repayments, counts}` — the LOAN FACTS on the lender's OWN book (newest first), one loan's
+//     RECORDED repayment history and the COUNTS + bigint sums in an FY window. The types carry no borrower, channel, bank account,
+//     narrative, fee anchor or tenant field. Read-only: no disburse / write-off / restructure / KCC method exists, and none ever will from
+//     a console — `decide.disburse` above is the refusal, not the act. Another lender's or an absent id → 404 `PARTNER_LOAN_NOT_FOUND`.
 //   • PC-56 PARTNER-2b: + `insurance.issuance(q)` — the `proposed` queue on the insurer's own products (a read; nothing is issued).
 //   • PC-56 PARTNER-2a: `insurance.{dashboard, products, product, policies, policy}` — an insurer's own book, policy facts only (no holder,
 //     subject, payment or tenant field exists on the types); `insurance` OFF → 404 `PARTNER_INSURANCE_SWITCHED_OFF`.
@@ -36,6 +40,9 @@ export interface PartnerMe {
   realm: 'partner';
 }
 export type PartnerApplicationStatus = 'submitted' | 'under_review' | 'approved' | 'rejected' | 'withdrawn' | 'disbursed';
+/** PC-56 PARTNER-4a — the FIVE loan statuses the platform can produce. `loan_status` holds a sixth, `transferred`, which NOTHING writes;
+ *  it is refused by name and is not offered as a filter. */
+export type PartnerBookLoanStatus = 'active' | 'overdue' | 'restructured' | 'closed' | 'written_off';
 export interface PartnerApplication {
   id: string;
   /** Opaque: the application id. There is never an applicant user id or a name. */
@@ -283,6 +290,77 @@ class PartnerLoanProductsApi {
   }
 }
 
+/** PC-56 PARTNER-4a (founder 4a-2) — ONE loan on the lender's own book: LOAN FACTS ONLY. No person field exists on the type (no borrower,
+ *  no applicant, no author), no repayment channel, no bank account, no narrative, no ledger anchor and no `tenantId` — the cooperative is
+ *  named by its PUBLIC display name in `fpoName`. Money is a bigint minor-unit STRING; the rate is INTEGER basis points, never a
+ *  percentage. `maturityDate` and `nextDueDate` are NULL on every loan the platform opens: there is no instalment schedule. */
+export interface PartnerBookLoan {
+  /** The loan's id — its REFERENCE (there is no loan number on the platform). */
+  id: string;
+  /** The application's id — its REFERENCE (`partner_app_ref` is never written). */
+  applicationId: string;
+  productId: string;
+  productName: string | null;
+  /** A platform `loan_kind` code (kcc, crop, dairy …), or null ("not recorded"). */
+  kindCode: string | null;
+  /** The cooperative's (FPO's) PUBLIC display name, or null. */
+  fpoName: string | null;
+  principalMinor: string;
+  /** INTEGER basis points, stamped at disbursal. */
+  interestAprBps: number;
+  disbursedAt: string | null;
+  /** NULL on every loan the platform opens — "no maturity date recorded". */
+  maturityDate: string | null;
+  status: string;
+  outstandingMinor: string;
+  /** NULL likewise — "no next due date recorded". */
+  nextDueDate: string | null;
+  openedAt: string | null;
+  lastChangedAt: string | null;
+}
+export interface PartnerBookPage { items: PartnerBookLoan[]; nextCursor: string | null; limit: number; computedAt: string | null }
+/** One RECORDED repayment. A row is created AT PAYMENT, so `dueDate` is not an instalment date and nothing here is "on time". */
+export interface PartnerBookRepayment {
+  id: string; loanId: string; dueDate: string | null; amountDueMinor: string; amountPaidMinor: string;
+  paidAt: string | null; recordedAt: string | null;
+}
+export interface PartnerBookRepaymentsPage { items: PartnerBookRepayment[]; limit: number; computedAt: string | null }
+/** PC-56 PARTNER-4a — COUNTS and bigint SUMS of the loans OPENED in [from, to) (IST days; by default the current FY): no ratio, no
+ *  percentage, no average, no PAR. */
+export interface PartnerBookCounts {
+  from: string; to: string; timeZone: string; fy: string | null; total: number;
+  byStatus: Record<string, number>; byKind: Record<string, number>;
+  outstandingByKindMinor: Record<string, string>; principalByKindMinor: Record<string, string>;
+  servicing: { count: number; outstandingMinor: string };
+  restructured: number;
+  writtenOff: { count: number; outstandingMinor: string };
+  computedAt: string;
+}
+
+class PartnerBookApi {
+  constructor(private readonly http: HttpClient) {}
+  /** This lender's own book, NEWEST first. Loop while `nextCursor` is non-null. */
+  async list(q: { status?: PartnerBookLoanStatus; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<PartnerBookPage> {
+    const r = await this.http.request<PartnerBookLoan[]>('GET', 'partner/loans', { query: { status: q.status, cursor: q.cursor, limit: q.limit }, signal });
+    const m = (r.meta ?? {}) as { nextCursor?: string | null; limit?: number; computedAt?: string };
+    return { items: r.data, nextCursor: m.nextCursor ?? null, limit: m.limit ?? r.data.length, computedAt: m.computedAt ?? null };
+  }
+  /** One loan of this lender's book; another lender's or an absent id → 404 `PARTNER_LOAN_NOT_FOUND`. */
+  async get(id: string, signal?: AbortSignal): Promise<PartnerBookLoan & { computedAt: string }> {
+    return (await this.http.request<PartnerBookLoan & { computedAt: string }>('GET', `partner/loans/${encodeURIComponent(id)}`, { signal })).data;
+  }
+  /** One loan's RECORDED repayment history (never the channel). An unowned loan answers the same 404 as an absent one. */
+  async repayments(id: string, q: { limit?: number } = {}, signal?: AbortSignal): Promise<PartnerBookRepaymentsPage> {
+    const r = await this.http.request<PartnerBookRepayment[]>('GET', `partner/loans/${encodeURIComponent(id)}/repayments`, { query: { limit: q.limit }, signal });
+    const m = (r.meta ?? {}) as { limit?: number; computedAt?: string };
+    return { items: r.data, limit: m.limit ?? r.data.length, computedAt: m.computedAt ?? null };
+  }
+  /** The counts and bigint sums in a window of IST days; omit both dates for the current FY (the database answers it). */
+  async counts(q: { from?: string; to?: string } = {}, signal?: AbortSignal): Promise<PartnerBookCounts> {
+    return (await this.http.request<PartnerBookCounts>('GET', 'partner/loans/counts', { query: { from: q.from, to: q.to }, signal })).data;
+  }
+}
+
 class PartnerAuth {
   constructor(private readonly http: HttpClient) {}
   /** The phone OTP (the platform's — enumeration-safe). Anonymous. */
@@ -417,11 +495,13 @@ export class PartnerResource {
   readonly insurance: PartnerInsuranceApi;
   /** PC-56 PARTNER-2c · a lender's own loan products' terms + the consented 30-day count (read-only; every read audited server-side). */
   readonly loanProducts: PartnerLoanProductsApi;
+  /** PC-56 PARTNER-4a · a lender's own loan book: loan facts, one loan's recorded repayments, the FY counts (read-only; every read audited). */
+  readonly loans: PartnerBookApi;
   constructor(private readonly http: HttpClient) {
     this.auth = new PartnerAuth(http); this.applications = new PartnerApplications(http); this.decide = new PartnerDecide(http);
     this.team = new PartnerTeamApi(http); this.invites = new PartnerInvites(http); this.twoFactor = new PartnerMe2fa(http);
     this.keys = new PartnerKeysApi(http); this.webhooks = new PartnerWebhooksApi(http); this.insurance = new PartnerInsuranceApi(http);
-    this.loanProducts = new PartnerLoanProductsApi(http);
+    this.loanProducts = new PartnerLoanProductsApi(http); this.loans = new PartnerBookApi(http);
   }
   /** PC-56 PARTNER-1b · the six readiness facts + computedAt (any member of the partner). */
   async readiness(signal?: AbortSignal): Promise<PartnerReadiness> { return (await this.http.request<PartnerReadiness>('GET', 'partner/readiness', { signal })).data; }

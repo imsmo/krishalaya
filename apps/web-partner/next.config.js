@@ -35,7 +35,7 @@ const nextConfig = {
   webpack: (config) => { config.resolve.symlinks = false; return config; },
   // PC-56 PARTNER-2a (survey E3): the four DEV-24 insurance routes moved to the canon's own `insurer/*` paths — a real HTTP 307
   // (permanent: false) answered before any page runs (a page-level redirect would stream behind app/loading.tsx as a 200). Mirrors
-  // src/features/partner2/refusals.ts INSURANCE_REDIRECTS + LENDER_REDIRECTS (pinned equal by test-render/not-yet.render.test.tsx). PC-56 PARTNER-3a: the claims pair too (CLAIMS_REDIRECTS).
+  // src/features/partner2/refusals.ts INSURANCE_REDIRECTS + LENDER_REDIRECTS (pinned equal by test-render/not-yet.render.test.tsx). PC-56 PARTNER-3a: the claims pair too (CLAIMS_REDIRECTS); PARTNER-4a: the lender's book (LENDER_BOOK_REDIRECTS).
   async redirects() {
     return [
       { source: '/insurance-products', destination: '/insurer/products', permanent: false },
@@ -48,6 +48,14 @@ const nextConfig = {
       // PC-56 PARTNER-3a: the DEV-24 claims pair (not-yet since PARTNER-0) → the canon's `insurer/claims` (mirrors CLAIMS_REDIRECTS in src/features/partner3/refusals.ts)
       { source: '/insurance-claims', destination: '/insurer/claims', permanent: false },
       { source: '/insurance-claims/:id', destination: '/insurer/claims/:id', permanent: false },
+      // PC-56 PARTNER-4a (survey F-15): the PARTNER-0 loan queue and the two not-yet portfolio pages → the canon's `lender/queue` and
+      // `lender/portfolio`; and `/servicing`, whose dead console is deleted, → the lender's own book (mirrors LENDER_BOOK_REDIRECTS in
+      // src/features/partner4/refusals.ts)
+      { source: '/loan-queue', destination: '/lender/queue', permanent: false },
+      { source: '/loan-queue/:id', destination: '/lender/queue/:id', permanent: false },
+      { source: '/portfolio', destination: '/lender/portfolio', permanent: false },
+      { source: '/portfolio/:id', destination: '/lender/portfolio/:id', permanent: false },
+      { source: '/servicing', destination: '/lender/portfolio', permanent: false },
     ];
   },
   async headers() {

@@ -9,7 +9,8 @@
 // Not here, by founder D5: key minting, endpoint writes, a settlement account, an onboarding application. PC-56 PARTNER-1b adds the partner's
 // own keys (read + the one REVOKE), endpoints and deliveries (read-only) and the readiness facts — on the kv_partner axis through 0227. PC-56
 // PARTNER-2a adds the INSURER's own book (products + policy facts, read-only, every read audited) through 0228; PARTNER-3a the claim FACTS on
-// the insurer's own products (read-only, every read audited) through 0230. The machine realm
+// the insurer's own products (read-only, every read audited) through 0230; PARTNER-4a the LOAN FACTS on the LENDER's own book (read-only,
+// every read audited) through 0231, whose column grants also take the borrower's user id and the repayment channel off the axis entirely. The machine realm
 // `/v1/partner-api/*` (PartnerApiModule, 0090) is untouched and still OFF.
 import { Inject, Module, OnModuleInit } from '@nestjs/common';
 import { IdentityModule } from '../identity/identity.module';
@@ -33,6 +34,7 @@ import { PartnerReadinessService } from './services/partner-readiness.service';
 import { PartnerInsuranceService } from './services/partner-insurance.service';
 import { PartnerLoanProductsService } from './services/partner-loan-products.service';
 import { PartnerClaimsService } from './services/partner-claims.service';
+import { PartnerLoansService } from './services/partner-loans.service';
 import { PartnerConsoleFlagGuard, PartnerInsuranceFlagGuard, PartnerPermissionsGuard, PartnerSessionGuard } from './guards/partner-session.guard';
 import { PartnerMemberInvitedHandler } from './events/handlers/partner-member-invited.handler';
 
@@ -40,7 +42,7 @@ import { PartnerMemberInvitedHandler } from './events/handlers/partner-member-in
   imports: [IdentityModule, FintechModule],
   controllers: [...PARTNER_CONSOLE_CONTROLLERS],
   providers: [PartnerConsoleRepository, PartnerAuthService, PartnerApplicationsService, PartnerTeamService, PartnerDashboardService,
-    PartnerKeysService, PartnerWebhooksService, PartnerReadinessService, PartnerInsuranceService, PartnerLoanProductsService, PartnerClaimsService,
+    PartnerKeysService, PartnerWebhooksService, PartnerReadinessService, PartnerInsuranceService, PartnerLoanProductsService, PartnerClaimsService, PartnerLoansService,
     PartnerConsoleFlagGuard, PartnerSessionGuard, PartnerPermissionsGuard, PartnerInsuranceFlagGuard, UiMessageRepository],
 })
 export class PartnerConsoleModule implements OnModuleInit {

@@ -115,3 +115,22 @@ const isoDay = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD');
 export const PartnerClaimCountsQuerySchema = z.object({ from: isoDay.optional(), to: isoDay.optional() }).strict()
   .refine((q) => (q.from === undefined) === (q.to === undefined), { message: 'from and to are given together, or neither' });
 export type PartnerClaimCountsQueryDto = z.infer<typeof PartnerClaimCountsQuerySchema>;
+
+// ── PC-56 PARTNER-4a ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+/** The lender's own book — keyset, NEWEST first; the status filter is the FIVE statuses the platform can produce (`transferred` has no
+ *  writer and is refused by name — asking for it is a 422 from zod, never an empty page that implies the state exists); limit ≤ 100. */
+export const PartnerLoansQuerySchema = z.object({
+  status: z.enum(['active', 'overdue', 'restructured', 'closed', 'written_off']).optional(),
+  cursor: z.string().max(200).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+}).strict();
+export type PartnerLoansQueryDto = z.infer<typeof PartnerLoansQuerySchema>;
+/** The loan counts' window — two IST calendar days [from, to), both or neither (neither = the current FY, answered by the database). */
+export const PartnerLoanCountsQuerySchema = z.object({ from: isoDay.optional(), to: isoDay.optional() }).strict()
+  .refine((q) => (q.from === undefined) === (q.to === undefined), { message: 'from and to are given together, or neither' });
+export type PartnerLoanCountsQueryDto = z.infer<typeof PartnerLoanCountsQuerySchema>;
+/** One loan's repayment history — a limit only. There is no channel filter: the channel is not on the axis at all (0231). */
+export const PartnerLoanRepaymentsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(200).optional(),
+}).strict();
+export type PartnerLoanRepaymentsQueryDto = z.infer<typeof PartnerLoanRepaymentsQuerySchema>;

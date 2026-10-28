@@ -1,8 +1,7 @@
 // apps/web-partner/src/test/application.spec.ts · unit tests for the pure lender loan-application helpers.
 import {
-  APP_STATUSES, isAppStatus, canTransition, isTerminal, canReview, canApprove, canReject, canDisburse,
+  APP_STATUSES, isAppStatus, canTransition, isTerminal, canReview, canApprove, canReject,
   statusKey, statusTone, rupeesToPaiseMinor, buildApprove, buildReject, LendingError,
-  LENDER_BOXES, isLenderBox, boxKey, buildListQuery, queueHref,
 } from '../features/lending/application';
 
 describe('loan-application state machine', () => {
@@ -25,8 +24,9 @@ describe('loan-application state machine', () => {
     expect(canReview('under_review')).toBe(false);
     expect(canApprove('under_review')).toBe(true);
     expect(canReject('under_review')).toBe(true);
-    expect(canDisburse('approved')).toBe(true);
-    expect(canDisburse('under_review')).toBe(false);
+    // PC-56 PARTNER-4a (survey F-14): there is no `canDisburse` any more — a partner never disburses, and the module
+    // exports no helper that could offer it. A reintroduced export would fail this assertion.
+    expect('canDisburse' in require('../features/lending/application')).toBe(false);
   });
   it('status key + tone', () => {
     expect(isAppStatus('approved')).toBe(true);
@@ -70,24 +70,7 @@ describe('builders', () => {
   });
 });
 
-describe('queue filters', () => {
-  it('lender boxes + keys', () => {
-    expect(LENDER_BOXES).toEqual(['review', 'all']);
-    expect(isLenderBox('review')).toBe(true);
-    expect(isLenderBox('all')).toBe(true);
-    expect(isLenderBox('mine')).toBe(false);
-    expect(isLenderBox(undefined)).toBe(false);
-    expect(boxKey('review')).toBe('loan.box.review');
-  });
-  it('buildListQuery normalises box/status/cursor', () => {
-    expect(buildListQuery({})).toEqual({ box: 'review', status: undefined, cursor: undefined, limit: 50 });
-    expect(buildListQuery({ box: 'all', status: 'approved', cursor: 'c1' })).toEqual({ box: 'all', status: 'approved', cursor: 'c1', limit: 50 });
-    expect(buildListQuery({ box: 'mine', status: 'nope', cursor: '  ' })).toEqual({ box: 'review', status: undefined, cursor: undefined, limit: 50 });
-  });
-  it('queueHref preserves filters, omits default box', () => {
-    expect(queueHref('review')).toBe('/loan-queue');
-    expect(queueHref('all')).toBe('/loan-queue?box=all');
-    expect(queueHref('review', 'under_review')).toBe('/loan-queue?status=under_review');
-    expect(queueHref('all', 'approved', 'cur2')).toBe('/loan-queue?box=all&status=approved&cursor=cur2');
-  });
-});
+// PC-56 PARTNER-4a: the `queue filters` block is GONE with the helpers it tested. The boxes, the status filter and the
+// queue's links moved to features/partner4/figures.ts at the canon's address `/lender/queue`, where `lender-figures.spec`
+// pins them — including the two things the old block could not: that only a whitelisted status enters the URL, and that a
+// malformed cursor is dropped rather than echoed.

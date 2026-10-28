@@ -9,6 +9,7 @@ import { gu } from '../i18n/gu';
 import { PARTNER1_REFUSALS } from '../features/partner1/refusals';
 import { PARTNER2_REFUSALS } from '../features/partner2/refusals';
 import { PARTNER3_REFUSALS } from '../features/partner3/refusals';
+import { PARTNER4_REFUSALS } from '../features/partner4/refusals';
 
 const CATS = { en, hi, gu } as const;
 const SCOPE = /^(dash\.|help\.|settings\.|partner\.|partner1\.)/;
@@ -370,3 +371,133 @@ describe('PC-56 PARTNER-3b · claims guard (what the insurer does not hold)', ()
   });
 });
 
+// PC-56 PARTNER-4a · THE LENDER READS ITS OWN BOOK (survey E6) — every `partner4.` value, every PARTNER-4 refusal, AND the eight surviving
+// `loan.` values (the prefix that had NO scope until now, which is how three shipped sentences offering disbursal survived — survey C-19 /
+// F-26) in en, hi and gu carry none of the canon's lending words: nothing disbursed from here, no co-approval, no response timer or clock, no
+// rating or model or weighting, no "verified platform income", no bank-data rails, no identity-number tail, no land record or acreage, no
+// scale-of-finance, no subsidy earned as an effective rate, no "%", no charge for opening a loan, no sanction letter, no instalment plan, no
+// punctuality figure, no arrears bucket or portfolio-at-risk rate, nothing away from the platform, none of the canon's role names, no dairy
+// bill, no animals, no money-record anchor, no seven-year promise, and no canon institution, person, place, bank, account tail or avatar.
+// Each regex is PROVEN on its own canon phrase below, and no `partner4.` value carries "%" at all. M8 (a percentage planted on the portfolio)
+// kills here; so would the return of `loan.disburseSubmit`.
+const SCOPE_4A = /^(partner4\.|loan\.)/;
+const FORBIDDEN_4A: readonly [string, RegExp, string][] = [
+  // the one act the platform refuses by name. `disbursed` as a STATE is legitimate and must stay printable, so the verb and the noun forms
+  // are banned and the past participle is not — the regex is proven on both directions below.
+  ['disburse', /disburs(e\b|es\b|e[- ]|al\b|als\b|ing\b|ement)/i, 'Disburse ready batch (8 · ₹9,20,000)'],
+  ['co-approve', /co-?approv/i, 'Co-approve — disburse now'],
+  ['SLA', /\bSLA\b/, 'SLA left ▴'],
+  ['clock', /clock/i, 'SLA clocks run server-side'],
+  ['credit score', /credit[- ]?scor/i, 'Credit score — explainable, consent-shared'],
+  ['742', /\b742\b/, 'Score (300–900) 742 · good'],
+  ['band', /\bband\b/i, 'the 300–900 band'],
+  ['model v', /model v/i, 'model v2.4 · computed 10 Jul'],
+  ['factor', /factor/i, 'the factors JSON block: income_consistency +186'],
+  ['verified platform income', /verified platform income/i, 'Verified platform income (12mo) ₹4,73,460'],
+  ['account aggregator', /account[- ]?aggregator/i, 'consent-shared via account-aggregator rails'],
+  ['Aadhaar', /aadhaa?r/i, 'Aadhaar (masked) verified XXXX-XXXX-8817'],
+  ['7/12', /\b7\/12\b/, 'Land record (7/12) verified'],
+  ['acre', /\bacres?\b/i, '4.2 acre · 2 parcels'],
+  ['scale of finance', /scale[- ]?of[- ]?finance/i, 'Limit set from scale-of-finance × acreage'],
+  ['subvention effective', /subvention[^.]*effective|effective[^.]*subvention/i, '4% effective with prompt-repayment subvention'],
+  ['effective', /effective/i, '7.0% APR − 3.0% subvention = 4.0% effective'],
+  ['origination fee', /origination fee/i, 'Platform origination fee posts to ledger'],
+  ['sanction letter', /sanction letter/i, 'Borrower gets the sanction letter PDF'],
+  ['EMI', /\bEMI\b/, 'EMI schedule generation'],
+  ['schedule', /schedul/i, 'Schedule & repayment history'],
+  ['on time', /\bon[- ]?time\b/i, '11/11 on time'],
+  ['DPD', /\bDPD\b/, 'Overdue 1–30 DPD · 31 loans'],
+  ['PAR', /\bPAR\b/, 'PAR > 30 1.9% outstanding basis'],
+  ['off-platform', /off[- ]?platform/i, 'vs 4.8% your off-platform agri book'],
+  ['credit officer', /credit[- ]?officer/i, 'Deciding needs credit-officer role'],
+  ['disbursal officer', /disbursal[- ]?officer/i, 'Needs disbursal officer role'],
+  ['servicing role', /servicing role/i, 'Servicing detail restricted — Needs servicing role'],
+  ['credit-risk role', /credit[- ]?risk role/i, 'Risk analytics need your bank\'s credit-risk role'],
+  ['collections role', /collections role/i, 'Collections view needs collections role'],
+  ['milk bill', /milk bill/i, 'deduction ₹4,180 ≈ 23% of her avg fortnightly milk bill'],
+  ['herd', /\bherds?\b/i, 'dairy product allows 2 active, herd-size-based'],
+  ['ledger anchor', /ledger anchor/i, 'Ledger anchors — disbursal LTX-…71204'],
+  ['LTX-', /LTX-/i, 'fee LTX-…71205'],
+  ['7 years', /\b7 years\b|seven years/i, 'Closed loans stay viewable for 7 years'],
+  ['code of conduct', /code of conduct/i, 'Collections code of conduct (platform-enforced)'],
+  ['Saurashtra', /Saurashtra/i, 'Saurashtra Gramin Bank'],
+  ['Gramin', /Gramin/i, 'Saurashtra Gramin Bank'],
+  ['Kotak', /Kotak/i, 'Kotak ••7726 (verified)'],
+  ['SBI', /\bSBI\b/, 'SBI ••2214 (verified)'],
+  ['Anand FPO', /Anand/i, 'Ramesh P. · Anand FPO'],
+  ['Mehsana', /Mehsana/i, 'Mehsana'],
+  ['Junagadh', /Junagadh/i, '4.2 acre · 2 parcels · Junagadh'],
+  ['LA-2026', /LA-2026/i, 'LA-2026-0710-08'],
+  ['LN-2026', /LN-2026/i, 'LN-2026-0114 dairy'],
+  ['KCC-2026', /KCC-2026/i, 'KCC-2026-0031 · limit ₹4,00,000'],
+  ['CASE-0041', /CASE-0041/i, 'CASE-0041'],
+  ['XXXX-XXXX', /XXXX-XXXX/i, 'XXXX-XXXX-8817'],
+  ['AJ', /\bAJ\b/, 'the avatar AJ'],
+  ['RBI ref', /RBI ref/i, 'RBI ref ••4471'],
+  ['Ben ', /\bBen\s/, 'Hetal Ben S.'],
+  ['Bhai', /Bhai/i, 'Popat Bhai K.'],
+];
+
+describe('PC-56 PARTNER-4a · claims guard (the lender\'s own book)', () => {
+  it('every 4a forbidden word is caught when planted once (each regex proven on its own canon phrase); an honest sentence passes all of them', () => {
+    for (const [name, re, planted] of FORBIDDEN_4A) expect([name, re.test(planted)]).toEqual([name, true]);
+    const honest = 'The money is the cooperative\'s own: it is the lender of record and it pays the farmer from its own console.';
+    for (const [name, re] of FORBIDDEN_4A) expect([name, re.test(honest)]).toEqual([name, false]);
+  });
+  it('the `disburse` regex bans the ACT and spares the STATE: a loan that was disbursed is still printable, in all three languages', () => {
+    const [, DISBURSE] = FORBIDDEN_4A[0];
+    for (const banned of ['Disburse ready batch', 'Disburse approved amount', 'Disbursal moves funds', 'disbursal officer', 'Co-approve — disburse now', 'disbursement batch', 'disbursing']) {
+      expect([banned, DISBURSE.test(banned)]).toEqual([banned, true]);
+    }
+    for (const allowed of ['Disbursed', 'disbursed (30d)', en['loan.st.disbursed'], hi['loan.st.disbursed'], gu['loan.st.disbursed'], en['partner4.loan.disbursed'], en['partner4.portfolio.colDisbursed']]) {
+      expect([allowed, DISBURSE.test(allowed)]).toEqual([allowed, false]);
+    }
+  });
+  it.each(Object.entries(CATS))('%s: no 4a claim in any partner4. or loan. value, nor in any PARTNER-4 refusal; and no "%" anywhere in the scope', (_l, cat) => {
+    const c = cat as Record<string, string>;
+    const keys = [...new Set([...Object.keys(c).filter((k) => SCOPE_4A.test(k)), ...PARTNER4_REFUSALS.map((r) => r.key)])];
+    expect(keys.length).toBeGreaterThan(200);
+    for (const k of keys) {
+      expect([k, typeof c[k]]).toEqual([k, 'string']);
+      for (const [name, re] of [...FORBIDDEN_4A.map(([n, r]) => [n, r] as const), ...FORBIDDEN]) expect([k, name, re.test(c[k])]).toEqual([k, name, false]);
+      expect([k, c[k].includes('%')]).toEqual([k, false]);
+    }
+  });
+  it('the `loan.` prefix is IN scope now, and the three sentences that OFFERED disbursal are gone from every catalogue (survey C-19)', () => {
+    for (const cat of [en, hi, gu]) {
+      const loanKeys = Object.keys(cat).filter((k) => k.startsWith('loan.'));
+      expect(loanKeys.every((k) => SCOPE_4A.test(k))).toBe(true);
+      expect(loanKeys.sort()).toEqual(['loan.st.approved', 'loan.st.disbursed', 'loan.st.draft', 'loan.st.rejected', 'loan.st.submitted', 'loan.st.under_review', 'loan.st.unknown', 'loan.st.withdrawn']);
+      for (const k of ['loan.disburseSubmit', 'loan.disburseHint', 'loan.ok.disburse']) expect([k, k in cat]).toEqual([k, false]);
+    }
+  });
+  it('founder 4a-2 / 4a-3 / 4a-4 / 4a-5 (en, verbatim): the wall, the consent nobody writes, the rating refused by name, the dates the platform does not hold', () => {
+    expect(en['partner4.loan.noMaturity']).toBe('no maturity date recorded');
+    expect(en['partner4.loan.noNextDue']).toBe('no next due date recorded');
+    expect(en['partner4.loan.noForeclosureFee']).toBe('No charge is made for closing this loan early — nothing on this platform charges one.');
+    expect(en['partner4.application.aprLine']).toBe('{apr} bps APR − {subvention} bps subsidy = {net} bps net of subsidy');
+    expect(en['partner4.export.notAvailable']).toBe('Exports are not available from the partner console yet; write to the partners mailbox.');
+    expect(en['partner4.application.consentGate']).toMatch(/the data goes from your view — as promised to the borrower/);
+    expect(en['partner4.application.consentNone']).toMatch(/No consent has been recorded for this application yet/);
+    expect(en['partner4.refusal.creditScore']).toMatch(/^No borrower is rated on this platform/);
+    expect(en['partner4.loan.servicingConsent']).toMatch(/not under the application consent, which ends with the decision/);
+    expect(en['partner4.portfolio.windowNote']).toMatch(/count the loans OPENED in this window/);
+    for (const k of ['partner4.loan.noForeclosureFee', 'partner4.application.consentGate', 'partner4.application.consentNone', 'partner4.refusal.creditScore', 'partner4.loan.servicingConsent']) {
+      expect([k, typeof hi[k] === 'string' && hi[k] !== en[k] && hi[k].length > 20, typeof gu[k] === 'string' && gu[k] !== en[k] && gu[k].length > 20]).toEqual([k, true, true]);
+    }
+  });
+  it('no lending view or page prints a percentage sign, a rate word or a money-record anchor (M8 kills here)', () => {
+    const fs2 = require('node:fs') as typeof import('node:fs');
+    const path2 = require('node:path') as typeof import('node:path');
+    const SRC = path2.join(__dirname, '..');
+    for (const rel of ['components/partner4/LenderQueueView.tsx', 'components/partner4/LenderApplicationView.tsx', 'components/partner4/LenderPortfolioView.tsx',
+      'components/partner4/LenderLoanView.tsx', 'components/partner4/LenderChain.tsx', 'components/partner4/LendingSubNav.tsx',
+      'app/lender/queue/page.tsx', 'app/lender/queue/[id]/page.tsx', 'app/lender/portfolio/page.tsx', 'app/lender/portfolio/[id]/page.tsx']) {
+      const code = fs2.readFileSync(path2.join(SRC, rel), 'utf8').split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
+      for (const [name, re] of [['%', /%/], ['toFixed', /toFixed/], ['percent', /percent/i], ['borrowerUserId', /borrowerUserId/], ['channel', /channel/i],
+        ['ledgerTxn', /ledgerTxn|ledger_txn/i], ['originationFee', /originationFee|origination_fee/i], ['narrative', /narrative/i]] as const) {
+        expect([rel, name, re.test(code)]).toEqual([rel, name, false]);
+      }
+    }
+  });
+});

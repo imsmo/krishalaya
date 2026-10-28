@@ -96,11 +96,22 @@ export class PartnerApiRepository {
     return perShard.flat();
   }
 
-  /** The lending servicing book. Money as bigint minor STRINGS (Law 2) — never a JS number. */
+  /**
+   * The lending servicing book. Money as bigint minor STRINGS (Law 2) — never a JS number.
+   *
+   * PC-56 PARTNER-4a (founder 4a-2, migration 0231): LOAN FACTS ONLY — kv_partner's grant on `loans` is now a COLUMN
+   * grant (id, application_id, tenant_id, partner_id, principal_minor, interest_apr_bps, disbursed_at, maturity_date,
+   * status, outstanding_minor, next_due_date, created_at, updated_at, deleted_at), so `borrower_user_id` is no longer
+   * selected (a SELECT of it is 42501) and no longer answered. The machine realm KEEPS `tenantId`: an FPO is an
+   * organisation, not a person, and a machine caller has no public-name resolver — the console (a person's screen)
+   * prints the FPO's public name instead and never returns the id (the 0228 ruling, applied again). `partner_api` is
+   * OFF at rollout 0 with no keys: no integrator is affected — but **the machine book's SHAPE HAS CHANGED, and SEC
+   * §8's own warning applies: any contract written against the old `lending/loans` shape is void** (report §8).
+   */
   async loans(partnerId: string, q: { status?: string; cursorId?: string; limit: number }): Promise<Array<Record<string, unknown>>> {
     const rows = await this.scatter(partnerId, async (c) => {
       const r = await c.query(
-        `SELECT id, tenant_id, borrower_user_id, principal_minor::text, interest_apr_bps, disbursed_at, maturity_date,
+        `SELECT id, tenant_id, principal_minor::text, interest_apr_bps, disbursed_at, maturity_date,
                 status::text AS status, outstanding_minor::text, next_due_date
            FROM loans
           WHERE partner_id = current_partner_id()
@@ -115,7 +126,7 @@ export class PartnerApiRepository {
       .sort((a: any, b: any) => (a.id < b.id ? 1 : a.id > b.id ? -1 : 0))
       .slice(0, q.limit)
       .map((x: any) => ({
-        id: x.id, tenantId: x.tenant_id, borrowerUserId: x.borrower_user_id,
+        id: x.id, tenantId: x.tenant_id,
         principalMinor: x.principal_minor, interestAprBps: Number(x.interest_apr_bps),
         disbursedAt: x.disbursed_at ? pgDate(x.disbursed_at) : null,
         maturityDate: x.maturity_date ? pgDate(x.maturity_date) : null,
@@ -124,12 +135,18 @@ export class PartnerApiRepository {
       }));
   }
 
-  /** Repayment schedule + what has actually been paid, for ONE loan of this partner's book. The EXISTS is evaluated
-   *  under the loans policy too, so two independent checks must agree (0090). */
+  /** What has actually been paid, for ONE loan of this partner's book. The EXISTS is evaluated
+   *  under the loans policy too, so two independent checks must agree (0090).
+   *
+   *  PC-56 PARTNER-4a (founder 4a-2, migration 0231): `channel` is GONE. kv_partner's grant on `loan_repayments` is
+   *  now a COLUMN grant without it (a SELECT of it is 42501). `milk_bill_deduction` is the only non-default value any
+   *  code writes, so the channel alone told a lender that this borrower is a dairy member of a cooperative and that
+   *  her milk bill was debited — which is exactly what W215's own "Consent status (servicing)" block promises a
+   *  lender does NOT see. The shape change is recorded for the S2 review (see `loans` above). */
   async loanRepayments(partnerId: string, loanId: string, limit: number): Promise<Array<Record<string, unknown>>> {
     const rows = await this.scatter(partnerId, async (c) => {
       const r = await c.query(
-        `SELECT r.id, r.loan_id, r.due_date, r.amount_due_minor::text, r.amount_paid_minor::text, r.paid_at, r.channel
+        `SELECT r.id, r.loan_id, r.due_date, r.amount_due_minor::text, r.amount_paid_minor::text, r.paid_at
            FROM loan_repayments r
           WHERE r.loan_id = $1
             AND EXISTS (SELECT 1 FROM loans l WHERE l.id = $1 AND l.partner_id = current_partner_id())
@@ -139,7 +156,7 @@ export class PartnerApiRepository {
     return rows.slice(0, limit).map((x: any) => ({
       id: x.id, loanId: x.loan_id, dueDate: pgDate(x.due_date),
       amountDueMinor: x.amount_due_minor, amountPaidMinor: x.amount_paid_minor,
-      paidAt: x.paid_at ? new Date(x.paid_at).toISOString() : null, channel: x.channel ?? null,
+      paidAt: x.paid_at ? new Date(x.paid_at).toISOString() : null,
     }));
   }
 

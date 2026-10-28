@@ -57,6 +57,9 @@ export const PARTNER_CODES: Readonly<Record<string, { status: number; message: s
   // PC-56 PARTNER-3a · the claims on the insurer's own products (founder Q4) — another insurer's claim and an absent id answer the same 404
   PARTNER_CLAIM_NOT_FOUND: { status: 404, message: 'This claim was not found.' },
   PARTNER_CLAIM_WINDOW_INVALID: { status: 422, message: 'The window is two calendar days, from before to, at most 400 days apart.' },
+  // PC-56 PARTNER-4a · the loans on the lender's own book (founder 4a-2) — another lender's loan and an absent id answer the same 404
+  PARTNER_LOAN_NOT_FOUND: { status: 404, message: 'This loan was not found.' },
+  PARTNER_LOAN_WINDOW_INVALID: { status: 422, message: 'The window is two calendar days, from before to, at most 400 days apart.' },
 });
 
 export function partnerRefused(code: string, details: Record<string, unknown> = {}): PartnerRefusedError {

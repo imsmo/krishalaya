@@ -3,7 +3,8 @@
 // KIND-AWARE: an INSURER organisation (`financial_partners.partner_kind = 'insurer'`, from `/me`) holding `partner.insurance.read` sees the
 // insurer group (Dashboard · Products · Policies · Issuance · Premiums · Reports — PARTNER-2b; + Claims between Premiums and Reports — PARTNER-3a;
 // Parametric is linked from the dashboard and the products page, never the nav) and NEVER the lending group; a LENDER
-// (`bank` / `nbfc` / `mfi` / `gold_loan`) holding `partner.applications.read` sees the lending group and never the insurer group; an asset
+// (`bank` / `nbfc` / `mfi` / `gold_loan`) holding `partner.applications.read` sees the lending group (Dashboard · Loan queue ·
+// Products · Portfolio — PARTNER-4a) and never the insurer group; an asset
 // manager (`amc`) sees neither vertical; an UNKNOWN kind (the `/me` read failed) keeps the lending group as before PARTNER-2 and never opens
 // the insurer group by a guess. The Account group is for every partner person, last. Within a visible group, only routes that exist in this
 // app (`live: true`) render as real links. Partner RBAC + RLS are enforced by the platform API per call — this nav never grants access.
@@ -52,12 +53,14 @@ export const PARTNER_NAV: readonly PartnerNavItem[] = [
   { href: '/settlements', labelKey: 'nav.settlements', group: 'common', live: true },
   { href: '/consents', labelKey: 'nav.consents', group: 'common', live: true },
   // lending vertical (financial partners)
-  { href: '/loan-queue', labelKey: 'nav.loanQueue', group: 'lending', live: true },
+  // PC-56 PARTNER-4a (survey C-18 / F-15): the group is Dashboard · Loan queue · Products · Portfolio — FOUR items, all four of them real
+  // pages at the canon's own addresses. `/profile` and `/servicing` are GONE: `/profile` rendered <NotYet> while the nav marked it
+  // `live: true` (three real links that landed on "not yet available"), and the dead servicing console is deleted. PARTNER-4b's
+  // Disbursements and Repayments are NOT added here — the lending pages' own sub-navigation carries them, dark, until they exist.
+  { href: '/lender/queue', labelKey: 'partner4.nav.loanQueue', group: 'lending', live: true },
   // PC-56 PARTNER-2c: the lender's own shelf at the canon's `lender/products` (the old `/products` answers 307 there)
   { href: '/lender/products', labelKey: 'partner2.nav.loanProducts', group: 'lending', live: true },
-  { href: '/profile', labelKey: 'nav.lenderProfile', group: 'lending', live: true },
-  { href: '/portfolio', labelKey: 'nav.portfolio', group: 'lending', live: true },
-  { href: '/servicing', labelKey: 'nav.servicing', group: 'lending', live: true },   // PC-55 B7 (W54-8)
+  { href: '/lender/portfolio', labelKey: 'partner4.nav.portfolio', group: 'lending', live: true },
   // logistics vertical (3PL partners)
   { href: '/shipments', labelKey: 'nav.shipments', group: 'fleet', live: true },
   { href: '/fleet', labelKey: 'nav.fleetSetup', group: 'fleet', live: true },

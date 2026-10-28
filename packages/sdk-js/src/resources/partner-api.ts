@@ -22,13 +22,19 @@ export interface PartnerPage<T> { rows: T[]; nextCursor: string | null; limit: n
 export interface PartnerIdentity {
   partnerId: string; keyId: string; scopes: string[]; rateLimitPerHour: number; capabilities: 'read-only';
 }
+/** PC-56 PARTNER-4a (founder 4a-2, migration 0231): LOAN FACTS ONLY. `borrowerUserId` is GONE — the grant on `loans`
+ *  is a column grant without `borrower_user_id`, so the realm cannot read it and no longer answers it. `tenantId`
+ *  stays: an FPO is an organisation, not a person (the 0228 ruling). **The shape changed: a contract written against
+ *  the old `lending/loans` shape is void** (SEC §8's own warning, applied again). */
 export interface PartnerLoan {
-  id: string; tenantId: string; borrowerUserId: string; principalMinor: string; interestAprBps: number;
+  id: string; tenantId: string; principalMinor: string; interestAprBps: number;
   disbursedAt: string | null; maturityDate: string | null; status: string; outstandingMinor: string; nextDueDate: string | null;
 }
+/** PC-56 PARTNER-4a: `channel` is GONE (0231's column grant drops it) — `milk_bill_deduction` is the only non-default
+ *  value code writes, so the channel alone said a borrower's milk cheque was tapped. */
 export interface PartnerLoanRepayment {
   id: string; loanId: string; dueDate: string; amountDueMinor: string; amountPaidMinor: string;
-  paidAt: string | null; channel: string | null;
+  paidAt: string | null;
 }
 export interface PartnerPolicy {
   id: string; tenantId: string; holderUserId: string; productId: string; policyNo: string | null;

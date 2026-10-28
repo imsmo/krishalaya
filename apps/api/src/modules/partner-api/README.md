@@ -96,3 +96,22 @@ Ownership routing above is unchanged. The CONTENT is no longer the raw outbox pa
 of ids, statuses, event type codes, minor-unit amounts and timestamps, each value type-checked. Never a user id (`claimantUserId`,
 `applicantUserId`, `holderUserId`), a note, a survey report, a payment id, a description, a surveyor. An event type with no projection
 → `{}` (never the raw payload). The S2 review now also covers this projection.
+
+## PC-56 PARTNER-4a (2026-10-28) — the LENDING book's shape changed again (founder 4a-2; survey F-5 / C-12 / C-13)
+Migration **0231** narrows 0090's two remaining full-table grants to COLUMN grants, the 0225 / 0228 way:
+
+- `loans` → `id, application_id, tenant_id, partner_id, principal_minor, interest_apr_bps, disbursed_at, maturity_date, status,
+  outstanding_minor, next_due_date, created_at, updated_at, deleted_at` — **never `borrower_user_id`, `created_by`, `updated_by`,
+  `origination_fee_txn_id`**;
+- `loan_repayments` → `id, loan_id, tenant_id, due_date, amount_due_minor, amount_paid_minor, paid_at, created_at` — **never `channel`**.
+
+So `GET /lending/loans` no longer answers **`borrowerUserId`** and `GET /lending/loans/:id/repayments` no longer answers **`channel`**
+(`repositories/partner-api.repository.ts`, edited in the SAME commit as the grant — without it the realm's own SELECT would be a 42501).
+`milk_bill_deduction` is the only non-default channel any code writes, so the channel alone told a lender that this borrower is a dairy
+member of a cooperative and that her milk cheque was debited. `tenantId` STAYS on both: an FPO is an organisation, not a person, and a
+machine caller has no public-name resolver (the 0228 ruling). 0090:24's "SELECT on exactly three relations" comment is now stale in a
+second way (a shipped migration's comment cannot be edited — recorded here, survey C-13).
+
+**SEC §8's own warning applies again: the machine book's SHAPE HAS CHANGED, and the S2 review must record it.** Any integrator contract
+written against the old `lending/loans` or `.../repayments` shape is void. `partner_api` is OFF at `rollout_pct` 0 with **0** keys, so no
+integrator is affected today — which is exactly why the narrowing happens now rather than after the first key is minted.

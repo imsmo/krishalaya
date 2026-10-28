@@ -392,6 +392,50 @@ export class PartnerConsoleRepository {
     });
   }
 
+  // ═════════════════════════════════════ PC-56 PARTNER-4a · the loans on the lender's own book (founder 4a-2) — on the axis, through 0231
+  // Loans and repayments carry their TENANT and live on that tenant's shard: the list and the counts SCATTER over every shard and merge in
+  // the service; the detail and the repayments are searched shard by shard. 0231's definers return the loan FACTS only (never
+  // borrower_user_id, created_by, updated_by, origination_fee_txn_id; never the repayment channel) AND 0231 narrowed kv_partner's grants on
+  // both tables to exactly those columns — so nothing here could select an identity column even if a definer were widened by mistake: the
+  // definer would not return it, and a hand-written query would be a 42501.
+
+  /** ONE shard's page of the loans on this lender's own book, NEWEST first, µs keyset (0231 `partner_loans`). */
+  async partnerLoansShard(shardId: number, partnerId: string, q: { status?: string; cursor?: KeysetCursor; limit: number }):
+    Promise<Array<Record<string, unknown> & { id: string; created_us: string }>> {
+    return this.withAxis(shardId, partnerId, async (c) => (await c.query(
+      `SELECT l.*, ${US_SQL('l.created_at')} AS created_us FROM partner_loans($1::text, $2::timestamptz, $3::uuid, $4::int) l`,
+      [q.status ?? null, q.cursor?.ts ?? null, q.cursor?.id ?? null, q.limit])).rows);
+  }
+
+  /** ONE loan on this lender's own book (0231 `partner_loan`), searched shard by shard; null for another lender's / an absent id. */
+  async partnerLoan(partnerId: string, id: string): Promise<Record<string, unknown> | null> {
+    for (let s = 0; s < this.shardCount; s++) {
+      const row = await this.withAxis(s, partnerId, async (c) => (await c.query(
+        `SELECT l.*, ${US_SQL('l.created_at')} AS created_us FROM partner_loan($1::uuid) l`, [id])).rows[0] ?? null);
+      if (row) return row as Record<string, unknown>;
+    }
+    return null;
+  }
+
+  /** The repayments RECORDED against ONE owned loan (0231 `partner_loan_repayments`), searched shard by shard. A loan with none, and a loan
+   *  that is not this lender's, both answer an empty array — the caller has already proven ownership with `partnerLoan`. */
+  async partnerLoanRepayments(partnerId: string, loanId: string, limit: number): Promise<Array<Record<string, unknown>>> {
+    for (let s = 0; s < this.shardCount; s++) {
+      const rows = await this.withAxis(s, partnerId, async (c) => (await c.query(
+        `SELECT r.*, ${US_SQL('r.created_at')} AS created_us FROM partner_loan_repayments($1::uuid, $2::int) r`, [loanId, limit])).rows);
+      if (rows.length > 0) return rows as Array<Record<string, unknown>>;
+    }
+    return [];
+  }
+
+  /** ONE shard's loan counts and bigint sums by `loan_kind` code × status, OPENED in [from, to) IST days (0231 `partner_loan_counts`). */
+  async partnerLoanCountsShard(shardId: number, partnerId: string, from: string, to: string):
+    Promise<Array<{ kind_code: string | null; status: string; n: string; outstanding_minor: string; principal_minor: string }>> {
+    return this.withAxis(shardId, partnerId, async (c) => (await c.query(
+      `SELECT kind_code, status, n::text, outstanding_minor::text, principal_minor::text FROM partner_loan_counts($1::date, $2::date)`,
+      [from, to])).rows);
+  }
+
   // ═════════════════════════════════════ control plane (kv_app, the caller's partner-realm transaction)
   /** The distinct ACTIVE partners a person belongs to (active partner rows only), with names for the chooser. Needs app.user_id = userId. */
   async membershipsOfUserTx(tx: TxContext, userId: string): Promise<Array<{ partnerId: string; name: string }>> {

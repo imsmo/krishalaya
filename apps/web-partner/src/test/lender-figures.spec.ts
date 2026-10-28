@@ -53,3 +53,164 @@ describe('PC-56 PARTNER-2c · the lender\'s terms row model', () => {
     expect([shelfState([P], null), shelfState([], null), shelfState(null, null), shelfState([P], 'off'), shelfState([], 'error')]).toEqual(['ok', 'empty', 'error', 'off', 'error']);
   });
 });
+
+// ══ PC-56 PARTNER-4a · THE LENDER READS ITS OWN BOOK — features/partner4/figures.ts ═══════════════════════════════════════════════════════
+// The server computes every figure; this block pins what the presentational layer may and may not do with them. The load-bearing assertion is
+// the last one: a SOURCE SCAN proving no function in the file can emit a "%" — there is no rate, no ratio, no average and no
+// portfolio-at-risk figure anywhere on a lending page (founder 4a-5 / 4a-7, survey E9). M8 plants one and this file plus the portfolio render
+// test both turn red.
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import {
+  APPLICATION_STATUSES, APPLICATION_STATUSES_VISIBLE, LOAN_KIND_CODES, LOAN_STATUSES, NOT_RECORDED, REFUSED_APPLICATION_STATUSES,
+  aprLine, countsState, headlineFigures, isLoanStatus, kindLabel, kindRows, listState, loanRef, loanStatusKey, loanStatusTone,
+  maturityText, netAprLine, nextDueText, portfolioHref, portfolioQuery, queueHref, queueQuery, statusRows, windowLabel,
+} from '../features/partner4/figures';
+
+const COUNTS = {
+  from: '2026-04-01', to: '2027-04-01', fy: '2026-27', total: 7,
+  byStatus: { active: 3, overdue: 1, restructured: 1, closed: 1, written_off: 1 },
+  byKind: { crop: 4, dairy: 1, kcc: 1, [NOT_RECORDED]: 1 },
+  outstandingByKindMinor: { crop: '400000', dairy: '100000', kcc: '10000', [NOT_RECORDED]: '0' },
+  principalByKindMinor: { crop: '800000', dairy: '160000', kcc: '70000', [NOT_RECORDED]: '5000' },
+  servicing: { count: 4, outstandingMinor: '450000' },
+  restructured: 1, writtenOff: { count: 1, outstandingMinor: '10000' },
+  computedAt: '2026-10-28T06:30:00.000Z',
+};
+
+describe('PC-56 PARTNER-4a · the lending vocabularies', () => {
+  it('FIVE loan statuses and NINE kinds; `transferred`, `docs_pending` and `closed`-as-an-application-state are not offered', () => {
+    expect(LOAN_STATUSES).toEqual(['active', 'overdue', 'restructured', 'closed', 'written_off']);
+    expect(isLoanStatus('transferred')).toBe(false);
+    expect(loanStatusKey('transferred')).toBe('partner4.status.unknown');
+    expect(loanStatusKey('active')).toBe('partner4.status.active');
+    expect([loanStatusTone('active'), loanStatusTone('overdue'), loanStatusTone('restructured'), loanStatusTone('closed'), loanStatusTone('transferred')]).toEqual(['ok', 'warn', 'info', 'muted', 'muted']);
+    expect(LOAN_KIND_CODES.length).toBe(9);
+    expect(APPLICATION_STATUSES.length).toBe(7);
+    expect(APPLICATION_STATUSES_VISIBLE).toEqual(['submitted', 'under_review', 'approved', 'rejected', 'withdrawn', 'disbursed']);
+    expect(REFUSED_APPLICATION_STATUSES).toEqual(['docs_pending', 'closed']);
+    for (const r of REFUSED_APPLICATION_STATUSES) expect([r, (APPLICATION_STATUSES as readonly string[]).includes(r)]).toEqual([r, false]);
+    expect(kindLabel(null)).toEqual({ key: 'partner4.kind.notRecorded' });
+    expect(kindLabel('crop')).toEqual({ key: 'partner4.kind.crop' });
+    expect(kindLabel('jlg')).toEqual({ raw: 'jlg' });           // named in a schema comment, never seeded — printed as stored, never invented
+  });
+  it('a reference is the id\'s head — there is no loan number on this platform', () => {
+    expect(loanRef('0192d2c4-c001-7000-8000-000000000001')).toBe('0192d2c4…');
+  });
+});
+
+describe('PC-56 PARTNER-4a · rates are INTEGER basis points, never a percentage', () => {
+  it('the loan\'s stamped rate and the product\'s three-part line are integers; a negative subsidy difference prints as the negative integer it is', () => {
+    expect(aprLine(1050)).toEqual({ key: 'partner4.loan.aprLine', vars: { apr: '1050' } });
+    expect(aprLine(10.5)).toEqual({ key: 'partner4.loan.aprLine', vars: { apr: '0' } });       // a float is not a rate this platform holds
+    expect(netAprLine(700, 300).vars).toEqual({ apr: '700', subvention: '300', net: '400' });
+    expect(netAprLine(300, 700).vars).toEqual({ apr: '300', subvention: '700', net: '-400' }); // a product priced BELOW its own subsidy
+    expect(netAprLine(0, 0).vars).toEqual({ apr: '0', subvention: '0', net: '0' });
+    expect(netAprLine(7.25, 3).vars).toEqual({ apr: '0', subvention: '3', net: '-3' });
+    for (const v of Object.values(netAprLine(700, 300).vars)) expect(/^-?\d+$/.test(v)).toBe(true);
+  });
+});
+
+describe('PC-56 PARTNER-4a · the dates this platform does not hold', () => {
+  it('a missing maturity and a missing next due date are SENTENCES, never a dash and never a guess', () => {
+    expect(maturityText(null)).toEqual({ key: 'partner4.loan.noMaturity' });
+    expect(maturityText(undefined)).toEqual({ key: 'partner4.loan.noMaturity' });
+    expect(maturityText('2029-02-09')).toEqual({ key: 'partner4.loan.maturity', vars: { date: '2029-02-09' } });
+    expect(nextDueText(null)).toEqual({ key: 'partner4.loan.noNextDue' });
+    expect(nextDueText('2026-07-17')).toEqual({ key: 'partner4.loan.nextDue', vars: { date: '2026-07-17' } });
+  });
+  it('a date reaches this layer as the calendar day the API already read with pgDate — nothing here re-parses one into a Date', () => {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'features', 'partner4', 'figures.ts'), 'utf8');
+    for (const [name, re] of [['new Date', /new Date\(/], ['toISOString', /toISOString/], ['Date.parse', /Date\.parse/], ['getFullYear', /getFullYear/]] as const) {
+      expect([name, re.test(src)]).toEqual([name, false]);
+    }
+  });
+});
+
+describe('PC-56 PARTNER-4a · the counts: integers and bigint strings, and the FY label the SERVER answered', () => {
+  it('the window label is the server\'s FY or the two days — never the browser\'s clock', () => {
+    expect(windowLabel(COUNTS)).toEqual({ key: 'partner4.portfolio.fy', vars: { fy: '2026-27' } });
+    expect(windowLabel({ from: '2026-01-01', to: '2026-02-01', fy: null })).toEqual({ key: 'partner4.portfolio.window', vars: { from: '2026-01-01', to: '2026-02-01' } });
+    expect(windowLabel(null)).toBeNull();
+  });
+  it('the four headline figures are a COUNT and, for two of them, a bigint minor-unit string — no average, no ratio', () => {
+    expect(headlineFigures(COUNTS).map((f) => [f.id, f.count, f.minor])).toEqual([
+      ['servicing', 4, '450000'], ['opened', 7, null], ['restructured', 1, null], ['written_off', 1, '10000']]);
+    expect(headlineFigures(null).map((f) => [f.count, f.minor])).toEqual([[0, '0'], [0, null], [0, null], [0, '0']]);
+    for (const f of headlineFigures(COUNTS)) {
+      expect([f.id, Number.isInteger(f.count)]).toEqual([f.id, true]);
+      if (f.minor !== null) expect([f.id, /^-?\d+$/.test(f.minor)]).toEqual([f.id, true]);
+    }
+  });
+  it('bigint sums over 2,000 loans of ₹50,000 stay exact past Number.MAX_SAFE_INTEGER', () => {
+    const big = (BigInt('5000000') * 2000n).toString();
+    const rows = kindRows({ ...COUNTS, byKind: { crop: 2000 }, outstandingByKindMinor: { crop: big }, principalByKindMinor: { crop: '9007199254740993' } });
+    const crop = rows.find((r) => r.code === 'crop');
+    expect(crop?.outstandingMinor).toBe('10000000000');
+    expect(crop?.principalMinor).toBe('9007199254740993');
+    // the point of keeping it a STRING: the same value through a JS number comes back a paisa short
+    expect(String(Number(crop?.principalMinor))).toBe('9007199254740992');
+    expect(crop?.principalMinor).not.toBe(String(Number(crop?.principalMinor)));
+  });
+  it('the kind rows are the nine codes, then any extra the server answered, then "not recorded" LAST — no bucket, no share', () => {
+    const rows = kindRows({ ...COUNTS, byKind: { ...COUNTS.byKind, jlg: 2 } });
+    expect(rows.map((r) => r.code)).toEqual([...LOAN_KIND_CODES, 'jlg', NOT_RECORDED]);
+    expect(rows[rows.length - 1].code).toBe(NOT_RECORDED);
+    for (const r of rows) {
+      expect([r.code, Number.isInteger(r.n)]).toEqual([r.code, true]);
+      expect([r.code, /^-?\d+$/.test(r.outstandingMinor), /^-?\d+$/.test(r.principalMinor)]).toEqual([r.code, true, true]);
+    }
+    expect(kindRows(null).every((r) => r.n === 0 && r.outstandingMinor === '0')).toBe(true);
+    // a malformed amount degrades to zero rather than to NaN or to a float
+    expect(kindRows({ ...COUNTS, outstandingByKindMinor: { crop: '4.5' } }).find((r) => r.code === 'crop')?.outstandingMinor).toBe('0');
+  });
+  it('the status rows are the five the platform can produce, 0 when none; a count is never a float', () => {
+    expect(statusRows(COUNTS.byStatus).map((r) => [r.status, r.n])).toEqual([['active', 3], ['overdue', 1], ['restructured', 1], ['closed', 1], ['written_off', 1]]);
+    expect(statusRows({ active: 2.5, overdue: -1 }).map((r) => r.n)).toEqual([0, 0, 0, 0, 0]);
+    expect(statusRows(undefined).map((r) => r.n)).toEqual([0, 0, 0, 0, 0]);
+  });
+  it('the page states: OFF as OFF, empty when nothing was opened in the window', () => {
+    expect([countsState(COUNTS, null), countsState({ total: 0 }, null), countsState(null, null), countsState(COUNTS, 'off'), countsState(COUNTS, 'error')]).toEqual(['ok', 'empty', 'error', 'off', 'error']);
+    expect([listState([1], null), listState([], null), listState(null, null), listState([1], 'off')]).toEqual(['ok', 'empty', 'error', 'off']);
+  });
+});
+
+describe('PC-56 PARTNER-4a · only a whitelisted filter and an opaque cursor ever enter a URL', () => {
+  it('the queue: a box, a status of the application machine, a URL-safe cursor — nothing else, and the default box is omitted', () => {
+    expect(queueHref('review')).toBe('/lender/queue');
+    expect(queueHref('all')).toBe('/lender/queue?box=all');
+    expect(queueHref('review', 'under_review')).toBe('/lender/queue?status=under_review');
+    expect(queueHref('all', 'approved', 'Y3Vyc29y')).toBe('/lender/queue?box=all&status=approved&cursor=Y3Vyc29y');
+    expect(queueHref('review', 'docs_pending')).toBe('/lender/queue');            // a status the machine cannot reach never enters the URL
+    expect(queueHref('review', undefined, 'not a cursor!')).toBe('/lender/queue'); // a malformed cursor is dropped, never echoed
+    expect(queueQuery({ box: 'mine', status: 'nope', cursor: 'x'.repeat(201) })).toEqual({ box: 'review', status: undefined, cursor: undefined });
+    expect(queueQuery({ box: ['all'], status: ['approved'], cursor: ['Y3Vyc29y'] })).toEqual({ box: 'all', status: 'approved', cursor: 'Y3Vyc29y' });
+    expect(queueQuery(undefined)).toEqual({ box: 'review', status: undefined, cursor: undefined });
+  });
+  it('the portfolio: a loan status of the five, a URL-safe cursor — and never `transferred`', () => {
+    expect(portfolioHref()).toBe('/lender/portfolio');
+    expect(portfolioHref('overdue')).toBe('/lender/portfolio?status=overdue');
+    expect(portfolioHref('transferred')).toBe('/lender/portfolio');
+    expect(portfolioQuery({ status: 'transferred' })).toEqual({ status: undefined, cursor: undefined });
+    expect(portfolioQuery({ status: 'written_off', cursor: 'Y3Vyc29y' })).toEqual({ status: 'written_off', cursor: 'Y3Vyc29y' });
+  });
+});
+
+describe('PC-56 PARTNER-4a · NO function in features/partner4/figures.ts can emit a percentage', () => {
+  it('the source carries no "%", no percent word and no division that would make a share (M8 kills here)', () => {
+    const raw = fs.readFileSync(path.join(__dirname, '..', 'features', 'partner4', 'figures.ts'), 'utf8');
+    // strip the comments: the file EXPLAINS why it prints no percentage, and the word may appear there
+    const code = raw.split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
+    for (const [name, re] of [['%', /%/], ['percent', /percent/i], ['toFixed', /toFixed/], ['/ 100', /\/\s*100\b/], ['ratio', /ratio/i], ['average', /average/i], ['Math.round', /Math\.round/]] as const) {
+      expect([name, re.test(code)]).toEqual([name, false]);
+    }
+  });
+  it('and no VALUE any of its functions returns carries one, over every shape this wave prints', () => {
+    const emitted = JSON.stringify([
+      aprLine(1050), netAprLine(700, 300), maturityText(null), maturityText('2029-02-09'), nextDueText(null),
+      windowLabel(COUNTS), headlineFigures(COUNTS), statusRows(COUNTS.byStatus), kindRows(COUNTS),
+      queueHref('all', 'approved', 'Y3Vyc29y'), portfolioHref('overdue', 'Y3Vyc29y'), loanRef('0192d2c4-c001-7000-8000-000000000001'),
+    ]);
+    expect(emitted).not.toContain('%');
+  });
+});

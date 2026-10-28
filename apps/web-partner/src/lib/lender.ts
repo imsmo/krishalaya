@@ -22,3 +22,5 @@ export async function lenderFailure(e: unknown): Promise<'off' | 'error'> {
   return failureOf(status, status === 404 ? await partnerConsoleSwitch() : 'unknown');
 }
 export const isLoanProductNotFound = (e: unknown) => e instanceof SdkError && e.status === 404 && e.code === 'PARTNER_LOAN_PRODUCT_NOT_FOUND';
+/** PC-56 PARTNER-4a: a loan outside this lender's own book and an absent id answer the SAME named 404 — never "not yours". */
+export const isLoanNotFound = (e: unknown) => e instanceof SdkError && e.status === 404 && e.code === 'PARTNER_LOAN_NOT_FOUND';

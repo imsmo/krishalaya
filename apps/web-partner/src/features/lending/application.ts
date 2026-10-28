@@ -33,8 +33,11 @@ export function canReview(s: AppStatus): boolean { return s === 'submitted'; }
 /** Approve / reject are only legal while under review. */
 export function canApprove(s: AppStatus): boolean { return s === 'under_review'; }
 export function canReject(s: AppStatus): boolean { return s === 'under_review'; }
-/** Disburse is only legal once approved (the API additionally enforces the cooling-off window). */
-export function canDisburse(s: AppStatus): boolean { return s === 'approved'; }
+// PC-56 PARTNER-4a (survey F-14 / C-19): `canDisburse` is GONE. A partner never disburses — the API refuses it by
+// name (`PARTNER_CANNOT_DISBURSE`) and the SDK's own `disburse()` throws after the 403. The helper was referenced
+// only by its own spec case, and the three shipped sentences that offered the act (`loan.disburseSubmit`,
+// `loan.disburseHint`, `loan.ok.disburse`) are deleted with it; the `loan.` prefix is now inside the guard's scope,
+// so they cannot come back silently.
 
 export function statusKey(status: string): string {
   return isAppStatus(status) ? `loan.st.${status}` : 'loan.st.unknown';
@@ -86,44 +89,10 @@ export function buildReject(rawNote: string | undefined): RejectBody {
   return { note };
 }
 
-// ---- queue filters (mirror QueryApplicationsSchema box/status) --------------------------------------------------
-// The API's `box` is one of mine|review|all. A lender is never the applicant, so the portal offers only the two
-// lender-relevant boxes: `review` (their decision queue, the default) and `all` (everything routed to them).
-export const LENDER_BOXES = ['review', 'all'] as const;
-export type LenderBox = (typeof LENDER_BOXES)[number];
-
-export function isLenderBox(v: string | undefined): v is LenderBox {
-  return v === 'review' || v === 'all';
-}
-export function boxKey(box: LenderBox): string {
-  return `loan.box.${box}`;
-}
-
-export interface ListQuery { box: LenderBox; status?: AppStatus; cursor?: string; limit: number; }
-/** Normalise the queue's raw query params into the exact shape the SDK list call expects (keyset, limit 50).
- *  Unknown box → 'review'; unknown status → omitted; blank cursor → omitted. Pure + float-free. */
-export function buildListQuery(raw: { box?: string; status?: string; cursor?: string }): ListQuery {
-  const box: LenderBox = isLenderBox(raw.box) ? raw.box : 'review';
-  const status = raw.status && isAppStatus(raw.status) ? raw.status : undefined;
-  const cursor = (raw.cursor ?? '').trim() || undefined;
-  return { box, status, cursor, limit: 50 };
-}
-/** Build a /loan-queue href preserving the active box + status (used by chips + the keyset pager). */
-export function queueHref(box: LenderBox, status?: AppStatus, cursor?: string): string {
-  const p = new URLSearchParams();
-  if (box !== 'review') p.set('box', box);
-  if (status) p.set('status', status);
-  if (cursor) p.set('cursor', cursor);
-  const qs = p.toString();
-  return qs ? `/loan-queue?${qs}` : '/loan-queue';
-}
-
-// ---- read-model types (mirror the loan-application API read-model) ----------------------------------------------
-export interface AppRow {
-  id: string; status: string; amountRequestedMinor: string; amountApprovedMinor: string | null;
-  purposeText: string | null; createdAt?: string;
-}
-export interface AppDetail extends AppRow {
-  applicantUserId: string; productId: string; partnerId: string;
-  nwrId: string | null; decisionAt: string | null; decisionNote: string | null; coolingOffUntil: string | null;
-}
+// ---- queue filters -------------------------------------------------------------------------------------------
+// PC-56 PARTNER-4a: the queue's boxes, its status filter, its links and its row model now live where the page that
+// prints them lives — features/partner4/figures.ts (`QUEUE_BOXES`, `queueQuery`, `queueHref`, `boxKey`) at the
+// canon's address `/lender/queue` — and `features/partner/application.ts` keeps `partnerListFilter`, which turns a
+// box into the partner read's filter. `LENDER_BOXES`, `isLenderBox`, `boxKey`, `buildListQuery`, `queueHref` and the
+// unread `AppRow` / `AppDetail` types are GONE from here: every one of them had no consumer left but its own spec
+// case once the pages moved, which is the same residue this wave deleted everywhere else (survey F-14).

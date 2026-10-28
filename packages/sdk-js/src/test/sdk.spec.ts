@@ -2012,7 +2012,8 @@ describe('loan-disbursement-batches', () => {
 // --- partner API realm (PC-55 A10) ---
 describe('partner-api realm', () => {
   it('never sends a user bearer token, carries the API key from getHeaders, and parses the cursor page', async () => {
-    const { fn, calls } = fakeFetch(() => ({ body: { data: [{ id: 'loan-1', tenantId: 't1', borrowerUserId: 'u1', principalMinor: '5000000', interestAprBps: 900, disbursedAt: '2026-07-01', maturityDate: null, status: 'active', outstandingMinor: '4200000', nextDueDate: '2026-09-01' }], meta: { nextCursor: 'loan-1', limit: 1 } } }));
+    // PC-56 PARTNER-4a: the machine book answers LOAN FACTS ONLY — there is no `borrowerUserId` in the shape any more (0231's column grant).
+    const { fn, calls } = fakeFetch(() => ({ body: { data: [{ id: 'loan-1', tenantId: 't1', principalMinor: '5000000', interestAprBps: 900, disbursedAt: '2026-07-01', maturityDate: null, status: 'active', outstandingMinor: '4200000', nextDueDate: '2026-09-01' }], meta: { nextCursor: 'loan-1', limit: 1 } } }));
     const c = createClient({
       ...base, fetchImpl: fn,
       // A real user token EXISTS on this client; the partner realm must still not attach it (a partner call has no

@@ -1,8 +1,31 @@
 // modules/fintech/controllers/v1/servicing.controller.ts · PC-54 W54-8 `fintech-servicing` (loan.manage).
+//
+// ------------------------------------------------------------------------------------------------------------------
+// [PC-56 PARTNER-4a · P4-B0 · founder 4a-1, 2026-10-28] **THE SWITCH THAT DID NOT SWITCH OFF.**
+//
+// Until this commit this controller carried `@UseGuards(AuthGuard, PermissionsGuard)` and NO feature flag, while its
+// three siblings (`loan-applications`, `loans`, `partners`) all carry `@FeatureFlag('fintech')` + `FeatureFlagGuard`.
+// There is no global guard (apps/api/src/main.ts / app.module.ts declare none), so with lending switched OFF for a
+// tenant its banker or tenant_admin could still reach all twelve routes below — and two of them write into the money
+// plane: `POST disbursement-batches` writes a `payout_batches` row and one `payouts` row per borrower (status
+// `queued`, provider `razorpayx`, purpose `loan_disbursal`), and `POST loans/:id/kcc/entries` raises a farmer's drawn
+// balance. Found at PARTNER-1 (survey_partner1.md B13), still open two waves later, and made worse by PC-55 A9 which
+// added the disbursement run to this same unflagged controller (survey_partner4.md F-1).
+//
+// The fix is the one `core/feature-flags/flags.guard.ts:7-23` was rewritten to make possible: **both** the decorator
+// AND the guard. The guard without the decorator gates nothing (no key is declared); the decorator without the guard
+// is metadata nobody reads. With the flag off every route answers 404 — invisible, not forbidden — and writes nothing.
+//
+// And (survey F-11, the other half of B13) the four money-adjacent writes that took NO Idempotency-Key now require
+// one, in the shape the module already uses (`loan-applications.controller.ts:29`, `:48`; `loans.controller.ts:36`;
+// `disbursement-batches` at :80 below): the KCC entry, the restructure proposal, the restructure transition and the
+// write-off. A double-submitted drawl used to write two entries and double a farmer's balance.
+// ------------------------------------------------------------------------------------------------------------------
 import { Controller, Get, Param, Post, Query, UseGuards, Headers, Req } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
+import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
 import { ZodBody } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
@@ -42,7 +65,8 @@ const DisbursementRunSchema = z.object({
 const WriteOffSchema = z.object({ reason: z.string().trim().min(3).max(500) }).strict();
 
 @Controller({ path: 'fintech/servicing', version: '1' })
-@UseGuards(AuthGuard, PermissionsGuard)
+@UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
+@FeatureFlag('fintech')
 @RequirePermissions(FintechPermissions.Manage)
 export class ServicingController {
   constructor(private readonly svc: ServicingService, private readonly disbursements: LoanDisbursementService, private readonly executor: LoanDisbursementExecuteHandler) {}
@@ -54,21 +78,26 @@ export class ServicingController {
   collections(@CurrentContext() ctx: RequestContext, @Query('limit') limit?: string) {
     return this.svc.collections(ctx.tenantId, this.actor(ctx), Number(limit) || 100).then((data) => ({ data }));
   }
+  // PC-56 PARTNER-4a · P4-B0: the four writes below are money-adjacent (a farmer's drawn balance, her restructured
+  // debt, a written-off loan) and now require an Idempotency-Key, like every other write in this module (Law 3).
   @Post('loans/:id/kcc/entries')
-  kccEntry(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(KccEntrySchema) dto: z.infer<typeof KccEntrySchema>) {
-    return this.svc.kccEntry(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data }));
+  kccEntry(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @Headers('idempotency-key') key: string, @ZodBody(KccEntrySchema) dto: z.infer<typeof KccEntrySchema>) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return this.svc.kccEntry(ctx.tenantId, this.actor(ctx), id, dto, key).then((data) => ({ data }));
   }
   @Get('loans/:id/kcc/ledger')
   kccLedger(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.kccLedger(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
   @Post('loans/:id/restructures')
-  propose(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(RestructureSchema) dto: z.infer<typeof RestructureSchema>) {
-    return this.svc.proposeRestructure(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data }));
+  propose(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @Headers('idempotency-key') key: string, @ZodBody(RestructureSchema) dto: z.infer<typeof RestructureSchema>) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return this.svc.proposeRestructure(ctx.tenantId, this.actor(ctx), id, dto, key).then((data) => ({ data }));
   }
   @Get('loans/:id/restructures')
   restructures(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.listRestructures(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
   @Post('restructures/:id/transition')
-  transition(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(TransitionSchema) dto: { to: string }) {
-    return this.svc.transitionRestructure(ctx.tenantId, this.actor(ctx), id, dto.to).then((data) => ({ data }));
+  transition(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @Headers('idempotency-key') key: string, @ZodBody(TransitionSchema) dto: { to: string }) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return this.svc.transitionRestructure(ctx.tenantId, this.actor(ctx), id, dto.to, key).then((data) => ({ data }));
   }
   // --- PC-55 A9 `loan-disbursement-batches`: approved credit → QUEUED payouts. Cooling-off is sacred:
   // an application inside its window is HELD BACK and reported with the instant it becomes eligible. ---
@@ -97,7 +126,8 @@ export class ServicingController {
   }
 
   @Post('loans/:id/write-off')
-  writeOff(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(WriteOffSchema) dto: { reason: string }) {
-    return this.svc.writeOff(ctx.tenantId, this.actor(ctx), id, dto.reason).then((data) => ({ data }));
+  writeOff(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @Headers('idempotency-key') key: string, @ZodBody(WriteOffSchema) dto: { reason: string }) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return this.svc.writeOff(ctx.tenantId, this.actor(ctx), id, dto.reason, key).then((data) => ({ data }));
   }
 }
