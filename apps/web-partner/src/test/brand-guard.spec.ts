@@ -180,3 +180,31 @@ describe('PC-56 PARTNER-4a · brand guard over the lender\'s own book (founder 4
     expect(/Saurashtra|Gramin|\bAJ\b|RBI ref/.test(nav)).toBe(false);
   });
 });
+
+describe('PC-56 PARTNER-5a · brand guard over the arrears pages (founder 5a-8: the platform\'s mark + the lender\'s own name; survey F-16)', () => {
+  // the file floor: every components/partner5/*.tsx, the two pages and every features/partner5/* module — found on disk, not listed by hand,
+  // so a new file in any of those folders is scanned without anyone remembering to add it
+  const DIRS = [path.join(SRC, 'components', 'partner5'), path.join(SRC, 'features', 'partner5'),
+    path.join(SRC, 'app', 'lender', 'portfolio', 'aging'), path.join(SRC, 'app', 'lender', 'portfolio', 'writeoffs')];
+  const mine = files().filter((f) => DIRS.some((d) => f.startsWith(d + path.sep))).map((f) => path.relative(SRC, f)).sort();
+  it('the floor holds: three views, two pages, two feature modules — all scanned', () => {
+    expect(mine).toEqual(expect.arrayContaining(['components/partner5/LenderAgingView.tsx', 'components/partner5/LenderChain5.tsx',
+      'components/partner5/LenderWriteoffsView.tsx', 'app/lender/portfolio/aging/page.tsx', 'app/lender/portfolio/writeoffs/page.tsx',
+      'features/partner5/figures.ts', 'features/partner5/refusals.ts']));
+    expect(mine.length).toBeGreaterThanOrEqual(7);
+  });
+  it('none carries the platform\'s name, a mailbox, a domain, or the canon\'s institution, person, place, phone, loan / case reference, scheme, rainfall figure or sha fragment', () => {
+    for (const rel of mine) {
+      const src = fs.readFileSync(path.join(SRC, rel), 'utf8').replace(/@krishalaya\/[a-z0-9-]+/g, '');
+      for (const lit of LITERALS) expect([rel, lit, src.includes(lit)]).toEqual([rel, lit, false]);
+      expect([rel, /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.(com|in|org|net|co)\b|krishalaya\.(in|com)|mailto:[a-z]|1800/i.test(src)]).toEqual([rel, false]);
+      expect([rel, /Saurashtra|Gramin|RBI ref|••4471|Bharat D|\+91|95•••|\bAJ\b|LN-20\d\d|CASE-0\d|PMFBY|rainfall|61% of normal|FPO office|2b1f|88c4|9e07|41aa/i.test(src)]).toEqual([rel, false]);
+    }
+  });
+  it('the views and pages name no borrower, cause, actor or date of write-off field', () => {
+    for (const rel of mine.filter((r) => !r.startsWith('features/'))) {
+      const src = fs.readFileSync(path.join(SRC, rel), 'utf8');
+      expect([rel, /borrowerUserId|borrower_user_id|borrowerName|writeOffReason|write_off_reason|writtenOffBy|writtenOffAt|caseRef|case_ref|proposedBy|checkerId|tenantId/.test(src)]).toEqual([rel, false]);
+    }
+  });
+});

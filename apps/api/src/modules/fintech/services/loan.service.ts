@@ -18,7 +18,7 @@ import { DomainEvent } from '../domain/fintech.events';
 import { LoanRepository } from '../repositories/loan.repository';
 import { LoanRepaymentRepository } from '../repositories/loan-repayment.repository';
 import { RepayLoanDto } from '../dto/create-loan-repayment.dto';
-import { LoanNotFoundError, FintechForbiddenError } from '../domain/fintech.errors';
+import { LoanNotFoundError, FintechForbiddenError, LoanRepayOwnWalletOnlyError } from '../domain/fintech.errors';
 import { FintechActor } from './loan-application.service';
 
 const tenantMain = (tenantId: string): AccountRef => ({ kind: 'tenant', tenantId, accountCode: TenantAccount.Main, currencyCode: 'INR' });
@@ -37,13 +37,17 @@ export class LoanService {
   ) {}
 
   async repay(tenantId: string, actor: FintechActor, loanId: string, idemKey: string, dto: RepayLoanDto, ip: string | null) {
-    if (!actor.canBorrow && !actor.canManage) throw new FintechForbiddenError('requires loan.borrow');
+    // PC-56 PARTNER-5a (founder 5a-4, survey F-3): the repay route debits the CALLER's own wallet only. The `canManage` branch that let a
+    // banker who also holds a farmer role debit ANY member's wallet "as a repayment" of that member's loan — bypassing the dairy module's
+    // 25% consent gate — is removed. The borrower's own repayment is unchanged; the milk-bill deduction below is UNCHANGED (the member's
+    // agreed rail, authorised where the cycle is decided). A desk-recorded cash receipt is a separate act for the money wave.
+    if (!actor.canBorrow) throw new FintechForbiddenError('requires loan.borrow');
     return this.idem.remember(idemKey, actor.userId, 'fintech.loan.repay', () =>
       timed(this.metrics, 'fintech.loan.repay', { tenant: tenantId }, () =>
         this.uow.run(tenantId, async (tx) => {
           const loan = await this.loans.getForUpdate(tx, tenantId, loanId);
           if (!loan) throw new LoanNotFoundError(loanId);
-          if (loan.borrowerUserId !== actor.userId && !actor.canManage) throw new FintechForbiddenError('only the borrower may repay this loan');
+          if (loan.borrowerUserId !== actor.userId) throw new LoanRepayOwnWalletOnlyError();   // before any ledger call
           const amount = BigInt(dto.amountMinor);
           loan.repay(amount, new Date());   // throws OverRepayment / not-servicing; closes at zero
           await this.loans.update(tx, loan);

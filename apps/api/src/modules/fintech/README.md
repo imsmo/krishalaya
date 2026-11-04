@@ -22,6 +22,12 @@ can never exceed the requested amount; the requested amount must be within the p
 ## Lifecycle (Law 5 — `domain/*.state.ts`)
 - **Application**: `submitted → under_review → approved → disbursed` (+ reject from review; withdraw before disbursal).
 - **Loan**: `active ↔ overdue`; `active|overdue → closed` (fully repaid) | `written_off`.
+  *Corrected by PC-56 PARTNER-5a (survey C-6 / C-7):* the machine allows `active ↔ overdue`, but **nothing drives it** —
+  `Loan.markOverdue()` / `cure()` have no caller and no job exists, so no loan becomes `overdue` except by hand-written SQL.
+  `restructured` is written by **no path** today: restructure activation is refused by name (`RESTRUCTURE_ACTIVATION_NOT_LIVE`, 409),
+  and a write-off is refused by name too (`WRITE_OFF_NOT_LIVE`, 409); `accepted` is refused from every session
+  (`RESTRUCTURE_ACCEPTANCE_NOT_LIVE`, 409), so no restructure progresses past `mediation`. The repay route debits the caller's own
+  wallet only (`LOAN_REPAY_OWN_WALLET_ONLY`, 403); the milk-bill deduction is unchanged.
 - No version columns → mutations lock **FOR UPDATE**. `loan_repayments` is partitioned by `created_at` (Law 8).
 
 ## Endpoints
@@ -51,6 +57,8 @@ can never exceed the requested amount; the requested amount must be within the p
 insurance (products/policies/claims), BNPL input financing, finance groups (SHG/JLG internal book),
 NWR-pledge collateral, origination-fee revenue leg, EMI schedule generation, parametric triggers,
 bank/NBFC partner-rail disbursement, and all jobs (EMI reminders, default early-warning, partner SLA).
+*(PC-56 PARTNER-5a, C-6: "default early-warning" includes the overdue flip itself — with no job, `overdue` has no driver, so every arrears
+figure on both planes is zero for that reason as well as for the missing due date.)*
 
 ## Tests
 - `__tests__/fintech-domain.spec.ts` — application + loan state machines, cooling-off gate, approved≤requested, repayment/outstanding math + close-at-zero.

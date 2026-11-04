@@ -5,6 +5,7 @@ import {
   PARTNER_NAV, hasLending, hasFleet, hasInsurer, visibleGroups, navForPartner, liveNavForPartner, soonNavForPartner, homeHref, navKind,
   partnerNoticeKey, FLEET_PERM, WILDCARD_PERM,
 } from '../features/nav/nav-model';
+import { LENDING_SUBNAV } from '../features/partner4/refusals';
 
 const set = (...p: string[]) => new Set(p);
 const ACCOUNT = ['/account/settings', '/account/api', '/account/webhooks', '/onboarding/status', '/help'];
@@ -112,6 +113,20 @@ describe('partner nav model (persona-aware)', () => {
     }
     // and no nav href is a route pattern at all (the KCC row lives in the sub-navigation, which resolves it against a loan)
     expect(PARTNER_NAV.filter((i) => i.href.includes('['))).toEqual([]);
+  });
+  // PC-56 PARTNER-5a · W222 and W223 are reached from the lending SUB-NAVIGATION only (survey F-16: total orphans in the canon) — never
+  // from the sidebar, for ANY kind and ANY permission set; the lending sidebar is still the same six, in the same order.
+  it('PC-56 PARTNER-5a · /lender/portfolio/aging and /lender/portfolio/writeoffs are in NO sidebar nav, for any kind; both are LIVE in LENDING_SUBNAV; the lending group is unchanged', () => {
+    const FIVE_A = ['/lender/portfolio/aging', '/lender/portfolio/writeoffs'];
+    expect(PARTNER_NAV.filter((i) => i.group === 'lending').map((i) => i.href)).toEqual(['/dashboard', '/lender/queue', '/lender/products',
+      '/lender/disbursements', '/lender/repayments', '/lender/portfolio']);
+    expect(PARTNER_NAV.filter((i) => FIVE_A.includes(i.href) || /aging|writeoff|partner5\./i.test(`${i.href} ${i.labelKey}`))).toEqual([]);
+    for (const [perms, kind] of [[PARTNER_READS, 'bank'], [PARTNER_READS, 'nbfc'], [PARTNER_READS, 'mfi'], [PARTNER_READS, 'gold_loan'],
+      [set(WILDCARD_PERM), 'bank'], [set(WILDCARD_PERM), null], [PARTNER_READS, 'insurer'], [PARTNER_READS, 'amc'], [PARTNER_READS, null], [set(), 'bank']] as const) {
+      const all = [...navForPartner(perms, kind), ...liveNavForPartner(perms, kind), ...soonNavForPartner(perms, kind)].map((i) => i.href);
+      for (const h of FIVE_A) expect([kind, h, all.includes(h)]).toEqual([kind, h, false]);
+    }
+    for (const h of FIVE_A) expect([h, LENDING_SUBNAV.find((i) => i.href === h)?.live]).toEqual([h, true]);
   });
   it('PC-56 PARTNER-2a · an asset manager sees neither vertical; an unknown kind keeps the lending group and never opens the insurer group', () => {
     expect(visibleGroups(PARTNER_READS, 'amc')).toEqual(['common', 'account']);

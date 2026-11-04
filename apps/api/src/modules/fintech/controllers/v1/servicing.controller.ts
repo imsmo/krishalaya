@@ -20,6 +20,11 @@
 // one, in the shape the module already uses (`loan-applications.controller.ts:29`, `:48`; `loans.controller.ts:36`;
 // `disbursement-batches` at :80 below): the KCC entry, the restructure proposal, the restructure transition and the
 // write-off. A double-submitted drawl used to write two entries and double a farmer's balance.
+//
+// [PC-56 PARTNER-5a · founder 5a-1 / 5a-2 / 5a-3, 2026-11-04] Routes UNCHANGED. `transition` to `activated` or `accepted` and every
+// `write-off` now answer 409 with the founder's sentence (RESTRUCTURE_ACTIVATION_NOT_LIVE / RESTRUCTURE_ACCEPTANCE_NOT_LIVE /
+// WRITE_OFF_NOT_LIVE). The Idempotency-Key requirement is KEPT and checked FIRST — a call without a key answers 400 before the refusal —
+// so the four writes keep one uniform contract (the 3a settle precedent chose "refusal first"; this module keeps the key first and says so).
 // ------------------------------------------------------------------------------------------------------------------
 import { Controller, Get, Param, Post, Query, UseGuards, Headers, Req } from '@nestjs/common';
 import type { Request } from 'express';

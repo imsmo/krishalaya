@@ -476,9 +476,13 @@ export const LENDER_BOOK_REDIRECTS: Readonly<Record<string, string>> = Object.fr
  *  PC-56 PARTNER-4c · W216 / W217 cannot be ORDINARY rows — their canon routes are `lender/kcc/[id]` and `lender/kcc/[id]/drawls`, which
  *  need a loan id — so the KCC row carries `needsLoanId` and is drawn ONLY where a loan id is in scope: on the loan page (W215), which is
  *  the inbound edge the canon never drew, and on the two KCC pages themselves. Everywhere else it is absent rather than dead. */
-export const LENDING_SUBNAV: readonly { href: string; key: string; wave: '4a' | '4b' | '4c'; live: boolean; needsLoanId?: boolean }[] = Object.freeze([
+export const LENDING_SUBNAV: readonly { href: string; key: string; wave: '4a' | '4b' | '4c' | '5a'; live: boolean; needsLoanId?: boolean }[] = Object.freeze([
   { href: '/lender/queue', key: 'partner4.subnav.queue', wave: '4a', live: true },
   { href: '/lender/portfolio', key: 'partner4.subnav.portfolio', wave: '4a', live: true },
+  // PC-56 PARTNER-5a (survey F-16): W222 and W223 are TOTAL ORPHANS in the canon — W212, their crumb parent, links to neither — so these
+  // two rows are the inbound edge, drawn beside Portfolio (the canon's crumb is "Lending › Portfolio › …"). Neither is a sidebar item.
+  { href: '/lender/portfolio/writeoffs', key: 'partner5.subnav.writeoffs', wave: '5a', live: true },
+  { href: '/lender/portfolio/aging', key: 'partner5.subnav.aging', wave: '5a', live: true },
   // PC-56 PARTNER-4b built both of these, so both are LIVE from this wave. `/lender/disbursements/[id]` (W218) is NOT a row: it is reached
   // from the pay-outs page and the sub-navigation only, which is the inbound edge the canon never drew (survey F-22).
   { href: '/lender/disbursements', key: 'partner4.subnav.disbursements', wave: '4b', live: true },

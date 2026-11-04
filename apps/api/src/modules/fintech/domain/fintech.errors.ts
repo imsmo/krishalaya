@@ -38,3 +38,42 @@ export class LoanDecidedByPartnerError extends AppError {
     super('LOAN_DECIDED_BY_PARTNER', 'This application is on a lending partner\'s product that the partner decides in its own console — your organisation disburses once the partner approves.', 403, { partnerId });
   }
 }
+
+// ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// PC-56 PARTNER-5a · THE FOUR NAMED REFUSALS (founder 5a-1 … 5a-4, 2026-11-04 — survey_partner5.md F-1, F-2, F-3; the 2a/3a precedent: a
+// tenant-plane first commit in the REFUSING direction only). Each carries the founder's sentence VERBATIM, and each is thrown BEFORE any
+// lock, any write and any ledger call, so a refused act leaves nothing behind. The real activation, the write-off record and the second
+// person are the fintech owner's founder-signed money wave (P5-B0 + P4-B9; P5-B1 + P4-B12); the borrower's own acceptance is P5-B4.
+// ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+/** 5a-1 · `activated` froze the loan (a `restructured` loan can be neither repaid, deducted, closed nor written off) and applied no term. */
+export class RestructureActivationNotLiveError extends DomainError {
+  constructor() {
+    super('RESTRUCTURE_ACTIVATION_NOT_LIVE',
+      'A restructure cannot be activated on the platform yet: the agreed terms would not reach the loan and the loan could no longer be repaid. Nothing was changed.',
+      409);
+  }
+}
+/** 5a-2 · `accepted` was a desk click recorded against the borrower's name; she has no screen to accept on. */
+export class RestructureAcceptanceNotLiveError extends DomainError {
+  constructor() {
+    super('RESTRUCTURE_ACCEPTANCE_NOT_LIVE',
+      'A borrower\'s acceptance cannot be recorded on the platform yet: the borrower has no screen to accept on, and no one may accept for her.',
+      409);
+  }
+}
+/** 5a-3 · a write-off was one person's click that kept no record of who, when or why, and threw the reason away. */
+export class WriteOffNotLiveError extends DomainError {
+  constructor() {
+    super('WRITE_OFF_NOT_LIVE',
+      'A write-off cannot be recorded on the platform yet: it would keep no record of who decided it, when, or why, and would need a second person. Nothing was changed.',
+      409);
+  }
+}
+/** 5a-4 · the repay route debits the CALLER's own wallet only; a desk can no longer debit a member's wallet "as a repayment". */
+export class LoanRepayOwnWalletOnlyError extends AppError {
+  constructor() {
+    super('LOAN_REPAY_OWN_WALLET_ONLY',
+      'A repayment is made from the borrower\'s own wallet by the borrower. A desk cannot repay a member\'s loan from her wallet.',
+      403);
+  }
+}

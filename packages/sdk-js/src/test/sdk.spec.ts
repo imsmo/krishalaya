@@ -1766,9 +1766,9 @@ describe('fintech servicing', () => {
     const dpd = await c.fintech.dpdBuckets();
     expect(calls[0].url).toBe('https://api.test/v1/fintech/servicing/dpd');
     expect(typeof dpd[0].outstandingMinor).toBe('string');
-    await c.fintech.kccEntry('l1', { entryKind: 'drawl', amountMinor: '350000', narrative: 'Drawl — kharif kit' });
+    await c.fintech.kccEntry('l1', { entryKind: 'drawl', amountMinor: '350000', narrative: 'Drawl — kharif kit' }, 'idem-kcc-0');
     expect(JSON.parse(String(calls[1].init.body)).amountMinor).toBe('350000');
-    await c.fintech.transitionRestructure('r1', 'checker_approved');
+    await c.fintech.transitionRestructure('r1', 'checker_approved', 'idem-tr-0');
     expect(calls[2].url).toContain('restructures/r1/transition');
   });
 });

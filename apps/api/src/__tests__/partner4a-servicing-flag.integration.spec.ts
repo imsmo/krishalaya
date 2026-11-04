@@ -12,7 +12,8 @@
 //       invisible, not forbidden), and NO `payouts`, `payout_batches`, `loan_disbursement_runs`, `loan_disbursement_run_items`,
 //       `kcc_drawl_ledger` or `loan_restructures` row is written; `loans.status` is unchanged.                              [M1, M2]
 //   (2) `fintech` ON: the same thirteen behave exactly as they do today — the preview, the maker-checker refusal, a run with a DISTINCT
-//       `confirmedBy`, a KCC entry, the ledger read, a restructure, its list, a transition, the runs list, and a write-off. **UPDATED BY
+//       `confirmedBy`, a KCC entry, the ledger read, a restructure, its list, a transition, the runs list, and a write-off (REFUSED BY NAME
+//       since PARTNER-5a, founder 5a-3 — 409 WRITE_OFF_NOT_LIVE, the loan unchanged). **UPDATED BY
 //       PARTNER-4b (founder 4b-1): the run with a distinct `confirmedBy` used to pin the write-ordering defect this spec found (a 23503 and
 //       a 500 on every database); 4b fixed the ordering, so the run now SUCCEEDS and its queued money-plane rows are asserted. Read the
 //       comment at the assertion.**
@@ -201,10 +202,14 @@ run('PC-56 PARTNER-4a · the lending servicing plane is behind the `fintech` fla
     // the listing and the single-run read still answer (the run that does not exist is a 404, not a 500)
     expect((await request(http).get('/v1/fintech/servicing/disbursement-batches').set(H())).status).toBe(200);
     expect((await request(http).get(`/v1/fintech/servicing/disbursement-batches/${randomUUID()}`).set(H())).status).toBe(404);
-    // a write-off from `overdue`, with a reason
+    // a write-off from `overdue`, with a reason.
+    // *** UPDATED BY PC-56 PARTNER-5a (founder 5a-3, 2026-11-04): A WRITE-OFF IS NOW REFUSED BY NAME. *** It used to succeed here (201,
+    // `written_off`) while keeping no record of who decided it, when or why, and discarding the reason it demanded (survey_partner5.md F-2).
+    // The route is still behind the flag (case 1) and still requires a key (case 3); with both satisfied it answers 409 WRITE_OFF_NOT_LIVE
+    // and the loan stays `overdue`. The full proof is partner5a-servicing-lockdown.integration.spec.ts case (4).
     const wo = await request(http).post(`/v1/fintech/servicing/loans/${overdueLoan}/write-off`).set(H()).set('idempotency-key', randomUUID()).send({ reason: 'the fixture reason' });
-    expect([wo.status, wo.body?.data?.status]).toEqual([201, 'written_off']);
-    expect(await loanStatus(overdueLoan)).toBe('written_off');
+    expect([wo.status, wo.body?.error?.code]).toEqual([409, 'WRITE_OFF_NOT_LIVE']);
+    expect(await loanStatus(overdueLoan)).toBe('overdue');
   }, 180_000);
 
   // ─────────────────────────────────────────────────────────────────────────────────────────────────────────── (3)

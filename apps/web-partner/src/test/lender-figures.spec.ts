@@ -299,3 +299,98 @@ describe('PC-56 PARTNER-4b · the pipeline, the collected window and the arrears
     expect(emitted).not.toMatch(/percent|ratio|average|onTime|dpd/i);
   });
 });
+
+// ══ PC-56 PARTNER-5a · THE BOOK IN ARREARS, AS COUNTS — W223's six rows and the sum-check, W222's summary (founder 5a-6 / 5a-7) ═══════════
+// eslint-disable-next-line import/first
+import {
+  AGING_ROWS, agingKey, agingRows, agingState, agingSumCheck, showRestructuredNote, windowLabel as windowLabel5, writeoffsHref, writeoffsQuery,
+  writeoffsState, writeoffsSummary,
+} from '../features/partner5/figures';
+
+const B5 = (count: number, outstandingMinor: string) => ({ count, outstandingMinor });
+/** 2,000 fixture loans of ₹50,000 each, spread across the six buckets, plus one bucket past Number.MAX_SAFE_INTEGER. */
+const DPD_2000 = {
+  buckets: {
+    no_due_date: B5(1200, (BigInt('5000000') * 1200n).toString()), not_due: B5(400, (BigInt('5000000') * 400n).toString()),
+    '1-30': B5(200, (BigInt('5000000') * 200n).toString()), '31-60': B5(100, (BigInt('5000000') * 100n).toString()),
+    '61-90': B5(60, (BigInt('5000000') * 60n).toString()), '90+': B5(40, '9007199254740993'),
+  },
+  servicing: B5(2000, (BigInt('5000000') * 1960n + BigInt('9007199254740993')).toString()),
+  computedAt: '2026-11-04T06:30:00.000Z',
+};
+const COUNTS_5A = { ...COUNTS, restructured: 2, writtenOff: { count: 2, outstandingMinor: '9007199254740993' } };
+
+describe('PC-56 PARTNER-5a · W223 the six rows, the sum-check and the restructured note', () => {
+  it('the SIX rows in the fixed order — no due date recorded FIRST — each an integer count and a bigint string; never a float', () => {
+    expect(AGING_ROWS).toEqual(['no_due_date', 'not_due', '1-30', '31-60', '61-90', '90+']);
+    const rows = agingRows(DPD_2000);
+    expect(rows.map((r) => [r.bucket, r.key, r.behind])).toEqual([
+      ['no_due_date', 'partner4.arrears.bucket.no_due_date', false], ['not_due', 'partner4.arrears.bucket.not_due', false],
+      ['1-30', 'partner4.arrears.bucket.1_30', true], ['31-60', 'partner4.arrears.bucket.31_60', true],
+      ['61-90', 'partner4.arrears.bucket.61_90', true], ['90+', 'partner4.arrears.bucket.90plus', true]]);
+    expect(rows.map((r) => r.n)).toEqual([1200, 400, 200, 100, 60, 40]);
+    expect(rows.reduce((a, r) => a + r.n, 0)).toBe(2000);
+    for (const r of rows) { expect(Number.isInteger(r.n)).toBe(true); expect(r.outstandingMinor).toMatch(/^\d+$/); }
+    expect(agingKey('90+')).toBe('partner4.arrears.bucket.90plus');
+    // a missing, float, negative or non-numeric figure never reaches the page as itself
+    expect(agingRows(null).map((r) => [r.n, r.outstandingMinor])).toEqual(Array(6).fill([0, '0']));
+    expect(agingRows({ ...DPD_2000, buckets: { no_due_date: { count: 1.5, outstandingMinor: '1.5' }, not_due: { count: -1, outstandingMinor: 'x' } } })
+      .slice(0, 2).map((r) => [r.n, r.outstandingMinor])).toEqual([[0, '0'], [0, '0']]);
+  });
+  it('BigInt sums over 2,000 fixture loans are EXACT past Number.MAX_SAFE_INTEGER, and the sum-check prints BOTH figures and their equality', () => {
+    const c = agingSumCheck(DPD_2000, COUNTS_5A);
+    const expected = (BigInt('5000000') * 1960n + BigInt('9007199254740993')).toString();
+    expect(c).toEqual({ sum: expected, total: expected, equal: true, restructured: 2 });
+    expect(c.sum).toBe('9007209054740993');
+    // the point of BigInt: the same arithmetic through JS numbers loses the last paisa
+    const floatSum = agingRows(DPD_2000).reduce((a, r) => a + Number(r.outstandingMinor), 0);
+    expect(String(floatSum)).not.toBe(c.sum);
+    // a mismatch is reported as one, with both figures — never hidden behind a tick
+    const off = agingSumCheck({ ...DPD_2000, servicing: B5(2000, '1') }, COUNTS_5A);
+    expect([off.equal, off.sum, off.total]).toEqual([false, expected, '1']);
+    expect(agingSumCheck(null, null)).toEqual({ sum: '0', total: '0', equal: true, restructured: 0 });
+  });
+  it('the restructured note is printed IFF the windowed counts read counted at least one restructured loan', () => {
+    expect(agingSumCheck(DPD_2000, COUNTS_5A).restructured).toBe(2);
+    expect(showRestructuredNote(agingSumCheck(DPD_2000, COUNTS_5A).restructured)).toBe(true);
+    expect(showRestructuredNote(agingSumCheck(DPD_2000, { ...COUNTS_5A, restructured: 0 }).restructured)).toBe(false);
+    expect([showRestructuredNote(1), showRestructuredNote(0), showRestructuredNote(-2), showRestructuredNote(1.5)]).toEqual([true, false, false, false]);
+  });
+  it('W223\'s states: OFF as OFF, error when either read is missing, EMPTY when nothing is being serviced', () => {
+    expect([agingState(DPD_2000, COUNTS_5A, null), agingState({ ...DPD_2000, servicing: B5(0, '0') }, COUNTS_5A, null), agingState(null, COUNTS_5A, null),
+      agingState(DPD_2000, null, null), agingState(DPD_2000, COUNTS_5A, 'off'), agingState(null, null, 'error')]).toEqual(['ok', 'empty', 'error', 'error', 'off', 'error']);
+  });
+});
+
+describe('PC-56 PARTNER-5a · W222 the written-off summary and the keyset link', () => {
+  it('the count and the bigint outstanding come from the WINDOWED counts read, with that window\'s label', () => {
+    expect(writeoffsSummary(COUNTS_5A)).toEqual({ count: 2, outstandingMinor: '9007199254740993', window: { key: 'partner4.portfolio.fy', vars: { fy: '2026-27' } } });
+    expect(writeoffsSummary(null)).toEqual({ count: 0, outstandingMinor: '0', window: null });
+    expect(windowLabel5({ ...COUNTS_5A, fy: null })).toEqual({ key: 'partner4.portfolio.window', vars: { from: '2026-04-01', to: '2027-04-01' } });
+  });
+  it('only an opaque URL-safe cursor ever enters the URL; the status is fixed by the page', () => {
+    expect([writeoffsHref(), writeoffsHref('Y3Vyc29y'), writeoffsHref('a b'), writeoffsHref('x'.repeat(201))])
+      .toEqual(['/lender/portfolio/writeoffs', '/lender/portfolio/writeoffs?cursor=Y3Vyc29y', '/lender/portfolio/writeoffs', '/lender/portfolio/writeoffs']);
+    expect([writeoffsQuery({ cursor: 'Y3Vyc29y' }), writeoffsQuery({ cursor: '../x' }), writeoffsQuery({ cursor: ['abc', 'def'] }), writeoffsQuery(undefined)])
+      .toEqual([{ cursor: 'Y3Vyc29y' }, { cursor: undefined }, { cursor: 'abc' }, { cursor: undefined }]);
+    expect([writeoffsState(COUNTS_5A, [1], null), writeoffsState(COUNTS_5A, [], null), writeoffsState(null, [], null), writeoffsState(COUNTS_5A, null, null), writeoffsState(null, null, 'off')])
+      .toEqual(['ok', 'empty', 'error', 'error', 'off']);
+  });
+});
+
+describe('PC-56 PARTNER-5a · NO function in features/partner5/figures.ts can emit a percentage (M5 has a twin here)', () => {
+  it('the source carries no "%", no toFixed, no percent word, no ratio and no division that would make a share', () => {
+    const raw = fs.readFileSync(path.join(__dirname, '..', 'features', 'partner5', 'figures.ts'), 'utf8');
+    const code = raw.split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
+    expect(code.length).toBeGreaterThan(1000);
+    for (const [name, re] of [['%', /%/], ['toFixed', /toFixed/], ['percent', /percent/i], ['/ 100', /\/\s*100\b/], ['ratio', /ratio/i], ['average', /average/i], ['Math.round', /Math\.round/], ['parseFloat', /parseFloat/]] as const) {
+      expect([name, re.test(code)]).toEqual([name, false]);
+    }
+  });
+  it('and no VALUE any of its functions returns carries one', () => {
+    const emitted = JSON.stringify([agingRows(DPD_2000), agingSumCheck(DPD_2000, COUNTS_5A), writeoffsSummary(COUNTS_5A), writeoffsHref('Y3Vyc29y'),
+      agingState(DPD_2000, COUNTS_5A, null), writeoffsState(COUNTS_5A, [], null)]);
+    expect(emitted).not.toContain('%');
+    expect(emitted).not.toMatch(/percent|ratio|average/i);
+  });
+});

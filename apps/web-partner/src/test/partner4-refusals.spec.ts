@@ -312,13 +312,17 @@ describe('PC-56 PARTNER-4a · the PARTNER-4 canon registry', () => {
     expect(PARTNER4_DELTAS.find((d) => d.id === 'w215_orphan')?.canon).toMatch(/ZERO inbound references/);
     expect(PARTNER4_DELTAS.find((d) => d.id === 'counts_window')?.built).toMatch(/OPENED in the FY window/);
   });
-  it('the lending sub-navigation: FIVE rows, all five LIVE — and PARTNER-4c\'s KCC row is the one that needs a loan id', () => {
+  // PC-56 PARTNER-5a · NAMED UPDATE: this case pinned FIVE rows; PARTNER-5a adds the two inbound edges the canon never drew to its total
+  // orphans W222 / W223 (survey F-16) beside Portfolio, so it now pins SEVEN — the two new rows keyed under `partner5.`, both live.
+  it('the lending sub-navigation: SEVEN rows, all seven LIVE — PARTNER-5a\'s two arrears rows beside Portfolio, and PARTNER-4c\'s KCC row the one that needs a loan id', () => {
     expect(LENDING_SUBNAV.map((i) => [i.href, i.wave, i.live])).toEqual([
       ['/lender/queue', '4a', true], ['/lender/portfolio', '4a', true],
+      ['/lender/portfolio/writeoffs', '5a', true], ['/lender/portfolio/aging', '5a', true],
       ['/lender/disbursements', '4b', true], ['/lender/repayments', '4b', true],
       ['/lender/kcc/[id]', '4c', true]]);
-    expect(LENDING_SUBNAV.filter((i) => i.live).length).toBe(5);
-    expect(new Set(LENDING_SUBNAV.map((i) => i.key)).size).toBe(5);
+    expect(LENDING_SUBNAV.filter((i) => i.live).length).toBe(7);
+    expect(new Set(LENDING_SUBNAV.map((i) => i.key)).size).toBe(7);
+    expect(LENDING_SUBNAV.filter((i) => i.wave === '5a').map((i) => i.key)).toEqual(['partner5.subnav.writeoffs', 'partner5.subnav.aging']);
     // exactly ONE row is addressed by a loan — and it is the only one whose href is a route pattern
     expect(LENDING_SUBNAV.filter((i) => i.needsLoanId).map((i) => i.href)).toEqual(['/lender/kcc/[id]']);
     expect(LENDING_SUBNAV.filter((i) => i.href.includes('[')).map((i) => i.needsLoanId)).toEqual([true]);

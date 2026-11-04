@@ -10,6 +10,7 @@ import { PARTNER1_REFUSALS } from '../features/partner1/refusals';
 import { PARTNER2_REFUSALS } from '../features/partner2/refusals';
 import { PARTNER3_REFUSALS } from '../features/partner3/refusals';
 import { PARTNER4_REFUSALS } from '../features/partner4/refusals';
+import { PARTNER5_REFUSALS } from '../features/partner5/refusals';
 
 const CATS = { en, hi, gu } as const;
 const SCOPE = /^(dash\.|help\.|settings\.|partner\.|partner1\.)/;
@@ -641,6 +642,119 @@ describe('PC-56 PARTNER-4a · claims guard (the lender\'s own book)', () => {
         ['balanceAfter', /balanceAfter|balance_after/i], ['entryKind', /entryKind|entry_kind/i], ['accrualBasis', /accrualBasis|accrual_basis/i],
         ['purposeCheck', /purposeCheck|purpose_check/i], ['destinationKind', /destinationKind|destination_kind/i],
         ['amountMinor (a ledger entry)', /drawlAmount|amount_minor/i]] as const) {
+        expect([rel, name, re.test(code)]).toEqual([rel, name, false]);
+      }
+    }
+  });
+});
+
+// ══ PC-56 PARTNER-5a · THE BOOK IN ARREARS, AS COUNTS (founder 5a-5 … 5a-8) ═══════════════════════════════════════════════════════════════
+// The words of W222 and W223 that promise a lender things this platform does not do: a share of the book, missed instalments, a review before
+// a classification, a cure that keeps the last bucket empty, a nightly job, a risk role, a recovery, a death, a herd, a scheme, a family's
+// help, a committee, a board's file, a record that cannot change, causes documented, a rule against a single officer — and the canon's
+// bank, its regulator reference and its loan numbers. Each regex is PROVEN on its own canon phrase, and kept to the canon's AFFIRMATIVE shape
+// where the bare word is the honest content of a refusal this scope prints (P4bR D-5; the FORBIDDEN_4C precedent). Applied to EVERY
+// `partner5.` value AND to every key PARTNER5_REFUSALS prints (including the PARTNER-4 keys it reuses), in en, hi and gu. M5 kills here.
+const SCOPE_5A = /^partner5\./;
+const FORBIDDEN_5A: readonly [string, RegExp, string][] = [
+  ['%', /%/, '95.4%'],
+  ['of book', /of book/i, '0.16% of book'],
+  ['missed inst', /missed inst/i, 'Arrears (missed inst.)'],
+  ['pre-NPA', /pre-?NPA/i, '90+ DPD (pre-NPA review)'],
+  ['cure machinery', /cure machinery|cure rate/i, 'the cure machinery (auto-deduction, early vet-visit-style nudges, mediation) works upstream'],
+  ['vet-visit', /vet[- ]visit/i, 'early vet-visit-style nudges'],
+  ['nightly', /nightly/i, 'Bucket math is server-computed nightly + live-adjusted.'],
+  ['credit-risk role', /credit[- ]risk role/i, 'Risk-committee view; needs credit-risk role.'],
+  ['recovered since', /recovered since|recoveries post/i, 'recoveries post to the ledger like any money'],
+  ['deceased', /deceased/i, 'Borrower deceased · crop insurance lapsed'],
+  ['herd loss', /herd loss/i, 'Herd loss (disease outbreak, documented)'],
+  ['PMFBY', /PMFBY/i, '₹18,000 (PMFBY claim, family-assisted)'],
+  ['family-assisted', /family[- ]assisted/i, 'PMFBY claim, family-assisted'],
+  ['committee sign-off', /committee sign-?off/i, 'Committee sign-off (your bank) + platform conduct check'],
+  ['board pack', /board pack/i, 'Export (board pack)'],
+  ['immutable', /immutable/i, 'Couldn’t load write-offs — Records are immutable.'],
+  // AFFIRMATIVE only: PARTNER-4 truthfully says the REPAYMENT record is append-only (it has a trigger, 0079); the canon's reassurance about
+  // the ledger / the write-off records is what is banned (4c-5 / 5a-8)
+  ['append-only (affirmative)', /ledger is append-?only|records are append-?only|append-?only and safe/i, 'The ledger is append-only and safe.'],
+  ['both causes documented', /both causes documented|causes documented/i, '2 of 2 write-offs (FY) · both causes documented — neither is ‘refused to pay’'],
+  ['never a single officer', /never a single officer/i, 'initiating needs committee workflow, never a single officer.'],
+  ['LN-20xx', /LN-20\d\d/, 'LN-2025-0387 dairy loan'],
+  ['Saurashtra', /Saurashtra/i, 'Saurashtra Gramin Bank'],
+  ['RBI ref', /RBI ref/i, 'RBI ref ••4471'],
+  // AFFIRMATIVE only: PARTNER-4's reused refusal truthfully says "There are no plan settings for your organisation to open."
+  ['plan settings (affirmative)', /see plan settings/i, 'This module is switched off for this tenant/plan (feature flag). See plan settings.'],
+  ['DPD', /\bDPD\b/, 'DPD Aging'],
+  ['current bucket', /\bcurrent\b/i, 'current 1,110 ₹6,52,66,000 ₹0 95.4%'],
+  ['the cure promise', /stays empty|works upstream/i, 'works upstream so the bottom bucket stays empty'],
+  ['closes your books', /closes your books|recovery stays open/i, 'A write-off closes your books, not the borrower’s story — recovery stays open, humane, and logged.'],
+  ['gate exists', /the gate exists/i, 'A clean book — the gate exists for the years that are not like this one.'],
+  ['CASE-0', /CASE-0\d/, 'CASE-0041'],
+  ['rainfall', /rainfall/i, 'June rainfall 61% of normal'],
+];
+/** The honest sentences 5a must NOT ban, because each is the content of a refusal or a page this scope prints. */
+const PERMITTED_5A = [
+  'No share of the book is printed for any row.',
+  'No figure for instalments that were missed is shown',
+  'No job works these rows out overnight or adjusts them afterwards.',
+  'There are no plan settings for your organisation to open. Nothing on this platform lets a partner switch its own modules on.',
+  'No record of a write-off exists to protect. The loan’s own row is an ordinary one, and nothing here claims it cannot be changed.',
+  'No document is prepared for your board from this console.',
+  'The record is append-only: a repayment is never edited or removed.',
+];
+/** The four sentences founder 5a-6 / 5a-7 pinned, VERBATIM. */
+const PINNED_5A: Readonly<Record<string, string>> = {
+  'partner5.aging.statement': 'No loan on this platform has a recorded due date yet, and nothing marks a loan overdue; every arrears row is therefore zero, and the count of loans with no due date says why.',
+  'partner5.aging.restructuredNote': 'Loans whose status is restructured sit outside these buckets and outside the servicing total; the count of such loans is shown beside the total.',
+  'partner5.writeoffs.statement': 'A write-off on this platform is recorded by the organisation that serves the farmer and keeps no cause, date, committee or recovery; a written-off loan cannot be repaid here yet. Shown are the loans opened in this window that are now written off, with the outstanding as recorded.',
+  'partner5.writeoffs.lockdownNote': 'No new write-off can be recorded on the platform until it keeps a record of who decided it, when and why, with a second person.',
+};
+
+describe('PC-56 PARTNER-5a · claims guard (the book in arrears, as counts)', () => {
+  it('every 5a forbidden word is caught when planted once (each regex proven on its own canon phrase); none of this scope\'s honest sentences trips one', () => {
+    for (const [name, re, planted] of FORBIDDEN_5A) expect([name, re.test(planted)]).toEqual([name, true]);
+    for (const ok of PERMITTED_5A) for (const [name, re] of FORBIDDEN_5A) expect([ok, name, re.test(ok)]).toEqual([ok, name, false]);
+    // the two NARROWED regexes spare the refusals this scope prints, and still catch the canon's own form
+    const re = (n: string) => (FORBIDDEN_5A.find(([x]) => x === n) as [string, RegExp, string])[1];
+    expect(re('plan settings (affirmative)').test(en['partner4.refusal.planSettings'])).toBe(false);
+    expect(re('plan settings (affirmative)').test('See plan settings.')).toBe(true);
+    expect(re('append-only (affirmative)').test(en['partner4.loan.noRepayments.body'] ?? '')).toBe(false);
+    expect(re('append-only (affirmative)').test('Records are append-only.')).toBe(true);
+    // and the four pinned sentences pass every one of them
+    for (const [k, v] of Object.entries(PINNED_5A)) for (const [name, r] of FORBIDDEN_5A) expect([k, name, r.test(v)]).toEqual([k, name, false]);
+  });
+  it.each(Object.entries(CATS))('%s: no 5a claim in any partner5. value, nor in any key PARTNER5_REFUSALS prints; and no "%" anywhere in the scope', (_l, cat) => {
+    const c = cat as Record<string, string>;
+    const keys = [...new Set([...Object.keys(c).filter((k) => SCOPE_5A.test(k)), ...PARTNER5_REFUSALS.map((r) => r.key)])];
+    expect(keys.length).toBeGreaterThan(70);
+    for (const k of keys) {
+      expect([k, typeof c[k]]).toEqual([k, 'string']);
+      for (const [name, re] of [...FORBIDDEN_5A.map(([n, r]) => [n, r] as const), ...FORBIDDEN]) expect([k, name, re.test(c[k])]).toEqual([k, name, false]);
+      expect([k, c[k].includes('%')]).toEqual([k, false]);
+    }
+  });
+  it('founder 5a-6 / 5a-7 (en, VERBATIM): the two statements and the two notes; present and distinct in hi and gu', () => {
+    for (const [k, v] of Object.entries(PINNED_5A)) {
+      expect([k, en[k]]).toEqual([k, v]);
+      expect([k, typeof hi[k] === 'string' && hi[k].length > 40 && hi[k] !== en[k], typeof gu[k] === 'string' && gu[k].length > 40 && gu[k] !== en[k]]).toEqual([k, true, true]);
+      expect([k, hi[k] !== gu[k]]).toEqual([k, true]);
+    }
+    expect(new Set(Object.keys(PINNED_5A).map((k) => en[k])).size).toBe(4);
+    // the sum-check prints BOTH figures (founder 5a-6)
+    expect(en['partner5.aging.sumCheck']).toMatch(/^The six rows add up to the servicing book’s outstanding: \{sum\} = \{total\}$/);
+  });
+  it('no arrears view or page names a percentage, a float formatter, a borrower, a channel, a reason or a cause in its CODE (M5 has a twin here)', () => {
+    const fs2 = require('node:fs') as typeof import('node:fs');
+    const path2 = require('node:path') as typeof import('node:path');
+    const SRC = path2.join(__dirname, '..');
+    const files = ['components/partner5/LenderAgingView.tsx', 'components/partner5/LenderWriteoffsView.tsx', 'components/partner5/LenderChain5.tsx',
+      'app/lender/portfolio/aging/page.tsx', 'app/lender/portfolio/writeoffs/page.tsx'];
+    expect(fs2.readdirSync(path2.join(SRC, 'components', 'partner5')).filter((f) => f.endsWith('.tsx')).sort())
+      .toEqual(['LenderAgingView.tsx', 'LenderChain5.tsx', 'LenderWriteoffsView.tsx']);
+    for (const rel of files) {
+      const code = fs2.readFileSync(path2.join(SRC, rel), 'utf8').split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
+      expect([rel, code.length > 300]).toEqual([rel, true]);
+      for (const [name, re] of [['%', /%/], ['toFixed', /toFixed/], ['percent', /percent/i], ['borrowerUserId', /borrowerUserId|borrower_user_id/],
+        ['channel', /channel/i], ['reason', /reason/i], ['cause', /cause/i], ['writtenOffAt', /writtenOffAt|written_off_at|writtenOffBy/i]] as const) {
         expect([rel, name, re.test(code)]).toEqual([rel, name, false]);
       }
     }

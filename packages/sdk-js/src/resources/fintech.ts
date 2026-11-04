@@ -1,6 +1,10 @@
 // @krishalaya/sdk-js · fintech servicing resource (PC-54 W54-8). The post-disbursal book, loan.manage-gated
 // server-side: DPD buckets, collections queue, the KCC drawl ledger (signed entries, server-run balance),
-// restructures (maker-checker), write-offs. Money bigint minor STRINGS (Law 2).
+// restructure proposals and transitions (the checker must differ from the proposer). Money bigint minor STRINGS (Law 2).
+// PC-56 PARTNER-5a (survey C-11 / P5-B12): the four servicing WRITES now take and SEND an `idempotencyKey` — since PARTNER-4a the
+// server answers 400 "Idempotency-Key header required" without one, so they were dead. And what the server now REFUSES by name
+// (founder 5a-1 / 5a-2 / 5a-3): a transition to `activated` (RESTRUCTURE_ACTIVATION_NOT_LIVE) or `accepted`
+// (RESTRUCTURE_ACCEPTANCE_NOT_LIVE), and every write-off (WRITE_OFF_NOT_LIVE) — each a 409 SdkError carrying the sentence.
 import { HttpClient } from '../http';
 
 export class FintechResource {
@@ -13,24 +17,25 @@ export class FintechResource {
     return (await this.http.request<Array<Record<string, unknown>>>('GET', 'fintech/servicing/collections', { query: { limit }, signal })).data;
   }
   /** Signed KCC entry: +drawl/+interest, −repayment; the SERVER computes the running balance under lock. */
-  async kccEntry(loanId: string, input: { entryKind: 'drawl' | 'repayment' | 'interest'; amountMinor: string; narrative: string; destinationKind?: 'supplier_direct' | 'other'; repaymentChannel?: string }): Promise<{ loanId: string; balanceAfterMinor: string }> {
-    return (await this.http.request<{ loanId: string; balanceAfterMinor: string }>('POST', `fintech/servicing/loans/${encodeURIComponent(loanId)}/kcc/entries`, { body: input })).data;
+  async kccEntry(loanId: string, input: { entryKind: 'drawl' | 'repayment' | 'interest'; amountMinor: string; narrative: string; destinationKind?: 'supplier_direct' | 'other'; repaymentChannel?: string }, idempotencyKey: string): Promise<{ loanId: string; balanceAfterMinor: string }> {
+    return (await this.http.request<{ loanId: string; balanceAfterMinor: string }>('POST', `fintech/servicing/loans/${encodeURIComponent(loanId)}/kcc/entries`, { body: input, idempotencyKey })).data;
   }
   async kccLedger(loanId: string, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
     return (await this.http.request<Array<Record<string, unknown>>>('GET', `fintech/servicing/loans/${encodeURIComponent(loanId)}/kcc/ledger`, { signal })).data;
   }
-  async proposeRestructure(loanId: string, input: Record<string, unknown>): Promise<{ id: string; status: string }> {
-    return (await this.http.request<{ id: string; status: string }>('POST', `fintech/servicing/loans/${encodeURIComponent(loanId)}/restructures`, { body: input })).data;
+  async proposeRestructure(loanId: string, input: Record<string, unknown>, idempotencyKey: string): Promise<{ id: string; status: string }> {
+    return (await this.http.request<{ id: string; status: string }>('POST', `fintech/servicing/loans/${encodeURIComponent(loanId)}/restructures`, { body: input, idempotencyKey })).data;
   }
   async restructures(loanId: string, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
     return (await this.http.request<Array<Record<string, unknown>>>('GET', `fintech/servicing/loans/${encodeURIComponent(loanId)}/restructures`, { signal })).data;
   }
-  /** Maker-checker: the server refuses checker_approved from the proposer. */
-  async transitionRestructure(id: string, to: 'mediation' | 'accepted' | 'checker_approved' | 'activated' | 'rejected' | 'expired'): Promise<{ id: string; status: string }> {
-    return (await this.http.request<{ id: string; status: string }>('POST', `fintech/servicing/restructures/${encodeURIComponent(id)}/transition`, { body: { to } })).data;
+  /** Maker-checker: the server refuses checker_approved from the proposer. `accepted` and `activated` are refused by name (409). */
+  async transitionRestructure(id: string, to: 'mediation' | 'accepted' | 'checker_approved' | 'activated' | 'rejected' | 'expired', idempotencyKey: string): Promise<{ id: string; status: string }> {
+    return (await this.http.request<{ id: string; status: string }>('POST', `fintech/servicing/restructures/${encodeURIComponent(id)}/transition`, { body: { to }, idempotencyKey })).data;
   }
-  async writeOff(loanId: string, reason: string): Promise<{ loanId: string; status: string; outstandingMinor: string }> {
-    return (await this.http.request<{ loanId: string; status: string; outstandingMinor: string }>('POST', `fintech/servicing/loans/${encodeURIComponent(loanId)}/write-off`, { body: { reason } })).data;
+  /** Refused by name today (409 WRITE_OFF_NOT_LIVE): no write-off is recorded until it keeps who, when and why, with a second person. */
+  async writeOff(loanId: string, reason: string, idempotencyKey: string): Promise<{ loanId: string; status: string; outstandingMinor: string }> {
+    return (await this.http.request<{ loanId: string; status: string; outstandingMinor: string }>('POST', `fintech/servicing/loans/${encodeURIComponent(loanId)}/write-off`, { body: { reason }, idempotencyKey })).data;
   }
 
   // --- PC-55 A9 `loan-disbursement-batches`. Approved loans → QUEUED payouts. The COOLING-OFF window is
