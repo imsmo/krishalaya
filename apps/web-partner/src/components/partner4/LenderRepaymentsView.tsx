@@ -91,7 +91,9 @@ export function LenderRepaymentsView({ t, lang, state, collected, arrears }: {
 
           <p className="kv-pager" data-kv-acts="repayments">
             <Link className="kv-btn kv-btn--muted" href="/lender/repayments?export=queued" data-kv-decor="export">{t.t('partner4.repayments.export')}</Link>{' '}
-            <Link className="kv-btn kv-btn--muted" href="/lender/portfolio" data-kv-real="portfolio">{t.t('partner4.repayments.viewPortfolio')}</Link>
+            <Link className="kv-btn kv-btn--muted" href="/lender/portfolio" data-kv-real="portfolio">{t.t('partner4.repayments.viewPortfolio')}</Link>{' '}
+            {/* PC-56 PARTNER-5b (founder 5b-6, survey E2): the canon's crumb "Lending › Repayments › Collections" had no link DOWN; this is it */}
+            <Link className="kv-btn kv-btn--muted" href="/lender/collections" data-kv-real="collections">{t.t('partner5.collections.fromRepayments')}</Link>
           </p>
         </>
       )}

@@ -95,3 +95,8 @@ export function writeoffsState(c: AgingCountsShape | null, items: readonly unkno
   if (!c || !items) return 'error';
   return items.length === 0 ? 'empty' : 'ok';
 }
+
+// ── PC-56 PARTNER-5b · the three honest pages' links (they read nothing; an id is only ever ENCODED into an href, never printed) ──────────
+export const collectionsHref = () => '/lender/collections';
+export const collectionsCaseHref = (loanId: string) => `/lender/collections/${encodeURIComponent(loanId)}`;
+export const restructureHref = (loanId: string) => `/lender/collections/${encodeURIComponent(loanId)}/restructure`;

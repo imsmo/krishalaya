@@ -128,6 +128,22 @@ describe('partner nav model (persona-aware)', () => {
     }
     for (const h of FIVE_A) expect([h, LENDING_SUBNAV.find((i) => i.href === h)?.live]).toEqual([h, true]);
   });
+  // PC-56 PARTNER-5b (founder 5b-6) · ONE Collections row in the lending SUB-NAVIGATION, live — and never a case row or a restructure row,
+  // in any nav; nothing added to the sidebar, for ANY kind or permission set. M5 (`/lender/collections/[id]` added to LENDING_SUBNAV) kills here.
+  it('PC-56 PARTNER-5b · Collections is ONE live LENDING_SUBNAV row; no collections case or restructure row anywhere; the sidebar is unchanged', () => {
+    const FIVE_B = ['/lender/collections', '/lender/collections/[id]', '/lender/collections/[id]/restructure'];
+    expect(LENDING_SUBNAV.filter((i) => i.href.startsWith('/lender/collections')).map((i) => [i.href, i.wave, i.live, !!i.needsLoanId]))
+      .toEqual([['/lender/collections', '5b', true, false]]);
+    expect(LENDING_SUBNAV.filter((i) => /collections\/|restructure/.test(i.href) || /case|restructure/i.test(i.key))).toEqual([]);
+    expect(PARTNER_NAV.filter((i) => i.group === 'lending').map((i) => i.href)).toEqual(['/dashboard', '/lender/queue', '/lender/products',
+      '/lender/disbursements', '/lender/repayments', '/lender/portfolio']);
+    expect(PARTNER_NAV.filter((i) => /collection|restructur|partner5\./i.test(`${i.href} ${i.labelKey}`))).toEqual([]);
+    for (const [perms, kind] of [[PARTNER_READS, 'bank'], [PARTNER_READS, 'nbfc'], [PARTNER_READS, 'mfi'], [PARTNER_READS, 'gold_loan'],
+      [set(WILDCARD_PERM), 'bank'], [set(WILDCARD_PERM), null], [PARTNER_READS, 'insurer'], [PARTNER_READS, 'amc'], [PARTNER_READS, null], [set(), 'bank']] as const) {
+      const all = [...navForPartner(perms, kind), ...liveNavForPartner(perms, kind), ...soonNavForPartner(perms, kind)].map((i) => i.href);
+      for (const h of FIVE_B) expect([kind, h, all.includes(h)]).toEqual([kind, h, false]);
+    }
+  });
   it('PC-56 PARTNER-2a · an asset manager sees neither vertical; an unknown kind keeps the lending group and never opens the insurer group', () => {
     expect(visibleGroups(PARTNER_READS, 'amc')).toEqual(['common', 'account']);
     expect(visibleGroups(PARTNER_READS, null)).toEqual(['common', 'lending', 'account']);

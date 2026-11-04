@@ -17,15 +17,18 @@ import { percents, withoutRefusals } from './partner4a-fixtures';
 import { FALSE_5A } from './partner5a-fixtures';
 
 const MAILBOX = { kind: 'published', address: 'partners@example.org' } as const;
+// PC-56 PARTNER-5b · NAMED UPDATE: PARTNER5_CHAINS now also holds 5b's four chains (their own spec: partner5b-chains.render). This file is
+// about 5a's four, so it reads exactly those — the assertions on them are unchanged.
+const CHAINS_5A = PARTNER5_CHAINS.filter((c) => c.wave === '5a');
 
 describe('PC-56 PARTNER-5a · the four arrears chains (render)', () => {
   it('FOUR chain entries over FOUR canon chains, TEN canon pages, each recorded once on its triggering page', () => {
-    expect(PARTNER5_CHAINS.map((c) => [c.id, c.page])).toEqual([
+    expect(CHAINS_5A.map((c) => [c.id, c.page])).toEqual([
       ['aging_export', '/lender/portfolio/aging'], ['aging_act', '/lender/portfolio/aging'],
       ['writeoffs_export', '/lender/portfolio/writeoffs'], ['writeoffs_act', '/lender/portfolio/writeoffs']]);
-    expect(PARTNER5_CHAINS.flatMap((c) => c.files)).toEqual(['W2929', 'W2930', 'W2931', 'W2932', 'W2933', 'W3024', 'W3025', 'W3026', 'W3027', 'W3028']);
+    expect(CHAINS_5A.flatMap((c) => c.files)).toEqual(['W2929', 'W2930', 'W2931', 'W2932', 'W2933', 'W3024', 'W3025', 'W3026', 'W3027', 'W3028']);
   });
-  for (const c of PARTNER5_CHAINS) {
+  for (const c of CHAINS_5A) {
     it.each(c.states.map((s) => [s]))(`${c.id} · %s: its own sentence, its refusals, Back to the triggering page`, (state) => {
       const html = renderToStaticMarkup(<LenderChain5 t={tr(en)} chain={c.id} state={state} mailbox={MAILBOX} />);
       const w = text(html);
@@ -66,7 +69,7 @@ describe('PC-56 PARTNER-5a · the four arrears chains (render)', () => {
     expect(partner5RefusalKeys('aging_export')).not.toContain('partner5.refusal.boardPack');
   });
   it('every state of every chain exists in hi and gu too, with the same markup skeleton', () => {
-    for (const c of PARTNER5_CHAINS) for (const state of c.states) {
+    for (const c of CHAINS_5A) for (const state of c.states) {
       const shapes = [en, hi, gu].map((cat) => {
         const html = renderToStaticMarkup(<LenderChain5 t={tr(cat)} chain={c.id} state={state} mailbox={MAILBOX} />);
         expect(text(html)).toContain(cat[`${c.key(state)}.body`]);

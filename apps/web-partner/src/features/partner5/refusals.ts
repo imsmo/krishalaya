@@ -7,14 +7,22 @@
 //
 // THE SURFACES `Partner5Surface`: `aging` (W223) · `writeoffs` (W222) — built in 5a as READS of the existing 4a/4b definers, with their four
 // chain surfaces `aging_export` (W2929–W2930, DECOR + the mailbox line) · `aging_act` (W2931–W2933, PARITY-DECOR: Retry is a genuine re-read)
-// · `writeoffs_export` (W3024–W3025, DECOR + the mailbox line) · `writeoffs_act` (W3026–W3028, PARITY-DECOR). The 5b and 5c surfaces are
-// DECLARED in the type and used by nothing yet: their founder doors (Q4, Q5, Q6, Q7) are 5b's and 5c's, and their refusals are registered
-// there, never here.
+// · `writeoffs_export` (W3024–W3025, DECOR + the mailbox line) · `writeoffs_act` (W3026–W3028, PARITY-DECOR).
+// PC-56 PARTNER-5b · COLLECTIONS THE PLATFORM DOES NOT DO (founder 5b-1 … 5b-7; doors Q4 + Q5) registers its six surfaces here: three
+// HONEST PAGES THAT READ NOTHING (the W217 shape) — `collections` (W219, `/lender/collections`), `collections_case` (W220,
+// `/lender/collections/[id]`, the `[id]` a LOAN id; its two canon inputs are never rendered) and `restructure` (W221,
+// `/lender/collections/[id]/restructure`) — and their four DECOR chains: `collections_form` (W2914–W2917, `?form=` on the case page, NO
+// mailbox), `collections_act` (W2918–W2920, `?act=` on `/lender/collections`), `case_act` (`?act=` on the case page, files listed on
+// W219's chain) and `restructure_act` (W2999–W3001). A lender never collects, contacts, ranks or sees a borrower in arrears here (Q5), and
+// nothing of any restructure proposal reaches this console (Q4). The 5c surfaces (`sla`, `sla_export`, `sla_act`) are declared and
+// unused: their doors are 5c's.
 export type Partner5Surface =
   | 'aging' | 'writeoffs' | 'aging_export' | 'aging_act' | 'writeoffs_export' | 'writeoffs_act'
-  // PARTNER-5b / 5c — declared, unused in 5a
-  | 'collections' | 'collections_case' | 'restructure' | 'sla'
-  | 'collections_form' | 'collections_act' | 'case_act' | 'restructure_act' | 'sla_export' | 'sla_act';
+  // PARTNER-5b
+  | 'collections' | 'collections_case' | 'restructure'
+  | 'collections_form' | 'collections_act' | 'case_act' | 'restructure_act'
+  // PARTNER-5c — declared, unused until 5c
+  | 'sla' | 'sla_export' | 'sla_act';
 export interface Partner5Refusal { id: string; canon: string; surfaces: readonly Partner5Surface[]; key: string; why: string }
 
 /** The two export chains of 5a: DECOR, with the partners-mailbox line. */
@@ -23,6 +31,12 @@ const EXPORT: readonly Partner5Surface[] = ['aging_export', 'writeoffs_export'];
 const CHAINS: readonly Partner5Surface[] = ['aging_export', 'aging_act', 'writeoffs_export', 'writeoffs_act'];
 /** The two pages of 5a. */
 const PAGES: readonly Partner5Surface[] = ['aging', 'writeoffs'];
+/** The three honest pages of 5b. */
+const PAGES_5B: readonly Partner5Surface[] = ['collections', 'collections_case', 'restructure'];
+/** The four DECOR chains of 5b. */
+const CHAINS_5B: readonly Partner5Surface[] = ['collections_form', 'collections_act', 'case_act', 'restructure_act'];
+/** The two collections pages (W219, W220) — where the canon's code of conduct and its contact promises are printed. */
+const COLL: readonly Partner5Surface[] = ['collections', 'collections_case'];
 
 export const PARTNER5_REFUSALS: readonly Partner5Refusal[] = Object.freeze([
   // ── W223 · days past a recorded due date (founder 5a-6) ──
@@ -42,7 +56,7 @@ export const PARTNER5_REFUSALS: readonly Partner5Refusal[] = Object.freeze([
     key: 'partner5.refusal.bucketDrilldown', why: 'refused (founder 5a-5, WALL): a bucket drill-down would list the loans in arrears; a lender never names, ranks or contacts a borrower through this console, so a row is not a link (survey §1F)' },
   { id: 'aging_roles', canon: 'W223 restricted state "Aging restricted — Risk-committee view; needs credit-risk role." · W222 restricted state "Write-offs restricted — Board-level view …"', surfaces: PAGES,
     key: 'partner4.refusal.platformRoles', why: 'FALSE: the partner realm has four roles (0225) and `partner.loans.read` covers both pages for all four (0231:142-164); no risk-committee, credit-risk or board role exists — PARTNER-4\'s refusal, reused by key' },
-  { id: 'plan_settings', canon: 'W222 / W223 flagged-off state "This module is switched off for this tenant/plan (feature flag) … See plan settings."', surfaces: PAGES,
+  { id: 'plan_settings', canon: 'W222 / W223 (and, PARTNER-5b, W219 / W220 / W221) flagged-off state "This module is switched off for this tenant/plan (feature flag) … See plan settings."', surfaces: [...PAGES, ...PAGES_5B],
     key: 'partner4.refusal.planSettings', why: 'OFF-as-OFF via `partner_console` (`lib/lender.ts:34-37`); no plan-settings surface exists for a partner organisation (the 2a / 2c / 3a / 4a precedent, reused by key)' },
   // ── W222 · written-off loans (founder 5a-3 / 5a-7) ──
   { id: 'written_off_share', canon: 'W222 "2 loans written off FY (₹1,10,000 · 0.16% of book)"', surfaces: ['writeoffs', 'writeoffs_export'],
@@ -78,12 +92,98 @@ export const PARTNER5_REFUSALS: readonly Partner5Refusal[] = Object.freeze([
     key: 'partner5.refusal.boardPack', why: 'DECOR (founder 5a-8, 2b-1): no partner export plane exists (P2-B6), and the lender\'s board is not a platform surface — nothing is prepared for one' },
   { id: 'export_file', canon: 'W2929 / W3024 "audit-stamped, checksummed, delivered by signed URL" · W2930 / W3025 "file name, row count, sha256, generated-at, requester — delivery via 15-min signed URL, every fetch logged" · W223 "Export (signed)"', surfaces: [...EXPORT, ...PAGES],
     key: 'partner4.refusal.exportFile', why: 'founder 5a-8 / 4a-7 (2b-1): there is no partner export plane in Phase 1 (P2-B6); the console names the partners mailbox instead — PARTNER-4\'s refusal, reused by key' },
-  { id: 'chain_zero_sum', canon: 'W2932 / W3027 "Money-adjacent actions reconcile zero-sum before this page ever shows"', surfaces: CHAINS,
+  { id: 'chain_zero_sum', canon: 'W2932 / W3027 "Money-adjacent actions reconcile zero-sum before this page ever shows"', surfaces: [...CHAINS, ...CHAINS_5B],
     key: 'partner4.refusal.chainZeroSum', why: 'nothing reached from these pages moves a rupee (survey §1 rupee 6), so there is nothing to reconcile — reused by key' },
-  { id: 'chain_on_call', canon: 'W2933 / W3028 "repeated failures page the on-call"', surfaces: CHAINS,
+  { id: 'chain_on_call', canon: 'W2933 / W3028 "repeated failures page the on-call"', surfaces: [...CHAINS, ...CHAINS_5B],
     key: 'partner4.refusal.chainOnCall', why: 'no paging from a partner page exists (survey §1, the shared chain sentences refused by PARTNER-1…4) — reused by key' },
-  { id: 'chain_audit', canon: 'W2931 / W3026 "confirming writes an audit-trail entry with actor, time and reason" · W2932 / W3027 "View audit trail" · "the audit trail has the entry (actor · time · reason · before/after)"', surfaces: CHAINS,
+  { id: 'chain_audit', canon: 'W2931 / W3026 "confirming writes an audit-trail entry with actor, time and reason" · W2932 / W3027 "View audit trail" · "the audit trail has the entry (actor · time · reason · before/after)"', surfaces: [...CHAINS, ...CHAINS_5B],
     key: 'partner4.refusal.chainAudit', why: 'a re-read writes only its own partner-realm read row (one per dpd / counts / list read, counts only — survey E10; PCON partner-console.controller.ts:294-331 are GETs) and the console has no audit-trail page — reused by key' },
+  // ══ PC-56 PARTNER-5b · COLLECTIONS THE PLATFORM DOES NOT DO (founder 5b-1 … 5b-5) ══
+  // ── the code of conduct, REUSED BY KEY from PARTNER-4b (founder 4b-5: recorded as intent, never as something the platform enforces) ──
+  { id: 'code_of_conduct', canon: 'W219 "worked with the code of conduct on every screen" · W220 "Contact log (every touch, code-of-conduct)" and "per the code-of-conduct"', surfaces: COLL,
+    key: 'partner4.refusal.codeOfConduct', why: 'founder 4b-5 / 5b-2 (survey F-4): the platform enforces none of it — no contact engine, no log, no hours window, no mediation gate, no prohibition, no suspension (features/partner4/refusals.ts `code_of_conduct`). Reused BY KEY, never re-worded' },
+  { id: 'contact_hours', canon: 'W219 "hours 08:00–19:00 · Gujarati first" · W220 "all within 08:00–19:00 · zero visits" and "any contact 19:00–08:00"', surfaces: COLL,
+    key: 'partner4.refusal.contactHours', why: 'founder 4b-5: no hours window is evaluated anywhere because no contact happens through this platform (survey §1 "Collections, contact and conduct") — reused BY KEY' },
+  { id: 'contact_log', canon: 'W219 "every contact logged" and the restricted state "every borrower contact is logged with time + channel + summary" · W220 "Contact log (every touch …)" and its three entries', surfaces: COLL,
+    key: 'partner4.refusal.contactLog', why: 'founder 4b-5: there is no contact table, record or tool anywhere (survey C-12; `grep -rn promise_to_pay` → none) — reused BY KEY' },
+  { id: 'mediation_first', canon: 'W219 "FPO mediation before escalation" and the KPI "> 30 DPD (mediation)" · W220 header "FPO mediation Thu 16 Jul" · W221 header "for Thu mediation"', surfaces: PAGES_5B,
+    key: 'partner4.refusal.mediationFirst', why: 'founder 4b-5: `loan_restructures.mediation_at` exists (0069:154) and nothing writes it; nothing schedules a meeting with anybody (survey §1C/§1D) — reused BY KEY' },
+  { id: 'third_party_agents', canon: 'W219 the code of conduct carried from W211 ("no third-party agents on platform-originated loans")', surfaces: ['collections'],
+    key: 'partner4.refusal.thirdPartyAgents', why: 'founder 4b-5: nothing on this platform knows who collects a debt, so nothing can prohibit anybody — reused BY KEY' },
+  { id: 'partner_suspension', canon: 'W219 the code of conduct carried from W211 ("Violation = partner suspension.")', surfaces: ['collections'],
+    key: 'partner4.refusal.partnerSuspension', why: 'founder 4b-5: no suspension mechanism, violation record or process exists — reused BY KEY' },
+  { id: 'collections_roles', canon: 'W219 "Named cases need collections role" · W220 "Named case files need collections role" · W221 "Proposing needs collections lead"', surfaces: PAGES_5B,
+    key: 'partner4.refusal.platformRoles', why: 'FALSE: the partner realm has four roles (0225) and none is a collections role or lead (survey F-11) — PARTNER-4\'s refusal, reused BY KEY' },
+  // ── W219 · the collections workbench (founder 5b-2) ──
+  { id: 'take_next_case', canon: 'W219 "Take next case" (FM:154, `chain-mutate` → W2918–W2920)', surfaces: ['collections', 'collections_act'],
+    key: 'partner5.refusal.takeNextCase', why: 'DECOR, refused by name (founder 5b-2, survey §1H): there is no case, no assignment and no lender act; the cooperative services its own book on the tenant plane' },
+  { id: 'named_cases', canon: 'W219 table "DPD ▾ · Case · Arrears · Last contact · Stage", its three rows (each a case reference and a loan kind, "name in case view — logged"), the links "Open" → W220, and the footer "3 highlighted of 14 named cases (≥16 DPD)" (FM:151, `bulkbar`)', surfaces: ['collections'],
+    key: 'partner5.refusal.namedCases', why: 'WALL (founder 5b-1 / Q5; PARTNER-0 Q4 — never a name): no case entity exists (`loan_restructures.case_ref` is free text, survey C-12), 0231:130-137 removed `borrower_user_id` from the axis so a name cannot be joined, and a ranked list of borrowers behind on a loan is exactly what a lender is never shown' },
+  { id: 'arrears_kpis', canon: 'W219 KPIs "38 loans past due" · "1–15 DPD (gentle nudge) … voice reminders only" · "16–30 DPD (named cases) … promise-to-pay tracking" · "> 30 DPD (mediation) … outstanding at risk"', surfaces: ['collections'],
+    key: 'partner5.refusal.arrearsKpis', why: 'founder 5b-2: NO FIGURE ON THIS PAGE. The six buckets already exist as counts on /lender/repayments and /lender/portfolio/aging (0232:112-130), linked instead of duplicated; "arrears" as missed instalments is GAP-BE (P4-B9); the reminders, stages and tracking are FALSE (no engine, survey §1B)' },
+  { id: 'recovery_measure', canon: 'W219 KPI "Cure rate (90d) 83% — most arrears cure within one season — patience is a strategy"', surfaces: ['collections'],
+    key: 'partner5.refusal.recoveryMeasure', why: 'FALSE: a rate (E9) over a status nothing sets — `cure()` has no caller (`loan.entity.ts:44`), nothing calls `markOverdue()` (survey C-6)' },
+  { id: 'dairy_inference', canon: 'W219 row "… SMS reminder · milk volume dip — vet visit suggested" and the paragraph "The dairy case shows the platform difference: the system noticed her milk volumes dipped BEFORE the missed instalment … Fix the cow, fix the loan."', surfaces: ['collections'],
+    key: 'partner5.refusal.dairyInference', why: 'FALSE and WALL — refused for its REASONING (founder 5b-1, survey F-4): no such detection exists, and a cooperative member\'s dairy, crop and rental records are never a lender\'s; using them to brief her lender is a purpose change (DPDP) the platform does not make' },
+  { id: 'auto_threshold', canon: 'W219 empty state "Queue clear — … Cases enter this queue automatically past the DPD threshold."', surfaces: ['collections'],
+    key: 'partner5.refusal.autoThreshold', why: 'FALSE: there is no queue and no job (survey §1B); nothing becomes `overdue` (C-6)' },
+  { id: 'all_loans_up_to_date', canon: 'W219 empty state "No cases — All loans current — the auto-deduction channels are doing their quiet work." + "View repayments" (FM:155, a dead `data-decor` button)', surfaces: ['collections'],
+    key: 'partner5.refusal.allLoansUpToDate', why: 'FALSE as a claim — with no due date on any loan (`loan-application.service.ts:129`) the platform cannot know; the auto-deduction sentence is S4\'s true line and lives on /lender/repayments, which this page links to (survey §1B)' },
+  { id: 'logs_server_side', canon: 'W219 error state "Couldn\'t load workbench — Contact logs and promises are server-side. Retry." (FM:153)', surfaces: ['collections', 'collections_act'],
+    key: 'partner5.refusal.logsServerSide', why: 'FALSE: no contact or promise is stored anywhere; and the page reads nothing, so it has no error state at all (founder 5b-1, the W217 shape)' },
+  // ── W220 · the collections case (founder 5b-3) ──
+  { id: 'case_identity', canon: 'W220 "<the borrower\'s name> · <a masked phone> (name visible in case view only — this access is logged)" and the restricted state "Named case files need collections role"', surfaces: ['collections_case'],
+    key: 'partner5.refusal.caseIdentity', why: 'WALL (founder 5b-1; PARTNER-0 Q4: a masked phone only on an approved consented APPLICATION, never on a loan in arrears, and never a name; survey F-4). The page looks nothing up, so there is nothing to log either' },
+  { id: 'case_entity', canon: 'W220 header "CASE-… — tractor loan, 34 DPD · FPO mediation Thu 16 Jul" and the crumb "… › Collections › CASE-…"', surfaces: ['collections_case'],
+    key: 'partner5.refusal.caseEntity', why: 'DELTA + FALSE: no case entity exists (survey C-12); the `[id]` is a LOAN id (founder 5b-3); "34 DPD" is GAP-BE (no due date) and the meeting is FALSE (`mediation_at` never written, 0069:154)' },
+  { id: 'case_narrative', canon: 'W220 "What happened (the honest picture)" — the family\'s business story and "Platform data: his own kharif sowing completed, custom-hiring bookings resuming"', surfaces: ['collections_case'],
+    key: 'partner5.refusal.caseNarrative', why: 'FALSE + WALL (founder 5b-1, survey F-4): cross-module reuse of a member\'s crop and equipment-rental records for her lender — the reuse PARTNER-3 refused for claims (S3 F-6) and PARTNER-4 for scores (S4 F-7)' },
+  { id: 'reconsent_recording', canon: 'W220 "Consented context only: he re-consented to share booking data for this mediation — the case file says so, with the recording reference."', surfaces: ['collections_case'],
+    key: 'partner5.refusal.reconsentRecording', why: 'FALSE, refused by name (founder 5b-1): no purpose-bound consent for collections exists; `credit_score_consents` has no writer (P4-B6) and its purpose is an application; there is no recording column' },
+  { id: 'contact_entries', canon: 'W220 contact log rows ("… voice (gu) · answered · \'hiring resumes next week, mediation agreed\'", "SMS reminder (gu) · delivered", "first-miss courtesy call, no pressure language (transcript scored ✓)") and "3 contacts in 34 days"', surfaces: ['collections_case'],
+    key: 'partner5.refusal.contactEntries', why: 'FALSE ×3 + WALL: no contact table, call record, transcript or scoring exists (survey §1C); quoting a farmer\'s words to his bank is the most identifying thing on the canon page' },
+  { id: 'mediation_meeting', canon: 'W220 "Mediation (Thu, at the cooperative) — Present: borrower, FPO coordinator (his own federation), your field officer. Agenda drafted … His choice, documented."', surfaces: ['collections_case'],
+    key: 'partner5.refusal.mediationMeeting', why: 'FALSE (survey §1C, Q5): no mediation record or attendee list; the platform does not place a bank\'s staff at a cooperative\'s meeting with its member and must not imply it' },
+  { id: 'promise_form', canon: 'W220 form "Promise-to-pay" — `Amount promised (INR)` and `By date`, the canon\'s TWO real `<input>`s — and "Record promise (he gets it in Gujarati, in writing)" (FM:160, `chain-form`)', surfaces: ['collections_case', 'collections_form'],
+    key: 'partner5.refusal.promiseForm', why: 'DECOR, refused by name (founder 5b-3, survey F-4): no promise table, route or permission; no notification (S4 F-19). NO INPUT IS RENDERED — a field that accepts a farmer\'s promise and stores nothing is the 4c KCC-form lesson made worse' },
+  { id: 'log_contact', canon: 'W220 "Log contact" ×2 (FM:158 action bar, FM:159 empty state, `chain-form` → W2914–W2917)', surfaces: ['collections_case', 'collections_form'],
+    key: 'partner5.refusal.logContact', why: 'DECOR, refused by name (founder 5b-3): no contact log, no lender contact role — and NO MAILBOX LINE, because the platform must not offer to relay a lender\'s contact with a cooperative\'s member (survey §1G, E4)' },
+  { id: 'promise_ladder', canon: 'W220 "Promises recorded · a kept promise resets the tone; a missed one escalates one step, never three"', surfaces: ['collections_case'],
+    key: 'partner5.refusal.promiseLadder', why: 'FALSE: no promise record and no escalation ladder exist (survey §1C)' },
+  { id: 'off_the_table', canon: 'W220 "What is off the table (platform-enforced)" ✕ "Asset seizure before mediation + 90 DPD + committee sign-off" ✕ "Contacting family/neighbours · visits without notice · any contact 19:00–08:00" ✕ "Blocking his marketplace access…"', surfaces: ['collections_case'],
+    key: 'partner5.refusal.offTheTable', why: 'FALSE as "platform-enforced" (founder 5b-3, survey F-4): nothing enforces any of the three; the first two are conduct rules for a lender\'s own staff off the platform, which a lawyer must read against the fair-practices code. The THIRD is true only as an ABSENCE and is printed as `partner5.collections.noSellingBlock`, never as a rule the platform keeps' },
+  { id: 'case_archive', canon: 'W220 state "Case not found — Cured cases archive with their full contact history." + "Back to workbench" (FM:157)', surfaces: ['collections_case'],
+    key: 'partner5.refusal.caseArchive', why: 'FALSE + a retention promise (refused — B2a :12). And there is no not-found at all: the page looks nothing up, so every id prints the same page and it is never an existence oracle (founder 5b-3). "Back to workbench" is a real link' },
+  { id: 'contact_log_safe', canon: 'W220 error state "Couldn\'t load case — Contact log is append-only and safe. Retry." (FM:161 → W2918–W2920)', surfaces: ['collections_case', 'case_act'],
+    key: 'partner5.refusal.contactLogSafe', why: 'FALSE: no log exists; "append-only" is reserved for tables with a trigger (founder 4c-5); and the page has no error state (it reads nothing)' },
+  { id: 'every_open_logged', canon: 'W220 restricted state "Case access restricted — Named case files need collections role; every open is logged — including yours, just now."', surfaces: ['collections_case'],
+    key: 'partner5.refusal.everyOpenLogged', why: 'FALSE here: the console writes one audit row per BOOK read (P4aR §1 case 7), but this page makes no read, so it writes no audit row (founder 5b-1; survey E10)' },
+  // ── W221 · the restructure proposal (founder 5b-4, Q4) ──
+  { id: 'stale_banner', canon: 'W221 banner "Backend pending (DELTA-033): `loan_restructures` terms table … today restructure is a status flip with terms in notes. Design leads."', surfaces: ['restructure'],
+    key: 'partner5.refusal.staleBanner', why: 'STALE — never copied (survey C-3): the terms table exists (0069:130-169) and activation applies none of it; the canon file is not edited, the banner is recorded as a DELTA and refused here' },
+  { id: 'terms_comparison', canon: 'W221 "Proposed terms (side by side)" — instalment, holiday ("interest accrues, no penalty"), tenor, rate ("unchanged, restructure is not a repricing"), total interest delta — "shown to him in ₹, in Gujarati, before he signs" · "Arrears fold into the new schedule … Penal interest … waived"', surfaces: ['restructure'],
+    key: 'partner5.refusal.termsComparison', why: 'WALL + FALSE (founder 5b-4): every value is typed by the caller (`servicing.controller.ts:47-58`), none reaches the loan, and kv_partner holds NOTHING on `loan_restructures` (0231:306, 0232:189) and keeps holding nothing — so not one term is printed' },
+  { id: 'weather_clause', canon: 'W221 "Weather-linked distress (monsoon clause qualifies: a monsoon-deficit figure, district notification attached)" and "credit record notes the weather cause"', surfaces: ['restructure'],
+    key: 'partner5.refusal.weatherClause', why: 'FALSE (survey §1D, F-7): `evidence_media_id` is optional (`servicing.controller.ts:50`) and nothing evaluates a clause, a weather figure or a notice; no credit record exists (P4-B14 refused)' },
+  { id: 'npa_discipline', canon: 'W221 "NPA discipline (honest books)": "90+ DPD without cure or restructure → NPA per your RBI norms — the platform never helps hide it" · "A restructure entered to dodge NPA recognition fails the weather-evidence gate" · "One restructure per loan per cause — serial restructuring is a red flag"', surfaces: ['restructure'],
+    key: 'partner5.refusal.npaDiscipline', why: 'FALSE ×2, PARTIAL ×1 (survey §1D, F-1): no asset classification exists, no evidence gate, and `uq_loan_restructures_loan_open` (0069:168-169) is one open proposal per loan, not per cause; a regulatory statement is a lawyer\'s, and this console makes none' },
+  { id: 'acceptance_flow', canon: 'W221 "Borrower acceptance flow": "Terms in Gujarati, ₹ figures, voice read-out at mediation" · "24h think-it-over window" · "Acceptance by OTP + voice · your checker countersigns · status → restructured"', surfaces: ['restructure'],
+    key: 'partner5.refusal.acceptanceFlow', why: 'FALSE ×3 and a P0 trust line (founder 5b-4 / 5a-2): `accepted` is REFUSED from every session (`RESTRUCTURE_ACCEPTANCE_NOT_LIVE`, 409) until P5-B4; the OTP, window and document columns are never written (0069:155-161); "your checker" puts the lender\'s officer in the cooperative\'s maker-checker, which is false' },
+  { id: 'comparison_forever', canon: 'W221 "Restructures recorded with full old→new terms · borrower gets the comparison PDF forever"', surfaces: ['restructure'],
+    key: 'partner5.refusal.comparisonForever', why: 'FALSE + a retention promise: `comparison_pdf_media_id` is never written (0069:161); the terms half is true of the proposal ROW, which a lender never reads' },
+  { id: 'versioned_draft', canon: 'W221 error state "Couldn\'t load proposal — The draft is versioned server-side. Retry." (FM:164)', surfaces: ['restructure', 'restructure_act'],
+    key: 'partner5.refusal.versionedDraft', why: 'FALSE: `loan_restructures.version` exists (0069:162) and nothing increments it; and this page reads nothing, so it has no error state' },
+  { id: 'restructure_people', canon: 'W221 restricted state "Proposing needs collections lead; activation needs borrower acceptance + your checker — three humans, always."', surfaces: ['restructure'],
+    key: 'partner5.refusal.restructurePeople', why: 'FALSE ×3 (survey F-11): one `loan.manage` covers every step; the borrower never accepts on the platform; activation is REFUSED by name since 5a (`RESTRUCTURE_ACTIVATION_NOT_LIVE`)' },
+  { id: 'take_to_mediation', canon: 'W221 "Take to mediation (checker after borrower accepts)" (FM:165, `chain-mutate` → W2999–W3001)', surfaces: ['restructure', 'restructure_act'],
+    key: 'partner5.refusal.takeToMediation', why: 'DECOR for a lender, refused by name (founder 5b-4): `draft → mediation` is the cooperative\'s act on the tenant plane; and the chain sentence must never repeat the canon\'s order, because the borrower cannot accept on the platform (F-1, 5a-2)' },
+  { id: 'no_acceptance_state', canon: 'W221 state "No acceptance recorded yet — The borrower\'s acceptance of these proposed terms will be recorded here once given."', surfaces: ['restructure'],
+    key: 'partner5.refusal.noAcceptanceState', why: 'refused (founder 5b-4, Q4): nothing of a proposal is shown here, and an acceptance cannot be recorded at all until P5-B4' },
+  { id: 'starts_from_case', canon: 'W221 state "No restructure in draft — Restructure starts from a collections case — context first, terms second." + "Back to case"', surfaces: ['restructure'],
+    key: 'partner5.refusal.startsFromCase', why: 'FALSE: there is no case; a restructure starts from a loan id on the tenant plane (`servicing.controller.ts:90-94`)' },
+  // ── the collections form chain (W2914–W2917) ──
+  { id: 'form_review_checker', canon: 'W2915 "Review before submitting — Maker-checker friendly review step … with the diff against current values" · W2914 "every invalid field is listed with its reason, values you entered are preserved"', surfaces: ['collections_form'],
+    key: 'partner5.refusal.formReviewChecker', why: 'DECOR (survey §1G): there is no form, nothing was entered and no second person checks anything; the four canon pages carry no input themselves' },
 ]);
 
 /** The refusal i18n keys printed on one surface (render tests read this). */
@@ -115,10 +215,40 @@ export const PARTNER5_DELTAS: readonly { id: string; canon: string; built: strin
     built: 'the dpd read is NOT windowed (every servicing loan); the counts read IS (loans OPENED in the IST window); the written-off list is NOT (every written-off loan, whenever opened). Each figure carries the label of its own window and its own as-of' },
   { id: 'chain_routes', canon: 'the chain pages W2929–W2933 and W3024–W3028 as separate files',
     built: 'query states of their parent pages: `?export=queued|ready` and `?act=confirm|success|failure` on `/lender/portfolio/aging` and `/lender/portfolio/writeoffs`; Back returns to the triggering page' },
+  // ── PC-56 PARTNER-5b ──
+  { id: 'case_id_is_loan', canon: 'W220 / W221 routes `lender/collections/[id]` and `lender/collections/[id]/restructure` — the `[id]` a CASE id (crumb "… › CASE-…")',
+    built: 'the `[id]` is a LOAN id (no case entity exists, survey C-12; the W217 precedent) and is used ONLY, encoded, in links — to the loan page `/lender/portfolio/[id]` and between the case and restructure pages; it is never printed as text' },
+  { id: 'every_id_same_page', canon: 'W220 state "Case not found" (and survey E2\'s "an unknown or foreign id → the 4a not-found shape")',
+    built: 'the case and restructure pages LOOK NOTHING UP, so every id — known, foreign, unknown or malformed — prints the SAME page: no not-found, no existence oracle (founder 5b-3 deliberately overrides E2, which would need a read)' },
+  { id: 'fm150_pagination', canon: 'FM:150 — W219 "18" classed `pagination`',
+    built: 'it is the third row\'s DPD `<td>`, mis-classed as a page number (survey F-15); nothing is listed or paged on the honest page' },
+  { id: 'fm_bulkbar_footer', canon: 'FM:151 — W219 "3 highlighted of 14 named cases (≥16 DPD)" classed `bulkbar`',
+    built: 'a static footer, not a selection bar; its claim is refused by name (`named_cases`)' },
+  { id: 'fm_avatar_5b', canon: 'FM:152 (W219), FM:156 (W220) and FM:162 (W221) — the two-letter avatar `<span>` classed `filter`',
+    built: 'no avatar is drawn; the header carries the platform\'s mark and the lender\'s own name' },
+  { id: 'fm_dead_nav_5b', canon: 'FM:155 "View repayments", FM:157 "Back to workbench", FM:163 "Back to case" — dead `<button … data-decor>` FM registers as `nav-detail`',
+    built: 'REAL links: `/lender/repayments` (and `/lender/portfolio/aging`) from W219; `/lender/collections` from W220; the case page `/lender/collections/[id]` from W221' },
+  { id: 'fm_omits_cluster_links', canon: 'FM omits W219\'s two anchors to W220 ("CASE-…", "Open"), W220\'s real "Propose restructure" → W221 and the crumb links among W211 / W219 / W220 / W221 (survey F-15)',
+    built: 'W219 → W220 has no edge (a list of cases would name borrowers — refused); W220 → W221 is a real link ("Propose restructure" → the honest restructure page) and W221 → W220 a real "Back to case"; W211 (`/lender/repayments`) gains a real link to W219 and the sub-navigation gains ONE Collections row — never a case or restructure row' },
+  { id: 'fm_chain_ids_5b', canon: 'FM names the 5b chains by W13xx ids that exist nowhere: W1377–W1379, W1380–W1383, W1384–W1386',
+    built: 'the canon\'s own files: W1377–W1379 → W2918–W2920, W1380–W1383 → W2914–W2917, W1384–W1386 → W2999–W3001 (survey F-15)' },
+  { id: 'form_chain_names_w219', canon: 'W2914–W2917: the donor in the route comment, the crumb and every Back name W219, though both triggers ("Log contact", "Record promise") are W220\'s; W2915 "Back to edit" → W219 skips W2914',
+    built: 'one `collections_form` entry on the TRIGGERING page (`/lender/collections/[id]?form=`), every state\'s Back → that case page; no state offers an earlier step' },
+  { id: 'form_retry_to_confirm', canon: 'W2917 "Retry — back to confirm" → W219 on a FORM chain',
+    built: 'a form chain has no confirm page; the failure state claims none and links back to the case page only (the W2956 precedent, 4c)' },
+  { id: 'mutate_back_w219', canon: 'W2918–W2920 Cancel / Back → W219 even when opened from W220 ("Retry")',
+    built: '`collections_act` (files W2918–W2920) on `/lender/collections` returns there; `case_act` (`files: []`, the 4a `application_act` precedent) on the case page returns to THAT case page' },
+  { id: 'case_act_no_trigger', canon: 'W220 "Retry" (FM:161) — the canon\'s only trigger of the mutate chain from the case page, inside its error state',
+    built: 'the case page reads nothing and so has no error state; `case_act` is reachable only as a query state and no control on the page leads to it (the 4c `kcc_act` precedent)' },
+  { id: 'stale_delta_033', canon: 'W221\'s banner "Backend pending (DELTA-033) …" (survey C-3)',
+    built: 'never copied; the honest gap is the opposite — the terms table exists and nothing of it is applied or shown' },
+  { id: 'view_repayments_dead', canon: 'W219 "View repayments" — a dead `data-decor` button inside the "No cases" state',
+    built: 'a REAL link to `/lender/repayments`, beside a real link to `/lender/portfolio/aging`, on the page itself (there is no "No cases" state)' },
 ]);
 
-/** Every canon file of PARTNER-5 (31), each with ONE verdict. 5a decides its 12; 5b's 13 and 5c's 6 wait for their own waves. */
-export type Partner5Verdict = 'BUILT (read)' | 'BUILT (honest)' | 'PARITY-DECOR' | 'DECOR' | 'pending_5b' | 'pending_5c';
+/** Every canon file of PARTNER-5 (31), each with ONE verdict. 5a decided its 12; 5b decides its 13; 5c's 6 wait for their own wave. */
+/** PC-56 PARTNER-5b (the 4c-7 rule): the 5b-pending value is DELETED now that 5b decides its 13; only 5c's pending value survives. */
+export type Partner5Verdict = 'BUILT (read)' | 'BUILT (honest)' | 'PARITY-DECOR' | 'DECOR' | 'pending_5c';
 export const PARTNER5_CANON_FILES: readonly { file: string; wave: '5a' | '5b' | '5c'; verdict: Partner5Verdict; note: string }[] = Object.freeze([
   // ── 5a · THE BOOK IN ARREARS, AS COUNTS (12) ──
   { file: 'W223-partner-dpd-aging.html', wave: '5a', verdict: 'BUILT (read)', note: '/lender/portfolio/aging over GET /v1/partner/loans/dpd + GET /v1/partner/loans/counts (two audit rows, counts only): the platform\'s SIX rows — no due date recorded first, with the statement beside it, then not yet due and the four rows past a recorded due date — each a count and a bigint sum; the sum-check sentence with BOTH figures; the restructured count from the windowed counts read with the restructured note; computedAt. Every percentage, "arrears (missed inst.)", the five buckets and "current", "pre-NPA review", the cure-machinery paragraph, "nightly + live-adjusted", the credit-risk role and "plan settings" are refused by name. Export is DECOR + mailbox; Retry is the PARITY-DECOR re-read; "View portfolio" is a real link' },
@@ -133,20 +263,20 @@ export const PARTNER5_CANON_FILES: readonly { file: string; wave: '5a' | '5b' | 
   { file: 'W3026-partner-writeoffs-mutate-confirm.html', wave: '5a', verdict: 'PARITY-DECOR', note: '/lender/portfolio/writeoffs?act=confirm — Retry is a genuine re-read of partner_loan_counts + partner_loans(status => written_off): no confirm step, no audit row of its own, no money' },
   { file: 'W3027-partner-writeoffs-mutate-success.html', wave: '5a', verdict: 'PARITY-DECOR', note: '?act=success — the figures and the list were read again' },
   { file: 'W3028-partner-writeoffs-mutate-failure.html', wave: '5a', verdict: 'PARITY-DECOR', note: '?act=failure — nothing changed' },
-  // ── 5b · COLLECTIONS THE PLATFORM DOES NOT DO (13) — decided by 5b ──
-  { file: 'W219-partner-collections.html', wave: '5b', verdict: 'pending_5b', note: 'PARTNER-5b — an honest page that reads nothing (survey §1B)' },
-  { file: 'W220-partner-collections-case.html', wave: '5b', verdict: 'pending_5b', note: 'PARTNER-5b — an honest page; its two canon inputs are never rendered (survey §1C)' },
-  { file: 'W221-partner-restructure.html', wave: '5b', verdict: 'pending_5b', note: 'PARTNER-5b — an honest page (survey §1D)' },
-  { file: 'W2914-partner-collections-form-form-error.html', wave: '5b', verdict: 'pending_5b', note: 'PARTNER-5b — the collections form chain (survey §1G)' },
-  { file: 'W2915-partner-collections-form-review.html', wave: '5b', verdict: 'pending_5b', note: 'PARTNER-5b — the collections form chain' },
-  { file: 'W2916-partner-collections-form-success.html', wave: '5b', verdict: 'pending_5b', note: 'PARTNER-5b — the collections form chain' },
-  { file: 'W2917-partner-collections-form-failure.html', wave: '5b', verdict: 'pending_5b', note: 'PARTNER-5b — the collections form chain' },
-  { file: 'W2918-partner-collections-mutate-confirm.html', wave: '5b', verdict: 'pending_5b', note: 'PARTNER-5b — the collections mutate chain (survey §1H)' },
-  { file: 'W2919-partner-collections-mutate-success.html', wave: '5b', verdict: 'pending_5b', note: 'PARTNER-5b — the collections mutate chain' },
-  { file: 'W2920-partner-collections-mutate-failure.html', wave: '5b', verdict: 'pending_5b', note: 'PARTNER-5b — the collections mutate chain' },
-  { file: 'W2999-partner-restructure-mutate-confirm.html', wave: '5b', verdict: 'pending_5b', note: 'PARTNER-5b — the restructure mutate chain (survey §1I)' },
-  { file: 'W3000-partner-restructure-mutate-success.html', wave: '5b', verdict: 'pending_5b', note: 'PARTNER-5b — the restructure mutate chain' },
-  { file: 'W3001-partner-restructure-mutate-failure.html', wave: '5b', verdict: 'pending_5b', note: 'PARTNER-5b — the restructure mutate chain' },
+  // ── 5b · COLLECTIONS THE PLATFORM DOES NOT DO (13) — decided by 5b (founder 5b-1 … 5b-5) ──
+  { file: 'W219-partner-collections.html', wave: '5b', verdict: 'BUILT (honest)', note: '/lender/collections — an HONEST PAGE THAT READS NOTHING (the W217 shape: no partner read, no audit row, no error state; the state is the public flag map, `partner_console` OFF as OFF). The statement: a lender does not collect on this platform; the organisation that serves the farmer is the lender of record and services its own book; no borrower in arrears is named, contacted or ranked here. Beside it: where arrears are COUNTED (real links to /lender/repayments and /lender/portfolio/aging) with 5a\'s zero reasons reused by key and no figure printed; PARTNER-4b\'s code-of-conduct refusals reused by key; and the one true line as an ABSENCE — nothing on this platform restricts a borrower\'s selling because of a loan. "Take next case" is DECOR → W2918–W2920. The KPI tiles, the recovery rate, the named-case table, the bulk bar, the dairy inference, "collections role", "every contact is logged", "automatically past the DPD threshold" and "plan settings" are refused by name' },
+  { file: 'W220-partner-collections-case.html', wave: '5b', verdict: 'BUILT (honest)', note: '/lender/collections/[id] — an HONEST PAGE THAT READS NOTHING; the `[id]` is a LOAN id and EVERY id prints the same page (no not-found, no existence oracle). There is no collections case on this platform; nothing about a borrower is shown or looked up — no name, phone, reason, contact, promise or meeting; the loan\'s own facts are on its loan page (a real link). The canon\'s TWO inputs are NEVER rendered: no input, select, textarea, label-for or form in the DOM. "Log contact" and "Record promise" are DECOR → W2914–W2917 with NO mailbox line; "Propose restructure" is a real link to W221. The name and phone, the case header, the family narrative and the cross-module "platform data", the re-consent and recording, the contact entries, the meeting with the lender\'s staff, the promise ladder, "what is off the table (platform-enforced)", the archive promise, "append-only and safe" and "every open is logged" are refused by name' },
+  { file: 'W221-partner-restructure.html', wave: '5b', verdict: 'BUILT (honest)', note: '/lender/collections/[id]/restructure — an HONEST PAGE THAT READS NOTHING: a restructure is proposed and decided by the organisation that serves the farmer, not from this console; the lender is not a party to it on this platform and nothing of any proposal is shown; a restructure cannot yet be accepted or activated on the platform; the loan\'s status appears on its own page (a real link). "restructure ≠ default" kept as the platform\'s doctrine. "Take to mediation" is DECOR → W2999–W3001 and never repeats the canon\'s acceptance order. The stale backend banner, the terms comparison, the weather clause and the credit-record note, the asset-classification block, the acceptance flow, the comparison document, "versioned server-side", the three-people promise, the no-acceptance and starts-from-a-case states and the canon\'s role names are refused by name' },
+  { file: 'W2914-partner-collections-form-form-error.html', wave: '5b', verdict: 'DECOR', note: '/lender/collections/[id]?form=error — the collections FORM chain, ONE entry on its triggering page (the 4c `kcc_form` shape) with NO mailbox line: there are no fields to put right, because no field exists' },
+  { file: 'W2915-partner-collections-form-review.html', wave: '5b', verdict: 'DECOR', note: '?form=review — nothing was entered, nothing is shown back, no second person checks anything; the canon\'s "Back to edit" → W219 is a DELTA' },
+  { file: 'W2916-partner-collections-form-success.html', wave: '5b', verdict: 'DECOR', note: '?form=success — nothing was recorded and the borrower is told nothing; the canon\'s mutate-chain body (audit trail · zero-sum) is refused' },
+  { file: 'W2917-partner-collections-form-failure.html', wave: '5b', verdict: 'DECOR', note: '?form=failure — nothing was attempted; the canon\'s "Retry — back to confirm" is a DELTA (a form chain has no confirm page)' },
+  { file: 'W2918-partner-collections-mutate-confirm.html', wave: '5b', verdict: 'DECOR', note: '/lender/collections?act=confirm — "Take next case" is a refused act and the page reads nothing, so there is nothing to confirm or re-read (the case page carries the same chain with `files: []`)' },
+  { file: 'W2919-partner-collections-mutate-success.html', wave: '5b', verdict: 'DECOR', note: '?act=success — nothing happened, so nothing succeeded' },
+  { file: 'W2920-partner-collections-mutate-failure.html', wave: '5b', verdict: 'DECOR', note: '?act=failure — nothing was attempted and nothing changed' },
+  { file: 'W2999-partner-restructure-mutate-confirm.html', wave: '5b', verdict: 'DECOR', note: '/lender/collections/[id]/restructure?act=confirm — moving a proposal is the cooperative\'s act on the tenant plane, not a lender\'s; nothing is confirmed here' },
+  { file: 'W3000-partner-restructure-mutate-success.html', wave: '5b', verdict: 'DECOR', note: '?act=success — nothing happened, so nothing succeeded' },
+  { file: 'W3001-partner-restructure-mutate-failure.html', wave: '5b', verdict: 'DECOR', note: '?act=failure — nothing was attempted and nothing changed' },
   // ── 5c · THE PROMISE THE PLATFORM SETS (6) — decided by 5c ──
   { file: 'W214-partner-sla-reports.html', wave: '5c', verdict: 'pending_5c', note: 'PARTNER-5c — the promise the platform sets (survey §1A)' },
   { file: 'W3009-partner-sla-export-queued.html', wave: '5c', verdict: 'pending_5c', note: 'PARTNER-5c — the SLA export chain (survey §1N)' },
@@ -157,12 +287,15 @@ export const PARTNER5_CANON_FILES: readonly { file: string; wave: '5a' | '5b' | 
 ]);
 
 // ── THE DECOR / PARITY-DECOR CHAINS: each is a query state of its parent page ──
-export type Chain5Id = 'aging_export' | 'aging_act' | 'writeoffs_export' | 'writeoffs_act';
+export type Chain5Id = 'aging_export' | 'aging_act' | 'writeoffs_export' | 'writeoffs_act'
+  | 'collections_form' | 'collections_act' | 'case_act' | 'restructure_act';
 export interface Chain5Def {
   id: Chain5Id; wave: '5a' | '5b' | '5c'; param: string; page: string; surface: Partner5Surface; states: readonly string[];
   key: (state: string) => string; files: readonly string[];
   /** An export chain prints "exports are not available … write to the partners mailbox" + the mailbox FACT (founder 5a-8, 2b-1). */
   mailbox?: boolean;
+  /** PC-56 PARTNER-5b (the 4c precedent): a chain of an HONEST page prints that page's founder-approved statement first. */
+  statement?: string;
 }
 export const PARTNER5_CHAINS: readonly Chain5Def[] = Object.freeze([
   { id: 'aging_export', wave: '5a', mailbox: true, param: 'export', page: '/lender/portfolio/aging', surface: 'aging_export', states: ['queued', 'ready'],
@@ -173,6 +306,18 @@ export const PARTNER5_CHAINS: readonly Chain5Def[] = Object.freeze([
     key: (s: string) => `partner5.chain.writeoffsExport.${s}`, files: ['W3024', 'W3025'] },
   { id: 'writeoffs_act', wave: '5a', param: 'act', page: '/lender/portfolio/writeoffs', surface: 'writeoffs_act', states: ['confirm', 'success', 'failure'],
     key: (s: string) => `partner5.chain.writeoffsAct.${s}`, files: ['W3026', 'W3027', 'W3028'] },
+  // ── PC-56 PARTNER-5b · the four DECOR chains of the three honest pages (founder 5b-5). All DECOR: the pages read nothing, so no Retry is a
+  // re-read. Files are listed ONCE, on the page the canon's trigger lives on; each state's Back is the TRIGGERING page (never the canon's
+  // W219 for a chain opened from the case page). The collections FORM chain carries NO `mailbox`: the platform must not offer to relay a
+  // lender's contact with a cooperative's member (survey E4) — unlike 4c's `kcc_form`, which does.
+  { id: 'collections_form', wave: '5b', param: 'form', page: '/lender/collections/[id]', surface: 'collections_form', states: ['error', 'review', 'success', 'failure'],
+    key: (s: string) => `partner5.chain.collectionsForm.${s}`, files: ['W2914', 'W2915', 'W2916', 'W2917'], statement: 'partner5.case.statement' },
+  { id: 'collections_act', wave: '5b', param: 'act', page: '/lender/collections', surface: 'collections_act', states: ['confirm', 'success', 'failure'],
+    key: (s: string) => `partner5.chain.collectionsAct.${s}`, files: ['W2918', 'W2919', 'W2920'], statement: 'partner5.collections.statement' },
+  { id: 'case_act', wave: '5b', param: 'act', page: '/lender/collections/[id]', surface: 'case_act', states: ['confirm', 'success', 'failure'],
+    key: (s: string) => `partner5.chain.caseAct.${s}`, files: [], statement: 'partner5.case.statement' },
+  { id: 'restructure_act', wave: '5b', param: 'act', page: '/lender/collections/[id]/restructure', surface: 'restructure_act', states: ['confirm', 'success', 'failure'],
+    key: (s: string) => `partner5.chain.restructureAct.${s}`, files: ['W2999', 'W3000', 'W3001'], statement: 'partner5.restructure.statement' },
 ]);
 export function chain5ById(id: Chain5Id): Chain5Def { return PARTNER5_CHAINS.find((c) => c.id === id) as Chain5Def; }
 /** The chain state a page was opened in (`?act=confirm` …), or null for the page itself / an unknown state. */

@@ -185,13 +185,18 @@ describe('PC-56 PARTNER-5a · brand guard over the arrears pages (founder 5a-8: 
   // the file floor: every components/partner5/*.tsx, the two pages and every features/partner5/* module — found on disk, not listed by hand,
   // so a new file in any of those folders is scanned without anyone remembering to add it
   const DIRS = [path.join(SRC, 'components', 'partner5'), path.join(SRC, 'features', 'partner5'),
-    path.join(SRC, 'app', 'lender', 'portfolio', 'aging'), path.join(SRC, 'app', 'lender', 'portfolio', 'writeoffs')];
+    path.join(SRC, 'app', 'lender', 'portfolio', 'aging'), path.join(SRC, 'app', 'lender', 'portfolio', 'writeoffs'),
+    // PC-56 PARTNER-5b · the collections tree (W219 / W220 / W221) joins the floor, recursively
+    path.join(SRC, 'app', 'lender', 'collections')];
   const mine = files().filter((f) => DIRS.some((d) => f.startsWith(d + path.sep))).map((f) => path.relative(SRC, f)).sort();
-  it('the floor holds: three views, two pages, two feature modules — all scanned', () => {
+  it('the floor holds: six views, five pages, two feature modules — all scanned (PARTNER-5b: + three views, three pages)', () => {
     expect(mine).toEqual(expect.arrayContaining(['components/partner5/LenderAgingView.tsx', 'components/partner5/LenderChain5.tsx',
       'components/partner5/LenderWriteoffsView.tsx', 'app/lender/portfolio/aging/page.tsx', 'app/lender/portfolio/writeoffs/page.tsx',
-      'features/partner5/figures.ts', 'features/partner5/refusals.ts']));
-    expect(mine.length).toBeGreaterThanOrEqual(7);
+      'features/partner5/figures.ts', 'features/partner5/refusals.ts',
+      // PC-56 PARTNER-5b
+      'components/partner5/LenderCollectionsView.tsx', 'components/partner5/LenderCollectionsCaseView.tsx', 'components/partner5/LenderRestructureView.tsx',
+      'app/lender/collections/page.tsx', 'app/lender/collections/[id]/page.tsx', 'app/lender/collections/[id]/restructure/page.tsx']));
+    expect(mine.length).toBeGreaterThanOrEqual(13);
   });
   it('none carries the platform\'s name, a mailbox, a domain, or the canon\'s institution, person, place, phone, loan / case reference, scheme, rainfall figure or sha fragment', () => {
     for (const rel of mine) {

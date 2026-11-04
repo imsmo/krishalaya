@@ -476,7 +476,7 @@ export const LENDER_BOOK_REDIRECTS: Readonly<Record<string, string>> = Object.fr
  *  PC-56 PARTNER-4c · W216 / W217 cannot be ORDINARY rows — their canon routes are `lender/kcc/[id]` and `lender/kcc/[id]/drawls`, which
  *  need a loan id — so the KCC row carries `needsLoanId` and is drawn ONLY where a loan id is in scope: on the loan page (W215), which is
  *  the inbound edge the canon never drew, and on the two KCC pages themselves. Everywhere else it is absent rather than dead. */
-export const LENDING_SUBNAV: readonly { href: string; key: string; wave: '4a' | '4b' | '4c' | '5a'; live: boolean; needsLoanId?: boolean }[] = Object.freeze([
+export const LENDING_SUBNAV: readonly { href: string; key: string; wave: '4a' | '4b' | '4c' | '5a' | '5b'; live: boolean; needsLoanId?: boolean }[] = Object.freeze([
   { href: '/lender/queue', key: 'partner4.subnav.queue', wave: '4a', live: true },
   { href: '/lender/portfolio', key: 'partner4.subnav.portfolio', wave: '4a', live: true },
   // PC-56 PARTNER-5a (survey F-16): W222 and W223 are TOTAL ORPHANS in the canon — W212, their crumb parent, links to neither — so these
@@ -487,6 +487,10 @@ export const LENDING_SUBNAV: readonly { href: string; key: string; wave: '4a' | 
   // from the pay-outs page and the sub-navigation only, which is the inbound edge the canon never drew (survey F-22).
   { href: '/lender/disbursements', key: 'partner4.subnav.disbursements', wave: '4b', live: true },
   { href: '/lender/repayments', key: 'partner4.subnav.repayments', wave: '4b', live: true },
+  // PC-56 PARTNER-5b (founder 5b-6, survey E2 / F-16): ONE Collections row, beside Repayments (the canon's crumb is "Lending › Repayments ›
+  // Collections"), LIVE — the honest page that says a lender does not collect here. NEVER a case row and never a restructure row: both are
+  // addressed by a loan and reached only from the collections pages themselves. Nothing is added to the sidebar.
+  { href: '/lender/collections', key: 'partner5.subnav.collections', wave: '5b', live: true },
   // PC-56 PARTNER-4c · LIVE, and drawn against the loan whose page you are on (`/lender/kcc/<that loan>`).
   { href: '/lender/kcc/[id]', key: 'partner4.subnav.kcc', wave: '4c', live: true, needsLoanId: true },
 ]);

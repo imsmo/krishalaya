@@ -747,14 +747,148 @@ describe('PC-56 PARTNER-5a · claims guard (the book in arrears, as counts)', ()
     const path2 = require('node:path') as typeof import('node:path');
     const SRC = path2.join(__dirname, '..');
     const files = ['components/partner5/LenderAgingView.tsx', 'components/partner5/LenderWriteoffsView.tsx', 'components/partner5/LenderChain5.tsx',
-      'app/lender/portfolio/aging/page.tsx', 'app/lender/portfolio/writeoffs/page.tsx'];
+      'app/lender/portfolio/aging/page.tsx', 'app/lender/portfolio/writeoffs/page.tsx',
+      // PC-56 PARTNER-5b · NAMED UPDATE: the three honest collections views and pages join the scan (and the folder listing below)
+      'components/partner5/LenderCollectionsView.tsx', 'components/partner5/LenderCollectionsCaseView.tsx', 'components/partner5/LenderRestructureView.tsx',
+      'app/lender/collections/page.tsx', 'app/lender/collections/[id]/page.tsx', 'app/lender/collections/[id]/restructure/page.tsx'];
     expect(fs2.readdirSync(path2.join(SRC, 'components', 'partner5')).filter((f) => f.endsWith('.tsx')).sort())
-      .toEqual(['LenderAgingView.tsx', 'LenderChain5.tsx', 'LenderWriteoffsView.tsx']);
+      .toEqual(['LenderAgingView.tsx', 'LenderChain5.tsx', 'LenderCollectionsCaseView.tsx', 'LenderCollectionsView.tsx', 'LenderRestructureView.tsx', 'LenderWriteoffsView.tsx']);
     for (const rel of files) {
       const code = fs2.readFileSync(path2.join(SRC, rel), 'utf8').split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
       expect([rel, code.length > 300]).toEqual([rel, true]);
       for (const [name, re] of [['%', /%/], ['toFixed', /toFixed/], ['percent', /percent/i], ['borrowerUserId', /borrowerUserId|borrower_user_id/],
         ['channel', /channel/i], ['reason', /reason/i], ['cause', /cause/i], ['writtenOffAt', /writtenOffAt|written_off_at|writtenOffBy/i]] as const) {
+        expect([rel, name, re.test(code)]).toEqual([rel, name, false]);
+      }
+    }
+  });
+});
+
+// ══ PC-56 PARTNER-5b · COLLECTIONS THE PLATFORM DOES NOT DO (founder 5b-1 … 5b-5; doors Q4 + Q5) ════════════════════════════════════════════
+// The words of W219, W220 and W221 that would put a lender inside a cooperative's arrears: a rate of recovery, named cases, a next case, a
+// promise tracked, a last contact, a contact log, a transcript, a field officer, a meeting fixed, a dairy inference, a name one click away,
+// a phone, a case or loan number, a committee, an asset classification under a regulator's rules, a weather clause, a rainfall figure, three
+// humans, an acceptance by OTP and voice, a think-it-over window, a comparison document, a collections role, "platform-enforced", a record
+// that cannot change, plan settings, and the canon's acceptance order. Each regex is PROVEN on its own canon phrase and narrowed to the
+// AFFIRMATIVE shape where a refusal this scope prints carries the bare word (P4bR D-5). Applied to every `partner5.collections.` /
+// `partner5.case.` / `partner5.restructure.` / 5b chain value AND to every key PARTNER5_REFUSALS prints on a 5b surface (including the
+// PARTNER-4 keys it reuses), in en, hi and gu; and to the CODE of the three pages and their three views.
+const SCOPE_5B = /^partner5\.(collections\.|case\.|restructure\.|subnav\.collections$|chain\.(collectionsForm|collectionsAct|caseAct|restructureAct)\.)/;
+const SURFACES_5B = ['collections', 'collections_case', 'restructure', 'collections_form', 'collections_act', 'case_act', 'restructure_act'] as const;
+const FORBIDDEN_5B: readonly [string, RegExp, string][] = [
+  ['%', /%/, 'Cure rate (90d) 83%'],
+  ['cure rate', /cure rate/i, 'Cure rate (90d) 83% — most arrears cure within one season'],
+  ['named case', /named cases?\b/i, '3 highlighted of 14 named cases (≥16 DPD)'],
+  ['take next', /take next/i, 'Take next case'],
+  // stricter than the brief's affirmative form: no value of this scope says the phrase at all (the honest sentences say "promise to repay")
+  ['promise-to-pay', /promise[- ]to[- ]pay/i, 'promise-to-pay 21 Jul (post-harvest) · promise tracked'],
+  ['promise tracked', /promises? tracked|promise(-to-pay)? tracking/i, 'promise-to-pay tracking'],
+  ['last contact', /last contact/i, 'DPD ▾ · Case · Arrears · Last contact · Stage'],
+  ['contact log (affirmative)', /contact logs? (is|are|\()|contact logs and promises|every (borrower )?contact (is )?logged|contacts? logged with/i, 'Contact log (every touch, code-of-conduct)'],
+  ['transcript', /transcript/i, 'no pressure language (transcript scored ✓)'],
+  ['field officer', /field officer/i, 'Present: borrower, FPO coordinator (his own federation), your field officer.'],
+  ['mediation fixed', /mediation (scheduled|thu|agreed)/i, 'FPO mediation Thu 16 Jul'],
+  ['vet visit', /vet[- ]visit/i, 'milk volume dip — vet visit suggested'],
+  ['milk volume', /milk volumes?/i, 'the system noticed her milk volumes dipped BEFORE the missed instalment'],
+  ['fix the cow', /fix the cow/i, 'Fix the cow, fix the loan.'],
+  ['name visible', /name (visible|in case view)/i, 'name in case view — logged'],
+  ['+91', /\+91/, '+91 95••• ••217'],
+  ['CASE-n', /CASE-\d/, 'CASE-0041'],
+  ['LN-20xx', /LN-20\d\d/, 'LN-2026-0041'],
+  ['committee sign-off', /committee sign-?off/i, 'Asset seizure before mediation + 90 DPD + committee sign-off'],
+  ['NPA per / RBI norms', /NPA per|RBI norms|\bNPA\b/i, 'NPA per your RBI norms — the platform never helps hide it'],
+  ['monsoon clause', /monsoon clause/i, 'monsoon clause qualifies'],
+  ['rainfall', /rainfall/i, 'June rainfall 61% of normal, district notification attached'],
+  ['credit record notes', /credit record notes/i, 'credit record notes the weather cause'],
+  ['weather, not will', /weather, not will/i, 'his revenue gap is weather, not will'],
+  ['three humans', /three humans/i, 'three humans, always'],
+  ['OTP + voice', /OTP \+ voice|OTP and voice/i, 'Acceptance by OTP + voice'],
+  ['your checker', /your checker/i, 'your checker countersigns'],
+  ['think-it-over', /think-it-over/i, '24h think-it-over window'],
+  ['comparison PDF', /comparison PDF/i, 'borrower gets the comparison PDF forever'],
+  ['collections role / lead', /collections (role|lead)/i, 'Named cases need collections role'],
+  ['platform-enforced', /platform-enforced/i, 'What is off the table (platform-enforced)'],
+  // the WORD, not only its affirmative form: no value printed on a 5b surface uses it at all (the refusal says "kept safe" instead)
+  ['append-only', /\bappend-?only\b/i, 'Contact log is append-only and safe.'],
+  ['plan settings (affirmative)', /see plan settings/i, 'This module is switched off for this tenant/plan (feature flag). See plan settings.'],
+  ['after borrower accepts', /after (the )?borrower accepts?/i, 'Take to mediation (checker after borrower accepts)'],
+  ['his choice, documented', /his choice,? documented/i, 'His choice, documented.'],
+  ['resets the tone', /resets the tone|escalates one step/i, 'a kept promise resets the tone; a missed one escalates one step, never three'],
+  ['full contact history', /full contact history/i, 'Cured cases archive with their full contact history.'],
+  ['every open is logged', /every open is logged|this access is logged/i, 'every open is logged — including yours, just now.'],
+  ['versioned server-side', /versioned server-side/i, 'The draft is versioned server-side.'],
+  ['automatically past', /automatically past/i, 'Cases enter this queue automatically past the DPD threshold.'],
+  ['gets it in Gujarati', /gets it in Gujarati/i, 'Record promise (he gets it in Gujarati, in writing)'],
+  ['stale banner', /DELTA-033|Backend pending|Design leads/i, 'Backend pending (DELTA-033): loan_restructures terms table'],
+  ['all loans current', /all loans current|quiet work/i, 'All loans current — the auto-deduction channels are doing their quiet work.'],
+  ['DPD', /\bDPD\b/, '16–30 DPD (named cases)'],
+];
+/** The honest sentences 5b must NOT ban: the reused 4b-5 refusals and this wave's own refusals that say no to the same words. */
+const PERMITTED_5B = [
+  'Nothing is logged about who was contacted, because there is no contact tool here and no record of one.',
+  'No record of contact exists to be kept safe. The word for a record the database refuses to change is not used about anything on this page.',
+  'No promise to repay is taken, kept or sent here, and this page has no field to type one into.',
+  'A restructure can carry a word that says mediation, and nothing anywhere makes it a step that must happen before another.',
+  'There are no plan settings for your organisation to open. Nothing on this platform lets a partner switch its own modules on.',
+  'No borrower who is behind on a loan is listed here — not by name, not by reference, not by row.',
+];
+/** The three statements and the absence line founder 5b-2 / 5b-3 / 5b-4 pinned, VERBATIM. */
+const PINNED_5B: Readonly<Record<string, string>> = {
+  'partner5.collections.statement': 'A lender does not collect on this platform. The organisation that serves the farmer is the lender of record and services its own book. No borrower in arrears is named, contacted or ranked here.',
+  'partner5.case.statement': "There is no collections case on this platform. Nothing about a borrower is shown or looked up here — no name, phone, reason, contact, promise or meeting. This loan's own facts are on its loan page.",
+  'partner5.restructure.statement': "A restructure is proposed and decided by the organisation that serves the farmer, not from this console. The lender is not a party to it on this platform, and nothing of any proposal is shown here. A restructure cannot yet be accepted or activated on the platform. The loan's status appears on its own page.",
+  'partner5.collections.noSellingBlock': "Nothing on this platform restricts a borrower's selling because of a loan.",
+};
+const keys5B = (c: Record<string, string>) => [...new Set([...Object.keys(c).filter((k) => SCOPE_5B.test(k)),
+  ...PARTNER5_REFUSALS.filter((r) => r.surfaces.some((x) => (SURFACES_5B as readonly string[]).includes(x))).map((r) => r.key)])];
+
+describe('PC-56 PARTNER-5b · claims guard (collections the platform does not do)', () => {
+  it('every 5b forbidden word is caught when planted once (each regex proven on its own canon phrase); none of this scope\'s honest sentences trips one', () => {
+    for (const [name, re, planted] of FORBIDDEN_5B) expect([name, re.test(planted)]).toEqual([name, true]);
+    for (const ok of PERMITTED_5B) for (const [name, re] of FORBIDDEN_5B) expect([ok, name, re.test(ok)]).toEqual([ok, name, false]);
+    for (const [k, v] of Object.entries(PINNED_5B)) for (const [name, r] of [...FORBIDDEN_5B, ...FORBIDDEN_5A]) expect([k, name, r.test(v)]).toEqual([k, name, false]);
+    // the narrowed contact-log regex spares PARTNER-4b's reused refusal and still catches the canon's three forms
+    const re = (n: string) => (FORBIDDEN_5B.find(([x]) => x === n) as [string, RegExp, string])[1];
+    expect(re('contact log (affirmative)').test(en['partner4.refusal.contactLog'])).toBe(false);
+    for (const canon of ['every contact logged', 'every borrower contact is logged with time + channel + summary', 'Contact logs and promises are server-side.']) {
+      expect([canon, re('contact log (affirmative)').test(canon)]).toEqual([canon, true]);
+    }
+  });
+  it.each(Object.entries(CATS))('%s: no 5b claim in any 5b value, nor in any key PARTNER5_REFUSALS prints on a 5b surface; no "%" anywhere', (_l, cat) => {
+    const c = cat as Record<string, string>;
+    const keys = keys5B(c);
+    expect(keys.length).toBeGreaterThan(80);
+    for (const k of keys) {
+      expect([k, typeof c[k]]).toEqual([k, 'string']);
+      for (const [name, re] of [...FORBIDDEN_5B.map(([n, r]) => [n, r] as const), ...FORBIDDEN]) expect([k, name, re.test(c[k])]).toEqual([k, name, false]);
+      expect([k, c[k].includes('%')]).toEqual([k, false]);
+    }
+    // every key of the scope is in all three catalogues
+    for (const k of Object.keys(en).filter((x) => SCOPE_5B.test(x))) expect([k, typeof c[k] === 'string' && c[k].length > 0]).toEqual([k, true]);
+  });
+  it('founder 5b-2 / 5b-3 / 5b-4 (en, VERBATIM): the three statements and the absence line; present and distinct in hi and gu', () => {
+    for (const [k, v] of Object.entries(PINNED_5B)) {
+      expect([k, en[k]]).toEqual([k, v]);
+      expect([k, typeof hi[k] === 'string' && hi[k].length > 30 && hi[k] !== en[k], typeof gu[k] === 'string' && gu[k].length > 30 && gu[k] !== en[k]]).toEqual([k, true, true]);
+      expect([k, hi[k] !== gu[k]]).toEqual([k, true]);
+    }
+    // the absence line is an ABSENCE, never a rule the platform keeps
+    expect(en['partner5.collections.noSellingBlock']).toMatch(/^Nothing on this platform/);
+    expect(/enforc|guarantee|never blocked|protect/i.test(en['partner5.collections.noSellingBlock'])).toBe(false);
+    // the restructure chain sentence never repeats the canon's acceptance order
+    for (const s of ['confirm', 'success', 'failure']) expect(/accept/i.test(en[`partner5.chain.restructureAct.${s}.body`])).toBe(false);
+  });
+  it('the three pages and their three views name no read, no input, no figure, no borrower and no proposal field in their CODE', () => {
+    const fs2 = require('node:fs') as typeof import('node:fs');
+    const path2 = require('node:path') as typeof import('node:path');
+    const SRC = path2.join(__dirname, '..');
+    for (const rel of ['components/partner5/LenderCollectionsView.tsx', 'components/partner5/LenderCollectionsCaseView.tsx', 'components/partner5/LenderRestructureView.tsx',
+      'app/lender/collections/page.tsx', 'app/lender/collections/[id]/page.tsx', 'app/lender/collections/[id]/restructure/page.tsx']) {
+      const code = fs2.readFileSync(path2.join(SRC, rel), 'utf8').split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
+      expect([rel, code.length > 300]).toEqual([rel, true]);
+      for (const [name, re] of [['partnerClient', /partnerClient|api-client|@krishalaya\/sdk-js/], ['mailbox', /mailbox/i], ['<input', /<input|<select|<textarea|<form|<label|htmlFor/],
+        ['formatMoney', /formatMoney|formatCount|toFixed|%/], ['borrower field', /borrowerUserId|borrower_user_id|borrowerName|phone/i],
+        ['proposal field', /instalment|tenor|rateApr|holiday|caseRef|case_ref|proposedBy|checkerId|mediationAt/i], ['figure', /\{\s*\d|\bcount\b/]] as const) {
         expect([rel, name, re.test(code)]).toEqual([rel, name, false]);
       }
     }

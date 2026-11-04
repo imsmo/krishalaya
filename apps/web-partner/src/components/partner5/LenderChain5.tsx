@@ -6,6 +6,10 @@
 //     no audit row of its own, no money.
 // Each state prints its refusals BY NAME and links back to the page it was opened FROM. No form, no act. The shape of partner4/LenderChain.
 // Also the arrears surfaces' refusal list (`LenderRefusals5`), printed BY NAME from features/partner5/refusals.ts.
+// PC-56 PARTNER-5b adds the four DECOR chains of the three honest collections pages (W2914–W2917 `?form=`, W2918–W2920 `?act=`, the case
+// page's `?act=` and W2999–W3001 `?act=`). Each prints its page's founder-approved statement first (the 4c `statement` precedent), never a
+// mailbox line (the collections form chain must not offer to relay anything), and links back to the TRIGGERING page — a record's own page
+// passes `back`; without one, a pattern page falls back to its list page, never to a route pattern like `[id]`.
 import Link from 'next/link';
 import type { Tr } from '../NotYet';
 import type { Mailbox } from '../partner1/HelpView';
@@ -23,12 +27,14 @@ export function LenderRefusals5({ t, surface }: { t: Tr; surface: Partner5Surfac
   );
 }
 
-export function LenderChain5({ t, chain, state, mailbox }: { t: Tr; chain: Chain5Id; state: string; mailbox?: Mailbox }) {
+export function LenderChain5({ t, chain, state, mailbox, back }: { t: Tr; chain: Chain5Id; state: string; mailbox?: Mailbox; back?: string }) {
   const c = chain5ById(chain);
   const k = c.key(state);
+  const href = back ?? (c.page.includes('[id]') ? c.page.slice(0, c.page.indexOf('/[id]')) : c.page);
   return (
     <section className="kv-card kv-chain" data-kv-chain={chain} data-kv-chain-state={state} role="status">
       <h1>{t.t(`${k}.title`)}</h1>
+      {c.statement && <p className="kv-statement" data-kv-statement={c.statement}>{t.t(c.statement)}</p>}
       <p>{t.t(`${k}.body`)}</p>
       {c.mailbox && (
         <div data-kv-export-note="true">
@@ -37,7 +43,7 @@ export function LenderChain5({ t, chain, state, mailbox }: { t: Tr; chain: Chain
         </div>
       )}
       <LenderRefusals5 t={t} surface={c.surface} />
-      <p className="kv-pager"><Link className="kv-btn" href={c.page} data-kv-back={c.page}>{t.t('partner4.chain.back')}</Link></p>
+      <p className="kv-pager"><Link className="kv-btn" href={href} data-kv-back={href}>{t.t('partner4.chain.back')}</Link></p>
     </section>
   );
 }
