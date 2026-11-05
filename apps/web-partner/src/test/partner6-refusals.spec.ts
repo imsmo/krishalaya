@@ -9,7 +9,8 @@ import { en } from '../i18n/en';
 import { hi } from '../i18n/hi';
 import { gu } from '../i18n/gu';
 import {
-  CONSENTS_REDIRECTS, PARTNER6_CANON_FILES, PARTNER6_CHAINS, PARTNER6_DELTAS, PARTNER6_REFUSALS, SETTLEMENTS_REDIRECTS, SURFACES_6A, SURFACES_6B, chain6ById, chain6State,
+  CONSENTS_REDIRECTS, NOTIFICATIONS_REDIRECTS, PARTNER6_CANON_FILES, PARTNER6_CHAINS, PARTNER6_DELTAS, PARTNER6_REFUSALS, SETTLEMENTS_REDIRECTS, SURFACES_6A, SURFACES_6B, SURFACES_6C,
+  chain6ById, chain6State,
   partner6RefusalKeys,
 } from '../features/partner6/refusals';
 import { PARTNER2_REFUSALS } from '../features/partner2/refusals';
@@ -37,7 +38,8 @@ const chainKeys = (c: { states: readonly string[]; key: (s: string) => string })
 
 describe('PC-56 PARTNER-6a · the PARTNER-6 canon registry', () => {
   // PC-56 PARTNER-6b · NAMED UPDATE: 6b's 14 are decided (W213 / W224 BUILT (honest), the 12 chain files DECOR) — no `pending_6b` remains
-  it('31 files — the survey §C list exactly — each with ONE verdict: 6a = 5 decided, 6b = 14 decided, 6c = 12 pending_6c; each exists on disk', () => {
+  // PC-56 PARTNER-6c · NAMED UPDATE: 6c's 12 are decided (W270 / W271 BUILT (honest), W2960–W2963 REAL, W2964–W2969 DECOR) — no `pending_6c` remains; PARTNER-6 is 31 of 31
+  it('31 files — the survey §C list exactly — each with ONE verdict: 6a = 5, 6b = 14, 6c = 12, all decided; each exists on disk', () => {
     const files = PARTNER6_CANON_FILES.map((f) => f.file);
     expect([...files].sort()).toEqual([...SURVEY_C].sort());
     expect(new Set(files).size).toBe(31);
@@ -47,9 +49,11 @@ describe('PC-56 PARTNER-6a · the PARTNER-6 canon registry', () => {
     expect(PARTNER6_CANON_FILES.filter((f) => f.wave === '6b').map((f) => [f.file.slice(0, f.file.indexOf('-')), f.verdict])).toEqual([
       ['W213', 'BUILT (honest)'], ['W2921', 'DECOR'], ['W2922', 'DECOR'], ['W2923', 'DECOR'], ['W2924', 'DECOR'], ['W2925', 'DECOR'],
       ['W224', 'BUILT (honest)'], ['W2987', 'DECOR'], ['W2988', 'DECOR'], ['W2989', 'DECOR'], ['W2990', 'DECOR'], ['W2991', 'DECOR'], ['W2992', 'DECOR'], ['W2993', 'DECOR']]);
-    expect(PARTNER6_CANON_FILES.filter((f) => f.verdict !== 'pending_6c').length).toBe(19);
-    expect(PARTNER6_CANON_FILES.filter((f) => f.verdict === 'pending_6c').length).toBe(12);
-    expect(PARTNER6_CANON_FILES.filter((f) => f.wave === '6c').every((f) => f.verdict === 'pending_6c')).toBe(true);
+    expect(PARTNER6_CANON_FILES.filter((f) => !(f.verdict as string).startsWith('pending')).length).toBe(31);
+    expect(PARTNER6_CANON_FILES.filter((f) => (f.verdict as string).startsWith('pending')).length).toBe(0);
+    expect(PARTNER6_CANON_FILES.filter((f) => f.wave === '6c').map((f) => [f.file.slice(0, f.file.indexOf('-')), f.verdict])).toEqual([
+      ['W270', 'BUILT (honest)'], ['W271', 'BUILT (honest)'], ['W2960', 'REAL'], ['W2961', 'REAL'], ['W2962', 'REAL'], ['W2963', 'REAL'],
+      ['W2964', 'DECOR'], ['W2965', 'DECOR'], ['W2966', 'DECOR'], ['W2967', 'DECOR'], ['W2968', 'DECOR'], ['W2969', 'DECOR']]);
     expect(PARTNER6_CANON_FILES.filter((f) => f.wave === '6c').length).toBe(12);
     // the 6a split: W213 / W224 and their chains are 6b's; W270 / W271 and theirs 6c's
     const wave = (id: string) => PARTNER6_CANON_FILES.find((f) => f.file.startsWith(`${id}-`))?.wave;
@@ -83,14 +87,13 @@ describe('PC-56 PARTNER-6a · the PARTNER-6 canon registry', () => {
     }
     for (const r of PARTNER6_REFUSALS) expect([r.id, SAYS_NO.test(en[r.key])]).toEqual([r.id, true]);
     expect(new Set(PARTNER6_REFUSALS.map((r) => r.id)).size).toBe(PARTNER6_REFUSALS.length);
-    for (const s of [...SURFACES_6A, ...SURFACES_6B]) expect([s, partner6RefusalKeys(s).length > 0]).toEqual([s, true]);
-    // PC-56 PARTNER-6b · NAMED UPDATE: a refusal may sit on a 6a OR a 6b surface, and may reuse a PARTNER-2 or PARTNER-5 key (brief E3)
+    for (const s of [...SURFACES_6A, ...SURFACES_6B, ...SURFACES_6C]) expect([s, partner6RefusalKeys(s).length > 0]).toEqual([s, true]);   // PC-56 PARTNER-6c · NAMED UPDATE: + the 6c surfaces
+    // PC-56 PARTNER-6b · NAMED UPDATE: a refusal may sit on a 6a OR a 6b surface, and may reuse a PARTNER-2 or PARTNER-5 key (brief E3) — PC-56 PARTNER-6c · NAMED UPDATE: or a 6c surface
     for (const r of PARTNER6_REFUSALS) {
-      expect([r.id, r.canon.length > 0, r.why.length > 0, r.surfaces.length > 0, r.surfaces.every((x) => SURFACES_6A.includes(x) || SURFACES_6B.includes(x))]).toEqual([r.id, true, true, true, true]);
+      expect([r.id, r.canon.length > 0, r.why.length > 0, r.surfaces.length > 0, r.surfaces.every((x) => SURFACES_6A.includes(x) || SURFACES_6B.includes(x) || SURFACES_6C.includes(x))]).toEqual([r.id, true, true, true, true]);
       expect([r.id, /^partner6\.refusal\.|^partner[2345]\.refusal\./.test(r.key)]).toEqual([r.id, true]);
     }
-    // no 6c surface carries a refusal yet (declared, not built)
-    for (const s of ['notifications', 'notification_prefs', 'notification_form', 'notification_act', 'notifications_act'] as const) expect([s, partner6RefusalKeys(s)]).toEqual([s, []]);
+    // PC-56 PARTNER-6c · NAMED UPDATE: the 6c surfaces are BUILT now — the old "no 6c surface carries a refusal yet" pin is replaced by the line above (each prints ≥ 1)
   });
   it('the reused keys are reused BY KEY — each is a key the earlier registry itself prints — and PARTNER-4\'s lender-worded chainAudit is NOT reused', () => {
     const reused = PARTNER6_REFUSALS.filter((r) => !r.key.startsWith('partner6.')).map((r) => r.key).sort();
@@ -129,7 +132,7 @@ describe('PC-56 PARTNER-6a · the PARTNER-6 canon registry', () => {
 describe('PC-56 PARTNER-6a · i18n parity for partner6.*', () => {
   it('every partner6. key is in en, hi and gu — the same key set, none English-only, none empty, hi and gu not English copies', () => {
     const k = (c: Record<string, string>) => Object.keys(c).filter((x) => x.startsWith('partner6.')).sort();
-    expect(k(en).length).toBe(134);   // PC-56 PARTNER-6b · NAMED UPDATE: 65 + 69 (the two pages, the four chains, 26 refusals)
+    expect(k(en).length).toBe(198);   // PC-56 PARTNER-6b · NAMED UPDATE: 65 + 69 (the two pages, the four chains, 26 refusals) — PC-56 PARTNER-6c · NAMED UPDATE: + 64 (the two pages, the language act, three chains, 24 refusals)
     expect(k(hi)).toEqual(k(en)); expect(k(gu)).toEqual(k(en));
     for (const key of k(en)) {
       for (const c of [en, hi, gu]) expect([key, typeof c[key] === 'string' && c[key].trim().length > 0]).toEqual([key, true]);
@@ -153,8 +156,8 @@ describe('PC-56 PARTNER-6b · the lender\'s two honest pages and their four DECO
       .split('\n').filter((l: string) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
     expect(src.includes('pending_6b')).toBe(false);
     expect(/P6B\(/.test(src)).toBe(false);
-    // 19 decided + 12 pending_6c
-    expect([PARTNER6_CANON_FILES.filter((f) => f.verdict !== 'pending_6c').length, PARTNER6_CANON_FILES.filter((f) => f.verdict === 'pending_6c').length]).toEqual([19, 12]);
+    // PC-56 PARTNER-6c · NAMED UPDATE: 31 decided + 0 pending (was 19 + 12 pending_6c)
+    expect([PARTNER6_CANON_FILES.filter((f) => !(f.verdict as string).startsWith('pending')).length, PARTNER6_CANON_FILES.filter((f) => (f.verdict as string).startsWith('pending')).length]).toEqual([31, 0]);
   });
   it('the four 6b chains: files listed ONCE on the page their trigger lives on; the export and form chains carry the mailbox; every file DECOR', () => {
     expect(PARTNER6_CHAINS.filter((c) => c.wave === '6b').map((c) => [c.id, c.page, c.param, c.states, c.files, c.statement, !!c.mailbox, c.mailboxKey ?? null])).toEqual([
@@ -207,5 +210,111 @@ describe('PC-56 PARTNER-6b · the lender\'s two honest pages and their four DECO
       'fm_dead_buttons_6b', 'w214_links_nothing', 'regulatory_form_back_to_edit', 'regulatory_form_retry_confirm', 'fm_chain_ids_6b', 'mutate_no_trigger_6b', 'chain_route_6b']));
     expect(new Set(PARTNER6_DELTAS.map((d) => d.id)).size).toBe(PARTNER6_DELTAS.length);
     expect(CONSENTS_REDIRECTS).toEqual({ '/consents': '/lender/consents' });
+  });
+});
+
+// ══ PC-56 PARTNER-6c · WHAT THE PLATFORM TELLS A PARTNER PERSON (founder 6c-1 … 6c-6; doors Q5-A / Q7-A) ══════════════════════════════════════
+describe('PC-56 PARTNER-6c · every partner person\'s two account pages, the REAL language chain and two DECOR chains in the registry', () => {
+  it('no `pending_6c` survives anywhere — not as a verdict, not in the registry\'s source, not in the verdict type; 31 of 31 decided', () => {
+    const src = fs.readFileSync(require('node:path').join(__dirname, '..', 'features', 'partner6', 'refusals.ts'), 'utf8')
+      .split('\n').filter((l: string) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
+    expect(/\bpending_\w*/.test(src)).toBe(false);
+    expect(/P6C\(/.test(src)).toBe(false);
+    expect(new Set(PARTNER6_CANON_FILES.map((f) => f.verdict))).toEqual(new Set(['BUILT (read)', 'BUILT (honest)', 'REAL', 'DECOR']));
+    expect(PARTNER6_CANON_FILES.filter((f) => f.verdict === 'REAL').map((f) => f.file.slice(0, f.file.indexOf('-')))).toEqual(['W2960', 'W2961', 'W2962', 'W2963']);
+  });
+  it('the three 6c chains: files listed ONCE on the page their trigger lives on; the form chain is REAL (the language act), no confirm state; the two act chains DECOR', () => {
+    expect(PARTNER6_CHAINS.filter((c) => c.wave === '6c').map((c) => [c.id, c.page, c.param, c.states, c.files, c.statement, c.real ?? null, !!c.mailbox])).toEqual([
+      ['notification_form', '/account/notifications/preferences', 'form', ['error', 'review', 'success', 'failure'], ['W2960', 'W2961', 'W2962', 'W2963'], 'partner6.notificationPrefs.statement', 'language', false],
+      ['notification_act', '/account/notifications/preferences', 'act', ['confirm', 'success', 'failure'], ['W2964', 'W2965', 'W2966'], 'partner6.notificationPrefs.statement', null, false],
+      ['notifications_act', '/account/notifications', 'act', ['confirm', 'success', 'failure'], ['W2967', 'W2968', 'W2969'], 'partner6.notifications.statement', null, false],
+    ]);
+    const verdictOf = (id: string) => PARTNER6_CANON_FILES.find((f) => f.file.startsWith(`${id}-`))?.verdict;
+    for (const id of chain6ById('notification_form').files) expect([id, verdictOf(id)]).toEqual([id, 'REAL']);
+    for (const c of ['notification_act', 'notifications_act'] as const) for (const id of chain6ById(c).files) expect([id, verdictOf(id)]).toEqual([id, 'DECOR']);
+    // only ONE chain in all of PARTNER-6 is REAL; across PARTNER-6, every chain file is recorded exactly once, and every chain file is a chain's
+    expect(PARTNER6_CHAINS.filter((c) => c.real).map((c) => c.id)).toEqual(['notification_form']);
+    const every = PARTNER6_CHAINS.flatMap((c) => c.files);
+    expect(every.length).toBe(25); expect(new Set(every).size).toBe(25);
+    expect(chain6ById('notification_form').states).not.toContain('confirm');
+    expect([chain6State('notification_form', { form: 'review' }), chain6State('notification_form', { form: 'confirm' }), chain6State('notification_act', { act: 'failure' }),
+      chain6State('notifications_act', { act: 'read-all' }), chain6State('notifications_act', { form: 'confirm' })]).toEqual(['review', null, 'failure', null, null]);
+  });
+  it('every 6c chain sentence, page key and language key exists ×3 with the same placeholders; every 6c surface prints at least one refusal', () => {
+    const keys = [...PARTNER6_CHAINS.filter((c) => c.wave === '6c').flatMap(chainKeys), 'partner6.notifications.statement', 'partner6.notificationPrefs.statement',
+      'partner6.notifications.webhooksLink', 'partner6.notifications.prefsLink', 'partner6.notifications.markAllRead', 'partner6.notificationPrefs.backLink',
+      'partner6.language.title', 'partner6.language.legend', 'partner6.language.submit', 'partner6.language.browserOnly', 'partner6.language.fallbackNote',
+      'partner6.language.chosen', 'partner6.language.use', 'partner6.language.current', 'nav.notifications'];
+    for (const k of keys) {
+      expect([k, typeof en[k], typeof hi[k], typeof gu[k]]).toEqual([k, 'string', 'string', 'string']);
+      expect([k, vars(hi[k])]).toEqual([k, vars(en[k])]); expect([k, vars(gu[k])]).toEqual([k, vars(en[k])]);
+    }
+    for (const s of SURFACES_6C) expect([s, partner6RefusalKeys(s).length > 0]).toEqual([s, true]);
+  });
+  it('the refusals the brief names are registered on the page that prints them; the form chain prints the three refused triggers; the reused keys BY KEY', () => {
+    const on = (id: string) => PARTNER6_REFUSALS.find((r) => r.id === id)?.surfaces ?? [];
+    for (const id of ['same_engine', 'inbox_counters', 'inbox_items', 'other_channels', 'mark_all_read', 'expand_grouped', 'page_list', 'phone_alerts', 'delivery_log_here',
+      'notifications_no_error', 'no_org_inbox', 'plan_settings']) expect([id, on(id).includes('notifications')]).toEqual([id, true]);
+    for (const id of ['prefs_matrix', 'duty_lock', 'security_channels', 'event_count', 'quiet_window', 'daily_summary', 'save_prefs', 'defaults_state', 'prefs_no_error',
+      'colleague_reach', 'template_parity', 'plan_settings']) expect([id, on(id).includes('notification_prefs')]).toEqual([id, true]);
+    // founder 6c-5: Change time, Change window and Save preferences print their refusals IN the REAL chain's states; no confirm page is claimed
+    for (const id of ['daily_summary', 'quiet_window', 'save_prefs', 'no_confirm_page', 'language_review_checker', 'language_no_audit', 'template_parity'])
+      expect([id, on(id).includes('notification_form')]).toEqual([id, true]);
+    // the REAL chain is never told "nothing was done, so nothing was written" (6a's chain_audit) — it has its own sentence
+    expect(on('chain_audit').includes('notification_form')).toBe(false);
+    for (const s of ['notification_act', 'notifications_act'] as const) for (const id of ['chain_audit', 'chain_on_call', 'chain_zero_sum_6b']) expect([s, id, on(id).includes(s)]).toEqual([s, id, true]);
+    expect(on('mark_all_read')).toEqual(['notifications', 'notifications_act']);
+    expect(on('prefs_no_error')).toEqual(['notification_prefs', 'notification_act']);
+    const key = (id: string) => PARTNER6_REFUSALS.find((r) => r.id === id)?.key;
+    expect([key('plan_settings'), key('chain_on_call'), key('chain_zero_sum_6b'), key('no_confirm_page')])
+      .toEqual(['partner4.refusal.planSettings', 'partner4.refusal.chainOnCall', 'partner4.refusal.chainZeroSum', 'partner6.refusal.noConfirmPage']);
+  });
+  it('the DELTAs the brief names; the two /notifications 307s', () => {
+    expect(PARTNER6_DELTAS.map((d) => d.id)).toEqual(expect.arrayContaining(['route_notifications', 'notifications_nav_account', 'fm_tabs_omitted', 'fm_avatar_pm_6c',
+      'fm_chain_ids_6c', 'notification_form_back_to_edit', 'form_entry_review', 'mutate_no_trigger_6c', 'chain_route_6c', 'viewer_name_omitted']));
+    expect(new Set(PARTNER6_DELTAS.map((d) => d.id)).size).toBe(PARTNER6_DELTAS.length);
+    expect(NOTIFICATIONS_REDIRECTS).toEqual({ '/notifications': '/account/notifications', '/notifications/preferences': '/account/notifications/preferences' });
+  });
+});
+
+// ══ PC-56 PARTNER-6c · THE PANEL-WIDE CHECK (founder 6c-6) — the partner panel's LAST registry closes the panel ═══════════════════════════════════
+// The 222 partner canon files (`ls web-screens | grep -- '-partner-'`), each with EXACTLY ONE verdict across the six registries
+// features/partner1 … partner6, every file on disk, and NO `pending_*` value anywhere in any partner registry's source (code, comments
+// stripped). A file decided twice, a file decided nowhere, a census file no registry names, or a pending value left behind turns this red.
+describe('PC-56 PARTNER-6c · the partner panel: 222 canon files, each with exactly one verdict across partner1 … partner6', () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const regs = [1, 2, 3, 4, 5, 6].map((n) => [n, require(`../features/partner${n}/refusals`)[`PARTNER${n}_CANON_FILES`] as readonly { file: string; verdict: string; note: string }[]] as const);
+  const all = regs.flatMap(([n, files]) => files.map((f) => ({ ...f, reg: n })));
+  const census = fs.readdirSync(CANON).filter((f) => /-partner-/.test(f) && /\.html$/.test(f)).sort();
+  it('the census is 222 partner canon files on disk; the six registries hold 45 + 50 + 26 + 39 + 31 + 31 = 222 rows', () => {
+    expect(census.length).toBe(222);
+    expect(regs.map(([n, files]) => [n, files.length])).toEqual([[1, 45], [2, 50], [3, 26], [4, 39], [5, 31], [6, 31]]);
+    expect(all.length).toBe(222);
+  });
+  it('EVERY census file has EXACTLY ONE verdict across the six registries, and every registry file is a census file that exists on disk', () => {
+    const counts = new Map<string, number>();
+    for (const r of all) counts.set(r.file, (counts.get(r.file) ?? 0) + 1);
+    expect([...counts.entries()].filter(([, n]) => n !== 1)).toEqual([]);
+    expect([...counts.keys()].sort()).toEqual(census);
+    for (const r of all) expect([r.reg, r.file, /^W\d{3,4}-partner-[a-z0-9-]+\.html$/.test(r.file), fs.existsSync(`${CANON}/${r.file}`), r.note.length > 0]).toEqual([r.reg, r.file, true, true, true]);
+  });
+  it('no verdict is pending: every one is a decided value', () => {
+    const DECIDED = new Set(['BUILT', 'BUILT (read)', 'BUILT (read-only)', 'BUILT (honest)', 'BUILT (REAL)', 'REAL', 'PARITY-DECOR', 'DECOR']);
+    expect(all.filter((r) => !DECIDED.has(r.verdict)).map((r) => [r.reg, r.file, r.verdict])).toEqual([]);
+    expect(all.filter((r) => /pending/i.test(r.verdict))).toEqual([]);
+  });
+  it('no `pending_*` value survives in ANY partner registry\'s source (code only; a positive control proves the scan fires)', () => {
+    const PENDING = /\bpending_\w*/;
+    const code = (n: number) => fs.readFileSync(require('node:path').join(__dirname, '..', 'features', `partner${n}`, 'refusals.ts'), 'utf8')
+      .split('\n').filter((l: string) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
+    // the positive control: the scan fires on the shape every earlier wave's placeholder had, and not on a word that merely contains it
+    expect(PENDING.test("verdict: 'pending_6c' as const")).toBe(true);
+    expect(PENDING.test("export type V = 'DECOR' | 'pending_2b';")).toBe(true);
+    expect(PENDING.test("{ id: 'docs_pending_state' }")).toBe(false);
+    for (const n of [1, 2, 3, 4, 5, 6]) {
+      const src = code(n);
+      expect([n, src.length > 2000]).toEqual([n, true]);
+      expect([n, (src.match(/\bpending_\w*/g) ?? [])]).toEqual([n, []]);
+    }
   });
 });

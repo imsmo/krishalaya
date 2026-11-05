@@ -25,13 +25,24 @@
 //     organisation files its own returns; the partners mailbox for data a filing of its own needs.
 //   • `consents_export` (W2921–W2922, DECOR + mailbox), `consents_act` (W2923–W2925, DECOR), `regulatory_form` (W2987–W2990, DECOR + mailbox,
 //     no input, no confirm page claimed), `regulatory_act` (W2991–W2993, DECOR).
-// The 6c surfaces are DECLARED (their pages are not built): `notifications`, `notification_prefs` and their chain surfaces. No refusal is
-// registered on them yet.
+// PC-56 PARTNER-6c · WHAT THE PLATFORM TELLS A PARTNER PERSON (founder 6c-1 … 6c-6, doors Q5-A / Q7-A, 2026-11-05) builds the last five —
+// every partner person's two account pages and their three chains. With it PARTNER-6 is 31 of 31 and the partner panel 222 of 222:
+//   • `notifications` (W270, `/account/notifications`, FIRST in the Account group for every partner kind; `/notifications` answers 307 here) —
+//     AN HONEST PAGE THAT READS NOTHING (Q5-A): the platform sends a partner person two kinds of message, by SMS — a sign-in code and a team
+//     invitation — and nothing else in this console; the organisation's machine notifications are its webhooks (a real link to their delivery
+//     log, `/account/webhooks`). No inbox, no item, no counter, no person, no place, no event code, no `<select>`.
+//   • `notification_prefs` (W271, `/account/notifications/preferences`) — AN HONEST PAGE WITH NO CHECKBOX (Q5-A): the two messages cannot be
+//     switched off and nothing else is sent, so there is nothing else to set — PLUS the one REAL act of PARTNER-6 (Q7-A): the console's
+//     language, a radio group of `@krishalaya/i18n`'s live languages and one submit (features/partner6/language.ts).
+//   • `notification_form` (W2960–W2963, `?form=`) — REAL: the language act (error = an unknown code, nothing set; review = the chosen language
+//     named in itself; success = set and re-rendered; failure = could not be set). The canon's three other triggers (Change time, Change
+//     window, Save preferences) print their refusals in the same states (the 1a W3006–W3008 precedent: one real trigger makes the chain REAL).
+//   • `notification_act` (W2964–W2966) and `notifications_act` (W2967–W2969, "Mark all read") — DECOR, refused by name.
 export type Partner6Surface =
   | 'settlements' | 'settlement' | 'settlement_act' | 'settlement_detail_act'
   // PARTNER-6b
   | 'consents' | 'regulatory' | 'consents_export' | 'consents_act' | 'regulatory_form' | 'regulatory_act'
-  // PARTNER-6c (declared, not built)
+  // PARTNER-6c
   | 'notifications' | 'notification_prefs' | 'notification_form' | 'notification_act' | 'notifications_act';
 export interface Partner6Refusal { id: string; canon: string; surfaces: readonly Partner6Surface[]; key: string; why: string }
 
@@ -48,6 +59,12 @@ const PAGES_6B: readonly Partner6Surface[] = ['consents', 'regulatory'];
 /** The two MUTATE chains of 6b (Retry on a page that reads nothing — nothing to re-read) and the regulatory FORM chain (no form). */
 const ACTS_6B: readonly Partner6Surface[] = ['consents_act', 'regulatory_act'];
 const STEPS_6B: readonly Partner6Surface[] = [...ACTS_6B, 'regulatory_form'];
+/** PC-56 PARTNER-6c — the surfaces it builds: every partner person's two account pages, the REAL language form chain and two DECOR chains. */
+export const SURFACES_6C: readonly Partner6Surface[] = ['notifications', 'notification_prefs', 'notification_form', 'notification_act', 'notifications_act'];
+/** The two pages of 6c. */
+const PAGES_6C: readonly Partner6Surface[] = ['notifications', 'notification_prefs'];
+/** The two DECOR mutate chains of 6c (Retry on a page that reads nothing; "Mark all read" with nothing to read). */
+const ACTS_6C: readonly Partner6Surface[] = ['notification_act', 'notifications_act'];
 
 export const PARTNER6_REFUSALS: readonly Partner6Refusal[] = Object.freeze([
   // ══ W260 · Claim settlements (founder 6a-1: counts only) ══
@@ -79,7 +96,7 @@ export const PARTNER6_REFUSALS: readonly Partner6Refusal[] = Object.freeze([
     key: 'partner6.refusal.reassembles', why: 'FALSE ×2: no run; nothing is gathered for payment. The page\'s own error state is a failed read of the COUNTS, and says so' },
   { id: 'finance_role', canon: 'W260 restricted state "Settlements restricted — Finance role at your insurer + checker; the run executes on platform rails." · W261 "Detail restricted — Finance + claims role"', surfaces: PAGES_6A,
     key: 'partner4.refusal.platformRoles', why: 'FALSE ×3: the partner realm has four roles (0225:20-21) and `partner.claims.read` covers the counts for all four (0230); no finance role, no checker on a payment, no rail — PARTNER-4\'s refusal, reused BY KEY' },
-  { id: 'plan_settings', canon: 'W260 / W261 flagged-off state "Claim Settlements disabled / Settlement Detail disabled … See plan settings." · PC-56 PARTNER-6b: W213 "Flagged off — Consent Registry disabled … See plan settings." · W224 "Flagged off — Regulatory & PSL Reports disabled … See plan settings."', surfaces: [...PAGES_6A, ...PAGES_6B],
+  { id: 'plan_settings', canon: 'W260 / W261 flagged-off state "Claim Settlements disabled / Settlement Detail disabled … See plan settings." · PC-56 PARTNER-6b: W213 "Flagged off — Consent Registry disabled … See plan settings." · W224 "Flagged off — Regulatory & PSL Reports disabled … See plan settings." · PC-56 PARTNER-6c: W270 / W271 "Flagged off — Notifications / Notification Preferences disabled … See plan settings."', surfaces: [...PAGES_6A, ...PAGES_6B, ...PAGES_6C],
     key: 'partner4.refusal.planSettings', why: 'OFF-as-OFF via `partner_console` (and the platform\'s `insurance`); no plan-settings surface exists for a partner organisation — PARTNER-4\'s refusal, reused BY KEY (brief E4)' },
   // ══ W261 · one claim's "settlement" (founder 6a-2: a readless honest page) ══
   { id: 'named_heading', canon: 'W261 heading "Settlement — <claimant name>, ₹1,10,000 · in today\'s 16:00 run"', surfaces: ['settlement'],
@@ -111,9 +128,9 @@ export const PARTNER6_REFUSALS: readonly Partner6Refusal[] = Object.freeze([
   // ══ the settlement chain (W2901–W2903; DECOR on both pages) ══
   { id: 'zero_sum', canon: 'W2902 "Money-adjacent actions reconcile zero-sum before this page ever shows" — on a SETTLEMENT chain: the most dangerous chain sentence in the panel (survey §1F)', surfaces: CHAINS_6A,
     key: 'partner6.refusal.zeroSum', why: 'refused BY NAME with its own sentence (brief E3): on a settlement chain the canon tells an insurer that money moved and balanced; nothing moved' },
-  { id: 'chain_on_call', canon: 'W2903 "repeated failures page the on-call" · PC-56 PARTNER-6b: W2925 / W2990 / W2993 the same sentence', surfaces: [...CHAINS_6A, ...STEPS_6B],
+  { id: 'chain_on_call', canon: 'W2903 "repeated failures page the on-call" · PC-56 PARTNER-6b: W2925 / W2990 / W2993 the same sentence · PC-56 PARTNER-6c: W2963 / W2966 / W2969', surfaces: [...CHAINS_6A, ...STEPS_6B, 'notification_form', ...ACTS_6C],
     key: 'partner4.refusal.chainOnCall', why: 'no paging from a partner page exists — the shared chain sentence, reused BY KEY (brief E3)' },
-  { id: 'chain_audit', canon: 'W2901 "confirming writes an audit-trail entry with actor, time and reason" · W2902 "the audit trail has the entry (actor · time · reason · before/after)" and "View audit trail" · PC-56 PARTNER-6b: W2923 / W2991 (confirm), W2924 / W2989 / W2992 (success + "View audit trail")', surfaces: [...CHAINS_6A, ...STEPS_6B],
+  { id: 'chain_audit', canon: 'W2901 "confirming writes an audit-trail entry with actor, time and reason" · W2902 "the audit trail has the entry (actor · time · reason · before/after)" and "View audit trail" · PC-56 PARTNER-6b: W2923 / W2991 (confirm), W2924 / W2989 / W2992 (success + "View audit trail") · PC-56 PARTNER-6c: W2964 / W2967 (confirm), W2965 / W2968 (success) — the two DECOR chains only (the REAL language act has its own sentence, `language_no_audit`)', surfaces: [...CHAINS_6A, ...STEPS_6B, ...ACTS_6C],
     key: 'partner6.refusal.chainAudit', why: 'nothing is done, so nothing is written; the console has no audit-trail page. PARTNER-4\'s `chainAudit` is NOT reused: its sentence names a lender\'s application decisions' },
 
   // ══ PC-56 PARTNER-6b · W213 the consent registry (founder 6b-1 / Q3-A: a page that reads nothing and shows no one; 6b-2 / Q4-A) ══
@@ -177,14 +194,68 @@ export const PARTNER6_REFUSALS: readonly Partner6Refusal[] = Object.freeze([
   // ══ PC-56 PARTNER-6b · the four chains (all DECOR) ══
   { id: 'export_file_6b', canon: 'W2921 "audit-stamped, checksummed, delivered by signed URL" · W2922 "file name, row count, sha256, generated-at, requester — delivery via 15-min signed URL, every fetch logged"', surfaces: ['consents_export'],
     key: 'partner4.refusal.exportFile', why: 'DECOR (founder 6b-5, 2b-1): no export plane for a partner (P2-B6); PARTNER-4\'s shared export refusal, reused BY KEY' },
-  { id: 'chain_zero_sum_6b', canon: 'W2924 / W2989 / W2992 "Money-adjacent actions reconcile zero-sum before this page ever shows"', surfaces: STEPS_6B,
+  { id: 'chain_zero_sum_6b', canon: 'W2924 / W2989 / W2992 "Money-adjacent actions reconcile zero-sum before this page ever shows" · PC-56 PARTNER-6c: W2962 / W2965 / W2968 the same sentence', surfaces: [...STEPS_6B, 'notification_form', ...ACTS_6C],
     key: 'partner4.refusal.chainZeroSum', why: 'nothing reached from these pages moves money — PARTNER-4\'s lender-worded refusal, reused BY KEY (6a\'s `zeroSum` names a claim and is not reused)' },
   { id: 'form_without_form', canon: 'W2987–W2990 — a FOUR-STATE FORM chain opened by "Generate Q1 pack", a button with no input on W224; the four pages carry no `<input>`, `<label>` or `<select>`', surfaces: ['regulatory', 'regulatory_form'],
     key: 'partner6.refusal.formWithoutForm', why: 'DECOR (founder 6b-5; the 4c `kcc_form` precedent): there is no form, so nothing is entered, checked, saved or submitted' },
   { id: 'form_review_checker_6b', canon: 'W2988 "Review before submitting — Maker-checker friendly review step: everything you entered, shown read-only, with the diff against current values" · W2987 "every invalid field is listed with its reason, values you entered are preserved"', surfaces: ['regulatory_form'],
     key: 'partner5.refusal.formReviewChecker', why: 'nothing was entered and no second person checks anything — PARTNER-5b\'s refusal, reused BY KEY' },
-  { id: 'no_confirm_page', canon: 'W2990 "Retry — back to confirm" (→ W224) — a form chain has no confirm page (the W2956 / W2963 defect)', surfaces: ['regulatory_form'],
+  { id: 'no_confirm_page', canon: 'W2990 "Retry — back to confirm" (→ W224) — a form chain has no confirm page (the W2956 / W2963 defect) · PC-56 PARTNER-6c: W2963 "Retry — back to confirm" (→ W271)', surfaces: ['regulatory_form', 'notification_form'],
     key: 'partner6.refusal.noConfirmPage', why: 'canon defect (survey §1I, F-10): the built failure state claims no confirm page and offers only the way back to the triggering page' },
+
+  // ══ PC-56 PARTNER-6c · W270 what the platform sends a partner person (founder 6c-1 / Q5-A: a page that reads nothing, no inbox) ══
+  { id: 'same_engine', canon: 'W270 lead "Critical rings, informational waits, promotional asks permission — the same engine farmers get."', surfaces: ['notifications'],
+    key: 'partner6.refusal.sameEngine', why: 'FALSE for a partner (survey C-12): the tiers are real on the tenant plane (0012:134), but no catalogue event (core/0007) and no event-map row reaches a partner person; the two messages a partner person gets (the sign-in code, the team invitation) bypass the engine entirely' },
+  { id: 'inbox_counters', canon: 'W270 counters "all · unread · critical · digests · failed → fallback"', surfaces: ['notifications'],
+    key: 'partner6.refusal.inboxCounters', why: 'FALSE (survey C-4): no partner inbox exists and the tenant inbox refuses a partner token (401, live partner6c (1)); "digests" is refused on the tenant side as well (COMM README :132)' },
+  { id: 'inbox_items', canon: 'W270 the six items — a claim intimated (a policyholder, a village, "survey clock started — assign within 48h"), a survey report (a surveyor\'s name, "ready for decision"), a payout completed (a payee and a rupee amount, "confirmed by the ledger"), a consent expiring ("Renewal requests go out from the policies screen"), a failed text message and a grouped summary — each with its event code, channel and status; and their links "Open claim" / "Read report" / "View run" / "Review" / "Open"', surfaces: ['notifications'],
+    key: 'partner6.refusal.inboxItems', why: 'WALL + FALSE (survey F-4): never a policyholder, surveyor or payee (2a / 3a / 3b); no claim is paid (6a); no insurance consent (P2-B3); none of those event codes is in the catalogue; the honest page lists nothing, so it draws none of the five item links' },
+  { id: 'other_channels', canon: 'W270 item "SMS failed → push fallback sent · Your DND-registered number rejected the parametric-window reminder; the push copy was delivered instead. Fallback, never silence."', surfaces: ['notifications'],
+    key: 'partner6.refusal.otherChannels', why: 'FALSE: no parametric product exists (2b); no partner push device exists (`notifications/devices` is tenant, guarded); no do-not-disturb registry lookup is made on a partner\'s phone' },
+  { id: 'mark_all_read', canon: 'W270 "Mark all read" (FM:340, `chain-mutate` → W2967–W2969)', surfaces: ['notifications', 'notifications_act'],
+    key: 'partner6.refusal.markAllRead', why: 'DECOR — refused by name (founder 6c-5): nothing to read; the tenant `read-all` is keyed and audited but refuses a partner token (live partner6c (1)); `POST /v1/partner/notifications/read-all` 404s (live (2))' },
+  { id: 'expand_grouped', canon: 'W270 "Expand 9" (FM:339, a `data-decor` chip) and the grouped item "… batched … suppressed into tomorrow\'s digest per your quiet-hours rule"', surfaces: ['notifications'],
+    key: 'partner6.refusal.expandGrouped', why: 'FALSE: the grouping engine is NOT built anywhere (COMM README :132; communication.module.ts:15 "DEFERRED"); nothing is held back for a partner person' },
+  { id: 'page_list', canon: 'W270 footer "Showing 6 of 214 (90 days) · Page size [select 25/50/100] · Page 1 of 9" — the page\'s only live control', surfaces: ['notifications'],
+    key: 'partner6.refusal.pageList', why: 'FALSE (no list); and a readless page renders NO input and NO `<select>` (the 4c / 5b rule) — pinned by account-notifications.render' },
+  { id: 'phone_alerts', canon: 'W270 empty state "… Critical events will always break through regardless of filters." · error state "… Delivery isn\'t affected — critical alerts still reach your phone."', surfaces: ['notifications'],
+    key: 'partner6.refusal.phoneAlerts', why: 'FALSE (survey C-12): the only things that reach a partner person\'s phone are the sign-in code and the team invitation — each sent once (live partner6c (3)); "always" is a promise' },
+  { id: 'delivery_log_here', canon: 'W270 "Statuses come straight from the delivery log: queued → sent → delivered → read, or failed / suppressed. What you see here is what was actually sent — not what should have been."', surfaces: ['notifications'],
+    key: 'partner6.refusal.deliveryLogHere', why: 'TRUE of the tenant engine and of the partner\'s WEBHOOK delivery log (PARTNER-1b), FALSE of this page: the principle survives ONLY as the statement\'s pointer to `/account/webhooks` (founder 6c-1)' },
+  { id: 'notifications_no_error', canon: 'W270 error state "Couldn\'t load notifications … Retry." (FM:342 → W2967–W2969)', surfaces: ['notifications', 'notifications_act'],
+    key: 'partner6.refusal.notificationsNoError', why: 'the readless page has NO error state (the W217 / 5b rule); Retry re-reads nothing' },
+  { id: 'no_org_inbox', canon: 'W270 restricted state "Signed-in staff only — Notifications are per-person, scoped to your own account. There is no org-wide inbox to over-share into."', surfaces: ['notifications'],
+    key: 'partner6.refusal.noOrgInbox', why: '"no org-wide inbox" is TRUE by absence (there is no inbox at all); "per-person" is TRUE of the tenant engine only — both said as absences (survey §1D-b)' },
+
+  // ══ PC-56 PARTNER-6c · W271 preferences (founder 6c-2 / Q5-A: no checkbox; 6c-3 / Q7-A: the language act) ══
+  { id: 'prefs_matrix', canon: 'W271 the matrix Event · Tier · In-app · Email · SMS — eight event rows and their 24 checkboxes (FM omits all 24)', surfaces: ['notification_prefs'],
+    key: 'partner6.refusal.prefsMatrix', why: 'FALSE ×7 (survey F-4): no partner event and no partner preference store; a checkbox that stores nothing is the 4c KCC-form lesson — NO checkbox is rendered (account-notification-prefs.render; mutant M1)' },
+  { id: 'duty_lock', canon: 'W271 row note "Cannot be switched off — a farmer is waiting on this. Opt out of noise, never of duty."', surfaces: ['notification_prefs'],
+    key: 'partner6.refusal.dutyLock', why: 'FALSE: the insurer decides nothing on a claim (3a); no such message exists for any partner kind' },
+  { id: 'security_channels', canon: 'W271 row note "Security events are locked on every channel."', surfaces: ['notification_prefs'],
+    key: 'partner6.refusal.securityChannels', why: 'NARROWED to the truth (survey §1E): the sign-in code is sent by SMS (`partner-auth.service.ts:53` → `AuthService.requestOtp(phone, \'sms\')`) and cannot be switched off — no email, no in-app copy' },
+  { id: 'event_count', canon: 'W271 "8 of 31 events shown — grouped by what they interrupt · The remaining 23 informational events follow the same tier rules"', surfaces: ['notification_prefs'],
+    key: 'partner6.refusal.eventCount', why: 'FALSE: zero partner events exist' },
+  { id: 'quiet_window', canon: 'W271 "Quiet hours — 22:00 – 07:00 · informational items wait and join the morning digest (status: suppressed → batched). Critical ignores quiet hours, by design." + "Change window" (FM:345, `chain-form`)', surfaces: ['notification_prefs', 'notification_form'],
+    key: 'partner6.refusal.quietWindow', why: 'FALSE for a partner (the tenant default is 21:00–06:00 and a hold is `held_until`, not "batched"); "Change window" is DECOR — refused in the form chain\'s states (founder 6c-5)' },
+  { id: 'daily_summary', canon: 'W271 "Daily digest — 07:00 · email · batches every event marked batchable. This morning it folded 9 separate pings into one email." + "Change time" (FM:344, `chain-form`)', surfaces: ['notification_prefs', 'notification_form'],
+    key: 'partner6.refusal.dailySummary', why: 'FALSE: the grouping engine is not built anywhere (COMM README :132); "Change time" is DECOR — refused in the form chain\'s states' },
+  { id: 'save_prefs', canon: 'W271 "Save preferences" (FM:348, `chain-form` → W2960–W2963)', surfaces: ['notification_prefs', 'notification_form'],
+    key: 'partner6.refusal.savePrefs', why: 'DECOR — refused by name (founder 6c-5): nothing to save; the ONE thing this page sets is the console\'s language (a browser cookie)' },
+  { id: 'defaults_state', canon: 'W271 state "Defaults active — You haven\'t customised anything yet — these are the platform defaults: critical everywhere, informational in-app only, promotional off."', surfaces: ['notification_prefs'],
+    key: 'partner6.refusal.defaultsState', why: 'FALSE for a partner: no defaults exist; nothing is sent but the two SMS' },
+  { id: 'prefs_no_error', canon: 'W271 error state "Couldn\'t load preferences — Your saved preferences still apply to deliveries — only this view failed. Retry." (FM:347 → W2964–W2966)', surfaces: ['notification_prefs', 'notification_act'],
+    key: 'partner6.refusal.prefsNoError', why: 'FALSE (no saved preferences); the readless page has NO error state and Retry re-reads nothing' },
+  { id: 'colleague_reach', canon: 'W271 restricted state "Your preferences only — … Admins can view (not edit) team members\' critical-tier reachability for on-call planning."', surfaces: ['notification_prefs'],
+    key: 'partner6.refusal.colleagueReach', why: 'FALSE: no such read exists; a partner admin sees its team through `GET /v1/partner/team` (names + roles, PARTNER-0) and nothing about anyone\'s phone' },
+  { id: 'template_parity', canon: 'W271 "Language — English · every template also exists in हिन्दी and ગુજરાતી — switching is one click, not a support ticket." + "Change language" (FM:343, `chain-form`)', surfaces: ['notification_prefs', 'notification_form'],
+    key: 'partner6.refusal.templateParity', why: 'PARTIAL (founder 6c-3): every key a wave added is at parity, but older text is English-only (en 2,217 vs hi / gu 1,838 before this wave) and falls back to English; "Change language" IS built — the REAL act' },
+
+  // ══ PC-56 PARTNER-6c · the notification FORM chain (W2960–W2963, REAL for the language act) ══
+  { id: 'language_review_checker', canon: 'W2961 "Review before submitting — Maker-checker friendly review step: everything you entered, shown read-only, with the diff against current values"', surfaces: ['notification_form'],
+    key: 'partner6.refusal.languageReviewChecker', why: 'the review state names the chosen language in itself, and nobody else checks it: a browser preference of one person' },
+  { id: 'language_no_audit', canon: 'W2962 "the audit trail has the entry (actor · time · reason · before/after)" and "View audit trail" — on the language act', surfaces: ['notification_form'],
+    key: 'partner6.refusal.languageNoAudit', why: 'founder 6c-3: the act writes no audit row (no API call; a cookie of this browser, no person\'s data); the console has no trail page' },
 ]);
 
 /** The refusal i18n keys printed on one surface (render tests read this). */
@@ -203,6 +274,13 @@ export const SETTLEMENTS_REDIRECTS: Readonly<Record<string, string>> = Object.fr
  *  dashboard (there is no insurance consent on this platform — P2-B3). */
 export const CONSENTS_REDIRECTS: Readonly<Record<string, string>> = Object.freeze({
   '/consents': '/lender/consents',
+});
+/** PC-56 PARTNER-6c (founder 6c-4) — the old `/notifications` pair (not-yet pages in the `common` nav group every partner kind saw) → every
+ *  partner person's own account pages, real 307s from next.config.js (pinned equal by test-render/not-yet.render.test.tsx). No gate: any
+ *  partner kind may open both. */
+export const NOTIFICATIONS_REDIRECTS: Readonly<Record<string, string>> = Object.freeze({
+  '/notifications': '/account/notifications',
+  '/notifications/preferences': '/account/notifications/preferences',
 });
 
 /** The canon shapes PARTNER-6a builds differently — recorded DELTAs, not refusals (survey F-10 / F-11). */
@@ -264,12 +342,32 @@ export const PARTNER6_DELTAS: readonly { id: string; canon: string; built: strin
     built: 'the two honest pages read nothing and have NO error state; `consents_act` and `regulatory_act` are reachable only as query states and no control leads to them (the 5b `case_act` precedent)' },
   { id: 'chain_route_6b', canon: 'the chain pages W2921–W2925 and W2987–W2993 as separate files',
     built: 'query states of their parent pages: `?export=queued|ready` and `?act=` on `/lender/consents`; `?form=error|review|success|failure` and `?act=` on `/lender/reports/regulatory`; Back returns to the triggering page' },
+  // ── PC-56 PARTNER-6c ──
+  { id: 'route_notifications', canon: 'W270 / W271 routes `account/notifications` and `account/notifications/preferences` — the built `/notifications` pair was a `common` nav item (live, EVERY partner kind) rendering "not yet available" (survey C-5 / C-6)',
+    built: 'built at the canon\'s own addresses; `/notifications` and `/notifications/preferences` answer real 307s there (`NOTIFICATIONS_REDIRECTS`); the old page files AND the dead `app/notifications/actions.ts` (a mark-read / matrix / quiet-hours / consent action set with no importer, found by 6b) are deleted' },
+  { id: 'notifications_nav_account', canon: 'the canon gives Notifications to the INSURER\'s Account section only (Notifications · Help); W270 / W271 are every partner person\'s pages, drawn for one persona (survey F-10)',
+    built: 'ONE `account` group item, FIRST (the canon\'s order), for EVERY partner kind; the `common` group is then empty and is DELETED with its `visibleGroups` branch' },
+  { id: 'fm_tabs_omitted', canon: 'W270 / W271 tabs "Inbox" · "Preferences" — real `<a>`s FM omits; W270\'s five item links and its "Page size" `<select>` — FM omits them too (survey F-11)',
+    built: 'a real link from Notifications to Preferences and back; no item is drawn, so no item link; no `<select>`' },
+  { id: 'fm_avatar_pm_6c', canon: 'FM:341 (W270) and FM:346 (W271) — the two-letter avatar `<span>` classed `filter`',
+    built: 'no avatar is drawn' },
+  { id: 'fm_chain_ids_6c', canon: 'FM names W1490–W1492 (notifications mutate), W1493–W1496 (notification form) and W1497–W1499 (notification mutate) — ids that exist nowhere (survey F-11)',
+    built: 'the canon\'s files: W2967–W2969, W2960–W2963, W2964–W2966 — each recorded ONCE on the page its trigger lives on' },
+  { id: 'notification_form_back_to_edit', canon: 'W2961 "Back to edit" → W271 (skips W2960) and W2963 "Retry — back to confirm" → W271 (a form chain has no confirm page)',
+    built: 'every form state\'s way back is the preferences page; the failure state claims no confirm page (`no_confirm_page`)' },
+  { id: 'form_entry_review', canon: 'W271\'s "Change language" opens W2960–W2963 with no form drawn on any of the four pages',
+    built: 'the form IS the page\'s radio group (the package\'s live languages) and ONE submit, which opens `?form=review&lang=<code>`; the review state names the chosen language in itself and its ONE button posts it to the Server Action; an unknown code in the URL prints the error state and sets nothing' },
+  { id: 'mutate_no_trigger_6c', canon: 'W270 "Retry" (FM:342 → W2967–W2969) and W271 "Retry" (FM:347 → W2964–W2966) — each inside its page\'s error state',
+    built: 'the two honest pages read nothing and have NO error state; `notification_act` is reachable only as a query state; `notifications_act` is reached from the refused "Mark all read" control' },
+  { id: 'chain_route_6c', canon: 'the chain pages W2960–W2969 as separate files',
+    built: 'query states of their parent pages: `?form=error|review|success|failure` and `?act=` on `/account/notifications/preferences`; `?act=` on `/account/notifications`; Back returns to the triggering page' },
+  { id: 'viewer_name_omitted', canon: 'W271 "Per event, per channel — saved for you alone (<a person\'s name>), not your whole organisation."',
+    built: 'no name is printed — the page makes no read at all (not even `/me`; the 5b honest-page precedent); the canon\'s person is never copied' },
 ]);
 
-/** The verdict values. `pending_6c` is deleted by that wave (the 4c-7 rule); PARTNER-6b deleted `pending_6b`. */
-export type Partner6Verdict = 'BUILT (read)' | 'BUILT (honest)' | 'REAL' | 'DECOR' | 'pending_6c';
-const P6C = (file: string) => ({ file, wave: '6c' as const, verdict: 'pending_6c' as const, note: 'PARTNER-6c — WHAT THE PLATFORM TELLS A PARTNER PERSON (every partner person); decided by its own wave' });
-/** Every canon file of PARTNER-6 (31), each with ONE verdict. 6a decided its 5, 6b its 14; 6c's 12 wait for their own wave. */
+/** The verdict values (the 4c-7 rule: no pending value survives its wave — PARTNER-6b deleted `pending_6b`, PARTNER-6c `pending_6c`). */
+export type Partner6Verdict = 'BUILT (read)' | 'BUILT (honest)' | 'REAL' | 'DECOR';
+/** Every canon file of PARTNER-6 (31), each with ONE verdict: 6a decided its 5, 6b its 14, 6c its 12 — PARTNER-6 is closed. */
 export const PARTNER6_CANON_FILES: readonly { file: string; wave: '6a' | '6b' | '6c'; verdict: Partner6Verdict; note: string }[] = Object.freeze([
   // ── 6a · WHERE A CLAIM IS NOT PAID (5) — decided by 6a (founder 6a-1 … 6a-3) ──
   { file: 'W260-partner-settlements.html', wave: '6a', verdict: 'BUILT (read)', note: '/insurer/settlements (a CLAIMS SUB-NAVIGATION row, insurer only) over PARTNER-3a\'s GET /v1/partner/insurance/claims/counts — ONE audit row per read, counts only: of the claims on the insurer\'s products FILED in the IST window, how many are approved and partially approved ("awaiting a settlement this platform does not make", each linked to the queue filtered by that status) and paid — 0 — beside "No claim is paid on this platform." No rupee total, no claimant, no account, no run, no rail' },
@@ -292,18 +390,26 @@ export const PARTNER6_CANON_FILES: readonly { file: string; wave: '6a' | '6b' | 
   { file: 'W2991-partner-regulatory-mutate-confirm.html', wave: '6b', verdict: 'DECOR', note: '/lender/reports/regulatory?act=confirm — Retry on a page that reads nothing re-reads nothing; no control leads here' },
   { file: 'W2992-partner-regulatory-mutate-success.html', wave: '6b', verdict: 'DECOR', note: '?act=success — nothing happened, so nothing succeeded' },
   { file: 'W2993-partner-regulatory-mutate-failure.html', wave: '6b', verdict: 'DECOR', note: '?act=failure — nothing was attempted and nothing changed' },
-  // ── 6c (12) — pending ──
-  P6C('W270-partner-notifications.html'), P6C('W271-partner-notification-preferences.html'),
-  P6C('W2960-partner-notification-form-form-error.html'), P6C('W2961-partner-notification-form-review.html'), P6C('W2962-partner-notification-form-success.html'),
-  P6C('W2963-partner-notification-form-failure.html'), P6C('W2964-partner-notification-mutate-confirm.html'), P6C('W2965-partner-notification-mutate-success.html'),
-  P6C('W2966-partner-notification-mutate-failure.html'), P6C('W2967-partner-notifications-mutate-confirm.html'), P6C('W2968-partner-notifications-mutate-success.html'),
-  P6C('W2969-partner-notifications-mutate-failure.html'),
+  // ── 6c · WHAT THE PLATFORM TELLS A PARTNER PERSON (12) — decided by 6c (founder 6c-1 … 6c-5) ──
+  { file: 'W270-partner-notifications.html', wave: '6c', verdict: 'BUILT (honest)', note: '/account/notifications (FIRST in the Account group, every partner kind; `/notifications` answers 307 here) — AN HONEST PAGE THAT READS NOTHING (Q5-A): the platform sends a partner person two kinds of message, by SMS — a sign-in code and a team invitation — and nothing else in this console; the organisation\'s machine notifications are its webhooks, with a REAL link to their delivery log (`/account/webhooks`). No inbox, no item, no counter, no person, no place, no event code, no `<select>`, no error state, no audit row' },
+  { file: 'W271-partner-notification-preferences.html', wave: '6c', verdict: 'BUILT (honest)', note: '/account/notifications/preferences (`/notifications/preferences` answers 307 here) — AN HONEST PAGE WITH NO CHECKBOX (Q5-A): the sign-in code and the team invitation cannot be switched off and nothing else is sent, so there is nothing else to set; PLUS the one REAL act of PARTNER-6 (Q7-A): the console\'s language — a radio group of `@krishalaya/i18n`\'s live languages, each in its own script, and one submit; the English-fallback note. No read, no error state' },
+  { file: 'W2960-partner-notification-form-form-error.html', wave: '6c', verdict: 'REAL', note: '?form=error — the language act: an unknown, empty or injected code (in the review URL or posted to the Server Action) sets NOTHING; the three other canon triggers (Change time, Change window, Save preferences) print their refusals in this state' },
+  { file: 'W2961-partner-notification-form-review.html', wave: '6c', verdict: 'REAL', note: '?form=review&lang=<code> — the chosen language named in itself before anything is set, and ONE button that posts it to the Server Action; no second person checks it; the canon\'s "Back to edit" → W271 is a DELTA (Back is the page)' },
+  { file: 'W2962-partner-notification-form-success.html', wave: '6c', verdict: 'REAL', note: '?form=success — the `kv_lang` cookie IS set (path `/`, SameSite=Lax, one year) and the page re-renders in the chosen language, which it names; no audit row (a browser preference — `language_no_audit`)' },
+  { file: 'W2963-partner-notification-form-failure.html', wave: '6c', verdict: 'REAL', note: '?form=failure — the cookie could not be set, so nothing changed; no confirm page is claimed (`no_confirm_page`)' },
+  { file: 'W2964-partner-notification-mutate-confirm.html', wave: '6c', verdict: 'DECOR', note: '/account/notifications/preferences?act=confirm — Retry on a page that reads nothing re-reads nothing; no control leads here (DELTA `mutate_no_trigger_6c`)' },
+  { file: 'W2965-partner-notification-mutate-success.html', wave: '6c', verdict: 'DECOR', note: '?act=success — nothing happened, so nothing succeeded; the zero-sum and audit-trail sentences refused BY NAME' },
+  { file: 'W2966-partner-notification-mutate-failure.html', wave: '6c', verdict: 'DECOR', note: '?act=failure — nothing was attempted and nothing changed; nobody is paged' },
+  { file: 'W2967-partner-notifications-mutate-confirm.html', wave: '6c', verdict: 'DECOR', note: '/account/notifications?act=confirm — "Mark all read" is refused by name: there is nothing to read' },
+  { file: 'W2968-partner-notifications-mutate-success.html', wave: '6c', verdict: 'DECOR', note: '?act=success — nothing was marked, so nothing succeeded' },
+  { file: 'W2969-partner-notifications-mutate-failure.html', wave: '6c', verdict: 'DECOR', note: '?act=failure — nothing was attempted and nothing changed; nobody is paged' },
 ]);
 
 // ── THE DECOR CHAINS: each is a query state of its parent page ──
-export type Chain6Id = 'settlement_act' | 'settlement_detail_act' | 'consents_export' | 'consents_act' | 'regulatory_form' | 'regulatory_act';
+export type Chain6Id = 'settlement_act' | 'settlement_detail_act' | 'consents_export' | 'consents_act' | 'regulatory_form' | 'regulatory_act'
+  | 'notification_form' | 'notification_act' | 'notifications_act';
 export interface Chain6Def {
-  id: Chain6Id; wave: '6a' | '6b'; param: string; page: string; surface: Partner6Surface; states: readonly string[];
+  id: Chain6Id; wave: '6a' | '6b' | '6c'; param: string; page: string; surface: Partner6Surface; states: readonly string[];
   key: (state: string) => string; files: readonly string[];
   /** The chain of an honest / counts page prints that page's founder-approved statement first (the 4c / 5b precedent). */
   statement: string;
@@ -311,6 +417,8 @@ export interface Chain6Def {
   mailbox?: boolean;
   /** The chain's own sentence above the mailbox FACT (the 4c `kcc_form` precedent); without one, `partner4.export.notAvailable`. */
   mailboxKey?: string;
+  /** PC-56 PARTNER-6c: the chain whose lead act is REAL — `language`, the console's language (founder 6c-3 / 6c-5). Absent = DECOR. */
+  real?: 'language';
 }
 export const PARTNER6_CHAINS: readonly Chain6Def[] = Object.freeze([
   // ONE canon chain (W2901–W2903), opened from BOTH pages. Files are listed ONCE, on the page the canon's trigger ("Release today's run") lives
@@ -332,6 +440,15 @@ export const PARTNER6_CHAINS: readonly Chain6Def[] = Object.freeze([
     statement: 'partner6.regulatory.statement' },
   { id: 'regulatory_act', wave: '6b', param: 'act', page: '/lender/reports/regulatory', surface: 'regulatory_act', states: ['confirm', 'success', 'failure'],
     key: (s: string) => `partner6.chain.regulatoryAct.${s}`, files: ['W2991', 'W2992', 'W2993'], statement: 'partner6.regulatory.statement' },
+  // PC-56 PARTNER-6c (founder 6c-5) · the three chains of every partner person's two account pages. The notification FORM chain is REAL (the
+  // language act; no confirm state); the two mutate chains are DECOR. Each prints its page's statement first and returns to its page.
+  { id: 'notification_form', wave: '6c', real: 'language', param: 'form', page: '/account/notifications/preferences', surface: 'notification_form',
+    states: ['error', 'review', 'success', 'failure'], key: (s: string) => `partner6.chain.notificationForm.${s}`, files: ['W2960', 'W2961', 'W2962', 'W2963'],
+    statement: 'partner6.notificationPrefs.statement' },
+  { id: 'notification_act', wave: '6c', param: 'act', page: '/account/notifications/preferences', surface: 'notification_act', states: ['confirm', 'success', 'failure'],
+    key: (s: string) => `partner6.chain.notificationAct.${s}`, files: ['W2964', 'W2965', 'W2966'], statement: 'partner6.notificationPrefs.statement' },
+  { id: 'notifications_act', wave: '6c', param: 'act', page: '/account/notifications', surface: 'notifications_act', states: ['confirm', 'success', 'failure'],
+    key: (s: string) => `partner6.chain.notificationsAct.${s}`, files: ['W2967', 'W2968', 'W2969'], statement: 'partner6.notifications.statement' },
 ]);
 export function chain6ById(id: Chain6Id): Chain6Def { return PARTNER6_CHAINS.find((c) => c.id === id) as Chain6Def; }
 /** The chain state a page was opened in (`?act=confirm` …), or null for the page itself / an unknown state. */

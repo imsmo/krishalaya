@@ -11,7 +11,7 @@ import { NOT_YET_ROUTES, notYetBack, surfaceKey } from '../features/partner/not-
 import { INSURANCE_REDIRECTS, LENDER_REDIRECTS } from '../features/partner2/refusals';
 import { CLAIMS_REDIRECTS } from '../features/partner3/refusals';
 import { LENDER_BOOK_REDIRECTS } from '../features/partner4/refusals';
-import { CONSENTS_REDIRECTS, SETTLEMENTS_REDIRECTS } from '../features/partner6/refusals';
+import { CONSENTS_REDIRECTS, NOTIFICATIONS_REDIRECTS, SETTLEMENTS_REDIRECTS } from '../features/partner6/refusals';
 import { hi } from '../i18n/hi';
 import { en } from '../i18n/en';
 import { gu } from '../i18n/gu';
@@ -33,13 +33,13 @@ describe('PC-56 PARTNER-0 · the not-yet pages, derived from the routes', () => 
 
   it('every page rendering <NotYet> is registered under its own route, and every registered route is such a page', () => {
     expect(notYet.map(routeOf).sort()).toEqual(Object.keys(NOT_YET_ROUTES).sort());
-    expect(notYet.length).toBe(17);   // PC-56 PARTNER-6b (NAMED UPDATE): /consents left (18 → 17); PC-56 PARTNER-2a: the four built insurer routes left the list (30 → 26); PARTNER-2c: /products(/[id]) left (26 → 24); PARTNER-3a: /insurance-claims(/[id]) left (24 → 22); PARTNER-4a: /portfolio(/[id]) and /servicing left (22 → 19); PARTNER-6a (NAMED UPDATE): /settlements left (19 → 18)
+    expect(notYet.length).toBe(15);   // PC-56 PARTNER-6c (NAMED UPDATE): /notifications and /notifications/preferences left (17 → 15); PC-56 PARTNER-6b (NAMED UPDATE): /consents left (18 → 17); PC-56 PARTNER-2a: the four built insurer routes left the list (30 → 26); PARTNER-2c: /products(/[id]) left (26 → 24); PARTNER-3a: /insurance-claims(/[id]) left (24 → 22); PARTNER-4a: /portfolio(/[id]) and /servicing left (22 → 19); PARTNER-6a (NAMED UPDATE): /settlements left (19 → 18)
   });
   it('PC-56 PARTNER-2a/3a · the six old insurance routes answer a real 307 from next.config.js (equal to the registries); their page files are gone', async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const cfg = require(path.join(__dirname, '..', '..', 'next.config.js')) as { redirects: () => Promise<Array<{ source: string; destination: string; permanent: boolean }>> };
     const rules = await cfg.redirects();
-    expect(Object.fromEntries(rules.map((r) => [r.source, r.destination]))).toEqual({ ...INSURANCE_REDIRECTS, ...LENDER_REDIRECTS, ...CLAIMS_REDIRECTS, ...LENDER_BOOK_REDIRECTS, ...SETTLEMENTS_REDIRECTS, ...CONSENTS_REDIRECTS });   // PC-56 PARTNER-6b · NAMED UPDATE: + /consents   // PC-56 PARTNER-6a · NAMED UPDATE: + /settlements   // PC-56 PARTNER-2c: + the /products pair; PARTNER-3a: + the claims pair; PARTNER-4a: + the lender's book (five)
+    expect(Object.fromEntries(rules.map((r) => [r.source, r.destination]))).toEqual({ ...INSURANCE_REDIRECTS, ...LENDER_REDIRECTS, ...CLAIMS_REDIRECTS, ...LENDER_BOOK_REDIRECTS, ...SETTLEMENTS_REDIRECTS, ...CONSENTS_REDIRECTS, ...NOTIFICATIONS_REDIRECTS });   // PC-56 PARTNER-6c · NAMED UPDATE: + the /notifications pair   // PC-56 PARTNER-6b · NAMED UPDATE: + /consents   // PC-56 PARTNER-6a · NAMED UPDATE: + /settlements   // PC-56 PARTNER-2c: + the /products pair; PARTNER-3a: + the claims pair; PARTNER-4a: + the lender's book (five)
     for (const r of rules) {
       expect([r.source, r.permanent]).toEqual([r.source, false]);   // 307, not 308: the move may be revisited
       expect([r.source, fs.existsSync(path.join(APP, ...r.source.replace(':id', '[id]').slice(1).split('/'), 'page.tsx'))]).toEqual([r.source, false]);
@@ -168,7 +168,39 @@ describe('PC-56 PARTNER-6b · /consents is no longer a not-yet page', () => {
       expect(['partner.surface.consents', 'partner.surface.consents' in cat]).toEqual(['partner.surface.consents', false]);
       expect(typeof cat['nav.consents']).toBe('string');
     }
-    // the last not-yet surface of PARTNER-6 is notifications (6c's)
-    expect(Object.entries(NOT_YET_ROUTES).filter(([r]) => /consent|settle|notif/.test(r)).map(([r]) => r).sort()).toEqual(['/notifications', '/notifications/preferences']);
+    // PC-56 PARTNER-6c · NAMED UPDATE: the last not-yet surfaces of PARTNER-6 (notifications) are gone too — none of the three remains
+    expect(Object.entries(NOT_YET_ROUTES).filter(([r]) => /consent|settle|notif/.test(r)).map(([r]) => r).sort()).toEqual([]);
+  });
+});
+
+// PC-56 PARTNER-6c (founder 6c-4, survey C-5 / C-6 / F-12) — the not-yet `/notifications` pair is GONE: its page files AND the dead
+// `app/notifications/actions.ts` (a mark-read / preference-matrix / quiet-hours / consent action set with no importer) are deleted, both
+// answer real 307s to every partner person's own account pages, the surface key is deleted from every catalogue, and the label names an
+// Account item in all three. No not-yet route of PARTNER-6 remains.
+describe('PC-56 PARTNER-6c · /notifications and /notifications/preferences are no longer not-yet pages', () => {
+  it('no page file, no dead action file, no registry entry, no surface key; both 307s land on built account pages with no kind gate', async () => {
+    expect(fs.existsSync(path.join(APP, 'notifications'))).toBe(false);
+    for (const f of [['notifications', 'page.tsx'], ['notifications', 'preferences', 'page.tsx'], ['notifications', 'actions.ts']]) expect([f.join('/'), fs.existsSync(path.join(APP, ...f))]).toEqual([f.join('/'), false]);
+    for (const r of ['/notifications', '/notifications/preferences']) expect(NOT_YET_ROUTES[r]).toBeUndefined();
+    expect(Object.values(NOT_YET_ROUTES)).not.toContain('notifications');
+    expect(NOTIFICATIONS_REDIRECTS).toEqual({ '/notifications': '/account/notifications', '/notifications/preferences': '/account/notifications/preferences' });
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const cfg = require(path.join(__dirname, '..', '..', 'next.config.js')) as { redirects: () => Promise<Array<{ source: string; destination: string; permanent: boolean }>> };
+    expect((await cfg.redirects()).filter((r) => r.source.startsWith('/notifications'))).toEqual([
+      { source: '/notifications', destination: '/account/notifications', permanent: false },
+      { source: '/notifications/preferences', destination: '/account/notifications/preferences', permanent: false }]);
+    for (const dest of [['account', 'notifications', 'page.tsx'], ['account', 'notifications', 'preferences', 'page.tsx']]) {
+      const page = fs.readFileSync(path.join(APP, ...dest), 'utf8');
+      expect(page).not.toContain('<NotYet');
+      expect(page.indexOf('await requirePartner()')).toBeGreaterThan(0);
+      expect(/lenderGate|insurerGate|wrongConsole/.test(page)).toBe(false);   // every partner kind may open both
+    }
+    for (const cat of [en, hi, gu] as Record<string, string>[]) {
+      expect(['partner.surface.notifications', 'partner.surface.notifications' in cat]).toEqual(['partner.surface.notifications', false]);
+      expect(typeof cat['nav.notifications']).toBe('string');
+    }
+    // nothing in the app still imports the deleted action file or links to the old addresses
+    const src = pages().map((f) => fs.readFileSync(f, 'utf8')).join('\n');
+    expect(/app\/notifications\/actions|href="\/notifications/.test(src)).toBe(false);
   });
 });

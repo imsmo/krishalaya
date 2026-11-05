@@ -160,3 +160,56 @@ describe('PC-56 PARTNER-6b · the ban set finds NOTHING on W213 and W224, and fi
     }
   });
 });
+
+// PC-56 PARTNER-6c (founder 6c-1 / 6c-2, brief E2) — W270 `/account/notifications` and W271 `/account/notifications/preferences`, their views,
+// their chain component AND the language act's Server Action read NOTHING: the same ban set finds nothing there, while it still FIRES on both
+// positive controls (the aging page and W260). The calls the two pages make are asserted BY NAME — `requirePartner`, `partnerConsoleSwitch`
+// (the public flag map, lib/console-flag.ts), `getTranslator`, `getLanguageDef` (the cookie), `chain6State` — and nothing comes from
+// lib/api-client or the SDK. The Server Action sets a cookie and calls no client (it imports next/headers, next/navigation and the pure
+// language module only). M5 (a `partnerClient()` read inserted into W270's page) kills here while both controls still fire.
+const NOTIFICATIONS_PAGE6 = 'app/account/notifications/page.tsx';
+const PREFS_PAGE6 = 'app/account/notifications/preferences/page.tsx';
+const LANGUAGE_ACTION = 'app/account/notifications/preferences/actions.ts';
+const SIX_C_VIEWS = ['components/partner6/AccountNotificationsView.tsx', 'components/partner6/AccountNotificationPrefsView.tsx', 'components/partner6/AccountChain6.tsx',
+  'features/partner6/language.ts'];
+
+describe('PC-56 PARTNER-6c · the ban set finds NOTHING on W270, W271 and the language act, and fires on both positive controls (aging and W260)', () => {
+  it('positive control 1: it still fires on the aging page in this same run', () => {
+    expect(readlessFires(AGING_PAGE)).toEqual(['partnerClient(', 'partner.loans.']);
+  });
+  it('positive control 2: it still fires on W260, a page that reads', () => {
+    expect(readlessFires(SETTLEMENTS_PAGE)).toEqual(['partnerClient(']);
+  });
+  it.each([[NOTIFICATIONS_PAGE6], [PREFS_PAGE6], [LANGUAGE_ACTION], ...SIX_C_VIEWS.map((f) => [f])])('%s: no ban fires', (rel) => {
+    const code = readCode(rel);
+    expect(code.length).toBeGreaterThan(400);
+    expect([rel, readlessFires(rel)]).toEqual([rel, []]);
+  });
+  it.each([[NOTIFICATIONS_PAGE6, ['notifications_act']], [PREFS_PAGE6, ['notification_form', 'notification_act']]] as const)('%s: the calls it makes, BY NAME, chain states FIRST — nothing from lib/api-client or the SDK', (rel, chains) => {
+    const code = readCode(rel);
+    const at = (s: string) => code.indexOf(s);
+    expect(code).toMatch(/await requirePartner\(\);/);
+    expect(code).toMatch(/const t = getTranslator\(\);/);
+    expect(code).toMatch(/state=\{await partnerConsoleSwitch\(\)\}/);
+    let prev = at('await requirePartner();');
+    for (const c of chains) { expect([c, at(`chain6State('${c}'`) > prev]).toEqual([c, true]); prev = at(`chain6State('${c}'`); }
+    expect(at('await partnerConsoleSwitch()')).toBeGreaterThan(prev);
+    expect([...new Set([...code.matchAll(/await\s+([A-Za-z_$][\w$.]*)\s*\(/g)].map((m) => m[1]))].sort()).toEqual(['partnerConsoleSwitch', 'requirePartner']);
+    const from = [...code.matchAll(/from '([^']+)'/g)].map((m) => m[1].replace(/^(\.\.\/)+/, ''));
+    for (const f of from) expect([rel, f, /^(next|lib\/session|lib\/i18n|lib\/console-flag|components\/partner6\/\w+|features\/partner6\/(refusals|language)|\.\/actions)$/.test(f)]).toEqual([rel, f, true]);
+    expect(/api-client|@krishalaya\/sdk-js|partners-mailbox|partnerClient|anonClient|lenderGate|insurerGate|partner\.me\(/.test(code)).toBe(false);
+  });
+  it('the language act: a cookie and a redirect — no client, no SDK, no session read, no API', () => {
+    const code = readCode(LANGUAGE_ACTION);
+    expect(code).toMatch(/cookies\(\)\.set\(LANG_COOKIE, lang\.code, languageCookie\(\)\)/);
+    const from = [...code.matchAll(/from '([^']+)'/g)].map((m) => m[1].replace(/^(\.\.\/)+/, ''));
+    expect(from.sort()).toEqual(['features/partner6/language', 'next/headers', 'next/navigation']);
+    expect(/api-client|sdk-js|partnerClient|anonClient|requirePartner|audit/.test(code)).toBe(false);
+  });
+  it('the 6c views import no client either, and mount no read of their own', () => {
+    for (const rel of SIX_C_VIEWS) {
+      const code = readCode(rel);
+      expect([rel, /api-client|@krishalaya\/sdk-js|lib\/console-flag|lib\/session|lib\/i18n|async function|await /.test(code)]).toEqual([rel, false]);
+    }
+  });
+});

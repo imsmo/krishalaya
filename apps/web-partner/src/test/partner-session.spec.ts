@@ -71,9 +71,12 @@ describe('PC-56 PARTNER-0 · i18n: every new key × 3', () => {
     // `/settlements` route (it answers a 307 to `/insurer/settlements` now), so the floor is 39 — and the deleted key is pinned ABSENT ×3
     // PC-56 PARTNER-6b · NAMED UPDATE (founder 6b-4): `partner.surface.consents` is DELETED with the not-yet `/consents` route (307 to
     // `/lender/consents`), so the floor is 38 — and that deleted key is pinned ABSENT ×3 too
-    expect(fresh.length).toBeGreaterThanOrEqual(38);
+    // PC-56 PARTNER-6c · NAMED UPDATE (founder 6c-4): `partner.surface.notifications` is DELETED with the not-yet `/notifications` pair (307s to
+    // `/account/notifications…`), so the floor is 37 — and that deleted key is pinned ABSENT ×3 too
+    expect(fresh.length).toBeGreaterThanOrEqual(37);
     for (const cat of [en, hi, gu]) expect(Object.prototype.hasOwnProperty.call(cat, 'partner.surface.settlements')).toBe(false);
     for (const cat of [en, hi, gu]) expect(Object.prototype.hasOwnProperty.call(cat, 'partner.surface.consents')).toBe(false);
+    for (const cat of [en, hi, gu]) expect(Object.prototype.hasOwnProperty.call(cat, 'partner.surface.notifications')).toBe(false);
     const vars = (s: string) => (s.match(/\{\w+\}/g) ?? []).sort();
     for (const k of fresh) {
       expect([k, typeof hi[k], typeof gu[k]]).toEqual([k, 'string', 'string']);

@@ -265,7 +265,9 @@ export const PARTNER2_DELTAS: readonly { id: string; canon: string; built: strin
 ]);
 
 /** Every canon file of PARTNER-2 (50): 2a's 22, 2b's 19 and 2c's 9 — all decided (PARTNER-2 closes at 50 of 50). */
-export type Partner2Verdict = 'BUILT' | 'BUILT (read-only)' | 'BUILT (read)' | 'BUILT (honest)' | 'PARITY-DECOR' | 'DECOR' | 'pending_2b' | 'pending_2c';
+// PC-56 PARTNER-6c (the panel-wide check, founder 6c-6): the dead `pending_2b` / `pending_2c` members are DELETED from the type — no file has carried
+// either since PARTNER-2c, and the panel's last registry asserts no `pending_*` value survives in any partner registry source (the 4c-7 rule).
+export type Partner2Verdict = 'BUILT' | 'BUILT (read-only)' | 'BUILT (read)' | 'BUILT (honest)' | 'PARITY-DECOR' | 'DECOR';
 export const PARTNER2_CANON_FILES: readonly { file: string; wave: '2a' | '2b' | '2c'; verdict: Partner2Verdict; note: string }[] = Object.freeze([
   // ── 2a · THE INSURER READS ITS OWN BOOK (22) ──
   { file: 'W245-partner-ins-dashboard.html', wave: '2a', verdict: 'BUILT', note: '/insurer/dashboard over GET /v1/partner/insurance/dashboard: in force + Σ sum insured, proposed (awaiting the farmer\'s payment), FPOs, products, with as-of; claims / reserves / payouts / runs refused' },

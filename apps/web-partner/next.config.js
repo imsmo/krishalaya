@@ -64,6 +64,10 @@ const nextConfig = {
       // honest consents page; `lenderGate()` there sends an insurer to its own dashboard (mirrors CONSENTS_REDIRECTS in
       // src/features/partner6/refusals.ts)
       { source: '/consents', destination: '/lender/consents', permanent: false },
+      // PC-56 PARTNER-6c (founder 6c-4): the PARTNER-0 not-yet `/notifications` pair (a `common` nav item EVERY partner kind saw) → every
+      // partner person's own account pages; no gate (mirrors NOTIFICATIONS_REDIRECTS in src/features/partner6/refusals.ts)
+      { source: '/notifications', destination: '/account/notifications', permanent: false },
+      { source: '/notifications/preferences', destination: '/account/notifications/preferences', permanent: false },
     ];
   },
   async headers() {

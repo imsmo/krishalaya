@@ -270,3 +270,29 @@ describe('PC-56 PARTNER-6b · brand guard over the consents and regulatory pages
     }
   });
 });
+
+describe('PC-56 PARTNER-6c · brand guard over the account notification pages (the platform\'s mark + the partner\'s own name; survey F-10)', () => {
+  // the floor: the new app tree `app/account/notifications/**` (found on disk, recursively — the Server Action included) + every
+  // components/partner6 / features/partner6 module (6a's and 6b's floor, re-scanned here for the insurer persona's notification canon names)
+  const DIRS = [path.join(SRC, 'app', 'account', 'notifications'), path.join(SRC, 'components', 'partner6'), path.join(SRC, 'features', 'partner6')];
+  const mine = files().filter((f) => DIRS.some((d) => f.startsWith(d + path.sep))).map((f) => path.relative(SRC, f)).sort();
+  it('the floor holds: two pages, the Server Action, three new components (with 6a\'s and 6b\'s), the three feature modules — all scanned', () => {
+    expect(mine).toEqual(expect.arrayContaining(['app/account/notifications/page.tsx', 'app/account/notifications/preferences/page.tsx',
+      'app/account/notifications/preferences/actions.ts', 'components/partner6/AccountNotificationsView.tsx', 'components/partner6/AccountNotificationPrefsView.tsx',
+      'components/partner6/AccountChain6.tsx', 'features/partner6/refusals.ts', 'features/partner6/figures.ts', 'features/partner6/language.ts']));
+    expect(mine.length).toBeGreaterThanOrEqual(15);
+  });
+  it('none carries the platform\'s name, a mailbox, a domain, or a canon institution, person, place, phone, claim reference, account tail, payout id, sha fragment or avatar', () => {
+    for (const rel of mine) {
+      const src = fs.readFileSync(path.join(SRC, rel), 'utf8').replace(/@krishalaya\/[a-z0-9-]+/g, '');
+      for (const lit of LITERALS) expect([rel, lit, src.includes(lit)]).toEqual([rel, lit, false]);
+      expect([rel, /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.(com|in|org|net|co)\b|krishalaya\.(in|com)|mailto:[a-z]|1800/i.test(src)]).toEqual([rel, false]);
+      expect([rel, /Bharat Krishi|IRDAI ref|Saurashtra|Gramin|Priti|Mehta|Bhavna|Rathod|Kesar|Vanthali|Bhesan|\+91|CLM-20|7741/i.test(src)]).toEqual([rel, false]);
+    }
+    // the 6c views, pages and the act (not the registry, which NAMES the canon's claims to refuse them) carry no avatar, no honorific
+    for (const rel of mine.filter((r) => /Account|account\//.test(r))) {
+      const src = fs.readFileSync(path.join(SRC, rel), 'utf8');
+      expect([rel, /\bPM\b|\bAJ\b|\bBen\s|Bhai|\bDr\./.test(src)]).toEqual([rel, false]);
+    }
+  });
+});

@@ -6,13 +6,14 @@
 // (`bank` / `nbfc` / `mfi` / `gold_loan`) holding `partner.applications.read` sees the lending group (Dashboard · Loan queue ·
 // Products · Portfolio — PARTNER-4a) and never the insurer group; an asset
 // manager (`amc`) sees neither vertical; an UNKNOWN kind (the `/me` read failed) keeps the lending group as before PARTNER-2 and never opens
-// the insurer group by a guess. The Account group is for every partner person, last. Within a visible group, only routes that exist in this
+// the insurer group by a guess. The Account group is for every partner person, last. PC-56 PARTNER-6c (founder 6c-4): the `common` group is
+// GONE — its last item, Notifications, is now the Account group's first, so every partner person still sees it, under Account. Within a visible group, only routes that exist in this
 // app (`live: true`) render as real links. Partner RBAC + RLS are enforced by the platform API per call — this nav never grants access.
 
 /** PC-56 PARTNER-1a (founder D7): + `account` — Settings and Help (PARTNER-1b: + API keys, Webhooks, Readiness), visible to every partner person,
  *  rendered last under its own heading. PC-56 PARTNER-2a: the DEV-24 `insurance` group (keyed to the TENANT permission `insurance.manage`, which
  *  a partner token never carries — survey C-10) is replaced by `insurer`, keyed to the partner realm's `partner.insurance.read` AND the kind. */
-export type NavGroup = 'common' | 'lending' | 'fleet' | 'insurer' | 'account';
+export type NavGroup = 'lending' | 'fleet' | 'insurer' | 'account';
 
 export interface PartnerNavItem {
   href: string;
@@ -49,7 +50,8 @@ export const PARTNER_NAV: readonly PartnerNavItem[] = [
   // sub-navigation (Queue · Insights now; PARTNER-3b adds Evidence · Surveyors · Surveys · Fraud) — the canon's other claims screens are orphans.
   { href: '/insurer/claims', labelKey: 'partner3.nav.claims', group: 'insurer', live: true },
   { href: '/insurer/reports', labelKey: 'partner2.nav.reports', group: 'insurer', live: true },
-  { href: '/notifications', labelKey: 'nav.notifications', group: 'common', live: true },
+  // PC-56 PARTNER-6c (founder 6c-4): `/notifications` is GONE from the `common` group (the group is then empty and is DELETED, with its
+  // `visibleGroups` branch) — it rendered <NotYet> for EVERY partner kind. Notifications is now the FIRST Account item (below).
   // PC-56 PARTNER-6a (founder 6a-3, survey C-6 / F-6): `/settlements` is GONE from the `common` group — it was `live: true` while rendering
   // <NotYet> for EVERY partner kind (the PARTNER-4a `/profile` defect again), and the canon gives Settlements to an insurer only and to no
   // sidebar at all. It is now a row of the insurer's CLAIMS SUB-NAVIGATION (`CLAIMS_SUBNAV`, features/partner3/refusals.ts) and the old
@@ -84,6 +86,9 @@ export const PARTNER_NAV: readonly PartnerNavItem[] = [
   { href: '/cold-chain', labelKey: 'nav.coldChain', group: 'fleet', live: true },
   // account (PC-56 PARTNER-1a · D7): built routes only — the canon's `account/settings` and the built `/help` (canon `account/help`, DELTA);
   // PARTNER-1b (D7): + the canon's `account/api`, `account/webhooks` and `onboarding/status` ("Readiness"). Help stays last.
+  // PC-56 PARTNER-6c (founder 6c-4): + Notifications FIRST (the canon's Account order: Notifications · Help), at the canon's `account/notifications`
+  // — every partner kind (an honest page about the two SMS a partner person gets; its Preferences page carries the console's language).
+  { href: '/account/notifications', labelKey: 'nav.notifications', group: 'account', live: true },
   { href: '/account/settings', labelKey: 'partner1.nav.settings', group: 'account', live: true },
   { href: '/account/api', labelKey: 'partner1.nav.keys', group: 'account', live: true },
   { href: '/account/webhooks', labelKey: 'partner1.nav.webhooks', group: 'account', live: true },
@@ -113,7 +118,7 @@ export function hasInsurer(perms: ReadonlySet<string>): boolean {
 export function visibleGroups(perms: ReadonlySet<string>, kind?: string | null): NavGroup[] {
   const k = navKind(kind);
   const all = perms.has(WILDCARD_PERM);
-  const groups: NavGroup[] = ['common'];
+  const groups: NavGroup[] = [];
   if (hasLending(perms) && (all || k === 'lender' || k === 'unknown')) groups.push('lending');
   if (hasFleet(perms)) groups.push('fleet');
   if (hasInsurer(perms) && (all || k === 'insurer')) groups.push('insurer');

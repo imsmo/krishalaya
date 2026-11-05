@@ -36,3 +36,10 @@ export const claimHref = (claimId: string) => `/insurer/claims/${encodeURICompon
 /** PC-56 PARTNER-6b — the lender's two honest pages (they read nothing; nothing here is a figure). */
 export const consentsHref = () => '/lender/consents';
 export const regulatoryHref = () => '/lender/reports/regulatory';
+
+/** PC-56 PARTNER-6c — every partner person's two account pages (they read nothing; nothing here is a figure) and the webhook delivery log
+ *  they point to (PARTNER-1b). The pages' state is the public flag map (lib/console-flag.ts `partnerConsoleSwitch()` — the same three values). */
+export const NOTIFICATIONS_PAGE = '/account/notifications';
+export const NOTIFICATION_PREFS_PAGE = '/account/notifications/preferences';
+export const WEBHOOKS_PAGE = '/account/webhooks';
+export type AccountState = 'on' | 'off' | 'unknown';

@@ -133,3 +133,8 @@ pre.kv-code { white-space: pre-wrap; padding-block: .5rem; padding-inline: .75re
 .kv-counts__item { min-inline-size: 7.5rem; padding-block: .4rem; padding-inline: .75rem; border-radius: .5rem; background: var(--kv-neutral-50, #f8f8f6); }
 .kv-counts__item dd { margin-inline-start: 0; font-size: 1.25rem; font-weight: 600; }
 [data-kv-decide] { margin-block: 1rem; }
+/* PC-56 PARTNER-6c · the console's language choice (W271) — one radio group, logical properties only (RTL-safe: no left/right anywhere) */
+.kv-lang-choice { display: flex; flex-direction: column; align-items: flex-start; gap: .75rem; margin-block: .5rem; }
+.kv-lang-choice__set { border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; }
+.kv-lang-choice__legend { padding: 0; margin-block-end: .5rem; font-weight: 600; }
+.kv-lang-choice__option { display: inline-flex; align-items: center; gap: .5rem; padding-block: .25rem; padding-inline: .5rem; }

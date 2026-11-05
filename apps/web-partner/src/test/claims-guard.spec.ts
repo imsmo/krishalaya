@@ -11,7 +11,7 @@ import { PARTNER2_REFUSALS } from '../features/partner2/refusals';
 import { PARTNER3_REFUSALS } from '../features/partner3/refusals';
 import { PARTNER4_REFUSALS } from '../features/partner4/refusals';
 import { PARTNER5_REFUSALS } from '../features/partner5/refusals';
-import { PARTNER6_REFUSALS, SURFACES_6A, SURFACES_6B } from '../features/partner6/refusals';
+import { PARTNER6_REFUSALS, SURFACES_6A, SURFACES_6B, SURFACES_6C } from '../features/partner6/refusals';
 
 const CATS = { en, hi, gu } as const;
 const SCOPE = /^(dash\.|help\.|settings\.|partner\.|partner1\.)/;
@@ -1218,6 +1218,103 @@ describe('PC-56 PARTNER-6b · claims guard (consent and the filings the platform
       for (const [name, re] of [['formatter', /Intl\.NumberFormat|toLocaleString|toFixed|formatMoney/], ['count field', /\.length|count|total|\bn\b=|\{n\}/i],
         ['%', /%/], ['₹', /₹/], ['person field', /userId|user_id|phone|fullName|full_name|gender|land_parcels|landParcel|purposeRef|purpose_ref|expiresAt|expires_at|grantedAt|granted_at/i],
         ['<input', /<input|<select|<textarea|<form/]] as const) {
+        expect([rel, name, re.test(code)]).toEqual([rel, name, false]);
+      }
+    }
+  });
+});
+
+
+// ══ PC-56 PARTNER-6c · WHAT THE PLATFORM TELLS A PARTNER PERSON (founder 6c-1 … 6c-3; doors Q5-A / Q7-A; brief E3) ═══════════════════════════════
+// The words of W270 / W271 and their chains that would give a partner person an inbox, a preference matrix and deliveries the platform never
+// makes: a percentage; "critical rings / breaks through / everywhere"; "the same engine farmers get"; a digest; quiet hours (affirmative) and
+// the canon's 22:00 / 07:00; a survey clock; a policyholder; a doctor; "payout completed"; a rupee; DND; push fallback; renewal requests;
+// reachability; "locked"; "a farmer is waiting on this"; "defaults active"; "saved preferences still apply"; "switching is one click"; "every
+// template (also) exists"; "N of M events"; plan settings (affirmative). Each regex is PROVEN on its own canon phrase (AFFIRMATIVE where an
+// honest sentence needs the word: "There is no quiet-time window", "There are no plan settings"). Applied to every 6c value (the two pages, the
+// language act, the three chains, `nav.notifications`) AND to every key PARTNER6_REFUSALS prints on a 6c surface (reused keys included), in en,
+// hi and gu. The two founder statements are PINNED verbatim.
+const SCOPE_6C = /^(partner6\.(notifications\.|notificationPrefs\.|language\.|chain\.(notificationForm|notificationAct|notificationsAct)\.)|nav\.notifications$)/;
+const FORBIDDEN_6C: readonly [string, RegExp, string][] = [
+  ['%', /%/, 'unread 3 · critical 1 · 98% delivered'],
+  ['critical rings / breaks through / everywhere', /critical (rings|breaks? through|everywhere)|critical events will always break through/i, 'Critical rings, informational waits, promotional asks permission'],
+  ['same engine farmers get', /same engine farmers( get)?/i, 'the same engine farmers get.'],
+  ['digest', /digest/i, 'Daily digest — 9 informational items batched'],
+  ['quiet hours (affirmative)', /quiet hours\s*(—|-|:|\d|rule|ignore)|critical ignores quiet hours|per your quiet[- ]hours/i, 'Quiet hours — 22:00 – 07:00 · informational items wait'],
+  ['22:00 / 07:00', /\b22:00\b|\b07:00\b/, 'Quiet hours — 22:00 – 07:00'],
+  ['assign within 48h / survey clock', /assign within 48h|survey clock/i, 'survey clock started — assign within 48h.'],
+  ['policy holder', /policy ?holder/i, 'CLM-… · policy holder <name>'],
+  ['Dr.', /\bDr\./, 'Dr. <name> filed the joint report for all 3 holdings'],
+  ['payout completed', /payout completed/i, 'Payout completed — ₹… to <name>'],
+  ['₹', /₹/, 'Payout completed — ₹1,10,000'],
+  ['DND', /\bDND\b/, 'Your DND-registered number rejected the parametric-window reminder'],
+  ['push fallback / fallback, never silence', /push fallback|fallback,? never silence/i, 'SMS failed → push fallback sent · Fallback, never silence.'],
+  ['renewal requests', /renewal requests/i, 'Renewal requests go out from the policies screen.'],
+  ['reachability', /reachability/i, "Admins can view (not edit) team members' critical-tier reachability for on-call planning."],
+  ['locked', /\blocked\b/i, 'Security events are locked on every channel.'],
+  ['a farmer is waiting on this', /a farmer is waiting on this/i, 'Cannot be switched off — a farmer is waiting on this.'],
+  ['defaults active', /defaults active/i, "Defaults active — You haven't customised anything yet"],
+  ['saved preferences still apply', /saved preferences still apply/i, 'Your saved preferences still apply to deliveries — only this view failed.'],
+  ['switching is one click', /switching is one click|one click, not a support ticket/i, 'switching is one click, not a support ticket.'],
+  ['every template (also) exists', /every template (also )?exists/i, 'every template also exists in हिन्दी and ગુજરાતી'],
+  ['N of M events', /\b\d+ of \d+ events\b/i, '8 of 31 events shown — grouped by what they interrupt'],
+  ['plan settings (affirmative)', /see plan settings/i, 'Notifications disabled … See plan settings.'],
+];
+/** Honest sentences of this wave's shape that MUST pass (the affirmative narrowing proven both ways). */
+const PERMITTED_6C = [
+  'There is no quiet-time window to set: nothing is sent to you that could be held back.',
+  'There are no plan settings for your organisation to open. Nothing on this platform lets a partner switch its own modules on.',
+  'Not every line of console text exists in Hindi and Gujarati yet: older text with no translation is shown in English.',
+];
+/** The two statements founder 6c-1 / 6c-2 pinned, VERBATIM. */
+const PINNED_6C: Readonly<Record<string, string>> = {
+  'partner6.notifications.statement': "The platform sends the people of your organisation two kinds of message, by SMS: a sign-in code when you sign in, and an invitation when a colleague adds you to the team. Nothing else is sent to you in this console. Your organisation's machine notifications are its webhooks, set up by the platform, and their delivery log is on the Webhooks page.",
+  'partner6.notificationPrefs.statement': 'The sign-in code and the team invitation cannot be switched off: you need them to use the console. No other message is sent to you here, so there is nothing else to set.',
+};
+const keys6C = (c: Record<string, string>) => [...new Set([...Object.keys(c).filter((k) => SCOPE_6C.test(k)),
+  ...PARTNER6_REFUSALS.filter((r) => r.surfaces.some((x) => SURFACES_6C.includes(x))).map((r) => r.key)])];
+
+describe('PC-56 PARTNER-6c · claims guard (what the platform tells a partner person)', () => {
+  it('every 6c forbidden word is caught when planted once (each regex proven on its own canon phrase); the honest sentences pass every one', () => {
+    for (const [name, re, planted] of FORBIDDEN_6C) expect([name, re.test(planted)]).toEqual([name, true]);
+    for (const ok of [...PERMITTED_6C, ...Object.values(PINNED_6C)]) for (const [name, re] of FORBIDDEN_6C) expect([ok, name, re.test(ok)]).toEqual([ok, name, false]);
+    const re = (n: string) => (FORBIDDEN_6C.find(([x]) => x === n) as [string, RegExp, string])[1];
+    expect(re('plan settings (affirmative)').test(en['partner4.refusal.planSettings'])).toBe(false);
+    for (const canon of ['Critical ignores quiet hours, by design.', "suppressed into tomorrow's digest per your quiet-hours rule"]) expect([canon, re('quiet hours (affirmative)').test(canon) || re('digest').test(canon)]).toEqual([canon, true]);
+  });
+  it.each(Object.entries(CATS))('%s: no 6c claim in any 6c value, nor in any key PARTNER6_REFUSALS prints on a 6c surface (the reused keys included)', (_l, cat) => {
+    const c = cat as Record<string, string>;
+    const keys = keys6C(c);
+    expect(keys.length).toBeGreaterThan(60);
+    for (const k of keys) {
+      expect([k, typeof c[k]]).toEqual([k, 'string']);
+      for (const [name, re] of [...FORBIDDEN_6C.map(([n, r]) => [n, r] as const), ...FORBIDDEN]) expect([k, name, re.test(c[k])]).toEqual([k, name, false]);
+    }
+    for (const k of Object.keys(en).filter((x) => SCOPE_6C.test(x))) expect([k, typeof c[k] === 'string' && c[k].length > 0]).toEqual([k, true]);
+  });
+  it('founder 6c-1 / 6c-2 (en, VERBATIM): the two statements; present and distinct in hi and gu; the English-fallback note says so plainly', () => {
+    for (const [k, v] of Object.entries(PINNED_6C)) {
+      expect([k, en[k]]).toEqual([k, v]);
+      expect([k, typeof hi[k] === 'string' && hi[k].length > 30 && hi[k] !== en[k], typeof gu[k] === 'string' && gu[k].length > 30 && gu[k] !== en[k]]).toEqual([k, true, true]);
+      expect([k, hi[k] !== gu[k]]).toEqual([k, true]);
+    }
+    // founder 6c-3: say plainly that some older text is English-only — never that every template exists in hi / gu
+    expect(en['partner6.language.fallbackNote']).toMatch(/still in English only/);
+    // the statement names exactly two messages and points at the webhook log; nothing about an inbox, an item or a person
+    expect(en['partner6.notifications.statement']).toMatch(/two kinds of message, by SMS/);
+    expect(en['partner6.notifications.statement']).toMatch(/delivery log is on the Webhooks page/);
+  });
+  it('the W270 / W271 views, pages, chain and language act carry no inbox, item, counter, person field or literal language list in their CODE', () => {
+    const fs2 = require('node:fs') as typeof import('node:fs');
+    const path2 = require('node:path') as typeof import('node:path');
+    const SRC = path2.join(__dirname, '..');
+    for (const rel of ['components/partner6/AccountNotificationsView.tsx', 'components/partner6/AccountNotificationPrefsView.tsx', 'components/partner6/AccountChain6.tsx',
+      'app/account/notifications/page.tsx', 'app/account/notifications/preferences/page.tsx', 'app/account/notifications/preferences/actions.ts', 'features/partner6/language.ts']) {
+      const code = fs2.readFileSync(path2.join(SRC, rel), 'utf8').split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
+      expect([rel, code.length > 300]).toEqual([rel, true]);
+      for (const [name, re] of [['formatter', /Intl\.NumberFormat|toLocaleString|toFixed|formatMoney/], ['count / unread field', /\bunread\b|\bcounts?\b|\btotal\b/i],
+        ['%', /%/], ['₹', /₹/], ['person field', /userId|user_id|phone|fullName|full_name|policyholder|payee|surveyor/i],
+        ['checkbox / select / textarea', /type="checkbox"|<select|<textarea/i], ['event code', /eventCode|event_code|claim\.intimated|payout\.completed|consent\.expiring/]] as const) {
         expect([rel, name, re.test(code)]).toEqual([rel, name, false]);
       }
     }

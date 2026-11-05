@@ -2,16 +2,20 @@
 // `kv_lang` cookie (the storefront's mechanism, ported — apps/web-storefront/src/lib/i18n.ts), else the Accept-Language header, else en, and
 // the Translator carries en + hi + gu. hi.ts / gu.ts are PARTIAL catalogues over en.ts: they hold this wave's NEW keys (every new key × 3);
 // a key missing there falls back to en INSIDE the shared Translator (`catalogs.get(active)?.[key] ?? catalogs.get('en')?.[key] ?? key`), so
-// a Hindi page shows the 871 untranslated keys in English, never blank. Backfilling those 871 is its own wave (named). No switcher UI yet
-// (PARTNER-1a's). Server-only: the catalogs are tiny + framework-free, so there is no client provider and no per-request bundle cost.
+// a Hindi page shows the untranslated keys in English, never blank. Backfilling them is its own wave (named). PC-56 PARTNER-6c (founder 6c-3,
+// door Q7-A): THE SWITCHER EXISTS — a partner person chooses the language on `/account/notifications/preferences` (a radio group of the
+// package's live languages, read from `@krishalaya/i18n`), and the Server Action there sets this cookie for the browser
+// (features/partner6/language.ts holds the cookie's name and attributes; it is defined once, there).
+// Server-only: the catalogs are tiny + framework-free, so there is no client provider and no per-request bundle cost.
 import 'server-only';
 import { cookies, headers } from 'next/headers';
 import { Translator, resolveLanguage, DEFAULT_LANGUAGE, type LanguageDef } from '@krishalaya/i18n';
 import { en } from '../i18n/en';
 import { hi } from '../i18n/hi';
 import { gu } from '../i18n/gu';
+import { LANG_COOKIE } from '../features/partner6/language';
 
-export const LANG_COOKIE = 'kv_lang';
+export { LANG_COOKIE };
 /** The default language of the partner portal (kept for imports that predate the cookie). */
 export const PARTNER_LANG = DEFAULT_LANGUAGE;
 
