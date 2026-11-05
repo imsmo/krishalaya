@@ -20,3 +20,17 @@ export function buildFarmer(raw: { phone: string; fullName: string; languageCode
   if (languageCode) value.languageCode = languageCode;
   return { ok: true, value };
 }
+
+// PC-56 HOTFIX-10 · H10-1 (survey OPS-1 F-1 / C-6, founder Q9-A). What the kiosk prints after `users.create`. The API used to answer an
+// existing phone with 200 and THAT PERSON'S profile, so this page said "Account created" for somebody who already existed. Now the API's
+// only success is 201 (a fresh account) and an existing phone is 409 `USER_PHONE_ALREADY_REGISTERED` with nothing about the person:
+//   resolved (the 201)                          → 'created'  ("Account created")
+//   409 USER_PHONE_ALREADY_REGISTERED            → 'exists'   ("This number already has an account. She signs in herself, on her own phone.")
+//   anything else (incl. another 409, e.g. a key still in flight) → 'create' (the generic "couldn't create" — never a false "exists")
+// The SDK hands back the body only, so "resolved" stands for the 201; the sentence printed never comes from the response.
+export const PHONE_ALREADY_REGISTERED = 'USER_PHONE_ALREADY_REGISTERED';
+export type KioskOutcome = 'created' | 'exists' | 'create';
+export function kioskCreateOutcome(r: { ok: true } | { ok: false; status?: number; code?: string }): KioskOutcome {
+  if (r.ok) return 'created';
+  return r.status === 409 && r.code === PHONE_ALREADY_REGISTERED ? 'exists' : 'create';
+}

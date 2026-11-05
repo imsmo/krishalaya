@@ -28,9 +28,21 @@ import { DomainEvent } from '../domain/ambassadors.events';
 import { ReferralRepository } from '../repositories/referral.repository';
 import { AmbassadorProfileRepository } from '../repositories/ambassador-profile.repository';
 import { AmbassadorActor } from './ambassador-profile.service';
-import { NotAnAmbassadorError, ConsentRequiredError, AssistedOnboardingExistingUserError } from '../domain/ambassadors.errors';
+import { NotAnAmbassadorError, ConsentRequiredError, AssistedOnboardingExistingUserError, AssistedConsentNotGrantableError } from '../domain/ambassadors.errors';
+import { UserPhoneAlreadyRegisteredError } from '../../identity/domain/identity.errors';
 import { normalizePhoneE164 } from '../../../shared/utils/phone';
 import { AssistedOnboardingDto } from '../dto/assisted-onboarding.dto';
+
+// PC-56 HOTFIX-10 · H10-3 (survey OPS-1 F-3, founder Q8-A) — A CONSENT WRITTEN BY THE PERSON IT EMPOWERS IS NOT HER CONSENT.
+// `on_behalf_listing` is the consent the on-behalf listing gate checks with `assistedBy = this ambassador` (on-behalf-listing.service.ts),
+// so recording it here let the ambassador authorise herself a minute later. Every `on_behalf_*` purpose is the same shape (a grant TO the
+// helper) and is refused with it. Refused whatever `granted` says: the helper does not record this purpose at all.
+export const ASSISTED_UNGRANTABLE_PURPOSES: readonly string[] = ['on_behalf_listing'];
+/** PURE: may assisted onboarding record a consent for `purposeCode`? */
+export function assistedGrantable(purposeCode: string): boolean {
+  const p = purposeCode.trim().toLowerCase();
+  return !ASSISTED_UNGRANTABLE_PURPOSES.includes(p) && !p.startsWith('on_behalf');
+}
 
 @Injectable()
 export class AssistedOnboardingService {
@@ -46,6 +58,9 @@ export class AssistedOnboardingService {
   ) {}
 
   async onboard(tenantId: string, actor: AmbassadorActor, idemKey: string, dto: AssistedOnboardingDto, ip: string | null) {
+    // HOTFIX-10 · H10-3: a purpose that empowers the helper is never recorded by the helper — refused first, before any read or write.
+    const forbidden = dto.consents.find((c) => !assistedGrantable(c.purposeCode));
+    if (forbidden) throw new AssistedConsentNotGrantableError(forbidden.purposeCode);
     if (!dto.consents.some((c) => c.granted)) throw new ConsentRequiredError();   // DPDP: no consent → no account
     const me = await this.profiles.findByUser(tenantId, actor.userId);
     if (!me || !me.toProps().isActive) throw new NotAnAmbassadorError();
@@ -65,8 +80,11 @@ export class AssistedOnboardingService {
         }, { userId: actor.userId });
 
         // 1. create the farmer (identity's own path; audited 'user.created_assisted'; an invalid phone is refused there)
+        // HOTFIX-10: `adminCreate` now REFUSES an existing phone itself (USER_PHONE_ALREADY_REGISTERED, incl. the race on the UNIQUE index);
+        // on this route the same fact keeps its TENANT-10a name, AMB_EXISTING_USER, so the F-4 contract is unchanged.
         const user = await this.users.adminCreate(tenantId, actor.userId,
-          { phone: dto.phone, fullName: dto.fullName, languageCode: dto.languageCode, countryCode: dto.countryCode }, ip);
+          { phone: dto.phone, fullName: dto.fullName, languageCode: dto.languageCode, countryCode: dto.countryCode }, ip)
+          .catch((e: unknown) => { throw e instanceof UserPhoneAlreadyRegisteredError ? new AssistedOnboardingExistingUserError() : e; });
         const createdBeforeCheck = await this.uow.run(tenantId, async (tx) => {
           const r = await tx.query<{ older: boolean }>(`SELECT created_at < $2::timestamptz AS older FROM users WHERE id=$1`, [user.id, checkedAt]);
           return r.rows[0]?.older === true;

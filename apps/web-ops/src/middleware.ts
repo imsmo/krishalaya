@@ -1,14 +1,15 @@
-// apps/web-tenant/src/middleware.ts · DEV-26, Q16 (URL/locale scheme). Mirrors
-// `apps/web-storefront/src/middleware.ts` exactly (see that file's own header for the full reasoning): if the
-// request URL carries a valid `?lang=<code>`, persists it into the existing `kvt_lang` cookie (`lib/i18n.ts`'s
-// `getLang()` already reads this cookie first) — purely additive, zero change for a request with no `lang` param.
+// apps/web-ops/src/middleware.ts · DEV-26, Q16 (URL/locale scheme). Mirrors
+// `apps/web-storefront/src/middleware.ts` (see that file's own header for the full reasoning): if the request URL
+// carries a valid `?lang=<code>`, persists it into the console's language cookie (`lib/i18n.ts`'s `getLang()` reads
+// it first) — purely additive, zero change for a request with no `lang` param.
+//
+// PC-56 HOTFIX-10 · H10-4 (survey OPS-1 F-20 / C-10): this file was copied from web-tenant and kept web-tenant's own
+// cookie name (`kvt_lang`) while web-ops reads `kvo_lang` — so a `?lang=` choice never stuck. The name now comes from
+// `lib/lang-cookie.ts`, the ONE definition (framework-free, so the Edge runtime can import it; `lib/i18n.ts` cannot be
+// imported here — it is `server-only` + `next/headers`).
 import { NextRequest, NextResponse } from 'next/server';
 import { pickUrlLang } from './lib/locale-url';
-
-// NOT imported from `lib/i18n.ts` (that module is `import 'server-only'` + `next/headers`, RSC-only APIs that
-// Middleware's Edge runtime does not provide) — this is the same cookie name `lib/i18n.ts`'s own `LANG_COOKIE`
-// constant holds; kept in sync by both files' own comments (a disclosed one-string duplication).
-const LANG_COOKIE = 'kvt_lang';
+import { LANG_COOKIE } from './lib/lang-cookie';
 const ONE_YEAR = 60 * 60 * 24 * 365;
 
 export function middleware(req: NextRequest): NextResponse {

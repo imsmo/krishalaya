@@ -24,13 +24,15 @@ const toRow = (x: any) => ({
 export class AepsEventRepository {
   constructor(@Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider) {}
 
-  async insert(tx: TxContext, e: AepsEventInput): Promise<void> {
-    await tx.query(
+  /** Returns the new row's id (bigserial, as text) — the HOTFIX-10 audit row names it. */
+  async insert(tx: TxContext, e: AepsEventInput): Promise<string> {
+    const r = await tx.query<{ id: string }>(
       `INSERT INTO aeps_service_events (tenant_id, ambassador_id, customer_user_id, service_kind, bank_name, account_last4, aadhaar_last4,
          amount_minor, balance_after_minor, status, exception_code, attempt_no, device_certified, npci_rrn, escalation_note, synced_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,now())`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,now()) RETURNING id::text AS id`,
       [e.tenantId, e.ambassadorId, e.customerUserId ?? null, e.serviceKind, e.bankName ?? null, e.accountLast4 ?? null, e.aadhaarLast4 ?? null,
        e.amountMinor ?? null, e.balanceAfterMinor ?? null, e.status, e.exceptionCode ?? null, e.attemptNo, e.deviceCertified, e.npciRrn ?? null, e.escalationNote ?? null]);
+    return r.rows[0].id;
   }
   async listForAmbassador(tenantId: string, ambassadorId: string, limit: number): Promise<Array<Record<string, unknown>>> {
     const r = await this.replica.forTenant(tenantId).query(

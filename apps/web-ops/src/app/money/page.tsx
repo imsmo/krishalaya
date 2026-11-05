@@ -101,9 +101,11 @@ export default async function AssistedMoneyPage({ searchParams }: { searchParams
           <p id="ae-bal-hint" className="kv-field__hint">{t.t('aeps.balanceHint')}</p>
         </div>
 
+        {/* PC-56 HOTFIX-10 · H10-2 / F-13: UNTICKED by default — certification is the operator's word (the platform cannot check a
+            device), so it is asserted by a deliberate tick, never by not touching a pre-ticked box. */}
         <fieldset className="kv-fieldset">
           <legend>{t.t('aeps.deviceLegend')}</legend>
-          <label className="kv-check"><input type="checkbox" name="deviceCertified" value="1" defaultChecked /> {t.t('aeps.deviceCertified')}</label>
+          <label className="kv-check"><input type="checkbox" name="deviceCertified" value="1" /> {t.t('aeps.deviceCertified')}</label>
           <p className="kv-field__hint">{t.t('aeps.deviceHint')}</p>
         </fieldset>
 

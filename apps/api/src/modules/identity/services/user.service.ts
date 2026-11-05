@@ -13,7 +13,13 @@ import { UserTenantRoleRepository } from '../repositories/user-tenant-role.repos
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { normalizePhoneE164 } from '../../../shared/utils/phone';
-import { InvalidPhoneError } from '../domain/identity.errors';
+import { InvalidPhoneError, UserPhoneAlreadyRegisteredError } from '../domain/identity.errors';
+
+/** PC-56 HOTFIX-10 · PURE: the insert lost the race for this phone (`users.phone` UNIQUE — `users_phone_key`). */
+export function isPhoneUniqueViolation(e: unknown): boolean {
+  const x = e as { code?: string; constraint?: string } | null;
+  return x?.code === '23505' && /phone/.test(String(x?.constraint ?? ''));
+}
 
 /** The editable profile fields, as the audit may compare them: the raw values for change detection, the email ALSO masked for the row. */
 interface ProfileAuditView { fullName: unknown; gender: unknown; dob: unknown; languageCode: unknown; email: unknown; emailMasked: unknown; photoMediaId: unknown }
@@ -96,15 +102,24 @@ export class UserService {
     return this.getById(tenantId, userId);
   }
 
-  /** Ambassador/admin-assisted onboarding of a user who can't self-register. */
+  /** Ambassador/admin-assisted onboarding of a user who can't self-register.
+   *
+   *  PC-56 HOTFIX-10 · H10-1 (survey OPS-1 F-1 / C-6, founder Q9-A) — "FIND OR CREATE" IS NOW "CREATE OR REFUSE". This used to return the
+   *  EXISTING person when the phone was taken (`if (existing) return existing.id;`), so any tenant administrator who typed a number got back
+   *  that person's profile — whichever tenant she belongs to (`users` is global, one identity per phone) — and the kiosk printed "Account
+   *  created". Now a phone that already has an account is refused with `USER_PHONE_ALREADY_REGISTERED` (409, no field about the person)
+   *  BEFORE anything is written. The race (the TENANT-10a F-4 shape): a self-signup that lands between the check and the insert makes the
+   *  insert hit `users.phone UNIQUE` (23505) — that is answered with the SAME 409 and the transaction rolls back, so no user, audit or
+   *  outbox row survives. A soft-deleted account still holds its phone (the UNIQUE index covers it), so it gets the same answer. */
   async adminCreate(tenantId: string, actorUserId: string, dto: CreateUserDto, ip: string | null) {
     const phone = normalizePhoneE164(dto.phone);
     if (!phone) throw new InvalidPhoneError();
     const id = await this.uow.run(tenantId, async (tx) => {
       const existing = await this.users.getByPhoneForUpdate(tx, phone);
-      if (existing) return existing.id;
+      if (existing) throw new UserPhoneAlreadyRegisteredError();
       const u = User.register({ id: uuidv7(), phone, fullName: dto.fullName ?? null, languageCode: dto.languageCode, countryCode: dto.countryCode });
-      await this.users.insert(tx, u);
+      try { await this.users.insert(tx, u); }
+      catch (e) { if (isPhoneUniqueViolation(e)) throw new UserPhoneAlreadyRegisteredError(); throw e; }
       await this.flush(tx, u.id, u.pullEvents());
       await this.audit.write(tx, { tenantId, actorUserId, action: 'user.created_assisted', entityType: 'user', entityId: u.id, ip });
       return u.id;

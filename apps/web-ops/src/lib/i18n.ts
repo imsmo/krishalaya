@@ -9,9 +9,10 @@ import { en } from '../i18n/en';
 import { hi } from '../i18n/hi';
 import { gu } from '../i18n/gu';
 
-// DEV-26/Q16: this exact string is ALSO hardcoded (disclosed, not re-imported — see that file's own comment) in
-// `../middleware.ts`, which cannot safely import this `server-only` + `next/headers` module. Keep both in sync.
-export const LANG_COOKIE = 'kvo_lang';
+// PC-56 HOTFIX-10 · H10-4: the cookie's name has ONE definition, `./lang-cookie` (framework-free, so the Edge middleware
+// imports it too); re-exported here so every existing importer of `lib/i18n`'s LANG_COOKIE keeps working.
+import { LANG_COOKIE } from './lang-cookie';
+export { LANG_COOKIE };
 
 /** The active language code for this request (cookie → Accept-Language → default). */
 export function getLang(): string {

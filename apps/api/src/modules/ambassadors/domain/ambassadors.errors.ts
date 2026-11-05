@@ -23,6 +23,10 @@ export class PayoutMarkMismatchError extends DomainError { constructor(locked: n
 /** PC-56 TENANT-10a · F-4. Assisted onboarding is for a person with NO account. A phone that already belongs to somebody is
  *  refused BEFORE any consent or attribution is written — an ambassador never records consents in an existing member's name. */
 export class AssistedOnboardingExistingUserError extends DomainError { constructor() { super('AMB_EXISTING_USER', 'This phone number already belongs to a member — assisted onboarding is only for a person without an account', 409, {}); } }
+/** PC-56 HOTFIX-10 · H10-3 (survey OPS-1 F-3, founder Q8-A). A consent that empowers the helper — `on_behalf_listing`, or any purpose that
+ *  names the ambassador as its grantee — cannot be recorded BY that helper. Refused by name, before any user, consent or referral row exists.
+ *  The farmer-confirmed grant (her own OTP, on her own phone) is OPS1-B3, a later wave; a voice note on a family member's phone is not accepted. */
+export class AssistedConsentNotGrantableError extends DomainError { constructor(purposeCode: string) { super('ASSISTED_CONSENT_NOT_GRANTABLE', 'A consent that lets the helper act for her cannot be recorded by the helper. She gives it herself, on her own phone.', 422, { purposeCode }); } }
 /** PC-56 TENANT-10a · F-12. A state change the canon promises an audit reason for, sent without one (3–300 characters). */
 export class ReasonRequiredError extends DomainError { constructor(act: string) { super('REASON_REQUIRED', `A reason (3–300 characters) is required to ${act}`, 422, { act }); } }
 /** PC-56 TENANT-10a · F-14. The leaderboard is for the people it ranks and the people who manage them. */

@@ -8,12 +8,13 @@ import { resolveLanguage } from '@krishalaya/i18n';
 import { en } from '../i18n/en';
 import { hi } from '../i18n/hi';
 import { gu } from '../i18n/gu';
+import { LANG_COOKIE } from '../lib/lang-cookie';   // PC-56 HOTFIX-10 · H10-4: the one definition (was a literal here)
 
 const CATALOGS: Record<string, Record<string, string>> = { en, hi, gu };
 
 function pick(key: string): string {
   const cookie = typeof document !== 'undefined'
-    ? document.cookie.split('; ').find((c) => c.startsWith('kvo_lang='))?.split('=')[1]
+    ? document.cookie.split('; ').find((c) => c.startsWith(`${LANG_COOKIE}=`))?.split('=')[1]
     : undefined;
   const lang = resolveLanguage(cookie).code;
   return CATALOGS[lang]?.[key] ?? en[key] ?? key;

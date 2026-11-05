@@ -53,6 +53,12 @@ export class TenantRequiredForAuthError extends DomainError {
 export class PhoneAlreadyInUseError extends DomainError {
   constructor() { super('PHONE_IN_USE', 'That phone number is already registered to another account', 409); }
 }
+/** PC-56 HOTFIX-10 · H10-1 (survey OPS-1 F-1, founder Q9-A). An assisted create (`POST /v1/users`) on a phone that already has an account
+ *  ANYWHERE on the platform. The refusal says only that — no id, no name, no field about the person at any depth (`details` is empty) —
+ *  and it is thrown before anything is written. A desk must never be able to look a person up by their phone number. */
+export class UserPhoneAlreadyRegisteredError extends DomainError {
+  constructor() { super('USER_PHONE_ALREADY_REGISTERED', 'This number already has an account. She signs in herself, on her own phone.', 409, {}); }
+}
 export class InvalidRefreshError extends DomainError {
   constructor() { super('REFRESH_INVALID', 'Refresh token is invalid, expired, or revoked', 401); }
 }
