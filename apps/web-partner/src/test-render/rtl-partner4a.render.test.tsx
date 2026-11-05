@@ -39,10 +39,10 @@ describe('PC-56 PARTNER-4a · the lending screens under dir="rtl" (en / hi / gu)
       expect([lang, /style="/.test(html)]).toEqual([lang, false]);   // no inline style at all on a lending page
       expect([lang, html.includes('dir="rtl"')]).toEqual([lang, true]);
       expect([lang, percents(html)]).toEqual([lang, 0]);
-      // the only arrows allowed are the ones the catalogue itself puts in a back-link
-      const arrows = (html.match(/[←→]/g) ?? []).length;
-      const catalogueArrows = [cat['partner4.application.back'], cat['partner4.loan.back']].join('').match(/[←→]/g)?.length ?? 0;
-      expect([lang, arrows <= catalogueArrows]).toEqual([lang, true]);
+      // NAMED UPDATE (PC-56 PARTNER-SWEEP, RTL spot-check 2026-11-05): no bare directional arrow at all — not even inside a catalogue
+      // back-link. A literal ← in a back-link points the wrong way under dir="rtl" (the panel's E9 rule; the STORE close's precedent).
+      expect([lang, (html.match(/[←→]/g) ?? []).length]).toEqual([lang, 0]);
+      expect([lang, /[←→]/.test(cat['partner4.application.back'] + cat['partner4.loan.back'])]).toEqual([lang, false]);
     }
   });
   it('the page SKELETON is identical in all three languages — a translation changes the words, never the structure', () => {
