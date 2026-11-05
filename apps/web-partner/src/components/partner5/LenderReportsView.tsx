@@ -77,6 +77,10 @@ export function LenderReportsView({ t, lang, state, sla, computedAt, orgName, ma
           </p>
         </>
       )}
+      {/* PC-56 PARTNER-6b (founder 6b-3, survey F-10): the inbound edge the canon never drew — W224 is reached from here, in every state */}
+      <p className="kv-pager" data-kv-acts="regulatory">
+        <Link className="kv-btn kv-btn--muted" href="/lender/reports/regulatory" data-kv-real="regulatory">{t.t('partner6.regulatory.fromReports')}</Link>
+      </p>
       <LenderRefusals5 t={t} surface="sla" />
     </section>
   );

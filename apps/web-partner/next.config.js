@@ -60,6 +60,10 @@ const nextConfig = {
       // → the insurer's own settlements page; `insurerGate()` there sends a lender or any other kind to its own home, because no partner
       // but an insurer has a claim on this platform (mirrors SETTLEMENTS_REDIRECTS in src/features/partner6/refusals.ts)
       { source: '/settlements', destination: '/insurer/settlements', permanent: false },
+      // PC-56 PARTNER-6b (founder 6b-4): the PARTNER-0 not-yet `/consents` (a `common` nav item EVERY partner kind saw) → the lender's own
+      // honest consents page; `lenderGate()` there sends an insurer to its own dashboard (mirrors CONSENTS_REDIRECTS in
+      // src/features/partner6/refusals.ts)
+      { source: '/consents', destination: '/lender/consents', permanent: false },
     ];
   },
   async headers() {

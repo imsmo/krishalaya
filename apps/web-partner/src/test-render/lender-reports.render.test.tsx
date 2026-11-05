@@ -97,6 +97,17 @@ describe('PC-56 PARTNER-5c · W214 the SLA page (render)', () => {
     expect(w).toContain(en['partner.off.title']); expect(w).toContain('Nothing is broken');
     expect(w).not.toMatch(/lending is off|see plan settings|unavailable/i);
   });
+  // PC-56 PARTNER-6b · NAMED UPDATE (founder 6b-3, survey F-10): W224 was a total orphan — W214 now links to it, a REAL link in every state
+  // but switched-off (there is no page to go to when the console is off)
+  it('PC-56 PARTNER-6b · the REAL "Regulatory reporting" link to /lender/reports/regulatory in ok, empty and error; none when switched off', () => {
+    for (const [state, sla] of [['ok', SLA], ['empty', SLA_EMPTY], ['error', null]] as const) for (const cat of [en, hi, gu]) {
+      const html = render(state, sla, cat);
+      expect([state, html.includes('href="/lender/reports/regulatory"'), html.includes('data-kv-real="regulatory"')]).toEqual([state, true, true]);
+      expect(text(html)).toContain(cat['partner6.regulatory.fromReports']);
+    }
+    expect(render('off', null)).not.toContain('/lender/reports/regulatory');
+    expect(FALSE_5C.test(en['partner6.regulatory.fromReports'])).toBe(false);
+  });
   it('hi and gu render the same skeleton with their own words', () => {
     const skel = (h: string) => (h.match(/data-kv-[a-z-]+="[^"]*"/g) ?? []).join('|');
     expect(skel(render('ok', SLA, hi))).toBe(skel(render('ok')));

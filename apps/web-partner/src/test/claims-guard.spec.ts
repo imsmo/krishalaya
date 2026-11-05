@@ -11,7 +11,7 @@ import { PARTNER2_REFUSALS } from '../features/partner2/refusals';
 import { PARTNER3_REFUSALS } from '../features/partner3/refusals';
 import { PARTNER4_REFUSALS } from '../features/partner4/refusals';
 import { PARTNER5_REFUSALS } from '../features/partner5/refusals';
-import { PARTNER6_REFUSALS, SURFACES_6A } from '../features/partner6/refusals';
+import { PARTNER6_REFUSALS, SURFACES_6A, SURFACES_6B } from '../features/partner6/refusals';
 
 const CATS = { en, hi, gu } as const;
 const SCOPE = /^(dash\.|help\.|settings\.|partner\.|partner1\.)/;
@@ -1117,3 +1117,109 @@ describe('PC-56 PARTNER-6a · claims guard (where a claim is not paid)', () => {
   });
 });
 
+
+// ══ PC-56 PARTNER-6b · CONSENT AND THE FILINGS THE PLATFORM DOES NOT MAKE (founder 6b-1 … 6b-3; doors Q3-A / Q4-A / Q6-A; brief E4) ═══════════
+// The words of W213 / W224 and their chains that sell a lender a consent registry it would hold and a regulatory service the platform does
+// not provide: a percentage; "revocable", "revocation takes effect", "within 60 seconds", "logged on both sides", "time-boxed", "standing
+// access" (Q4-A — none is true until P4-B6 builds an expiry and a withdrawal); "your bank holds"; a regulator's return named as a platform
+// product; PSL, priority sector, weaker section, small & marginal, women borrowers; a landholding or land-record classification; "from KYC";
+// signed extracts; sha256; watermarks; a compliance role; a consent channel; a phone country code; an application reference; a warehouse-
+// receipt valuation; a standard consent term; plan settings. Each regex is PROVEN on its own canon phrase and kept in the canon's AFFIRMATIVE
+// shape where an honest sentence needs the word (the founder's statement says "It never gives your organisation a borrower's gender or
+// landholding" — legal; the reused PARTNER-2 role refusal says "No … compliance role exists" — legal). Applied to every 6b value (the two
+// pages, the four chains, `nav.consents`) AND to every key PARTNER6_REFUSALS prints on a 6b surface (reused keys included), in en, hi and gu.
+const SCOPE_6B = /^(partner6\.(consents\.|regulatory\.|chain\.(consentsExport|consentsAct|regulatoryForm|regulatoryAct)\.)|nav\.consents$)/;
+const FORBIDDEN_6B: readonly [string, RegExp, string][] = [
+  ['%', /%/, 'Small & marginal farmers 74%'],
+  ['revocable', /revocab/i, 'purpose-bound, time-boxed, revocable'],
+  ['revocation takes effect', /revocation takes effect/i, 'A revocation takes effect within 60 seconds and is logged on both sides.'],
+  ['within 60 seconds', /within \d+ seconds/i, 'A revocation takes effect within 60 seconds'],
+  ['logged on both sides', /logged on both sides/i, 'is logged on both sides'],
+  ['time-boxed', /time-?boxed/i, 'purpose-bound, time-boxed, revocable'],
+  // AFFIRMATIVE: the canon's own promise; no honest sentence on these pages needs the phrase at all
+  ['standing access (affirmative)', /(never|no|don['’]t) (hold|have) standing access|standing access to (anyone|any)/i, 'Consents arrive with applications — you never hold standing access to anyone.'],
+  ['your bank holds', /your bank holds/i, 'Every data-sharing consent your bank holds (credit_score_consents)'],
+  ['RBI (compliance|PSL|DSB)', /RBI (compliance|PSL|DSB)/i, 'This registry is exportable (signed) for your RBI compliance file.'],
+  ['PSL', /\bPSL\b/, 'PSL-qualifying (agri)'],
+  ['priority sector', /priority[- ]sector/i, 'pre-shaped for the filings you already make: priority-sector lending (agri)'],
+  ['weaker section', /weaker[- ]section/i, 'weaker-section splits'],
+  ['small & marginal', /small (&|and) marginal/i, 'Small & marginal farmers 74%'],
+  ['women borrower', /women[- ]borrower/i, 'Women borrowers 41%'],
+  // AFFIRMATIVE: the classification by land, never the statement's "never gives … landholding"
+  ['landholding / land records (affirmative)', /landholding\s*(≤|<=|of|under|below|up to|\d)|(from|verified) land records/i, 'landholding ≤ 2 ha, from verified land records'],
+  ['from KYC', /from KYC/i, 'women-borrower from KYC'],
+  ['signed extract', /signed extracts?|extracts?,? signed|extracts? (generate|are signed)/i, 'Extracts, signed — your compliance team files'],
+  ['sha256', /sha256/i, 'sha256:7a91…44c2'],
+  ['watermark', /watermark/i, 'extracts are signed and watermarked per download'],
+  // AFFIRMATIVE: PARTNER-2's reused refusal truthfully says "No underwriting, finance or compliance role exists"
+  ['compliance role (affirmative)', /compliance role (at|needed|required)|(bank['’]s|your) (admin or )?compliance role/i, 'Registry restricted — Compliance role at your bank'],
+  ['voice (gu)', /voice \(gu\)|app tap/i, '11 Jul · voice (gu)'],
+  ['+91', /\+91/, '+91 94••• ••883'],
+  ['LA-20xx', /LA-20\d\d/, 'LA-2026-0711-09'],
+  ['NWR', /\bNWR\b/, 'score + factors + NWR valuation'],
+  ['7d standard', /\d+d standard/i, '(short-form consent — 7d standard)'],
+  ['plan settings (affirmative)', /see plan settings/i, 'Consent Registry disabled … See plan settings.'],
+  ['Q1 pack', /Q\d pack/i, 'Generate Q1 pack'],
+  ['exportable (signed)', /exportable \(signed\)|registry \(signed\)/i, 'Export registry (signed)'],
+];
+/** Honest sentences that MUST pass (the affirmative narrowing proven both ways). */
+const PERMITTED_6B = [
+  "It never gives your organisation a borrower's gender or landholding.",
+  'No underwriting, finance or compliance role exists: the four partner roles read the same facts.',
+  'There are no plan settings for your organisation to open. Nothing on this platform lets a partner switch its own modules on.',
+  "No borrower is grouped by the size of the land they farm: a farmer's land record belongs to another part of the platform and is never read for your organisation.",
+];
+/** The three sentences founder 6b-1 / 6b-3 pinned, VERBATIM. */
+const PINNED_6B: Readonly<Record<string, string>> = {
+  'partner6.consents.statement': "A farmer's consent to show you a loan application is given for that one application. The platform checks it every time your organisation reads the application, and your access ends when the consent expires. You never see who consented, when, how or what the consent covers.",
+  'partner6.consents.noneYet': 'No consent is recorded on the platform yet: the step that asks the farmer for it does not exist.',
+  'partner6.regulatory.statement': "The platform produces no regulatory extract and classifies nothing for a regulator. It never gives your organisation a borrower's gender or landholding. Your book's own figures are on Portfolio and DPD aging; your organisation files its own returns — the platform never files for you.",
+};
+const keys6B = (c: Record<string, string>) => [...new Set([...Object.keys(c).filter((k) => SCOPE_6B.test(k)),
+  ...PARTNER6_REFUSALS.filter((r) => r.surfaces.some((x) => SURFACES_6B.includes(x))).map((r) => r.key), 'partner4.export.notAvailable'])];
+
+describe('PC-56 PARTNER-6b · claims guard (consent and the filings the platform does not make)', () => {
+  it('every 6b forbidden word is caught when planted once (each regex proven on its own canon phrase); the honest sentences pass every one', () => {
+    for (const [name, re, planted] of FORBIDDEN_6B) expect([name, re.test(planted)]).toEqual([name, true]);
+    for (const ok of [...PERMITTED_6B, ...Object.values(PINNED_6B)]) for (const [name, re] of FORBIDDEN_6B) expect([ok, name, re.test(ok)]).toEqual([ok, name, false]);
+    const re = (n: string) => (FORBIDDEN_6B.find(([x]) => x === n) as [string, RegExp, string])[1];
+    expect(re('compliance role (affirmative)').test(en['partner2.refusal.partnerRoles'])).toBe(false);
+    expect(re('plan settings (affirmative)').test(en['partner4.refusal.planSettings'])).toBe(false);
+    for (const canon of ['Small & marginal farmers 74% · landholding ≤ 2 ha', 'small/marginal from verified land records']) expect([canon, re('landholding / land records (affirmative)').test(canon)]).toEqual([canon, true]);
+  });
+  it.each(Object.entries(CATS))('%s: no 6b claim in any 6b value, nor in any key PARTNER6_REFUSALS prints on a 6b surface (the reused keys included)', (_l, cat) => {
+    const c = cat as Record<string, string>;
+    const keys = keys6B(c);
+    expect(keys.length).toBeGreaterThan(70);
+    for (const k of keys) {
+      expect([k, typeof c[k]]).toEqual([k, 'string']);
+      for (const [name, re] of [...FORBIDDEN_6B.map(([n, r]) => [n, r] as const), ...FORBIDDEN]) expect([k, name, re.test(c[k])]).toEqual([k, name, false]);
+    }
+    for (const k of Object.keys(en).filter((x) => SCOPE_6B.test(x))) expect([k, typeof c[k] === 'string' && c[k].length > 0]).toEqual([k, true]);
+  });
+  it('founder 6b-1 / 6b-3 (en, VERBATIM): the consent statement, the truth today and the regulatory statement; present and distinct in hi and gu', () => {
+    for (const [k, v] of Object.entries(PINNED_6B)) {
+      expect([k, en[k]]).toEqual([k, v]);
+      expect([k, typeof hi[k] === 'string' && hi[k].length > 30 && hi[k] !== en[k], typeof gu[k] === 'string' && gu[k].length > 30 && gu[k] !== en[k]]).toEqual([k, true, true]);
+      expect([k, hi[k] !== gu[k]]).toEqual([k, true]);
+    }
+    // founder 6b-2 (Q4-A): the strongest thing the page says about an end is "ends when the consent expires"
+    expect(en['partner6.consents.statement']).toContain('your access ends when the consent expires');
+    for (const k of Object.keys(en).filter((x) => SCOPE_6B.test(x) || x.startsWith('partner6.refusal.'))) expect([k, /revocab|time-?boxed|standing access|within \d+ seconds|both sides/i.test(en[k])]).toEqual([k, false]);
+  });
+  it('the W213 / W224 views, pages and chain carry no figure in their CODE: no number formatter, no count, no "%", no input', () => {
+    const fs2 = require('node:fs') as typeof import('node:fs');
+    const path2 = require('node:path') as typeof import('node:path');
+    const SRC = path2.join(__dirname, '..');
+    for (const rel of ['components/partner6/LenderConsentsView.tsx', 'components/partner6/LenderRegulatoryView.tsx', 'components/partner6/LenderChain6.tsx',
+      'app/lender/consents/page.tsx', 'app/lender/reports/regulatory/page.tsx']) {
+      const code = fs2.readFileSync(path2.join(SRC, rel), 'utf8').split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
+      expect([rel, code.length > 300]).toEqual([rel, true]);
+      for (const [name, re] of [['formatter', /Intl\.NumberFormat|toLocaleString|toFixed|formatMoney/], ['count field', /\.length|count|total|\bn\b=|\{n\}/i],
+        ['%', /%/], ['₹', /₹/], ['person field', /userId|user_id|phone|fullName|full_name|gender|land_parcels|landParcel|purposeRef|purpose_ref|expiresAt|expires_at|grantedAt|granted_at/i],
+        ['<input', /<input|<select|<textarea|<form/]] as const) {
+        expect([rel, name, re.test(code)]).toEqual([rel, name, false]);
+      }
+    }
+  });
+});

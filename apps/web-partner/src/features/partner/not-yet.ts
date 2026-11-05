@@ -13,7 +13,9 @@
 // now answer a real 307 to the lender's own book (`LENDER_BOOK_REDIRECTS`), and their page files are deleted.
 // PC-56 PARTNER-6a (founder 6a-3): `'settlements'` is GONE — `/settlements` answers a real 307 to `/insurer/settlements` (next.config.js,
 // `SETTLEMENTS_REDIRECTS` in features/partner6/refusals.ts) and its page file is deleted; `partner.surface.settlements` goes with it.
-export type NotYetSurface = 'fleet' | 'logistics' | 'consents' | 'notifications' | 'profile';
+// PC-56 PARTNER-6b (founder 6b-4): `'consents'` is GONE — `/consents` answers a real 307 to `/lender/consents` (`CONSENTS_REDIRECTS`) and its
+// page file is deleted; `partner.surface.consents` goes with it.
+export type NotYetSurface = 'fleet' | 'logistics' | 'notifications' | 'profile';
 
 export const NOT_YET_ROUTES: Readonly<Record<string, NotYetSurface>> = Object.freeze({
   // PC-56 PARTNER-2c: /products and /products/[id] answer 307 to the built `lender/products` routes (the lender's shelf)
@@ -23,7 +25,6 @@ export const NOT_YET_ROUTES: Readonly<Record<string, NotYetSurface>> = Object.fr
   '/fleet': 'fleet', '/fleet/carriers/[id]': 'fleet', '/fleet/slots': 'fleet', '/fleet/slots/[id]': 'fleet', '/fleet/vehicles': 'fleet', '/fleet/vehicles/[id]': 'fleet',
   '/shipments': 'logistics', '/shipments/[id]': 'logistics', '/zones': 'logistics', '/zones/[id]': 'logistics', '/routes': 'logistics', '/routes/[id]': 'logistics',
   '/cold-chain': 'logistics',
-  '/consents': 'consents',
   '/notifications': 'notifications', '/notifications/preferences': 'notifications',
   '/profile': 'profile', '/profile/[id]': 'profile',
 });

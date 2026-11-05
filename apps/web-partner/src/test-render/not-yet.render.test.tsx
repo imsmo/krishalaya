@@ -11,7 +11,7 @@ import { NOT_YET_ROUTES, notYetBack, surfaceKey } from '../features/partner/not-
 import { INSURANCE_REDIRECTS, LENDER_REDIRECTS } from '../features/partner2/refusals';
 import { CLAIMS_REDIRECTS } from '../features/partner3/refusals';
 import { LENDER_BOOK_REDIRECTS } from '../features/partner4/refusals';
-import { SETTLEMENTS_REDIRECTS } from '../features/partner6/refusals';
+import { CONSENTS_REDIRECTS, SETTLEMENTS_REDIRECTS } from '../features/partner6/refusals';
 import { hi } from '../i18n/hi';
 import { en } from '../i18n/en';
 import { gu } from '../i18n/gu';
@@ -33,13 +33,13 @@ describe('PC-56 PARTNER-0 · the not-yet pages, derived from the routes', () => 
 
   it('every page rendering <NotYet> is registered under its own route, and every registered route is such a page', () => {
     expect(notYet.map(routeOf).sort()).toEqual(Object.keys(NOT_YET_ROUTES).sort());
-    expect(notYet.length).toBe(18);   // PC-56 PARTNER-2a: the four built insurer routes left the list (30 → 26); PARTNER-2c: /products(/[id]) left (26 → 24); PARTNER-3a: /insurance-claims(/[id]) left (24 → 22); PARTNER-4a: /portfolio(/[id]) and /servicing left (22 → 19); PARTNER-6a (NAMED UPDATE): /settlements left (19 → 18)
+    expect(notYet.length).toBe(17);   // PC-56 PARTNER-6b (NAMED UPDATE): /consents left (18 → 17); PC-56 PARTNER-2a: the four built insurer routes left the list (30 → 26); PARTNER-2c: /products(/[id]) left (26 → 24); PARTNER-3a: /insurance-claims(/[id]) left (24 → 22); PARTNER-4a: /portfolio(/[id]) and /servicing left (22 → 19); PARTNER-6a (NAMED UPDATE): /settlements left (19 → 18)
   });
   it('PC-56 PARTNER-2a/3a · the six old insurance routes answer a real 307 from next.config.js (equal to the registries); their page files are gone', async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const cfg = require(path.join(__dirname, '..', '..', 'next.config.js')) as { redirects: () => Promise<Array<{ source: string; destination: string; permanent: boolean }>> };
     const rules = await cfg.redirects();
-    expect(Object.fromEntries(rules.map((r) => [r.source, r.destination]))).toEqual({ ...INSURANCE_REDIRECTS, ...LENDER_REDIRECTS, ...CLAIMS_REDIRECTS, ...LENDER_BOOK_REDIRECTS, ...SETTLEMENTS_REDIRECTS });   // PC-56 PARTNER-6a · NAMED UPDATE: + /settlements   // PC-56 PARTNER-2c: + the /products pair; PARTNER-3a: + the claims pair; PARTNER-4a: + the lender's book (five)
+    expect(Object.fromEntries(rules.map((r) => [r.source, r.destination]))).toEqual({ ...INSURANCE_REDIRECTS, ...LENDER_REDIRECTS, ...CLAIMS_REDIRECTS, ...LENDER_BOOK_REDIRECTS, ...SETTLEMENTS_REDIRECTS, ...CONSENTS_REDIRECTS });   // PC-56 PARTNER-6b · NAMED UPDATE: + /consents   // PC-56 PARTNER-6a · NAMED UPDATE: + /settlements   // PC-56 PARTNER-2c: + the /products pair; PARTNER-3a: + the claims pair; PARTNER-4a: + the lender's book (five)
     for (const r of rules) {
       expect([r.source, r.permanent]).toEqual([r.source, false]);   // 307, not 308: the move may be revisited
       expect([r.source, fs.existsSync(path.join(APP, ...r.source.replace(':id', '[id]').slice(1).split('/'), 'page.tsx'))]).toEqual([r.source, false]);
@@ -146,5 +146,29 @@ describe('PC-56 PARTNER-6a · /settlements is no longer a not-yet page', () => {
       expect(/loan queue|लोन कतार|લોન કતાર/i.test(cat['partner.notYet.back'])).toBe(false);
     }
     expect(en['partner.notYet.back']).toBe('Go to your dashboard');
+  });
+});
+
+// PC-56 PARTNER-6b (founder 6b-4, survey C-5 / C-6 / F-12) — the not-yet `/consents` is GONE: its page file is deleted, it answers a real 307
+// to the lender's own honest page, its surface key is deleted from every catalogue, and its label now names a lending item in all three.
+describe('PC-56 PARTNER-6b · /consents is no longer a not-yet page', () => {
+  it('no page file, no registry entry, no surface key; the 307 lands on a built lender page whose kind gate sends an insurer home', async () => {
+    expect(fs.existsSync(path.join(APP, 'consents', 'page.tsx'))).toBe(false);
+    expect(NOT_YET_ROUTES['/consents']).toBeUndefined();
+    expect(Object.values(NOT_YET_ROUTES)).not.toContain('consents');
+    expect(CONSENTS_REDIRECTS).toEqual({ '/consents': '/lender/consents' });
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const cfg = require(path.join(__dirname, '..', '..', 'next.config.js')) as { redirects: () => Promise<Array<{ source: string; destination: string; permanent: boolean }>> };
+    expect((await cfg.redirects()).filter((r) => r.source === '/consents')).toEqual([{ source: '/consents', destination: '/lender/consents', permanent: false }]);
+    expect(fs.existsSync(path.join(APP, 'lender', 'consents', 'page.tsx'))).toBe(true);
+    const page = fs.readFileSync(path.join(APP, 'lender', 'consents', 'page.tsx'), 'utf8');
+    expect(page.indexOf('await lenderGate()')).toBeGreaterThan(page.indexOf('await requirePartner()'));
+    expect(page).not.toContain('<NotYet');
+    for (const cat of [en, hi, gu] as Record<string, string>[]) {
+      expect(['partner.surface.consents', 'partner.surface.consents' in cat]).toEqual(['partner.surface.consents', false]);
+      expect(typeof cat['nav.consents']).toBe('string');
+    }
+    // the last not-yet surface of PARTNER-6 is notifications (6c's)
+    expect(Object.entries(NOT_YET_ROUTES).filter(([r]) => /consent|settle|notif/.test(r)).map(([r]) => r).sort()).toEqual(['/notifications', '/notifications/preferences']);
   });
 });

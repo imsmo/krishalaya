@@ -69,8 +69,11 @@ describe('PC-56 PARTNER-0 · i18n: every new key × 3', () => {
     const fresh = Object.keys(en).filter((k) => k.startsWith('partner.')).concat('nav.brand');
     // PC-56 PARTNER-6a · NAMED UPDATE (survey F-12, the 4a deletion precedent): `partner.surface.settlements` is DELETED with the not-yet
     // `/settlements` route (it answers a 307 to `/insurer/settlements` now), so the floor is 39 — and the deleted key is pinned ABSENT ×3
-    expect(fresh.length).toBeGreaterThanOrEqual(39);
+    // PC-56 PARTNER-6b · NAMED UPDATE (founder 6b-4): `partner.surface.consents` is DELETED with the not-yet `/consents` route (307 to
+    // `/lender/consents`), so the floor is 38 — and that deleted key is pinned ABSENT ×3 too
+    expect(fresh.length).toBeGreaterThanOrEqual(38);
     for (const cat of [en, hi, gu]) expect(Object.prototype.hasOwnProperty.call(cat, 'partner.surface.settlements')).toBe(false);
+    for (const cat of [en, hi, gu]) expect(Object.prototype.hasOwnProperty.call(cat, 'partner.surface.consents')).toBe(false);
     const vars = (s: string) => (s.match(/\{\w+\}/g) ?? []).sort();
     for (const k of fresh) {
       expect([k, typeof hi[k], typeof gu[k]]).toEqual([k, 'string', 'string']);

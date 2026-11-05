@@ -32,3 +32,7 @@ export function settlementsState(c: { byStatus: Record<string, number> } | null,
 export const settlementsHref = () => '/insurer/settlements';
 export const settlementHref = (claimId: string) => `/insurer/settlements/${encodeURIComponent(claimId)}`;
 export const claimHref = (claimId: string) => `/insurer/claims/${encodeURIComponent(claimId)}`;
+
+/** PC-56 PARTNER-6b — the lender's two honest pages (they read nothing; nothing here is a figure). */
+export const consentsHref = () => '/lender/consents';
+export const regulatoryHref = () => '/lender/reports/regulatory';

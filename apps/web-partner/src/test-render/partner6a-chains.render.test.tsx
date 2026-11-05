@@ -20,13 +20,16 @@ import { percents, withoutRefusals } from './partner4a-fixtures';
 import { FALSE_6A, FORM_CONTROL_6A, IDS_6A } from './partner6a-fixtures';
 
 /** The page each chain is opened FROM, exactly as the page passes it (W260 passes none and falls back to itself). */
-const BACK: Record<Chain6Id, string> = { settlement_act: '/insurer/settlements', settlement_detail_act: settlementHref(IDS_6A.claim) };
+const BACK: Partial<Record<Chain6Id, string>> = { settlement_act: '/insurer/settlements', settlement_detail_act: settlementHref(IDS_6A.claim) };
+// PC-56 PARTNER-6b · NAMED UPDATE: PARTNER6_CHAINS now also holds 6b's four lender chains (their own spec: partner6b-chains.render). This
+// file is 6a's settlement chain only — the 5a/5b precedent (`PARTNER5_CHAINS.filter((c) => c.wave === '5a')`).
+const CHAINS_6A = PARTNER6_CHAINS.filter((c) => c.wave === '6a');
 const render = (chain: Chain6Id, state: string, cat: Record<string, string> = en) =>
   renderToStaticMarkup(<InsurerChain6 t={tr(cat)} chain={chain} state={state} back={chain === 'settlement_act' ? undefined : BACK[chain]} />);
 const ZERO_SUM = /zero-sum|reconcil|before this page ever shows|money-adjacent/i;
 
 describe('PC-56 PARTNER-6a · the settlement chain (render)', () => {
-  for (const c of PARTNER6_CHAINS) {
+  for (const c of CHAINS_6A) {
     it.each(c.states.map((s) => [s]))(`${c.id} · %s: the statement, its own sentence, its refusals, Back to the TRIGGERING page, no money, no zero-sum`, (state) => {
       const html = render(c.id, state);
       const w = text(html);
@@ -68,7 +71,7 @@ describe('PC-56 PARTNER-6a · the settlement chain (render)', () => {
     for (const src of [page(), page('[id]')]) expect(/mailbox|back="\/insurer\/settlements"/i.test(src)).toBe(false);
   });
   it('no 6a chain value says the canon\'s zero-sum, on-call or audit-trail sentences in any language; every state exists in hi and gu with the same skeleton', () => {
-    for (const c of PARTNER6_CHAINS) for (const state of c.states) {
+    for (const c of CHAINS_6A) for (const state of c.states) {
       const shapes = [en, hi, gu].map((cat) => {
         const html = render(c.id, state, cat);
         expect(text(html)).toContain(cat[`${c.key(state)}.body`]);

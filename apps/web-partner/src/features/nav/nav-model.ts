@@ -54,7 +54,8 @@ export const PARTNER_NAV: readonly PartnerNavItem[] = [
   // <NotYet> for EVERY partner kind (the PARTNER-4a `/profile` defect again), and the canon gives Settlements to an insurer only and to no
   // sidebar at all. It is now a row of the insurer's CLAIMS SUB-NAVIGATION (`CLAIMS_SUBNAV`, features/partner3/refusals.ts) and the old
   // address answers a real 307 to `/insurer/settlements` (next.config.js; `insurerGate()` sends a lender or any other kind to its own home).
-  { href: '/consents', labelKey: 'nav.consents', group: 'common', live: true },
+  // PC-56 PARTNER-6b (founder 6b-4, survey C-6 / F-6): `/consents` is GONE from the `common` group too — it rendered <NotYet> for EVERY
+  // partner kind, and the canon gives Consents to a LENDER only. It is now a lending item (below), and the old address answers a real 307.
   // lending vertical (financial partners)
   // PC-56 PARTNER-4a (survey C-18 / F-15): the group is Dashboard · Loan queue · Products · Portfolio — FOUR items, all four of them real
   // pages at the canon's own addresses. `/profile` and `/servicing` are GONE: `/profile` rendered <NotYet> while the nav marked it
@@ -68,6 +69,10 @@ export const PARTNER_NAV: readonly PartnerNavItem[] = [
   { href: '/lender/disbursements', labelKey: 'partner4.nav.payouts', group: 'lending', live: true },
   { href: '/lender/repayments', labelKey: 'partner4.nav.repayments', group: 'lending', live: true },
   { href: '/lender/portfolio', labelKey: 'partner4.nav.portfolio', group: 'lending', live: true },
+  // PC-56 PARTNER-6b (founder 6b-4): + Consents (W213 `lender/consents`) in the canon's Trust position — after Portfolio, before "SLA &
+  // reports" (the canon's sidebar order: Portfolio · Consents · SLA & reports). In the LENDING group, so an insurer, an asset manager and a
+  // 3PL never see it (there is no insurance consent on this platform — P2-B3); `/consents` answers a real 307 to it (CONSENTS_REDIRECTS).
+  { href: '/lender/consents', labelKey: 'nav.consents', group: 'lending', live: true },
   // PC-56 PARTNER-5c (founder 5c-2, survey C-15): + "SLA & reports" (W214 `lender/reports`), the canon's own sidebar item, after Portfolio —
   // in the LENDING group, so a lender sees it and an insurer never does (and `lenderGate()` sends an insurer who opens it to its own home).
   { href: '/lender/reports', labelKey: 'nav.slaReports', group: 'lending', live: true },

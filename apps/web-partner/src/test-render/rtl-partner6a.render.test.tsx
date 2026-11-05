@@ -46,7 +46,7 @@ describe('PC-56 PARTNER-6a · the two settlement pages and their chain under dir
     for (let i = 0; i < all[0].length; i++) expect([i, new Set(all.map((p) => p[i])).size]).toEqual([i, 1]);
   });
   it('every chain state renders in all three languages under rtl, with no physical direction, no arrow and no percentage', () => {
-    for (const c of PARTNER6_CHAINS) for (const state of c.states) for (const cat of Object.values(CATS)) {
+    for (const c of PARTNER6_CHAINS.filter((x) => x.wave === '6a')) for (const state of c.states) for (const cat of Object.values(CATS)) {   // PC-56 PARTNER-6b · NAMED UPDATE: 6a's chain only (6b's lender chains: rtl-partner6b.render)
       const html = rtl(<InsurerChain6 t={tr(cat)} chain={c.id} state={state} back={c.id === 'settlement_detail_act' ? settlementHref(IDS_6A.claim) : undefined} />);
       expect([c.id, state, PHYSICAL.test(html), ARROWS.test(text(html)), percents(text(html))]).toEqual([c.id, state, false, false, 0]);
     }

@@ -243,3 +243,30 @@ describe('PC-56 PARTNER-6a · brand guard over the settlement pages (the platfor
     }
   });
 });
+
+describe('PC-56 PARTNER-6b · brand guard over the consents and regulatory pages (the platform\'s mark + the lender\'s own name; survey F-10)', () => {
+  // the floor: the two new app trees (found on disk, recursively) + every components/partner6 / features/partner6 module (already 6a's floor,
+  // re-scanned here for the lender persona's canon names)
+  const DIRS = [path.join(SRC, 'app', 'lender', 'consents'), path.join(SRC, 'app', 'lender', 'reports', 'regulatory'),
+    path.join(SRC, 'components', 'partner6'), path.join(SRC, 'features', 'partner6')];
+  const mine = files().filter((f) => DIRS.some((d) => f.startsWith(d + path.sep))).map((f) => path.relative(SRC, f)).sort();
+  it('the floor holds: two pages, three new components (with 6a\'s), the two feature modules — all scanned', () => {
+    expect(mine).toEqual(expect.arrayContaining(['app/lender/consents/page.tsx', 'app/lender/reports/regulatory/page.tsx',
+      'components/partner6/LenderConsentsView.tsx', 'components/partner6/LenderRegulatoryView.tsx', 'components/partner6/LenderChain6.tsx',
+      'features/partner6/refusals.ts', 'features/partner6/figures.ts']));
+    expect(mine.length).toBeGreaterThanOrEqual(10);
+  });
+  it('none carries the platform\'s name, a mailbox, a domain, or a canon institution, farmer, phone, application reference, regulator reference, avatar or sha fragment', () => {
+    for (const rel of mine) {
+      const src = fs.readFileSync(path.join(SRC, rel), 'utf8').replace(/@krishalaya\/[a-z0-9-]+/g, '');
+      for (const lit of LITERALS) expect([rel, lit, src.includes(lit)]).toEqual([rel, lit, false]);
+      expect([rel, /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.(com|in|org|net|co)\b|krishalaya\.(in|com)|mailto:[a-z]|1800/i.test(src)]).toEqual([rel, false]);
+      expect([rel, /Saurashtra|Gramin|RBI ref|••4471|Popat|Ramesh P|Meera|\+91|94•••|98•••|97•••|LA-20\d\d|7a91|44c2|c204|18ef|e442|90b1|6,84,20,000|1,148/i.test(src)]).toEqual([rel, false]);
+    }
+    // the views and pages (not the registry, which NAMES the canon's claims to refuse them) carry no avatar, no honorific, no regulator acronym
+    for (const rel of mine.filter((r) => !r.startsWith('features/') && /Lender|lender\//.test(r))) {
+      const src = fs.readFileSync(path.join(SRC, rel), 'utf8');
+      expect([rel, /\bAJ\b|\bBen\s|Bhai|\bRBI\b|\bPSL\b|\bNWR\b/.test(src)]).toEqual([rel, false]);
+    }
+  });
+});

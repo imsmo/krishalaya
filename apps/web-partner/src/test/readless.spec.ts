@@ -113,3 +113,50 @@ describe('PC-56 PARTNER-6a · the ban set finds NOTHING on W261, and fires on bo
     expect(/api-client|@krishalaya\/sdk-js|lib\/insurer|lib\/session|async function|await /.test(code)).toBe(false);
   });
 });
+
+// PC-56 PARTNER-6b (founder 6b-1 / 6b-3, brief E2) — W213 `/lender/consents` and W224 `/lender/reports/regulatory` and their views read
+// NOTHING: the same ban set finds nothing there, while it still FIRES on both positive controls (the aging page and W260). The calls the two
+// pages make are asserted BY NAME — `requirePartner`, `lenderGate`, `lenderSwitches` (the public flag map), `partnersMailbox` (the
+// platform's published fact), `getTranslator`, `chain6State` — and nothing comes from lib/api-client or the SDK. M3 (a `partnerClient()`
+// read inserted into the W213 page) kills here while both controls still fire.
+const CONSENTS_PAGE = 'app/lender/consents/page.tsx';
+const REGULATORY_PAGE = 'app/lender/reports/regulatory/page.tsx';
+const SIX_B_VIEWS = ['components/partner6/LenderConsentsView.tsx', 'components/partner6/LenderRegulatoryView.tsx', 'components/partner6/LenderChain6.tsx'];
+
+describe('PC-56 PARTNER-6b · the ban set finds NOTHING on W213 and W224, and fires on both positive controls (aging and W260)', () => {
+  it('positive control 1: it still fires on the aging page in this same run', () => {
+    expect(readlessFires(AGING_PAGE)).toEqual(['partnerClient(', 'partner.loans.']);
+  });
+  it('positive control 2: it still fires on W260, a page that reads', () => {
+    expect(readlessFires(SETTLEMENTS_PAGE)).toEqual(['partnerClient(']);
+  });
+  it.each([[CONSENTS_PAGE], [REGULATORY_PAGE], ...SIX_B_VIEWS.map((f) => [f])])('%s: no ban fires', (rel) => {
+    const code = readCode(rel);
+    expect(code.length).toBeGreaterThan(400);
+    expect([rel, readlessFires(rel)]).toEqual([rel, []]);
+  });
+  it.each([[CONSENTS_PAGE, 'consents_export', 'consents_act'], [REGULATORY_PAGE, 'regulatory_form', 'regulatory_act']])('%s: the calls it makes, BY NAME, chain states FIRST — nothing from lib/api-client or the SDK', (rel, first, second) => {
+    const code = readCode(rel);
+    expect(code).toMatch(/await requirePartner\(\);/);
+    expect(code).toMatch(/await lenderGate\(\);/);
+    expect(code).toMatch(/state=\{await lenderSwitches\(\)\}/);
+    expect(code).toMatch(/const t = getTranslator\(\);/);
+    const at = (s: string) => code.indexOf(s);
+    expect(at(`chain6State('${first}'`)).toBeGreaterThan(at('await lenderGate();'));
+    expect(at(`chain6State('${second}'`)).toBeGreaterThan(at(`chain6State('${first}'`));
+    expect(at('await lenderSwitches()')).toBeGreaterThan(at(`chain6State('${second}'`));
+    expect([...new Set([...code.matchAll(/await\s+([A-Za-z_$][\w$.]*)\s*\(/g)].map((m) => m[1]))].sort()).toEqual(['lenderGate', 'lenderSwitches', 'partnersMailbox', 'requirePartner']);
+    const from = [...code.matchAll(/from '([^']+)'/g)].map((m) => m[1].replace(/^(\.\.\/)+/, ''));
+    for (const f of from) expect([rel, f, /^(next|lib\/session|lib\/i18n|lib\/lender|lib\/partners-mailbox|components\/partner6\/\w+|features\/partner6\/refusals)$/.test(f)]).toEqual([rel, f, true]);
+    expect(/api-client|@krishalaya\/sdk-js|partnerClient|anonClient|lenderFailure/.test(code)).toBe(false);
+    expect(code).toMatch(/import \{ lenderGate, lenderSwitches \} from '[./]+lib\/lender';/);
+    expect(code).toContain("export const dynamic = 'force-dynamic'");
+    expect(code).toContain('robots: { index: false, follow: false }');
+  });
+  it('the views and the chain component import no client, no gate, no session and mount no read of their own', () => {
+    for (const rel of SIX_B_VIEWS) {
+      const code = readCode(rel);
+      expect([rel, /api-client|@krishalaya\/sdk-js|lib\/lender|lib\/session|lib\/partners-mailbox|async function|await /.test(code)]).toEqual([rel, false]);
+    }
+  });
+});
