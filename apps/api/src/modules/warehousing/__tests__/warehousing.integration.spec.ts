@@ -2,8 +2,8 @@
 // REAL end-to-end proof of the warehouse-receipt spine against a live Postgres:
 //   1. an operator lists a warehouse (₹50/qtl/month); a depositor requests to store 100 qtl;
 //   2. the operator confirms → stores → records an assay → issues an eNWR (depositor is the holder);
-//   3. the operator RELEASES: the storage fee (100 × ₹50 × ≥1 month) is collected depositor → operator
-//      (zero-sum, txnType storage_fee); the booking goes released;
+//   3. the operator's RELEASE is refused by name (PC-56 OPS-1a, founder Q3-A) — the fee would leave the depositor's wallet
+//      without her word; the booking stays stored and no wallet moves;
 //   4. ROW-LEVEL SECURITY: tenant B cannot see tenant A's storage booking.
 // Schema/seeds come from the REAL db/migrations + db/seeds (test/integration-global-setup.js).
 import { randomUUID } from 'node:crypto';
@@ -98,15 +98,15 @@ run('warehousing receipt spine (integration, real Postgres + RLS + storage-fee s
     await expect(nwr.issue(tenantA, opActor, `idem-${randomUUID()}`, { storageBookingId: bookingId, repository: 'NERL', enwrNo: `EN-${randomUUID().slice(0, 8)}`, valuationMinor: '1' } as any, null)).rejects.toThrow();
   });
 
-  it('RELEASE collects the storage fee depositor → operator (zero-sum, ≥1 month)', async () => {
+  // PC-56 OPS-1a · NAMED UPDATE (founder Q3-A, 2026-11-05): this case pinned RELEASE collecting the storage fee depositor → operator.
+  // The release that debits the depositor's wallet on the operator's act is now REFUSED BY NAME (until she confirms it in her own
+  // session), so the case pins the refusal against the real database: the booking stays stored and neither wallet moves.
+  it('RELEASE is refused by name (STORAGE_RELEASE_AWAITS_DEPOSITOR): the booking stays stored, no wallet moves', async () => {
     const dBefore = await bal(depositor); const oBefore = await bal(operator);
-    const released = await bookings.release(tenantA, opActor, bookingId, `idem-${randomUUID()}`, null);
-    expect(released.status).toBe('released');
-    const fee = BigInt(released.storageFeeMinor);
-    expect(fee).toBe(500000n);                                // 100 qtl × ₹50 × 1 month (just stored)
-    expect(dBefore - (await bal(depositor))).toBe(fee);       // depositor debited
-    expect((await bal(operator)) - oBefore).toBe(fee);        // operator credited
-    expect((dBefore - (await bal(depositor))) - ((await bal(operator)) - oBefore)).toBe(0n);  // ZERO-SUM
+    await expect(bookings.release(tenantA, opActor, bookingId, `idem-${randomUUID()}`, null)).rejects.toMatchObject({ code: 'STORAGE_RELEASE_AWAITS_DEPOSITOR', httpStatus: 409 });
+    expect((await bookings.getById(tenantA, opActor, bookingId)).status).toBe('stored');
+    expect(await bal(depositor)).toBe(dBefore);
+    expect(await bal(operator)).toBe(oBefore);
   });
 
   it('RLS: tenant B cannot see tenant A\'s storage booking', async () => {

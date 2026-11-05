@@ -1,5 +1,5 @@
 // modules/warehousing/services/storage-booking.service.ts · the deposit lifecycle + THE STORAGE-FEE MONEY PATH.
-// request (depositor) → confirm → store (operator) → release (operator): on release the storage fee
+// request (depositor) → confirm → store (operator) → release (operator — PAUSED by PC-56 OPS-1a, founder Q3-A: refused by name, see release()): on release the storage fee
 // (quantity × rate/qtl/month × months, float-free) is collected depositor userMain → operator userMain via
 // the wallet boundary (txnType 'storage_fee', zero-sum + idempotent — Law 2). Every write: one ACID tx
 // (UoW), state via the machine (Law 5), outbox in-tx (Law 4), idempotent money mutations (Law 3), authz
@@ -18,7 +18,7 @@ import { DomainEvent } from '../domain/warehousing.events';
 import { StorageBookingRepository } from '../repositories/storage-booking.repository';
 import { WarehouseRepository } from '../repositories/warehouse.repository';
 import { RequestBookingDto } from '../dto/create-storage-booking.dto';
-import { BookingNotFoundError, WarehouseNotFoundError, NoWarehouseOperatorError, WarehousingForbiddenError } from '../domain/warehousing.errors';
+import { BookingNotFoundError, WarehouseNotFoundError, NoWarehouseOperatorError, WarehousingForbiddenError, StorageReleaseAwaitsDepositorError } from '../domain/warehousing.errors';
 import { WhActor } from './warehouse.service';
 
 const parseScaled = (s: string, dec: number): bigint => { const [i, f = ''] = s.split('.'); return BigInt(i + (f + '0'.repeat(dec)).slice(0, dec)); };
@@ -57,6 +57,10 @@ export class StorageBookingService {
   /** Operator releases the goods + collects the storage fee (depositor → operator, zero-sum, idempotent). */
   async release(tenantId: string, actor: WhActor, id: string, idemKey: string, ip: string | null) {
     if (!actor.canManage) throw new WarehousingForbiddenError('requires warehouse.manage');
+    // PC-56 OPS-1a (founder Q3-A): the release debits the DEPOSITOR's wallet on the operator's act alone. Until she confirms the
+    // release and its fee in her own session, it is refused BY NAME here — after the permission and Idempotency-Key checks, BEFORE the
+    // idempotency record, the lock, the fee and any state write. Nothing below this line runs; it is kept, unchanged, for that wave.
+    throw new StorageReleaseAwaitsDepositorError();
     return this.idem.remember(idemKey, actor.userId, 'warehousing.booking.release', () =>
       timed(this.metrics, 'warehousing.booking.release', { tenant: tenantId }, () =>
         this.uow.run(tenantId, async (tx) => {

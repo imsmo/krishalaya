@@ -1,6 +1,6 @@
 'use server';
-// apps/web-ops/src/app/dairy/actions.ts · dairy-POS mutations (PC-34 OW-4). record + generate + pay are
-// Idempotency-Keyed (a slip, a bill or a pay run must never double-fire); the SERVER prices collections from
+// apps/web-ops/src/app/dairy/actions.ts · dairy-POS mutations (PC-34 OW-4; PC-56 OPS-1a removed approve + pay). record + generate are
+// Idempotency-Keyed (a slip or a bill must never double-fire); the SERVER prices collections from
 // the rate card and computes bill totals — the POS never does money math (Law 2/11).
 import { randomUUID } from 'node:crypto';
 import { redirect } from 'next/navigation';
@@ -45,20 +45,19 @@ export async function generateBillAction(formData: FormData): Promise<void> {
   back('ok=bill');
 }
 
-export async function billLifecycleAction(formData: FormData): Promise<void> {
+/**
+ * PC-56 OPS-1a (founder 1a-1, Q2-A): the ops console READS milk bills and never approves or pays one — "Bills are approved and paid by your
+ * organisation's dairy desk, not from this console." (founder 2026-11-06: "with two people" dropped until a second person per bill is enforced — paying is one person today." The approve and pay acts are REMOVED from this file (and their buttons
+ * from the page). PREVIEW stays: it moves a draft bill to `previewed`, opens the member's dispute window and queues her notice — a state step
+ * with no ledger posting (`milk-bill.service.ts` preview writes no wallet leg), so it is not a money act. GENERATE stays for the same reason:
+ * the server prices the bill from recorded pours and nothing moves.
+ */
+export async function previewBillAction(formData: FormData): Promise<void> {
   await requireSession('/dairy');
   const id = String(formData.get('id') ?? '').trim();
-  const kind = String(formData.get('kind') ?? '');
   if (!id) redirect('/dairy');
-  try {
-    const d = opsClient().dairy;
-    if (kind === 'preview') await d.previewBill(id);
-    else if (kind === 'approve') await d.approveBill(id);
-    else if (kind === 'pay') await d.payBill(id, randomUUID());
-    else back('error=action');
-  } catch (e) {
-    back(`error=${e instanceof SdkError && e.status === 409 ? 'illegal' : 'action'}`);
-  }
+  try { await opsClient().dairy.previewBill(id); }
+  catch (e) { back(`error=${e instanceof SdkError && e.status === 409 ? 'illegal' : 'action'}`); }
   revalidatePath('/dairy');
-  back(`ok=${kind}`);
+  back('ok=preview');
 }

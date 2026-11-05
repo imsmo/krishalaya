@@ -1,16 +1,17 @@
 // apps/web-ops/src/app/dairy/page.tsx · dairy collection POS (PC-34 OW-4). Four sections, each degrading
 // independently: (1) record a collection — member + shift + weighment + FAT/SNF quality + adulteration flags;
 // the SERVER prices the slip from the rate card (the POS never computes money); (2) member slip lookup
-// (member + date range → collections with server-priced amounts); (3) milk bills — generate for a period,
-// then ONLY the legal step (preview → approve → pay, pay = the idempotent money run); (4) rate charts, read-only.
+// (member + date range → collections with server-priced amounts); (3) milk bills — generate for a period, preview a draft (PC-56 OPS-1a:
+// approve and pay are NOT on this console — founder Q2-A; the run is read at /payout); (4) rate charts, read-only.
 import type { Metadata } from 'next';
 import { requireSession } from '../../lib/session';
 import { opsClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
 import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
-import { DAIRY_SHIFTS, ADULTERATION_FLAGS, BILL_STATUSES, isBillStatus, canPreview, canApprove, canPay } from '../../features/dairy/pos';
-import { recordCollectionAction, generateBillAction, billLifecycleAction } from './actions';
+import { DAIRY_SHIFTS, ADULTERATION_FLAGS, BILL_STATUSES, isBillStatus, canPreview } from '../../features/dairy/pos';
+import { recordCollectionAction, generateBillAction, previewBillAction } from './actions';
+import Link from 'next/link';
 import type { DairyMembership, DairyCollection, MilkBill, DairyRateCard } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,7 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('dairy.title'), robots: { index: false, follow: false } };
 }
 
-const OK = new Set(['collection', 'bill', 'preview', 'approve', 'pay']);
+const OK = new Set(['collection', 'bill', 'preview']);
 const ERR = new Set(['collection', 'col_member', 'col_shift', 'col_date', 'col_weight', 'col_fat', 'col_snf', 'col_dup', 'bill', 'bill_member', 'bill_period', 'bill_dup', 'action', 'illegal']);
 
 export default async function DairyPosPage({ searchParams }: { searchParams: { ok?: string; error?: string; slipMember?: string; slipFrom?: string; slipTo?: string; billStatus?: string } }) {
@@ -123,6 +124,7 @@ export default async function DairyPosPage({ searchParams }: { searchParams: { o
       ) : <p className="kv-muted">{t.t('dairy.slipsPick')}</p>}
 
       <h2>{t.t('dairy.bills')}</h2>
+      <p className="kv-statement" data-kv-statement="ops1.payout.statement">{t.t('ops1.payout.statement')} <Link href="/payout" className="kv-btn--link" data-kv-real="payout">{t.t('ops1.payout.dairyLink')}</Link></p>
       <form method="get" action="/dairy" className="kv-inline-form" role="search" aria-label={t.t('dairy.bills')}>
         <label htmlFor="bl-status" className="kv-field__label">{t.t('dairy.colStatus')}</label>
         <select id="bl-status" name="billStatus" className="kv-input" defaultValue={billStatus ?? ''}>
@@ -143,16 +145,13 @@ export default async function DairyPosPage({ searchParams }: { searchParams: { o
             { header: t.t('dairy.colStatus'), cell: (b) => <span className="kv-badge">{t.t(`dairy.status.${b.status}`) || b.status}</span> },
             {
               header: t.t('dairy.colActions'),
-              cell: (b) => {
-                const kind = canPreview(b.status) ? 'preview' : canApprove(b.status) ? 'approve' : canPay(b.status) ? 'pay' : null;
-                return kind ? (
-                  <form action={billLifecycleAction} className="kv-inline-form">
-                    <input type="hidden" name="id" value={b.id} />
-                    <input type="hidden" name="kind" value={kind} />
-                    <button type="submit" className="kv-btn--link">{t.t(`dairy.act.${kind}`)}</button>
-                  </form>
-                ) : t.t('common.dash');
-              },
+              // PC-56 OPS-1a (Q2-A): only PREVIEW is offered here (a state step, no ledger posting); approve and pay are not on this console.
+              cell: (b) => canPreview(b.status) ? (
+                <form action={previewBillAction} className="kv-inline-form">
+                  <input type="hidden" name="id" value={b.id} />
+                  <button type="submit" className="kv-btn--link">{t.t('dairy.act.preview')}</button>
+                </form>
+              ) : t.t('common.dash'),
             },
           ]}
         />

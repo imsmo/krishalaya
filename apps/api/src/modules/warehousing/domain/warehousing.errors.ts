@@ -17,4 +17,14 @@ export class NoWarehouseOperatorError extends DomainError { constructor() { supe
 export class EnwrExistsError extends AppError { constructor() { super('ENWR_EXISTS', 'An eNWR with this number already exists', 409); } }
 /** An NWR already exists for the booking (one active receipt per deposit). */
 export class NwrAlreadyIssuedError extends AppError { constructor() { super('NWR_ALREADY_ISSUED', 'An active NWR already exists for this booking', 409); } }
+/**
+ * PC-56 OPS-1a (founder Q3-A, 2026-11-05) — THE RELEASE THAT DEBITS THE DEPOSITOR'S WALLET IS PAUSED.
+ * Release collects the storage fee from the depositor's wallet on the operator's act alone; until she confirms the release and
+ * its fee in her own session (a later wave), the route refuses BY NAME, before any lock, fee or state write. Nothing moves.
+ */
+export const STORAGE_RELEASE_AWAITS_DEPOSITOR_SENTENCE =
+  'A release cannot be made here yet: the storage fee would leave the depositor\'s wallet without her confirming it. Nothing was released or charged.';
+export class StorageReleaseAwaitsDepositorError extends DomainError {
+  constructor() { super('STORAGE_RELEASE_AWAITS_DEPOSITOR', STORAGE_RELEASE_AWAITS_DEPOSITOR_SENTENCE, 409, {}); }
+}
 export class WarehousingForbiddenError extends AppError { constructor(message = 'Not allowed on this warehousing resource') { super('WAREHOUSING_FORBIDDEN', message, 403); } }

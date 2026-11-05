@@ -42,6 +42,7 @@ a { color: inherit; text-decoration: none; }
 .kv-sidebar { background: var(--kv-neutral-0); border-inline-end: 1px solid var(--kv-neutral-200); padding: var(--kv-space); }
 .kv-sidebar a { display: block; padding: 10px 12px; border-radius: var(--kv-radius); min-height: 44px; }
 .kv-sidebar a:hover { background: var(--kv-neutral-100); }
+.kv-sidebar a.kv-sidebar__link--sub { padding-inline-start: 28px; } /* PC-56 OPS-1a: /payout under Dairy, /warehouse/withdrawal under Warehouse */
 .kv-brand { font-weight: 700; color: var(--kv-brand-700); margin-bottom: var(--kv-space); display: block; }
 .kv-content { padding: 24px; max-width: 1100px; }
 .kv-table { width: 100%; border-collapse: collapse; }

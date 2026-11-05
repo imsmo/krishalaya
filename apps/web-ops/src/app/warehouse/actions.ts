@@ -1,6 +1,6 @@
 'use server';
 // apps/web-ops/src/app/warehouse/actions.ts · warehouse-wave mutations (PC-32 OW-2). All server-gated by
-// warehousing.manage; release + eNWR issue are Idempotency-Keyed (Law 3 — a release or a receipt must never
+// warehousing.manage; eNWR issue is Idempotency-Keyed (PC-56 OPS-1a: release is NOT offered — paused, founder Q3-A) (Law 3 — a release or a receipt must never
 // double-fire); 409s degrade to honest state messages (Law 12).
 import { randomUUID } from 'node:crypto';
 import { redirect } from 'next/navigation';
@@ -21,7 +21,8 @@ export async function bookingLifecycleAction(formData: FormData): Promise<void> 
     const w = opsClient().warehousing;
     if (kind === 'confirm') await w.confirmBooking(id);
     else if (kind === 'store') await w.storeBooking(id);
-    else if (kind === 'release') await w.releaseBooking(id, randomUUID());
+    // PC-56 OPS-1a (founder 1a-2, Q3-A): no release from this console — the storage fee would leave the depositor's wallet without her word
+    // (the API refuses it by name: 409 STORAGE_RELEASE_AWAITS_DEPOSITOR). `kind=release` falls through to the generic refusal below.
     else if (kind === 'cancel') await w.cancelBooking(id, String(formData.get('reason') ?? '').trim() || undefined);
     else back(id, 'error=action');
   } catch (e) {

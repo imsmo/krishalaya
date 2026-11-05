@@ -3,12 +3,14 @@
 import { getTranslator, getLang } from '../lib/i18n';
 import { LocaleSwitcher } from './LocaleSwitcher';
 
-const NAV: ReadonlyArray<{ href: string; labelKey: string }> = [
+const NAV: ReadonlyArray<{ href: string; labelKey: string; sub?: boolean }> = [
   { href: '/dashboard', labelKey: 'nav.dashboard' },
   { href: '/kiosk', labelKey: 'nav.kiosk' }, // OW-1
   { href: '/warehouse', labelKey: 'nav.warehouse' }, // OW-2
+  { href: '/warehouse/withdrawal', labelKey: 'nav.withdrawal', sub: true }, // PC-56 OPS-1a · W377 (the warehouse section)
   { href: '/equipment', labelKey: 'nav.equipment' }, // OW-3
   { href: '/dairy', labelKey: 'nav.dairy' }, // OW-4
+  { href: '/payout', labelKey: 'nav.payout', sub: true }, // PC-56 OPS-1a · W367 (the dairy section)
   { href: '/money', labelKey: 'nav.money' }, // OW-5 (PC-55 B3)
   { href: '/insights', labelKey: 'nav.insights' }, // OW-6
   { href: '/devices', labelKey: 'nav.devices' }, // OW-7 (PC-55 B4)
@@ -24,7 +26,7 @@ export function Sidebar() {
       <a href="/dashboard" className="kv-brand">{t.t('nav.brand')}</a>
       <ul className="kv-sidebar__nav">
         {NAV.map((n) => (
-          <li key={n.href}><a href={n.href} className="kv-sidebar__link">{t.t(n.labelKey)}</a></li>
+          <li key={n.href}><a href={n.href} className={n.sub ? 'kv-sidebar__link kv-sidebar__link--sub' : 'kv-sidebar__link'}>{t.t(n.labelKey)}</a></li>
         ))}
       </ul>
       <div className="kv-sidebar__footer">

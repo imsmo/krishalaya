@@ -1,5 +1,5 @@
 // apps/web-ops/src/app/warehouse/[id]/page.tsx · one deposit's lifecycle (PC-32 OW-2): facts → ONLY the legal
-// actions (confirm arrival / mark stored after weighment / release with fee settlement / cancel pre-storage,
+// actions (confirm arrival / mark stored after weighment / cancel pre-storage — release PAUSED by PC-56 OPS-1a, Q3-A,
 // pure gates mirroring the state machine) → assay reports (plain-text name=value entry, honest typed coercion)
 // → eNWR issue (stored goods only; NERL/CCRL; float-free valuation; idempotent). notFound = IDOR guard.
 import type { Metadata } from 'next';
@@ -12,6 +12,7 @@ import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
 import { canConfirm, canStore, canRelease, canCancel, canIssueNwr, NWR_REPOSITORIES } from '../../../features/warehouse/manage';
 import { bookingLifecycleAction, recordAssayAction, issueNwrAction } from '../actions';
 import type { StorageBooking, AssayReport } from '@krishalaya/sdk-js';
+import { ReleasePaused } from '../../../components/ops1/WithdrawalView';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +20,7 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('wh.detailTitle'), robots: { index: false, follow: false } };
 }
 
-const OK = new Set(['confirm', 'store', 'release', 'cancel', 'assay', 'nwr']);
+const OK = new Set(['confirm', 'store', 'cancel', 'assay', 'nwr']);
 const ERR = new Set(['action', 'illegal', 'assay', 'as_assayer', 'as_params', 'as_validuntil', 'nwr', 'nwr_dup', 'nwr_booking', 'nwr_repo', 'nwr_enwrno', 'nwr_valuation', 'nwr_expires']);
 
 export default async function BookingDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
@@ -41,7 +42,6 @@ export default async function BookingDetailPage({ params, searchParams }: { para
   const lifecycle = [
     { kind: 'confirm', label: t.t('wh.actConfirm'), show: canConfirm(s) },
     { kind: 'store', label: t.t('wh.actStore'), show: canStore(s) },
-    { kind: 'release', label: t.t('wh.actRelease'), show: canRelease(s) },
   ];
 
   return (
@@ -70,7 +70,8 @@ export default async function BookingDetailPage({ params, searchParams }: { para
           </form>
         ))}
       </div>
-      {canRelease(s) && <p className="kv-field__hint">{t.t('wh.releaseHint')}</p>}
+      {/* PC-56 OPS-1a (founder 1a-2, Q3-A): the release button is replaced by the honest sentence — no button. */}
+      {canRelease(s) && <ReleasePaused t={t} />}
 
       {canCancel(s) && (
         <form action={bookingLifecycleAction} className="kv-card kv-form">
