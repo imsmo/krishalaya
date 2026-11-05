@@ -11,6 +11,8 @@ import { NOT_YET_ROUTES, notYetBack, surfaceKey } from '../features/partner/not-
 import { INSURANCE_REDIRECTS, LENDER_REDIRECTS } from '../features/partner2/refusals';
 import { CLAIMS_REDIRECTS } from '../features/partner3/refusals';
 import { LENDER_BOOK_REDIRECTS } from '../features/partner4/refusals';
+import { SETTLEMENTS_REDIRECTS } from '../features/partner6/refusals';
+import { hi } from '../i18n/hi';
 import { en } from '../i18n/en';
 import { gu } from '../i18n/gu';
 
@@ -31,13 +33,13 @@ describe('PC-56 PARTNER-0 · the not-yet pages, derived from the routes', () => 
 
   it('every page rendering <NotYet> is registered under its own route, and every registered route is such a page', () => {
     expect(notYet.map(routeOf).sort()).toEqual(Object.keys(NOT_YET_ROUTES).sort());
-    expect(notYet.length).toBe(19);   // PC-56 PARTNER-2a: the four built insurer routes left the list (30 → 26); PARTNER-2c: /products(/[id]) left (26 → 24); PARTNER-3a: /insurance-claims(/[id]) left (24 → 22); PARTNER-4a: /portfolio(/[id]) and /servicing left (22 → 19)
+    expect(notYet.length).toBe(18);   // PC-56 PARTNER-2a: the four built insurer routes left the list (30 → 26); PARTNER-2c: /products(/[id]) left (26 → 24); PARTNER-3a: /insurance-claims(/[id]) left (24 → 22); PARTNER-4a: /portfolio(/[id]) and /servicing left (22 → 19); PARTNER-6a (NAMED UPDATE): /settlements left (19 → 18)
   });
   it('PC-56 PARTNER-2a/3a · the six old insurance routes answer a real 307 from next.config.js (equal to the registries); their page files are gone', async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const cfg = require(path.join(__dirname, '..', '..', 'next.config.js')) as { redirects: () => Promise<Array<{ source: string; destination: string; permanent: boolean }>> };
     const rules = await cfg.redirects();
-    expect(Object.fromEntries(rules.map((r) => [r.source, r.destination]))).toEqual({ ...INSURANCE_REDIRECTS, ...LENDER_REDIRECTS, ...CLAIMS_REDIRECTS, ...LENDER_BOOK_REDIRECTS });   // PC-56 PARTNER-2c: + the /products pair; PARTNER-3a: + the claims pair; PARTNER-4a: + the lender's book (five)
+    expect(Object.fromEntries(rules.map((r) => [r.source, r.destination]))).toEqual({ ...INSURANCE_REDIRECTS, ...LENDER_REDIRECTS, ...CLAIMS_REDIRECTS, ...LENDER_BOOK_REDIRECTS, ...SETTLEMENTS_REDIRECTS });   // PC-56 PARTNER-6a · NAMED UPDATE: + /settlements   // PC-56 PARTNER-2c: + the /products pair; PARTNER-3a: + the claims pair; PARTNER-4a: + the lender's book (five)
     for (const r of rules) {
       expect([r.source, r.permanent]).toEqual([r.source, false]);   // 307, not 308: the move may be revisited
       expect([r.source, fs.existsSync(path.join(APP, ...r.source.replace(':id', '[id]').slice(1).split('/'), 'page.tsx'))]).toEqual([r.source, false]);
@@ -108,14 +110,41 @@ describe('PC-56 PARTNER-0 · the not-yet pages, derived from the routes', () => 
       const html = renderToStaticMarkup(<NotYet t={tr(en)} route={route} />);
       expect(html).toContain(en['partner.notYet.title'].replace('{surface}', en[surfaceKey(surface)]));
       expect(html).toContain(en['partner.notYet.body'].replace(/'/g, '&#x27;'));
-      // PC-56 PARTNER-4a: PARTNER-2a's kind-aware branch is gone with the dead `'insurance'` surface — every remaining not-yet page goes
-      // back to the lender's queue at the canon's own address
+      // PC-56 PARTNER-4a: PARTNER-2a's kind-aware branch is gone with the dead `'insurance'` surface.
+      // PC-56 PARTNER-6a · NAMED UPDATE (survey C-7): the way back is `/dashboard` — kind-aware without a read (that page sends an insurer to
+      // its own dashboard) — never the lender's queue, which `lenderGate()` sends an insurer away from
       expect(html).toContain(`href="${notYetBack(route).href}"`);
-      expect(notYetBack(route).href).toBe('/lender/queue');
+      expect(notYetBack(route).href).toBe('/dashboard');
+      expect(html).not.toContain('href="/lender/queue"');
       expect([route, surface]).not.toEqual([route, 'insurance']);
       expect(html).not.toMatch(/unavailable|temporarily/i);
       const g = renderToStaticMarkup(<NotYet t={tr(gu)} route={route} />);
       expect(g).toContain(gu['partner.notYet.title'].replace('{surface}', gu[surfaceKey(surface)]));
     }
+  });
+});
+
+// PC-56 PARTNER-6a (founder 6a-3, survey C-6 / C-7 / F-12) — the not-yet `/settlements` is GONE: its page file is deleted, it answers a real
+// 307 to the insurer's own page, its surface and label keys are deleted from every catalogue, and the not-yet way back names no console.
+describe('PC-56 PARTNER-6a · /settlements is no longer a not-yet page', () => {
+  it('no page file, no registry entry, no surface key; the 307 lands on a built insurer page; the dashboard it goes back to sends an insurer on', async () => {
+    expect(fs.existsSync(path.join(APP, 'settlements', 'page.tsx'))).toBe(false);
+    expect(NOT_YET_ROUTES['/settlements']).toBeUndefined();
+    expect(Object.values(NOT_YET_ROUTES)).not.toContain('settlements');
+    expect(SETTLEMENTS_REDIRECTS).toEqual({ '/settlements': '/insurer/settlements' });
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const cfg = require(path.join(__dirname, '..', '..', 'next.config.js')) as { redirects: () => Promise<Array<{ source: string; destination: string; permanent: boolean }>> };
+    expect((await cfg.redirects()).filter((r) => r.source === '/settlements')).toEqual([{ source: '/settlements', destination: '/insurer/settlements', permanent: false }]);
+    expect(fs.existsSync(path.join(APP, 'insurer', 'settlements', 'page.tsx'))).toBe(true);
+    // the insurer page's kind gate is what sends a lender (or any other kind) to its own home
+    const page = fs.readFileSync(path.join(APP, 'insurer', 'settlements', 'page.tsx'), 'utf8');
+    expect(page.indexOf('await insurerGate()')).toBeGreaterThan(page.indexOf('await requirePartner()'));
+    // the dashboard the not-yet pages go back to redirects an insurer to its own
+    expect(fs.readFileSync(path.join(APP, 'dashboard', 'page.tsx'), 'utf8')).toMatch(/wrongConsole\(me\?\.organisation\?\.kind, 'lender'\)\) redirect\('\/insurer\/dashboard'\)/);
+    for (const cat of [en, hi, gu] as Record<string, string>[]) {
+      for (const k of ['partner.surface.settlements', 'nav.settlements']) expect([k, k in cat]).toEqual([k, false]);
+      expect(/loan queue|लोन कतार|લોન કતાર/i.test(cat['partner.notYet.back'])).toBe(false);
+    }
+    expect(en['partner.notYet.back']).toBe('Go to your dashboard');
   });
 });

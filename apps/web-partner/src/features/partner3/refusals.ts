@@ -282,13 +282,16 @@ export const CLAIMS_REDIRECTS: Readonly<Record<string, string>> = Object.freeze(
 /** The claims sub-navigation (survey E3 / F-17): ONE nav item for nine canon screens, and the claims pages' own tabs. 3a built Queue ·
  *  Insights; PARTNER-3b's four pages are now live, so all six rows are drawn. The four 3b routes appear in NO nav group for any kind or
  *  permission set (`nav-model.spec` pins it) — they are reached from here only, which is exactly the canon's own orphan problem (F-17). */
-export const CLAIMS_SUBNAV: readonly { href: string; key: string; wave: '3a' | '3b'; live: boolean }[] = Object.freeze([
+// PC-56 PARTNER-6a (founder 6a-3, survey E2 / F-10): + Settlements, LAST — the canon's W260 has no sidebar entry and W252 never links to it, so
+// this row is the inbound edge the canon never drew. It is an insurer's only way in (an insurer-only console: `/settlements` is in no nav group).
+export const CLAIMS_SUBNAV: readonly { href: string; key: string; wave: '3a' | '3b' | '6a'; live: boolean }[] = Object.freeze([
   { href: '/insurer/claims', key: 'partner3.subnav.queue', wave: '3a', live: true },
   { href: '/insurer/claims/insights', key: 'partner3.subnav.insights', wave: '3a', live: true },
   { href: '/insurer/claims/evidence', key: 'partner3.subnav.evidence', wave: '3b', live: true },
   { href: '/insurer/surveyors', key: 'partner3.subnav.surveyors', wave: '3b', live: true },
   { href: '/insurer/surveys', key: 'partner3.subnav.surveys', wave: '3b', live: true },
   { href: '/insurer/claims/fraud', key: 'partner3.subnav.fraud', wave: '3b', live: true },
+  { href: '/insurer/settlements', key: 'partner6.subnav.settlements', wave: '6a', live: true },
 ]);
 /** The sub-navigation row a page is on (`aria-current="page"`), or null for a page outside the tabs (a claim, an evidence board, a report). */
 export type ClaimsSubNavHref = (typeof CLAIMS_SUBNAV)[number]['href'];

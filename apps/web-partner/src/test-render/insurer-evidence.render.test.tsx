@@ -51,7 +51,7 @@ describe('PC-56 PARTNER-3b · W255 the evidence page (render)', () => {
   });
   it('the sub-navigation: six live rows, Evidence current (M1 kills here)', () => {
     expect(html).toContain('data-kv-subnav="claims"');
-    expect([...html.matchAll(/data-kv-subnav-item="/g)].length).toBe(6);
+    expect([...html.matchAll(/data-kv-subnav-item="/g)].length).toBe(7);   // PC-56 PARTNER-6a · NAMED UPDATE: + the Settlements row
     expect(html).toMatch(/aria-current="page"[^>]*data-kv-subnav-item="\/insurer\/claims\/evidence"/);
   });
   it('empty: no claim on your products is awaiting a survey (though claims were filed in the window); error: nothing is broken + the re-read', () => {

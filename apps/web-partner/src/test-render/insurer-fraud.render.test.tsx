@@ -37,7 +37,7 @@ describe('PC-56 PARTNER-3b · W263 the fraud flags page (render)', () => {
     expect(html).toContain('href="/insurer/claims/fraud?act=confirm"'); expect(html).toContain('data-kv-decor="retry"');
     expect(html).toContain('href="/insurer/claims"'); expect(html).toContain('data-kv-real="claims"');
     expect(html).not.toContain('<form'); expect(html).not.toContain('<button');
-    expect([...html.matchAll(/data-kv-subnav-item="/g)].length).toBe(6);
+    expect([...html.matchAll(/data-kv-subnav-item="/g)].length).toBe(7);   // PC-56 PARTNER-6a · NAMED UPDATE: + the Settlements row
     expect(html).toMatch(/aria-current="page"[^>]*data-kv-subnav-item="\/insurer\/claims\/fraud"/);
   });
   it('switched off (both switches); an unreadable flag map prints the SAME true page; hi and gu carry their own words; the kind rule', () => {

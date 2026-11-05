@@ -109,12 +109,13 @@ describe('PC-56 PARTNER-3a · the PARTNER-3 canon registry', () => {
   // W257's "Empanel surveyor" ×3 and its surveyor-name cells and W259's "Query surveyor"; `fm_omissions` already covers W255's "Review"
   // drill-ins and W257's "Actions for sv 1/2/3"). M1 (the evidence row's `live` flipped to false) kills here.
   it('the claims sub-navigation: SIX rows, every one live, in the built order — Queue · Insights · Evidence · Surveyors · Surveys · Fraud', () => {
+    // PC-56 PARTNER-6a · NAMED UPDATE (founder 6a-3): + Settlements, LAST (wave 6a) — SEVEN rows, every one live
     expect(CLAIMS_SUBNAV.map((i) => [i.href, i.wave, i.live])).toEqual([
       ['/insurer/claims', '3a', true], ['/insurer/claims/insights', '3a', true], ['/insurer/claims/evidence', '3b', true],
-      ['/insurer/surveyors', '3b', true], ['/insurer/surveys', '3b', true], ['/insurer/claims/fraud', '3b', true]]);
-    expect(CLAIMS_SUBNAV.filter((i) => i.live).length).toBe(6);
+      ['/insurer/surveyors', '3b', true], ['/insurer/surveys', '3b', true], ['/insurer/claims/fraud', '3b', true], ['/insurer/settlements', '6a', true]]);
+    expect(CLAIMS_SUBNAV.filter((i) => i.live).length).toBe(7);
     expect(CLAIMS_SUBNAV.filter((i) => !i.live)).toEqual([]);
-    expect(new Set(CLAIMS_SUBNAV.map((i) => i.key)).size).toBe(6);
+    expect(new Set(CLAIMS_SUBNAV.map((i) => i.key)).size).toBe(7);
   });
   it('PC-56 PARTNER-3b · the 3b DELTAs are recorded and none duplicates a 3a DELTA', () => {
     expect(PARTNER3_DELTAS.map((d) => d.id)).toEqual(expect.arrayContaining(['chain_returns_3b', 'fm_omissions_3b', 'evidence_counts_only', 'surveys_tabs', 'report_one_claim']));

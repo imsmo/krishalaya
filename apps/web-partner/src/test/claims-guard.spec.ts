@@ -11,6 +11,7 @@ import { PARTNER2_REFUSALS } from '../features/partner2/refusals';
 import { PARTNER3_REFUSALS } from '../features/partner3/refusals';
 import { PARTNER4_REFUSALS } from '../features/partner4/refusals';
 import { PARTNER5_REFUSALS } from '../features/partner5/refusals';
+import { PARTNER6_REFUSALS, SURFACES_6A } from '../features/partner6/refusals';
 
 const CATS = { en, hi, gu } as const;
 const SCOPE = /^(dash\.|help\.|settings\.|partner\.|partner1\.)/;
@@ -1022,3 +1023,97 @@ describe('PC-56 PARTNER-5c · claims guard (the promise the platform sets)', () 
     }
   });
 });
+
+// ══ PC-56 PARTNER-6a · WHERE A CLAIM IS NOT PAID (founder 6a-1 / 6a-2; brief E6) ═══════════════════════════════════════════════════════════════
+// The words of W260 / W261 / W2901–W2903 that tell an insurer a claim is paid: a percentage, a rupee sign, "ready to pay", "paid FY / today",
+// a daily run at a time of day, a payout id, a zero-sum reconciliation, a verified account, a second approver over a threshold, a hash-sealed
+// file, a watermark, a seven-year promise, reinsurance and cedant documentation, a pre-approved offer, a vet desk, an ear-tag, money that lands
+// tonight, a village that can verify, a finance role, plan settings. Each regex is PROVEN on its own canon phrase and kept in the canon's
+// AFFIRMATIVE shape where an honest refusal needs the bare word ("nothing to reconcile", "There are no plan settings"). Applied to every
+// `partner6.` value AND to every key PARTNER6_REFUSALS prints on a 6a surface (the reused PARTNER-3 / PARTNER-4 keys included), in en, hi and
+// gu. Stricter than the brief: the word "run" is banned outright from every `partner6.` value (no honest sentence on these pages needs it).
+const SCOPE_6A = /^partner6\./;
+const FORBIDDEN_6A: readonly [string, RegExp, string][] = [
+  ['%', /%/, '94% of surveyed claims pay'],   // W253's line (3a) — W260 / W261 print none; the brief bans it on this scope too
+  ['₹', /₹/, 'Ready to pay ₹1,58,000'],
+  ['ready to pay', /ready to pay/i, 'Ready to pay ₹1,58,000 · 2 claims approved this morning'],
+  ['paid FY / today', /paid (FY|today)/i, 'Paid FY ₹41,80,000 · 64 claims · median approve → paid 5h'],
+  ["today's run", /today[’']?s run/i, 'Release today’s run (2 claims, checker)'],
+  ['16:00', /\b16:00\b/, 'Run today 16:00'],
+  ['payout_id / po-', /payout_id|\bpo-/i, 'payout_id po-…7741 → ledger txn'],
+  ['zero-sum', /zero-sum/i, 'Money-adjacent actions reconcile zero-sum before this page ever shows'],
+  ['reconcile (affirmative)', /(?<!nothing to |no need to |never )\breconcil(e[sd]?|iation)\b/i, 'Money-adjacent actions reconcile zero-sum before this page ever shows'],
+  ['verified a/c', /verified a\/c|a\/c ••/i, 'verified a/c ••4482'],
+  ['2nd approver / ≥₹1L', /2nd approver|≥ ?₹ ?1L/i, '2nd approver ✓ (≥₹1L)'],
+  ['hash-sealed / sha256', /hash-sealed|sha256/i, 'Claim file (complete, hash-sealed)'],
+  ['watermark', /watermark/i, 'Finance + claims role; the claim file export is watermarked.'],
+  ['7 years', /\b7 years\b/i, 'Paid settlements keep their full chain (7 years).'],
+  ['reinsurance / cedant', /reinsurance|cedant/i, 'the hash-sealed file IS the cedant documentation'],
+  ['pre-approved', /pre-approved/i, 'dairy loan pre-approved offer, HER choice, zero pressure'],
+  ['vet desk', /vet desk/i, 'the vet desk follows up next week about a replacement animal'],
+  ['ear-tag', /ear-tag/i, 'ear-tag ••2764 verified'],
+  ['money lands / tonight / in account', /money[- ](lands|tonight|in[- ]account)/i, "The distance from 'approved' to money-in-account is measured in hours"],
+  ['village can verify', /village can verify/i, 'a village can verify its own insurance money'],
+  ['finance role', /finance (\+ claims )?role/i, 'Finance role at your insurer + checker'],
+  ['plan settings (affirmative)', /see plan settings/i, 'Claim Settlements disabled … See plan settings.'],
+  ['run', /\bruns?\b/i, 'the run fires daily at 16:00 regardless'],
+];
+/** Honest sentences of this wave's own shape that MUST pass (the affirmative narrowing proven both ways). */
+const PERMITTED_6A = [
+  'There is nothing to reconcile, because no money moved.',
+  'There are no plan settings for your organisation to open. Nothing on this platform lets a partner switch its own modules on.',
+  'No claim is paid on this platform.',
+];
+/** The two statements and the paid line founder 6a-1 / 6a-2 pinned, VERBATIM. */
+const PINNED_6A: Readonly<Record<string, string>> = {
+  'partner6.settlements.statement': 'No claim is paid on this platform, and no money moves between your organisation and the platform. The counts below are the claims on your products that have been approved; the payment that would follow is not made here.',
+  'partner6.settlement.statement': "No settlement exists for any claim on this platform. This claim's own facts are on its claim page.",
+  'partner6.settlements.paidNone': 'No claim is paid on this platform.',
+};
+const keys6A = (c: Record<string, string>) => [...new Set([...Object.keys(c).filter((k) => SCOPE_6A.test(k)),
+  ...PARTNER6_REFUSALS.filter((r) => r.surfaces.some((x) => SURFACES_6A.includes(x))).map((r) => r.key)])];
+
+describe('PC-56 PARTNER-6a · claims guard (where a claim is not paid)', () => {
+  it('every 6a forbidden word is caught when planted once (each regex proven on its own canon phrase); the honest sentences pass every one', () => {
+    for (const [name, re, planted] of FORBIDDEN_6A) expect([name, re.test(planted)]).toEqual([name, true]);
+    for (const ok of [...PERMITTED_6A, ...Object.values(PINNED_6A)]) for (const [name, re] of FORBIDDEN_6A) expect([ok, name, re.test(ok)]).toEqual([ok, name, false]);
+  });
+  it.each(Object.entries(CATS))('%s: no 6a claim in any partner6. value, nor in any key PARTNER6_REFUSALS prints on a 6a surface (the reused keys included)', (_l, cat) => {
+    const c = cat as Record<string, string>;
+    const keys = keys6A(c);
+    expect(keys.length).toBeGreaterThan(65);
+    for (const k of keys) {
+      expect([k, typeof c[k]]).toEqual([k, 'string']);
+      // the bare word "run" is banned on the partner6 scope only (a reused earlier key is held to the canon's affirmative shapes)
+      for (const [name, re] of [...FORBIDDEN_6A.filter(([n]) => n !== 'run' || SCOPE_6A.test(k)).map(([n, r]) => [n, r] as const), ...FORBIDDEN]) expect([k, name, re.test(c[k])]).toEqual([k, name, false]);
+    }
+    for (const k of Object.keys(en).filter((x) => SCOPE_6A.test(x))) expect([k, typeof c[k] === 'string' && c[k].length > 0]).toEqual([k, true]);
+  });
+  it('founder 6a-1 / 6a-2 (en, VERBATIM): the two statements and the paid line; present and distinct in hi and gu', () => {
+    for (const [k, v] of Object.entries(PINNED_6A)) {
+      expect([k, en[k]]).toEqual([k, v]);
+      expect([k, typeof hi[k] === 'string' && hi[k].length > 20 && hi[k] !== en[k], typeof gu[k] === 'string' && gu[k].length > 20 && gu[k] !== en[k]]).toEqual([k, true, true]);
+      expect([k, hi[k] !== gu[k]]).toEqual([k, true]);
+    }
+    // the statement opens with the paid line — the one sentence every state of W260 carries
+    expect(en['partner6.settlements.statement'].startsWith(en['partner6.settlements.paidNone'].replace(/\.$/, ''))).toBe(true);
+    // the window wording says FILED (survey F-8): the count is never read as "approved in this window"
+    expect(en['partner6.settlements.filedNote']).toMatch(/filed in this window that are approved now — not the claims approved in it/);
+    for (const k of ['partner6.settlements.windowFy', 'partner6.settlements.windowRange']) expect([k, /filed/i.test(en[k])]).toEqual([k, true]);
+  });
+  it('the W260 / W261 views and pages print no money in their CODE: no currency formatter, no amount or approvedMinor field, no "%", no rupee sign', () => {
+    const fs2 = require('node:fs') as typeof import('node:fs');
+    const path2 = require('node:path') as typeof import('node:path');
+    const SRC = path2.join(__dirname, '..');
+    for (const rel of ['components/partner6/InsurerSettlementsView.tsx', 'components/partner6/InsurerSettlementView.tsx', 'components/partner6/InsurerChain6.tsx',
+      'app/insurer/settlements/page.tsx', 'app/insurer/settlements/[id]/page.tsx', 'features/partner6/figures.ts']) {
+      const code = fs2.readFileSync(path2.join(SRC, rel), 'utf8').split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
+      expect([rel, code.length > 300]).toEqual([rel, true]);
+      for (const [name, re] of [['formatMoney', /formatMoney|formatCurrency|Intl\.NumberFormat|toLocaleString|toFixed/], ['amount field', /approvedMinor|approved_minor|amountMinor|amount_minor|sumInsured|\bamount\b/i],
+        ['%', /%/], ['₹', /₹/], ['claimant field', /claimant|holderName|fullName|accountLast4|account_last4|ifsc|payoutId|payout_id|surveyor/i], ['<input', /<input|<select|<textarea|<form/]] as const) {
+        expect([rel, name, re.test(code)]).toEqual([rel, name, false]);
+      }
+    }
+  });
+});
+

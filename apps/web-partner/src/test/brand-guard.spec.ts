@@ -217,3 +217,29 @@ describe('PC-56 PARTNER-5a · brand guard over the arrears pages (founder 5a-8: 
     }
   });
 });
+
+describe('PC-56 PARTNER-6a · brand guard over the settlement pages (the platform\'s mark + the insurer\'s own name; survey F-10)', () => {
+  // the file floor: every components/partner6/*, every features/partner6/* module and the app/insurer/settlements tree — found on disk, not
+  // listed by hand, so a new file in any of those folders is scanned without anyone remembering to add it
+  const DIRS = [path.join(SRC, 'components', 'partner6'), path.join(SRC, 'features', 'partner6'), path.join(SRC, 'app', 'insurer', 'settlements')];
+  const mine = files().filter((f) => DIRS.some((d) => f.startsWith(d + path.sep))).map((f) => path.relative(SRC, f)).sort();
+  it('the floor holds: three components, two feature modules, two pages — all scanned', () => {
+    expect(mine).toEqual(expect.arrayContaining(['components/partner6/InsurerChain6.tsx', 'components/partner6/InsurerSettlementsView.tsx',
+      'components/partner6/InsurerSettlementView.tsx', 'features/partner6/figures.ts', 'features/partner6/refusals.ts',
+      'app/insurer/settlements/page.tsx', 'app/insurer/settlements/[id]/page.tsx']));
+    expect(mine.length).toBeGreaterThanOrEqual(7);
+  });
+  it('none carries the platform\'s name, a mailbox, a domain, or a canon institution, person, place, phone, claim reference, account tail, payout id or avatar', () => {
+    for (const rel of mine) {
+      const src = fs.readFileSync(path.join(SRC, rel), 'utf8').replace(/@krishalaya\/[a-z0-9-]+/g, '');
+      for (const lit of LITERALS) expect([rel, lit, src.includes(lit)]).toEqual([rel, lit, false]);
+      expect([rel, /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.(com|in|org|net|co)\b|krishalaya\.(in|com)|mailto:[a-z]|1800/i.test(src)]).toEqual([rel, false]);
+      expect([rel, /Bharat Krishi|IRDAI ref|••118|Saurashtra|Gramin|Kesar|Bhavna|Rathod|R\. Shah|M\. Iyer|Priti|Mehta|Vanthali|Bhesan|\+91|CLM-20|••4482|••1108|••2764|7741|કેસર/i.test(src)]).toEqual([rel, false]);
+    }
+    // the views and pages (not the registry, which NAMES the canon's claims to refuse them) carry no avatar and no honorific either
+    for (const rel of mine.filter((r) => !r.startsWith('features/'))) {
+      const src = fs.readFileSync(path.join(SRC, rel), 'utf8');
+      expect([rel, /\bPM\b|\bAJ\b|\bBen\s|Bhai|\bDr\./.test(src)]).toEqual([rel, false]);
+    }
+  });
+});

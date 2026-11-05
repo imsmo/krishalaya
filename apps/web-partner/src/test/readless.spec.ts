@@ -70,3 +70,46 @@ describe('PC-56 PARTNER-5b · the readlessness ban set finds NOTHING on the thre
     }
   });
 });
+
+// PC-56 PARTNER-6a (founder 6a-2, brief E7 / survey E11) — W261 `/insurer/settlements/[id]` and its view read NOTHING: the same ban set finds
+// nothing there, while it still FIRES on the aging page AND on W260 `/insurer/settlements` — the second positive control, a page of THIS wave
+// that does read (`partnerClient().partner.insurance.claims.counts()`). The calls W261's page makes are asserted BY NAME: `requirePartner`,
+// `insurerGate`, `insurerSwitches` (the public flag map), `getTranslator`, `chain6State`. M5 (a `partnerClient(` read inserted into the W261
+// page) kills here while both controls still fire.
+const SETTLEMENTS_PAGE = 'app/insurer/settlements/page.tsx';
+const SETTLEMENT_PAGE = 'app/insurer/settlements/[id]/page.tsx';
+const SETTLEMENT_VIEW = 'components/partner6/InsurerSettlementView.tsx';
+
+describe('PC-56 PARTNER-6a · the ban set finds NOTHING on W261, and fires on both positive controls (aging and W260)', () => {
+  it('positive control 1: it still fires on the aging page in this same run', () => {
+    expect(readlessFires(AGING_PAGE)).toEqual(['partnerClient(', 'partner.loans.']);
+  });
+  it('positive control 2: it FIRES on W260 — the counts read through the partner client — and for that reason only', () => {
+    const code = readCode(SETTLEMENTS_PAGE);
+    expect(code.length).toBeGreaterThan(400);
+    expect(code).toMatch(/partnerClient\(\)\.partner\.insurance\.claims\.counts\(\)/);
+    expect(readlessFires(SETTLEMENTS_PAGE)).toEqual(['partnerClient(']);
+  });
+  it.each([[SETTLEMENT_PAGE], [SETTLEMENT_VIEW]])('%s: no ban fires', (rel) => {
+    const code = readCode(rel);
+    expect(code.length).toBeGreaterThan(400);
+    expect([rel, readlessFires(rel)]).toEqual([rel, []]);
+  });
+  it('W261\'s page: the calls it makes, BY NAME — and nothing from lib/api-client, the SDK or the mailbox', () => {
+    const code = readCode(SETTLEMENT_PAGE);
+    expect(code).toMatch(/await requirePartner\(\);/);
+    expect(code).toMatch(/await insurerGate\(\);/);
+    expect(code).toMatch(/state=\{await insurerSwitches\(\)\}/);
+    expect(code).toMatch(/const t = getTranslator\(\);/);
+    expect(code).toMatch(/chain6State\('settlement_detail_act'/);
+    expect([...new Set([...code.matchAll(/await\s+([A-Za-z_$][\w$.]*)\s*\(/g)].map((m) => m[1]))].sort()).toEqual(['insurerGate', 'insurerSwitches', 'requirePartner']);
+    const from = [...code.matchAll(/from '([^']+)'/g)].map((m) => m[1].replace(/^(\.\.\/)+/, ''));
+    for (const f of from) expect([f, /^(next|lib\/session|lib\/i18n|lib\/insurer|components\/partner6\/\w+|features\/partner6\/(refusals|figures))$/.test(f)]).toEqual([f, true]);
+    expect(/api-client|@krishalaya\/sdk-js|partners-mailbox|partnerClient|anonClient|insurerFailure/.test(code)).toBe(false);
+    expect(code).toMatch(/import \{ insurerGate, insurerSwitches \} from '[./]+lib\/insurer';/);
+  });
+  it('the W261 view imports no client either, and mounts no read of its own', () => {
+    const code = readCode(SETTLEMENT_VIEW);
+    expect(/api-client|@krishalaya\/sdk-js|lib\/insurer|lib\/session|async function|await /.test(code)).toBe(false);
+  });
+});

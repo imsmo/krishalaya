@@ -6,6 +6,7 @@ import {
   partnerNoticeKey, FLEET_PERM, WILDCARD_PERM,
 } from '../features/nav/nav-model';
 import { LENDING_SUBNAV } from '../features/partner4/refusals';
+import { CLAIMS_SUBNAV } from '../features/partner3/refusals';
 
 const set = (...p: string[]) => new Set(p);
 const ACCOUNT = ['/account/settings', '/account/api', '/account/webhooks', '/onboarding/status', '/help'];
@@ -16,7 +17,8 @@ describe('partner nav model (persona-aware)', () => {
   it('a lender (bank / nbfc / mfi / gold_loan) sees its dashboard, common + lending — never the insurer group', () => {
     for (const kind of ['bank', 'nbfc', 'mfi', 'gold_loan']) {
       expect([kind, visibleGroups(PARTNER_READS, kind)]).toEqual([kind, ['common', 'lending', 'account']]);
-      expect(liveNavForPartner(PARTNER_READS, kind).map((i) => i.href)).toEqual(['/dashboard', '/notifications', '/settlements', '/consents', '/lender/queue', '/lender/products',
+      // PC-56 PARTNER-6a · NAMED UPDATE (founder 6a-3): `/settlements` is GONE from the `common` group — a lender has no settlement here
+      expect(liveNavForPartner(PARTNER_READS, kind).map((i) => i.href)).toEqual(['/dashboard', '/notifications', '/consents', '/lender/queue', '/lender/products',
         '/lender/disbursements', '/lender/repayments', '/lender/portfolio', '/lender/reports', ...ACCOUNT]);   // PC-56 PARTNER-4b added two; PARTNER-5c (NAMED UPDATE) + SLA & reports
       expect(liveNavForPartner(PARTNER_READS, kind).some((i) => i.href.startsWith('/insurer/'))).toBe(false);
     }
@@ -27,7 +29,7 @@ describe('partner nav model (persona-aware)', () => {
   it('PC-56 PARTNER-2a/2b/3a · an INSURER sees the insurer group\'s SEVEN — Dashboard · Products · Policies · Issuance · Premiums · Claims · Reports — common + account; never the lending group', () => {
     expect(visibleGroups(PARTNER_READS, 'insurer')).toEqual(['common', 'insurer', 'account']);
     expect(liveNavForPartner(PARTNER_READS, 'insurer').map((i) => i.href)).toEqual(['/insurer/dashboard', '/insurer/products', '/insurer/policies', '/insurer/issuance', '/insurer/premiums',
-      '/insurer/claims', '/insurer/reports', '/notifications', '/settlements', '/consents', ...ACCOUNT]);
+      '/insurer/claims', '/insurer/reports', '/notifications', '/consents', ...ACCOUNT]);   // PC-56 PARTNER-6a · NAMED UPDATE: Settlements is a claims sub-navigation row, not a nav item
     expect(liveNavForPartner(PARTNER_READS, 'insurer').map((i) => i.labelKey).slice(0, 7)).toEqual(['partner2.nav.dashboard', 'partner2.nav.products', 'partner2.nav.policies',
       'partner2.nav.issuance', 'partner2.nav.premiums', 'partner3.nav.claims', 'partner2.nav.reports']);
     expect(PARTNER_NAV.filter((i) => i.group === 'insurer').length).toBe(7);
@@ -166,6 +168,25 @@ describe('partner nav model (persona-aware)', () => {
     const cats = [require('../i18n/en').en, require('../i18n/hi').hi, require('../i18n/gu').gu] as Record<string, string>[];
     for (const c of cats) expect(typeof c['nav.slaReports'] === 'string' && c['nav.slaReports'].length > 0).toBe(true);
   });
+  // PC-56 PARTNER-6a (founder 6a-3, survey C-6 / F-6) · `/settlements` and `/insurer/settlements` are in NO nav group, for ANY kind or
+  // permission set (the wildcard included): Settlements is a row of the insurer's CLAIMS SUB-NAVIGATION only, so a lender, an asset manager,
+  // a 3PL and an unknown kind carry no settlements anything. M2 (`/settlements` back in the `common` group or a lender's) kills here.
+  it('PC-56 PARTNER-6a · Settlements is in NO nav for any kind; it is ONE live claims sub-navigation row (insurer pages only); no nav item or label names a settlement', () => {
+    const SIX_A = ['/settlements', '/insurer/settlements', '/insurer/settlements/[id]'];
+    expect(PARTNER_NAV.filter((i) => SIX_A.includes(i.href) || /settle/i.test(`${i.href} ${i.labelKey}`))).toEqual([]);
+    for (const [perms, kind] of [[PARTNER_READS, 'bank'], [PARTNER_READS, 'nbfc'], [PARTNER_READS, 'mfi'], [PARTNER_READS, 'gold_loan'], [PARTNER_READS, 'amc'],
+      [PARTNER_READS, 'insurer'], [PARTNER_READS, null], [set(FLEET_PERM), null], [set(), 'bank'], [set(WILDCARD_PERM), null], [set(WILDCARD_PERM), 'bank']] as const) {
+      const all = [...navForPartner(perms, kind), ...liveNavForPartner(perms, kind), ...soonNavForPartner(perms, kind)];
+      expect([kind, all.filter((i) => /settle/i.test(`${i.href} ${i.labelKey}`)).map((i) => i.href)]).toEqual([kind, []]);
+    }
+    // the `common` group no longer holds it (Notifications and Consents stay until 6b / 6c)
+    expect(PARTNER_NAV.filter((i) => i.group === 'common').map((i) => i.href)).toEqual(['/notifications', '/consents']);
+    // it is the claims sub-navigation's LAST row, live, wave 6a — drawn only on the insurer's claims pages
+    expect(CLAIMS_SUBNAV.filter((i) => /settle/.test(i.href)).map((i) => [i.href, i.key, i.wave, i.live])).toEqual([['/insurer/settlements', 'partner6.subnav.settlements', '6a', true]]);
+    expect(CLAIMS_SUBNAV[CLAIMS_SUBNAV.length - 1].href).toBe('/insurer/settlements');
+    // and nowhere in the LENDING sub-navigation
+    expect(LENDING_SUBNAV.filter((i) => /settle/i.test(`${i.href} ${i.key}`))).toEqual([]);
+  });
   it('PC-56 PARTNER-2a · an asset manager sees neither vertical; an unknown kind keeps the lending group and never opens the insurer group', () => {
     expect(visibleGroups(PARTNER_READS, 'amc')).toEqual(['common', 'account']);
     expect(visibleGroups(PARTNER_READS, null)).toEqual(['common', 'lending', 'account']);
@@ -179,7 +200,7 @@ describe('partner nav model (persona-aware)', () => {
     expect(hasFleet(perms)).toBe(true);
     expect(hasLending(perms)).toBe(false);
     expect(visibleGroups(perms)).toEqual(['common', 'fleet', 'account']);
-    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/notifications', '/settlements', '/consents', '/shipments', '/fleet', '/zones', '/routes', '/cold-chain', ...ACCOUNT]);
+    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/notifications', '/consents', '/shipments', '/fleet', '/zones', '/routes', '/cold-chain', ...ACCOUNT]);   // PC-56 PARTNER-6a · NAMED UPDATE: − /settlements
     expect(soonNavForPartner(perms)).toEqual([]); // logistics vertical fully built
   });
 
@@ -192,7 +213,7 @@ describe('partner nav model (persona-aware)', () => {
   it('no partner perms → only the common and account groups', () => {
     const perms = set();
     expect(visibleGroups(perms)).toEqual(['common', 'account']);
-    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/notifications', '/settlements', '/consents', ...ACCOUNT]);
+    expect(liveNavForPartner(perms).map((i) => i.href)).toEqual(['/notifications', '/consents', ...ACCOUNT]);   // PC-56 PARTNER-6a · NAMED UPDATE: − /settlements
     expect(soonNavForPartner(perms)).toEqual([]);
   });
 

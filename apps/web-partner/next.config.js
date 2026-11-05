@@ -56,6 +56,10 @@ const nextConfig = {
       { source: '/portfolio', destination: '/lender/portfolio', permanent: false },
       { source: '/portfolio/:id', destination: '/lender/portfolio/:id', permanent: false },
       { source: '/servicing', destination: '/lender/portfolio', permanent: false },
+      // PC-56 PARTNER-6a (founder 6a-3, survey C-6 / F-6): the PARTNER-0 not-yet `/settlements` (a `common` nav item EVERY partner kind saw)
+      // → the insurer's own settlements page; `insurerGate()` there sends a lender or any other kind to its own home, because no partner
+      // but an insurer has a claim on this platform (mirrors SETTLEMENTS_REDIRECTS in src/features/partner6/refusals.ts)
+      { source: '/settlements', destination: '/insurer/settlements', permanent: false },
     ];
   },
   async headers() {

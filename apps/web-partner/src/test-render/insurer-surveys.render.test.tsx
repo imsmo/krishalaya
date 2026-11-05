@@ -59,7 +59,7 @@ describe('PC-56 PARTNER-3b · W258 the surveys page (render)', () => {
     expect(render('ok', en, STAGE_ROWS, 'surveyed')).toContain('href="/insurer/surveys?status=surveyed&amp;cursor=Y3Vyc29y"');
     expect(render('ok', en, STAGE_ROWS, 'surveyed', null)).not.toContain('data-kv-next');
     expect(html).not.toContain('<form'); expect(html).not.toContain('<button');
-    expect([...html.matchAll(/data-kv-subnav-item="/g)].length).toBe(6);
+    expect([...html.matchAll(/data-kv-subnav-item="/g)].length).toBe(7);   // PC-56 PARTNER-6a · NAMED UPDATE: + the Settlements row
     expect(html).toMatch(/aria-current="page"[^>]*data-kv-subnav-item="\/insurer\/surveys"/);
   });
   it('empty per tab: no claim has this survey status (the tab\'s own word); error: nothing is broken + the re-read; OFF; the kind rule', () => {

@@ -50,7 +50,10 @@ export const PARTNER_NAV: readonly PartnerNavItem[] = [
   { href: '/insurer/claims', labelKey: 'partner3.nav.claims', group: 'insurer', live: true },
   { href: '/insurer/reports', labelKey: 'partner2.nav.reports', group: 'insurer', live: true },
   { href: '/notifications', labelKey: 'nav.notifications', group: 'common', live: true },
-  { href: '/settlements', labelKey: 'nav.settlements', group: 'common', live: true },
+  // PC-56 PARTNER-6a (founder 6a-3, survey C-6 / F-6): `/settlements` is GONE from the `common` group — it was `live: true` while rendering
+  // <NotYet> for EVERY partner kind (the PARTNER-4a `/profile` defect again), and the canon gives Settlements to an insurer only and to no
+  // sidebar at all. It is now a row of the insurer's CLAIMS SUB-NAVIGATION (`CLAIMS_SUBNAV`, features/partner3/refusals.ts) and the old
+  // address answers a real 307 to `/insurer/settlements` (next.config.js; `insurerGate()` sends a lender or any other kind to its own home).
   { href: '/consents', labelKey: 'nav.consents', group: 'common', live: true },
   // lending vertical (financial partners)
   // PC-56 PARTNER-4a (survey C-18 / F-15): the group is Dashboard · Loan queue · Products · Portfolio — FOUR items, all four of them real

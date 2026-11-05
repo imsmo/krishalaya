@@ -59,7 +59,7 @@ describe('PC-56 PARTNER-3b · W259 the survey report page (render)', () => {
     expect(html).toContain(`href="/insurer/claims/${CLAIM_SURVEYED.id}"`); expect(html).toContain('data-kv-real="claim"');
     expect(html).toContain('data-kv-back="/insurer/surveys"');
     expect(html).not.toContain('<form'); expect(html).not.toContain('<button');
-    expect([...html.matchAll(/data-kv-subnav-item="/g)].length).toBe(6);
+    expect([...html.matchAll(/data-kv-subnav-item="/g)].length).toBe(7);   // PC-56 PARTNER-6a · NAMED UPDATE: + the Settlements row
   });
   it('not found — never "not yours"; the error state re-reads; switched off (both switches); hi and gu; the kind rule', () => {
     const nf = render(null, null, true);

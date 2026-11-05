@@ -42,7 +42,7 @@ describe('PC-56 PARTNER-3b · W257 the surveyors page (render)', () => {
     expect(html).not.toContain('<form'); expect(html).not.toContain('<button');
   });
   it('the sub-navigation: six live rows, Surveyors current', () => {
-    expect([...html.matchAll(/data-kv-subnav-item="/g)].length).toBe(6);
+    expect([...html.matchAll(/data-kv-subnav-item="/g)].length).toBe(7);   // PC-56 PARTNER-6a · NAMED UPDATE: + the Settlements row
     expect(html).toMatch(/aria-current="page"[^>]*data-kv-subnav-item="\/insurer\/surveyors"/);
   });
   it('switched off (both switches); an unreadable flag map prints the SAME true page, with no alert; hi and gu carry their own words; the kind rule', () => {
