@@ -40,6 +40,8 @@ import {
   codeIsCurrentKey, noCentreKey, pouredCentresText, spansCentresKey,
 } from '../../../features/dairy/cycles';
 import { DAIRY_NAV, dairyNavLabelKey, dairyUnbuiltCount } from '../../../features/dairy/nav';
+// [PC-56 HOTFIX-11] the refusals as sentences (a second person on every milk bill, and the cycle's own maker-checker).
+import { dairyRefusalKey } from '../../../features/dairy/calc';
 import { approveCycleAction, previewCycleAction } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -108,7 +110,7 @@ export default async function DairyCyclesPage({ searchParams }: {
           )}
         </div>
       )}
-      {searchParams.error && <div className="kv-error" role="alert"><p>{t.t('dairy.cycles.error.act')} {searchParams.error}</p></div>}
+      {searchParams.error && <div className="kv-error" role="alert"><p>{t.t('dairy.cycles.error.act')} {dairyRefusalKey(searchParams.error) ? t.t(dairyRefusalKey(searchParams.error)!) : searchParams.error}</p></div>}
 
       {state !== 'ok' || !view ? (
         <div className={state === 'flaggedOff' ? 'kv-card kv-card--notice' : 'kv-error'} role={state === 'flaggedOff' ? 'status' : 'alert'}>

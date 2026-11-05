@@ -68,7 +68,7 @@ describe('dairy/calc — validators', () => {
   it('nextBillActions follows the state machine', () => {
     expect(nextBillActions('draft')).toEqual(['preview']);
     expect(nextBillActions('previewed')).toEqual(['approve']);
-    expect(nextBillActions('disputed')).toEqual(['approve']);
+    expect(nextBillActions('disputed')).toEqual([]);   // [PC-56 HOTFIX-11] NAMED UPDATE (founder Q4-A): a disputed bill is answered first, never approved
     expect(nextBillActions('approved')).toEqual(['pay']);
     expect(nextBillActions('paid')).toEqual([]);
   });

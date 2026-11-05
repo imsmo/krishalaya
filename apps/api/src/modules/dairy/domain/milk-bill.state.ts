@@ -19,7 +19,11 @@ const TRANSITIONS: Readonly<Record<BillStatus, readonly BillStatus[]>> = Object.
   // erasing a wallet movement's own justification while the movement stays in the ledger.
   draft:     ['previewed', 'voided'],
   previewed: ['disputed', 'approved', 'voided'],
-  disputed:  ['previewed', 'approved', 'voided'],   // resolved → re-previewed, override-approved, or rebuilt
+  // [PC-56 HOTFIX-11] `approved` REMOVED from `disputed` (founder Q4-A, 2026-11-06). It was an "override-approve": a
+  // bill the member had objected to could be approved and then paid once the window shut, with the objection
+  // unanswered. A dispute is now answered first — rejected and shown again (→ previewed), or voided and rebuilt.
+  // `MilkBill.approve` refuses it BY NAME (DAIRY_BILL_DISPUTE_UNANSWERED) before this table is consulted.
+  disputed:  ['previewed', 'voided'],   // resolved → re-previewed, or rebuilt
   approved:  ['paid', 'voided'],
   paid:      [],
   voided:    [],

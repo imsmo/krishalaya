@@ -316,7 +316,8 @@ describe('THE COMPOSITION — the member is paid the GROSS', () => {
 
   function harness(lines: ReturnType<typeof line>[], opts: { consent?: unknown; recovery?: boolean } = {}) {
     const b = bill(lines);
-    b.preview(NOW, WINDOW, 'farmer1', { period: '01/07–15/07', litres: '204.526', net: 'INR 8,412.00', deductions: 'INR 0.00', window_ends: '16/07 09:00' }); b.approve(); b.pullEvents();
+    // [PC-56 HOTFIX-11] NAMED UPDATE: the acts now name their signer — 'desk1' previews, a different person ('admin1') approves, and the payer ('op1') is not the approver (founder H11-1).
+    b.preview(NOW, WINDOW, 'farmer1', { period: '01/07–15/07', litres: '204.526', net: 'INR 8,412.00', deductions: 'INR 0.00', window_ends: '16/07 09:00' }, 'desk1'); b.approve(NOW, 'admin1'); b.pullEvents();
     const tx = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 1 }) };
     const uow = { run: jest.fn(async (_t: string, fn: any) => fn(tx)) };
     const wallet = { post: jest.fn(async () => ({ txnId: 'txn-gross', alreadyApplied: false })) };

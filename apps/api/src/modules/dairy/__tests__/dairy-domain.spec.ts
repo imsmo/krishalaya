@@ -79,13 +79,13 @@ describe('milk-bill.state machine + net computation', () => {
       totalLitresMilli: 70000n, grossMinor: 48000n, deductions: [line('feed_credit', 5000n, 'dairy_member_credit'), line('loan_emi', 3000n, 'loan')] });
     expect(b.toProps().deductionsMinor).toBe(8000n); expect(b.netMinor).toBe(40000n);
     b.pullEvents();
-    b.preview(NOW, WINDOW, 'farmer1', { period: '01/07–15/07', litres: '204.526', net: 'INR 8,412.00', deductions: 'INR 0.00', window_ends: '16/07 09:00' }); b.approve(); b.markPaid(AFTER_WINDOW);
+    b.preview(NOW, WINDOW, 'farmer1', { period: '01/07–15/07', litres: '204.526', net: 'INR 8,412.00', deductions: 'INR 0.00', window_ends: '16/07 09:00' }, 'desk1'); b.approve(NOW, 'admin1'); b.markPaid(AFTER_WINDOW, 'desk1');   // [PC-56 HOTFIX-11] NAMED UPDATE: two people — desk1 previews and pays, admin1 approves (Q2-A)
     expect(b.status).toBe('paid');
     expect(b.pullEvents().map((e) => e.type)).toEqual([DairyEventType.BillPreviewed, DairyEventType.BillApproved, DairyEventType.BillPaid]);
   });
   it('rejects deductions exceeding gross, and pay before approval', () => {
     expect(() => MilkBill.generate({ id: 'b', tenantId: 't', membershipId: 'm', periodStart: '2026-06-01', periodEnd: '2026-06-07', totalLitresMilli: 1n, grossMinor: 1000n, deductions: [line('feed_credit', 2000n, 'dairy_member_credit')] })).toThrow(BillNotPayableError);
     const b = MilkBill.generate({ id: 'b', tenantId: 't', membershipId: 'm', periodStart: '2026-06-01', periodEnd: '2026-06-07', totalLitresMilli: 1n, grossMinor: 1000n });
-    expect(() => b.markPaid(AFTER_WINDOW)).toThrow(BillNotPayableError);
+    expect(() => b.markPaid(AFTER_WINDOW, 'op1')).toThrow(BillNotPayableError);   // [PC-56 HOTFIX-11] NAMED UPDATE: markPaid names its payer
   });
 });

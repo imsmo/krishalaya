@@ -93,8 +93,27 @@ export function nextBillActions(status: string): Array<'preview' | 'approve' | '
   switch (status) {
     case 'draft': return ['preview'];
     case 'previewed': return ['approve'];
-    case 'disputed': return ['approve'];
+    // [PC-56 HOTFIX-11] Founder Q4-A: a disputed bill is ANSWERED first (rejected and shown again, or voided and rebuilt) — the
+    // API refuses its approval by name (DAIRY_BILL_DISPUTE_UNANSWERED), so the console no longer offers it.
+    case 'disputed': return [];
     case 'approved': return ['pay'];
     default: return [];
   }
+}
+
+/**
+ * [PC-56 HOTFIX-11] The refusals a dairy secretary must read as a SENTENCE, not a code (survey F-6, Law 7).
+ *
+ * A second person on every milk bill (founder H11-1 … H11-5, 2026-11-06): the API refuses the previewer's approval, the approver's
+ * payment, unknown signers and the approval of a disputed bill — plus the cycle's own maker-checker refusals. Each has a
+ * `dairy.error.<CODE>` key in en/hi/gu; any other code keeps today's "couldn't save: <code>" line.
+ */
+export const DAIRY_REFUSAL_CODES = [
+  'DAIRY_BILL_APPROVER_IS_PREVIEWER', 'DAIRY_BILL_PAYER_IS_APPROVER', 'DAIRY_BILL_PREVIEWER_UNKNOWN', 'DAIRY_BILL_APPROVER_UNKNOWN',
+  'DAIRY_BILL_SIGNER_UNKNOWN', 'DAIRY_BILL_DISPUTE_UNANSWERED', 'DAIRY_CYCLE_CHECKER_IS_PREVIEWER', 'DAIRY_CYCLE_NOT_PREVIEWED',
+] as const;
+export type DairyRefusalCode = (typeof DAIRY_REFUSAL_CODES)[number];
+/** The i18n key for a refusal code the console can explain, or null (the caller prints the raw code as before). */
+export function dairyRefusalKey(code: string | null | undefined): string | null {
+  return code && (DAIRY_REFUSAL_CODES as readonly string[]).includes(code) ? `dairy.error.${code}` : null;
 }

@@ -18,7 +18,7 @@ import { DataTable } from '../../../components/DataTable';
 import { getTranslator, getLang } from '../../../lib/i18n';
 import { env } from '../../../lib/env';
 import { formatMoneyMinor } from '@krishalaya/i18n';
-import { ANIMAL_TYPES, PRICING_MODELS, PAYMENT_CYCLES, MILK_SHIFTS, nextBillActions } from '../../../features/dairy/calc';
+import { ANIMAL_TYPES, PRICING_MODELS, PAYMENT_CYCLES, MILK_SHIFTS, nextBillActions, dairyRefusalKey } from '../../../features/dairy/calc';
 import {
   createMccAction, setMccActiveAction, enrolMemberAction, createRateCardAction,
   recordCollectionAction, generateBillAction, previewBillAction, approveBillAction, payBillAction,
@@ -53,6 +53,9 @@ export default async function DairyOperatorConsolePage({ searchParams }: { searc
 
   const okKey = searchParams.ok && OK.has(searchParams.ok) ? searchParams.ok : null;
   const errorKey = searchParams.error || null;
+  // [PC-56 HOTFIX-11] A second person on every milk bill: the API's refusals are printed as the sentence, in the member desk's own
+  // language, instead of the raw code (survey F-6). Any code without a sentence keeps today's line.
+  const refusalKey = dairyRefusalKey(errorKey);
   const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
 
   return (
@@ -60,7 +63,7 @@ export default async function DairyOperatorConsolePage({ searchParams }: { searc
       <h1>{t.t('dairy.title')}</h1>
       <p className="kv-muted">{t.t('dairy.subtitle')}</p>
       {okKey && <p className="kv-success" role="status">{t.t(`dairy.ok.${okKey}`)}</p>}
-      {errorKey && <p className="kv-error" role="alert">{t.t('dairy.error')}: {errorKey}</p>}
+      {errorKey && <p className="kv-error" role="alert">{refusalKey ? t.t(refusalKey) : `${t.t('dairy.error')}: ${errorKey}`}</p>}
 
       {/* ---- MCCs ---- */}
       <h2 className="kv-section-title">{t.t('dairy.mcc.title')}</h2>
@@ -186,6 +189,7 @@ export default async function DairyOperatorConsolePage({ searchParams }: { searc
       {/* ---- milk bills (settlement) ---- */}
       <h2 className="kv-section-title">{t.t('dairy.bill.title')}</h2>
       <p className="kv-muted kv-fine">{t.t('dairy.bill.help')}</p>
+      <p className="kv-muted kv-fine">{t.t('dairy.bill.secondPerson')}</p>
       {billsFailed ? <p className="kv-error" role="alert">{t.t('dairy.loadError')}</p> : (
         <DataTable
           rows={bills}

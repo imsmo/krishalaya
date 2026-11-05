@@ -67,11 +67,16 @@ run('dairy milk-procurement spine (integration, real Postgres + RLS + wallet pay
   const tenantB = randomUUID();
   const operator = randomUUID();
   const farmer = randomUUID();
+  const approverHF11 = randomUUID();
   let mccId = ''; let membershipId = ''; let billId = '';
   // [PC-56 TENANT-6c-3] `canCloseSettlement` is 0144's `settlement.close`, which W169 names on both the preview and
   // the approve. These fixtures drive one operator through the whole desk, so they carry both keys; the wave's own
   // spec is where the refusals live.
   const actor = { userId: operator, canManage: true, canCloseSettlement: true };
+  // [PC-56 HOTFIX-11] NAMED UPDATE: a SECOND PERSON on every milk bill (founder H11-1, 2026-11-06). The approver is not the previewer
+  // and the payer is not the approver, so this fixture's approvals are signed by a second holder of both keys; the previewer still pays
+  // (two people suffice — Q2-A). The rule's own proof is `src/__tests__/hotfix11-second-person.integration.spec.ts`.
+  const secondPerson = { userId: approverHF11, canManage: true, canCloseSettlement: true };
   const today = new Date().toISOString().slice(0, 10);
 
   const balUser = async (u: string) => BigInt((await admin.query(`SELECT COALESCE(cached_balance_minor,0) b FROM wallet_accounts WHERE owner_kind='user' AND account_code='main' AND owner_user_id=$1`, [u])).rows[0]?.b ?? '0');
@@ -83,7 +88,7 @@ run('dairy milk-procurement spine (integration, real Postgres + RLS + wallet pay
   beforeAll(async () => {
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
     await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B');
-    await makeUser(admin, operator); await makeUser(admin, farmer);
+    await makeUser(admin, operator); await makeUser(admin, farmer); await makeUser(admin, approverHF11);
 
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
     pools = new PgPoolProvider(config);
@@ -165,7 +170,7 @@ run('dairy milk-procurement spine (integration, real Postgres + RLS + wallet pay
     // would be asserting that the promise is not kept.
     const AFTER_WINDOW = new Date(Date.now() + 25 * 3_600_000);
     await bills.preview(tenantA, actor, billId);
-    await bills.approve(tenantA, actor, billId);
+    await bills.approve(tenantA, secondPerson, billId);   // [PC-56 HOTFIX-11] NAMED UPDATE: the second person approves
     const tBefore = await balTenant(tenantA); const fBefore = await balUser(farmer);
     const paid = await bills.pay(tenantA, actor, billId, `idem-${randomUUID()}`, null, AFTER_WINDOW);
     expect(paid.status).toBe('paid');

@@ -52,8 +52,9 @@ const bill = () => {
   b.pullEvents();
   return b;
 };
-const previewedBill = () => { const b = bill(); b.preview(PREVIEW_AT, WINDOW_END, 'farmer1', { period: '01/07–15/07', litres: '204.526', net: 'INR 8,412.00', deductions: 'INR 0.00', window_ends: '16/07 09:00' }); b.pullEvents(); return b; };
-const approvedBill = () => { const b = previewedBill(); b.approve(); b.pullEvents(); return b; };
+// [PC-56 HOTFIX-11] NAMED UPDATE: the acts now name their signer — 'desk1' previews, a different person ('admin1') approves, and the payer ('op1') is not the approver (founder H11-1).
+const previewedBill = () => { const b = bill(); b.preview(PREVIEW_AT, WINDOW_END, 'farmer1', { period: '01/07–15/07', litres: '204.526', net: 'INR 8,412.00', deductions: 'INR 0.00', window_ends: '16/07 09:00' }, 'desk1'); b.pullEvents(); return b; };
+const approvedBill = () => { const b = previewedBill(); b.approve(PREVIEW_AT, 'admin1'); b.pullEvents(); return b; };
 
 /* ----------------------------------------------------------------------------------------------------------- */
 describe('the window: SET by the preview, and ENFORCED at the payment', () => {
@@ -62,7 +63,7 @@ describe('the window: SET by the preview, and ENFORCED at the payment', () => {
     expect(b.disputeWindowEnds).toBeNull();
     expect(b.wasPreviewed).toBe(false);
 
-    b.preview(PREVIEW_AT, WINDOW_END, 'farmer1', { period: '01/07–15/07', litres: '204.526', net: 'INR 8,412.00', deductions: 'INR 0.00', window_ends: '16/07 09:00' });
+    b.preview(PREVIEW_AT, WINDOW_END, 'farmer1', { period: '01/07–15/07', litres: '204.526', net: 'INR 8,412.00', deductions: 'INR 0.00', window_ends: '16/07 09:00' }, 'desk1');   // [PC-56 HOTFIX-11] NAMED UPDATE: preview names its signer
 
     expect(b.status).toBe('previewed');
     expect(b.disputeWindowEnds).toEqual(WINDOW_END);
@@ -98,26 +99,26 @@ describe('the window: SET by the preview, and ENFORCED at the payment', () => {
 
   it('REFUSES to pay while the member still has time — the promise, enforced', () => {
     const b = approvedBill();
-    expect(() => b.markPaid(INSIDE)).toThrow(DisputeWindowOpenError);
+    expect(() => b.markPaid(INSIDE, 'desk1')).toThrow(DisputeWindowOpenError);
     expect(b.status).toBe('approved');
     expect(b.pullEvents()).toHaveLength(0);          // and publishes no BillPaid
   });
 
   it('pays once the window has shut', () => {
     const b = approvedBill();
-    b.markPaid(AT_THE_INSTANT);
+    b.markPaid(AT_THE_INSTANT, 'desk1');   // [PC-56 HOTFIX-11] NAMED UPDATE: the payer is named, and is not the approver
     expect(b.status).toBe('paid');
     expect(b.pullEvents()[0].type).toBe('dairy.bill_paid');
   });
 
   it('still refuses a bill that was never approved, window or no window', () => {
     const b = previewedBill();
-    expect(() => b.markPaid(AFTER)).toThrow(BillNotPayableError);
+    expect(() => b.markPaid(AFTER, 'desk1')).toThrow(BillNotPayableError);
   });
 
   it('names the window in the refusal, so an operator knows WHEN it can be paid', () => {
     const b = approvedBill();
-    expect(() => b.markPaid(INSIDE)).toThrow(expect.objectContaining({
+    expect(() => b.markPaid(INSIDE, 'desk1')).toThrow(expect.objectContaining({
       code: 'DISPUTE_WINDOW_OPEN', details: { billId: 'b1', windowEndsAt: WINDOW_END.toISOString() },
     }));
   });
@@ -147,8 +148,9 @@ describe('the objection', () => {
     b.dispute(INSIDE, 'my litres are short by about four'); b.pullEvents();
     const second = new Date('2026-07-18T04:00:00.000Z');
     b.resolveToPreviewed(AFTER, second, 'farmer1', 'rejected',
-      { period: '01/07–15/07', outcome: { en: 'your objection was not accepted', gu: 'તમારો વાંધો સ્વીકાર્યો નથી' }, note: 'n' });
+      { period: '01/07–15/07', outcome: { en: 'your objection was not accepted', gu: 'તમારો વાંધો સ્વીકાર્યો નથી' }, note: 'n' }, 'op2');   // [PC-56 HOTFIX-11] NAMED UPDATE: the answerer signs
     expect(b.status).toBe('previewed');
+    expect(b.previewedBy).toBe('op2');   // [PC-56 HOTFIX-11] Q5-A: whoever answered becomes the previewer
     expect(b.disputeWindowEnds).toEqual(second);
     // Not the old window: a resolution that answered the objection and simultaneously removed the member's ability to
     // object to the ANSWER would be a worse state than having no dispute path at all.
@@ -259,7 +261,7 @@ describe('the VOID — the only correction this platform can make to a bill', ()
 
   it('refuses a thin reason and refuses a PAID bill', () => {
     expect(() => previewedBill().void(AFTER, 'op1', 'wrong')).toThrow(BillVoidReasonRequiredError);
-    const paid = approvedBill(); paid.markPaid(AFTER);
+    const paid = approvedBill(); paid.markPaid(AFTER, 'desk1');   // [PC-56 HOTFIX-11] NAMED UPDATE: markPaid names its payer (not the approver)
     expect(() => paid.void(AFTER, 'op1', 'the member says it was wrong')).toThrow(BillNotPayableError);
   });
 });
@@ -507,6 +509,8 @@ describe('MilkBillDisputeService — who is allowed to object', () => {
     expect(h.billService.voidBill).not.toHaveBeenCalled();
   });
 
+  // [PC-56 HOTFIX-11] NAMED UPDATE (survey C-3, founder Q4-A): the title was FALSE before this hotfix — `disputed → approved`
+  // was legal and the bill paid once the window shut. It is now true, and this test pins WHY: approve is refused by name.
   it('an UPHELD answer WITHOUT a void leaves the bill disputed — and therefore unpayable', async () => {
     // The member was right and the correction is not expressible on this bill. A bill that cannot be computed
     // correctly must not become payable, so it stays where an operator can see it.
@@ -521,7 +525,9 @@ describe('MilkBillDisputeService — who is allowed to object', () => {
 
     expect(disputed.status).toBe('disputed');
     expect(h.billService.voidLoaded).not.toHaveBeenCalled();
-    expect(() => disputed.markPaid(AFTER)).toThrow(BillNotPayableError);
+    expect(() => disputed.markPaid(AFTER, 'op2')).toThrow(BillNotPayableError);
+    expect(() => disputed.approve(AFTER, 'admin9')).toThrow(expect.objectContaining({ code: 'DAIRY_BILL_DISPUTE_UNANSWERED', httpStatus: 409 }));
+    expect(disputed.status).toBe('disputed');
   });
 
   it('resolving needs dairy.manage; raising needs none', async () => {

@@ -15,7 +15,8 @@ import { BillNotFoundError } from '../domain/dairy.errors';
 // `MilkBillDeductionRepository`; a bill read without them carries `null` and refuses to answer for them, because `[]`
 // and "not loaded" are different facts and the difference is a member's money.
 const COLS = `id, tenant_id, membership_id, cycle_id, period_start, period_end, total_litres, gross_minor, deductions_minor, net_minor, status,
-              dispute_window_ends, previewed_at, voided_at, voided_by, void_reason, payout_id, created_at`;
+              dispute_window_ends, previewed_at, voided_at, voided_by, void_reason, payout_id, created_at,
+              previewed_by, approved_at, approved_by, paid_at, paid_by`;   // [PC-56 HOTFIX-11] the three signers (0233)
 
 /** Litres are stored as `numeric(12,3)` (0157 widened them to match `milk_collections.weight_kg`) and read as a
  *  scaled integer. Never `Number(x) * 1000` — see `core/database/pg-numeric.ts`. */
@@ -31,6 +32,8 @@ function toDomain(r: any, deductions: BillDeduction[] | null = null): MilkBill {
     totalLitresMilli: scaledFromNumeric(r.total_litres, LITRE_SCALE), grossMinor: BigInt(r.gross_minor), deductions, deductionsMinor: BigInt(r.deductions_minor),
     netMinor: BigInt(r.net_minor), status: r.status as BillStatus, disputeWindowEnds: r.dispute_window_ends,
     previewedAt: r.previewed_at ?? null, voidedAt: r.voided_at ?? null, voidedBy: r.voided_by ?? null, voidReason: r.void_reason ?? null,
+    previewedBy: r.previewed_by ?? null, approvedAt: r.approved_at ?? null, approvedBy: r.approved_by ?? null,
+    paidAt: r.paid_at ?? null, paidBy: r.paid_by ?? null,
     payoutId: r.payout_id, createdAt: r.created_at });
 }
 
@@ -79,9 +82,13 @@ export class MilkBillRepository {
     const p = b.toProps();
     const res = await tx.query(
       `UPDATE milk_bills
-          SET status=$3, payout_id=$4, dispute_window_ends=$5, previewed_at=$6, updated_at=now()
+          SET status=$3, payout_id=$4, dispute_window_ends=$5, previewed_at=$6,
+              previewed_by=$7, approved_at=$8, approved_by=$9, paid_at=$10, paid_by=$11, updated_at=now()
         WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
-      [p.id, p.tenantId, p.status, p.payoutId, p.disputeWindowEnds, p.previewedAt]);
+      // [PC-56 HOTFIX-11] The signers are written by the ACTS (preview / resolveToPreviewed / approve / markPaid) and
+      // persisted here — never by a caller. 0233's CHECKs refuse a row on which approver = previewer or payer = approver.
+      [p.id, p.tenantId, p.status, p.payoutId, p.disputeWindowEnds, p.previewedAt,
+       p.previewedBy, p.approvedAt, p.approvedBy, p.paidAt, p.paidBy]);
     if (res.rowCount === 0) throw new BillNotFoundError(p.id);
   }
 

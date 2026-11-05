@@ -356,7 +356,9 @@ run('PC-56 TENANT-6c-3 · the second signature (integration, real Postgres)', ()
 
     it('and the PAYMENT still refuses, and moves not a rupee', async () => {
       const before = await balUser(farmerA);
-      await expect(bills.pay(tenantA, checker, billA, `idem-${randomUUID()}`, null))
+      // [PC-56 HOTFIX-11] NAMED UPDATE: the payer is now the DESK (the cycle's previewer) — the checker approved these bills and may not
+      // pay them (founder H11-2, Q1-A). The window refusal this test pins is unchanged.
+      await expect(bills.pay(tenantA, maker, billA, `idem-${randomUUID()}`, null))
         .rejects.toMatchObject({ code: 'DISPUTE_WINDOW_OPEN' });
       expect(await balUser(farmerA)).toBe(before);
     });
@@ -364,7 +366,13 @@ run('PC-56 TENANT-6c-3 · the second signature (integration, real Postgres)', ()
     it('once the window shuts, the money moves — approval was the cooperative\'s act, not the member\'s', async () => {
       const ends = (await admin.query(`SELECT dispute_window_ends FROM milk_bills WHERE id=$1`, [billA])).rows[0].dispute_window_ends;
       const before = await balUser(farmerA);
-      const paid = await bills.pay(tenantA, checker, billA, `idem-${randomUUID()}`, null, new Date(new Date(ends).getTime() + 1000));
+      // [PC-56 HOTFIX-11] NAMED UPDATE — this line used to pin THE CHECKER PAYING what he approved (survey F-2). It now pins the refusal:
+      // the cycle's checker → 409 DAIRY_BILL_PAYER_IS_APPROVER and not a rupee moves; the desk, who previewed, pays (two people suffice).
+      await expect(bills.pay(tenantA, checker, billA, `idem-${randomUUID()}`, null, new Date(new Date(ends).getTime() + 1000)))
+        .rejects.toMatchObject({ code: 'DAIRY_BILL_PAYER_IS_APPROVER' });
+      expect(await balUser(farmerA)).toBe(before);
+      expect((await admin.query(`SELECT approved_by, previewed_by FROM milk_bills WHERE id=$1`, [billA])).rows[0]).toEqual({ approved_by: admin2, previewed_by: desk });
+      const paid = await bills.pay(tenantA, maker, billA, `idem-${randomUUID()}`, null, new Date(new Date(ends).getTime() + 1000));
       expect(paid.status).toBe('paid');
       expect(await balUser(farmerA) - before).toBe(BigInt(paid.netMinor));
     });

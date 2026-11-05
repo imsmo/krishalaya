@@ -91,6 +91,11 @@ run('PC-56 TENANT-6c-4 · the deduction\'s destination (integration, real Postgr
   const farmer = randomUUID();
   const farmerB = randomUUID();
   const actor = { userId: desk, canManage: true, canCloseSettlement: true };
+  const approverHF11 = randomUUID();
+  // [PC-56 HOTFIX-11] NAMED UPDATE: a SECOND PERSON on every milk bill (founder H11-1, 2026-11-06). The approver is not the previewer
+  // and the payer is not the approver, so this fixture's approvals are signed by a second holder of both keys; the previewer still pays
+  // (two people suffice — Q2-A). The rule's own proof is `src/__tests__/hotfix11-second-person.integration.spec.ts`.
+  const secondPerson = { userId: approverHF11, canManage: true, canCloseSettlement: true };
 
   let mccId = ''; let mem = ''; let memB = '';
   let loanId = ''; let creditId = '';
@@ -118,7 +123,7 @@ run('PC-56 TENANT-6c-4 · the deduction\'s destination (integration, real Postgr
   beforeAll(async () => {
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
     await makeTenant(admin, tenantA, 'A');
-    for (const u of [desk, farmer, farmerB]) await makeUser(admin, u);
+    for (const u of [desk, farmer, farmerB, approverHF11]) await makeUser(admin, u);
 
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
     pools = new PgPoolProvider(config);
@@ -298,7 +303,7 @@ run('PC-56 TENANT-6c-4 · the deduction\'s destination (integration, real Postgr
       const farmerBefore = await balUser(farmer);
       const tenantBefore = await balTenant(tenantA);
       await bills.preview(tenantA, actor, billId, new Date('2026-05-20T04:00:00.000Z'));
-      await bills.approve(tenantA, actor, billId);
+      await bills.approve(tenantA, secondPerson, billId);
       const paid: any = await bills.pay(tenantA, actor, billId, `idem-${randomUUID()}`, null, new Date('2026-05-22T04:00:00.000Z'));
       expect(paid.status).toBe('paid');
 
@@ -424,7 +429,7 @@ run('PC-56 TENANT-6c-4 · the deduction\'s destination (integration, real Postgr
       // not own, so this fails where the loan's invariants live. 404-shaped, so a loan id is not probeable.
       const b: any = await billFor(memB, [{ type: 'loan_emi', amountMinor: '1000', sourceId: loanId }]);
       await bills.preview(tenantA, actor, b.id, new Date('2026-05-20T04:00:00.000Z'));
-      await bills.approve(tenantA, actor, b.id);
+      await bills.approve(tenantA, secondPerson, b.id);
       await expect(bills.pay(tenantA, actor, b.id, `idem-${randomUUID()}`, null, new Date('2026-05-22T04:00:00.000Z')))
         .rejects.toMatchObject({ code: 'LOAN_NOT_FOUND' });
       // AND NOTHING MOVED — not even the gross, which was posted before the line failed. One transaction.
@@ -438,7 +443,7 @@ run('PC-56 TENANT-6c-4 · the deduction\'s destination (integration, real Postgr
       } as never, null);
       const b: any = await billFor(mem, [{ type: 'feed_credit', amountMinor: '5000', sourceId: c.id }]);
       await bills.preview(tenantA, actor, b.id, new Date('2026-05-20T04:00:00.000Z'));
-      await bills.approve(tenantA, actor, b.id);
+      await bills.approve(tenantA, secondPerson, b.id);
       await admin.query(`UPDATE feature_flags SET is_enabled = false WHERE key='dairy_deduction_recovery'`);
       await flagCache.del('flag:dairy_deduction_recovery'); await flagCache.del('flags:all');
       try {
@@ -491,7 +496,7 @@ run('PC-56 TENANT-6c-4 · the deduction\'s destination (integration, real Postgr
     });
 
     it('REFUSES to pay it, and moves not a rupee', async () => {
-      await bills.approve(tenantA, actor, bigBill);
+      await bills.approve(tenantA, secondPerson, bigBill);
       const before = await balUser(farmer);
       await expect(bills.pay(tenantA, actor, bigBill, `idem-${randomUUID()}`, null, new Date('2026-05-22T04:00:00.000Z')))
         .rejects.toMatchObject({ code: 'DEDUCTION_CONSENT_REQUIRED', details: { stale: false, thresholdPct: 25 } });
@@ -551,7 +556,7 @@ run('PC-56 TENANT-6c-4 · the deduction\'s destination (integration, real Postgr
       } as never, null);
       const b: any = await billFor(mem, [{ type: 'feed_credit', amountMinor: '200000', sourceId: c.id }]);
       await bills.preview(tenantA, actor, b.id, new Date('2026-05-20T04:00:00.000Z'));
-      await bills.approve(tenantA, actor, b.id);
+      await bills.approve(tenantA, secondPerson, b.id);
       await consents.record(tenantA, farmer, b.id, { granted: true, channel: 'app' } as never, `idem-${randomUUID()}`, null);
       // Now the bill's own figures move underneath the consent — the hand-run equivalent of TENANT-6c-2's void,
       // rebuild and re-preview, which is exactly how a member ends up shown three different sets of numbers.

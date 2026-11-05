@@ -95,6 +95,11 @@ run('PC-56 TENANT-6c-1 · the dairy payout cycle (integration, real Postgres)', 
   // the approve. These fixtures drive one operator through the whole desk, so they carry both keys; the wave's own
   // spec is where the refusals live.
   const actor = { userId: operator, canManage: true, canCloseSettlement: true };
+  const approverHF11 = randomUUID();
+  // [PC-56 HOTFIX-11] NAMED UPDATE: a SECOND PERSON on every milk bill (founder H11-1, 2026-11-06). The approver is not the previewer
+  // and the payer is not the approver, so this fixture's approvals are signed by a second holder of both keys; the previewer still pays
+  // (two people suffice — Q2-A). The rule's own proof is `src/__tests__/hotfix11-second-person.integration.spec.ts`.
+  const secondPerson = { userId: approverHF11, canManage: true, canCloseSettlement: true };
   let mccId = ''; let memA = ''; let memB = ''; let memMonthly = '';
   let today = '';
 
@@ -109,7 +114,7 @@ run('PC-56 TENANT-6c-1 · the dairy payout cycle (integration, real Postgres)', 
     // The fixture stamps every tenant 'IN'. The second cooperative is moved to a DIFFERENT seeded country, because a
     // one-timezone test cannot tell a per-tenant resolution from a platform-wide constant.
     await admin.query(`UPDATE tenants SET country_code='AE' WHERE id=$1`, [tenantAE]);
-    for (const u of [operator, farmerA, farmerB, farmerMonthly]) await makeUser(admin, u);
+    for (const u of [operator, farmerA, farmerB, farmerMonthly, approverHF11]) await makeUser(admin, u);
 
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
     pools = new PgPoolProvider(config);
@@ -432,7 +437,7 @@ run('PC-56 TENANT-6c-1 · the dairy payout cycle (integration, real Postgres)', 
     it('PAYS a cycle bill with no deductions: zero-sum tenant → farmer', async () => {
       const bill = (await admin.query(`SELECT id, net_minor FROM milk_bills WHERE tenant_id=$1 AND membership_id=$2`, [tenantIST, memA])).rows[0];
       await bills.preview(tenantIST, actor, bill.id);
-      await bills.approve(tenantIST, actor, bill.id);
+      await bills.approve(tenantIST, secondPerson, bill.id);   // [PC-56 HOTFIX-11] NAMED UPDATE: the second person approves
       const before = await balUser(farmerA);
       // [PC-56 TENANT-6c-2] previewing now starts the member's 24h window and `pay()` waits for it.
       const paid = await bills.pay(tenantIST, actor, bill.id, `idem-${randomUUID()}`, null, new Date(Date.now() + 25 * 3_600_000));

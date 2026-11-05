@@ -250,7 +250,7 @@ export class MilkBillService {
    * owed the same window as everybody else. Both paths go through the same aggregate method, so the window they set
    * and the event they publish cannot diverge.
    */
-  async preview(tenantId: string, actor: DairyActor, id: string, now = new Date()) {
+  async preview(tenantId: string, actor: DairyActor, id: string, now = new Date(), ip: string | null = null) {
     if (!actor.canManage) throw new DairyForbiddenError('requires dairy.manage');
     return this.uow.run(tenantId, async (tx) => {
       // [PC-56 TENANT-6c-4] The LINES are loaded here too, and the reason is the notification below: the moment a
@@ -268,8 +268,16 @@ export class MilkBillService {
           periodStart: bp.periodStart, periodEnd: bp.periodEnd, totalLitresMilli: bp.totalLitresMilli,
           netMinor: bill.netMinor, deductionsMinor: bill.deductionsMinor,
           windowEndsAt,
-        }));
+        }),
+        // [PC-56 HOTFIX-11] WHO showed it — the person a different person must now approve against.
+        actor.userId);
       await this.bills.update(tx, bill);
+      // [PC-56 HOTFIX-11] Survey F-5 / E-6: preview wrote no audit row. It now does, with the actor; no amount is added
+      // beyond what the pay audit already carries.
+      await this.audit.write(tx, {
+        tenantId, actorUserId: actor.userId, action: 'dairy.bill.previewed', entityType: 'milk_bill', entityId: bill.id,
+        newValue: { status: 'previewed', previewedBy: bill.previewedBy, windowEndsAt: windowEndsAt.toISOString() }, ip,
+      });
       await this.flush(tx, tenantId, bill.id, bill.pullEvents());
 
       // [PC-56 TENANT-6c-4] W169: *"Deductions above 25% of gross need the member's fresh consent."* A gate the
@@ -310,10 +318,28 @@ export class MilkBillService {
    * Approve ONE bill. W169: *"Preview/approve needs dairy-desk + `settlement.close` + checker."* The CHECKER rule lives
    * on the CYCLE (a per-bill checker would mean 312 signatures, which is not what the canon's button is), so this route
    * carries the two keys and the cycle-level act carries the second human.
+   *
+   * [PC-56 HOTFIX-11] …and that left the BILL with one human: the per-bill route let the previewer approve, and the
+   * cycle's checker could then pay what he approved. Founder H11-1/H11-2 (2026-11-06): on EVERY bill the approver is not
+   * the previewer — enforced on the aggregate (`MilkBill.approve`) and by 0233's CHECK. The cycle approve pass calls this
+   * same method with the presser, so it inherits the rule (a re-press by the cycle's previewer now fails per bill —
+   * survey C-4 closed). A refusal throws before any write: no update, no audit, no outbox.
    */
-  async approve(tenantId: string, actor: DairyActor, id: string) {
+  async approve(tenantId: string, actor: DairyActor, id: string, ip: string | null = null, now = new Date()) {
     if (!actor.canCloseSettlement) throw new DairyForbiddenError('requires settlement.close — approving a bill takes the second key, not just the dairy desk');
-    return this.transition(tenantId, actor, id, (b) => b.approve());
+    if (!actor.canManage) throw new DairyForbiddenError('requires dairy.manage');
+    return this.uow.run(tenantId, async (tx) => {
+      const bill = await this.bills.getForUpdate(tx, tenantId, id);
+      if (!bill) throw new BillNotFoundError(id);
+      bill.approve(now, actor.userId);
+      await this.bills.update(tx, bill);
+      await this.audit.write(tx, {
+        tenantId, actorUserId: actor.userId, action: 'dairy.bill.approved', entityType: 'milk_bill', entityId: bill.id,
+        newValue: { status: 'approved', previewedBy: bill.previewedBy, approvedBy: bill.approvedBy }, ip,
+      });
+      await this.flush(tx, tenantId, bill.id, bill.pullEvents());
+      return bill.toJSON();
+    }, { userId: actor.userId });
   }
 
   /**
@@ -375,6 +401,11 @@ export class MilkBillService {
           const bill = await this.bills.getForUpdate(tx, tenantId, id, await this.deductionLines.linesForBill(tx, tenantId, id));
           if (!bill) throw new BillNotFoundError(id);
           if (bill.status !== 'approved') throw new BillNotPayableError(bill.status);
+          // [PC-56 HOTFIX-11] THE SECOND PERSON AT THE MONEY (founder H11-1, Q2-A): the payer is not the approver. HERE,
+          // right after the status check and before the flag, the consent, `wallet.post` and the deductions (survey
+          // E-4), so a refused payer moves nothing; the idempotency record stores the refusal and a same-key replay
+          // answers the same 409. `markPaid` asserts it again, and 0233's CHECK holds it in the row.
+          bill.assertPayer(actor.userId);
           // [PC-56 TENANT-6c-1 → 6c-4] A DEDUCTION WITH NO DESTINATION WAS NOT PAID — IT WAS KEPT. NOW IT HAS ONE.
           //
           // 0157 posted exactly one movement — the NET, cooperative → farmer — and therefore REFUSED any bill carrying
@@ -415,7 +446,7 @@ export class MilkBillService {
           // [PC-56 TENANT-6c-2] The member's window is checked HERE, at the money movement, because that is what W169
           // promises: "member sees every pour + every deduction, 24h dispute window" and then "paid Fri". The refusal
           // lives on the aggregate (`markPaid`) so no route can forget it.
-          bill.markPaid(now);
+          bill.markPaid(now, actor.userId);
           await this.bills.update(tx, bill);
           // ITEMISED IN THE AUDIT TRAIL TOO, because "paid ₹8,914" is not an answer to "what happened to my ₹500".
           await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'dairy.bill.paid', entityType: 'milk_bill', entityId: bill.id,
@@ -451,17 +482,8 @@ export class MilkBillService {
     return { items, nextCursor };
   }
 
-  private async transition(tenantId: string, actor: DairyActor, id: string, mutate: (b: MilkBill) => void) {
-    if (!actor.canManage) throw new DairyForbiddenError('requires dairy.manage');
-    return this.uow.run(tenantId, async (tx) => {
-      const bill = await this.bills.getForUpdate(tx, tenantId, id);
-      if (!bill) throw new BillNotFoundError(id);
-      mutate(bill);
-      await this.bills.update(tx, bill);
-      await this.flush(tx, tenantId, bill.id, bill.pullEvents());
-      return bill.toJSON();
-    }, { userId: actor.userId });
-  }
+  // [PC-56 HOTFIX-11] The generic `transition` helper is gone: `approve` (its only caller) now stamps the approver and
+  // writes its audit row in its own body.
   private async flush(tx: TxContext, tenantId: string, id: string, events: DomainEvent[]) {
     for (const e of events) await this.outbox.write(tx, { tenantId, aggregateType: 'milk_bill', aggregateId: id, eventType: e.type, payload: { v: 1, ...e.payload } });
   }

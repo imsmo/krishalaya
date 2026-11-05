@@ -12,7 +12,10 @@ import { requireSession } from '../../lib/session';
 import { SdkError } from '@krishalaya/sdk-js';
 import { validateMcc, validateMembership, validateRateCard, validateCollection } from '../../features/dairy/calc';
 
-const PATH = '/dairy';
+// [PC-56 HOTFIX-11] Found on the way: these actions serve the legacy `/dairy/console` (TENANT-6a moved the page and left this PATH at
+// `/dairy`), so every `?ok=` and `?error=` landed on W167's page, which reads neither — a refused approval or payment was
+// SILENT. They now return to the console that pressed the button, where the refusal is printed as a sentence.
+const PATH = '/dairy/console';
 const opt = (v: FormDataEntryValue | null) => { const s = String(v ?? '').trim(); return s.length ? s : undefined; };
 
 function fail(e: unknown): never {

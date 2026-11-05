@@ -335,3 +335,40 @@ export class PourNotAtThisCentreError extends DomainError {
       409, { membershipId, enteredMccId, routeMccId });
   }
 }
+
+/**
+ * [PC-56 HOTFIX-11] A SECOND PERSON ON EVERY MILK BILL (founder H11-1 … H11-5, 2026-11-06; migration 0233).
+ *
+ * The approver must not be the person who showed the bill to the member, and the payer must not be the approver. Two
+ * people suffice (A previews, B approves, A pays — Q2-A). A missing or `'system'` signer is refused, never counted as a
+ * second person (E-2/E-3). No one-person exception and no amount threshold (Q3-A): the sentence tells the cooperative
+ * how to get the second person. Every refusal is a 409 and writes nothing — the database CHECKs in 0233 make the same
+ * rule true of the row whatever wrote it.
+ */
+export type BillSignatureRefusal =
+  | 'DAIRY_BILL_APPROVER_IS_PREVIEWER'
+  | 'DAIRY_BILL_PAYER_IS_APPROVER'
+  | 'DAIRY_BILL_PREVIEWER_UNKNOWN'
+  | 'DAIRY_BILL_APPROVER_UNKNOWN'
+  | 'DAIRY_BILL_SIGNER_UNKNOWN';
+export const BILL_SIGNATURE_SENTENCES: Readonly<Record<BillSignatureRefusal, string>> = Object.freeze({
+  DAIRY_BILL_APPROVER_IS_PREVIEWER: 'The person who showed this bill to the member cannot also approve it. A second person on your dairy desk approves it — your administrator can give a colleague the dairy key.',
+  DAIRY_BILL_PAYER_IS_APPROVER: 'The person who approved this bill cannot also pay it. Another person on your dairy desk pays it.',
+  DAIRY_BILL_PREVIEWER_UNKNOWN: 'Nobody is recorded as having shown this bill to the member, so a second person cannot be checked. Show it to the member again before approving it.',
+  DAIRY_BILL_APPROVER_UNKNOWN: 'Nobody is recorded as having approved this bill, so a second person cannot be checked. It cannot be paid until a person approves it.',
+  DAIRY_BILL_SIGNER_UNKNOWN: 'A milk bill is approved and paid by a person on your dairy desk, never by the system.',
+});
+export class BillSecondPersonRequiredError extends DomainError {
+  constructor(id: string, reason: BillSignatureRefusal, signer: { previewedBy?: string | null; approvedBy?: string | null } = {}) {
+    super(reason, BILL_SIGNATURE_SENTENCES[reason], 409, { id, reason, ...signer });
+  }
+}
+
+/** [PC-56 HOTFIX-11] Founder Q4-A: a bill the member has objected to is answered before it is approved. */
+export class BillDisputeUnansweredError extends DomainError {
+  constructor(id: string) {
+    super('DAIRY_BILL_DISPUTE_UNANSWERED',
+      'This bill has an open objection from the member. Answer it first — reject it and show her the bill again, or void and rebuild it.',
+      409, { id });
+  }
+}

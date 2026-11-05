@@ -87,6 +87,10 @@ run('PC-56 TENANT-6c-2 · the preview, the window and the dispute (integration, 
   // the approve. These fixtures drive one operator through the whole desk, so they carry both keys; the wave's own
   // spec is where the refusals live.
   const actor = { userId: operator, canManage: true, canCloseSettlement: true };
+  // [PC-56 HOTFIX-11] NAMED UPDATE: a SECOND PERSON on every milk bill (founder H11-1, 2026-11-06). The approver is not the previewer
+  // and the payer is not the approver, so this fixture's approvals are signed by a second holder of both keys; the previewer still pays
+  // (two people suffice — Q2-A). The rule's own proof is `src/__tests__/hotfix11-second-person.integration.spec.ts`.
+  const secondPerson = { userId: checker, canManage: true, canCloseSettlement: true };
   let mccId = ''; let memA = ''; let cycleId = ''; let billId = '';
   let win = { from: '', to: '', cycle: 'fortnightly' as const, basis: 'derived_from_membership_preference' as const };
 
@@ -318,7 +322,7 @@ run('PC-56 TENANT-6c-2 · the preview, the window and the dispute (integration, 
   /* ======================================================================================================= */
   describe('the window, ENFORCED', () => {
     it('REFUSES to pay while the member still has time, and moves not a rupee', async () => {
-      await bills.approve(tenantA, actor, billId);
+      await bills.approve(tenantA, secondPerson, billId);   // [PC-56 HOTFIX-11] NAMED UPDATE: the second person approves
       const before = await balUser(farmerA);
       await expect(bills.pay(tenantA, actor, billId, `idem-${randomUUID()}`, null))
         .rejects.toMatchObject({ code: 'DISPUTE_WINDOW_OPEN' });
@@ -394,6 +398,9 @@ run('PC-56 TENANT-6c-2 · the preview, the window and the dispute (integration, 
     it('a disputed bill CANNOT be paid, window or no window', async () => {
       await expect(bills.pay(tenantA, actor, secondBill, `idem-${randomUUID()}`, null, new Date(windowEnds.getTime() + 10_000)))
         .rejects.toMatchObject({ code: 'BILL_NOT_PAYABLE' });
+      // [PC-56 HOTFIX-11] NAMED UPDATE (founder Q4-A): …and it cannot be APPROVED either, by anyone — the objection is answered first.
+      await expect(bills.approve(tenantA, secondPerson, secondBill)).rejects.toMatchObject({ code: 'DAIRY_BILL_DISPUTE_UNANSWERED' });
+      expect((await admin.query(`SELECT status, approved_by FROM milk_bills WHERE id=$1`, [secondBill])).rows[0]).toEqual({ status: 'disputed', approved_by: null });
     });
 
     it('the app role cannot rewrite what the member SAID', async () => {

@@ -42,9 +42,10 @@ function harness(bill: MilkBill, opts: { recoveryEnabled?: boolean; consent?: un
 const line = (type: string, amountMinor: bigint, sourceType: string) =>
   ({ id: `ded-${type}`, type, amountMinor, sourceType, sourceId: `src-${type}`, status: 'pending' as const });
 
+// [PC-56 HOTFIX-11] NAMED UPDATE: the acts now name their signer — 'desk1' previews, a different person ('admin1') approves, and the payer ('op1') is not the approver (founder H11-1).
 const approvedBill = (deductions: ReturnType<typeof line>[] = []) => {
   const b = MilkBill.generate({ id: 'b1', tenantId: 't1', membershipId: 'mem1', periodStart: '2026-06-01', periodEnd: '2026-06-07', totalLitresMilli: 70000n, grossMinor: 40000n, deductions });
-  b.preview(NOW, WINDOW, 'farmer1', { period: '01/07–15/07', litres: '204.526', net: 'INR 8,412.00', deductions: 'INR 0.00', window_ends: '16/07 09:00' }); b.approve(); b.pullEvents(); return b;
+  b.preview(NOW, WINDOW, 'farmer1', { period: '01/07–15/07', litres: '204.526', net: 'INR 8,412.00', deductions: 'INR 0.00', window_ends: '16/07 09:00' }, 'desk1'); b.approve(NOW, 'admin1'); b.pullEvents(); return b;
 };
 const actor = { userId: 'op1', canManage: true };
 /** The window opens when the bill is previewed and the payment waits for it to shut (W169, TENANT-6c-2). */

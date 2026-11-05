@@ -6,9 +6,11 @@
 // What it proves (brief §C; founder 1a-1 Q2-A, 1a-2 Q3-A, 2026-11-05):
 //   (1) `GET /v1/dairy/milk-bills?box=all` returns the bill's server amounts — gross / deductions / net as minor-unit strings, the status
 //       verbatim — exactly what /payout prints; the bill's own read (`GET …/:id`) answers the same figures; no cycle total is in the list.
-//       **TODAY'S TRUTH PINNED — THE OPEN DOOR (founder question, not changed by this wave):** ONE person holding `dairy.manage` +
-//       `settlement.close` (tenant_admin holds both in the seed) previews, approves AND pays one bill over the per-bill routes, alone:
-//       one `milk_payment` txn keyed `milkbill:<id>`; a second pay with a new Idempotency-Key is refused (409) and moves nothing more.
+//       **[PC-56 HOTFIX-11] NAMED UPDATE — THE DOOR IS CLOSED (founder H11-1, 2026-11-06).** This case used to pin the open door: ONE
+//       person holding `dairy.manage` + `settlement.close` previewed, approved AND paid one bill alone. It now proves the opposite: the
+//       previewer's approve → 409 DAIRY_BILL_APPROVER_IS_PREVIEWER; a second person approves; the approver's pay → 409
+//       DAIRY_BILL_PAYER_IS_APPROVER with no ledger txn; the previewer pays → 201, exactly one `milk_payment` txn keyed `milkbill:<id>`;
+//       a second pay with a new Idempotency-Key is refused (409) and moves nothing more.
 //   (2) Q3-A: `POST /v1/warehousing/storage-bookings/:id/release` by the warehouse's own operator → 409 STORAGE_RELEASE_AWAITS_DEPOSITOR with
 //       the founder's sentence; the booking stays `stored`; no ledger txn, no `storage_fee` row, no audit row, no idempotency record — searched
 //       by the booking id; by the depositor (no warehouse.manage) → the existing 403; a replay with the SAME key → the same refusal; no key → 400.
@@ -104,6 +106,8 @@ run('PC-56 OPS-1a · the money desks (integration, real AppModule over HTTP)', (
     depositorBalance = async () => BigInt((await admin.query(`SELECT COALESCE(cached_balance_minor,0) b FROM wallet_accounts WHERE owner_kind='user' AND account_code='main' AND owner_user_id=$1`, [depositor])).rows[0]?.b ?? '0');
 
     T.desk = mintToken(app, { userId: desk, tenantId: A, roles: ['tenant_admin'], perms: ['dairy.manage', 'settlement.close'] });
+    // [PC-56 HOTFIX-11] the SECOND person on the dairy desk (otherManager is a tenant_admin too).
+    T.check = mintToken(app, { userId: otherManager, tenantId: A, roles: ['tenant_admin'], perms: ['dairy.manage', 'settlement.close'] });
     T.op = mintToken(app, { userId: operator, tenantId: A, roles: ['tenant_admin'], perms: ['warehouse.manage'] });
     T.other = mintToken(app, { userId: otherManager, tenantId: A, roles: ['tenant_admin'], perms: ['warehouse.manage'] });
     T.dep = mintToken(app, { userId: depositor, tenantId: A, roles: ['farmer'], perms: ['warehouse.store'] });
@@ -116,7 +120,7 @@ run('PC-56 OPS-1a · the money desks (integration, real AppModule over HTTP)', (
     await admin?.end();
   }, 40_000);
 
-  it('(1) the bills list answers the server amounts /payout prints; the bill read agrees; TODAY one person previews, approves AND pays one bill alone (the open door, pinned)', async () => {
+  it('(1) the bills list answers the server amounts /payout prints; the bill read agrees; HOTFIX-11: one person can no longer preview, approve AND pay a bill alone (the door, closed)', async () => {
     const list = await get(T.desk, '/v1/dairy/milk-bills?box=all&limit=25');
     expect(list.status).toBe(200);
     const row = (list.body.data as Array<Record<string, unknown>>).find((b) => b.id === billId);
@@ -125,14 +129,20 @@ run('PC-56 OPS-1a · the money desks (integration, real AppModule over HTTP)', (
     const one = await get(T.desk, `/v1/dairy/milk-bills/${billId}`);
     expect([one.status, one.body.data.grossMinor, one.body.data.netMinor, one.body.data.status]).toEqual([200, '1046210', '1046210', 'draft']);
 
-    // ── THE OPEN DOOR (founder question; this wave does NOT change it): the per-bill routes let ONE person do all three acts. ──
+    // ── [PC-56 HOTFIX-11] NAMED UPDATE — THE DOOR, CLOSED: the per-bill routes no longer let ONE person do all three acts. ──
     expect((await post(T.desk, `/v1/dairy/milk-bills/${billId}/preview`, null)).status).toBe(201);
-    expect((await post(T.desk, `/v1/dairy/milk-bills/${billId}/approve`, null)).status).toBe(201);   // no previewer ≠ approver on the per-bill path
+    const self = await post(T.desk, `/v1/dairy/milk-bills/${billId}/approve`, null);                 // the previewer approves → refused by name
+    expect([self.status, self.body.error?.code]).toEqual([409, 'DAIRY_BILL_APPROVER_IS_PREVIEWER']);
+    expect((await admin.query(`SELECT status FROM milk_bills WHERE id = $1`, [billId])).rows[0].status).toBe('previewed');
+    expect((await post(T.check, `/v1/dairy/milk-bills/${billId}/approve`, null)).status).toBe(201);  // a second person approves
     // the member's dispute window is real and enforced at pay; the fixture moves it into the past (what payday looks like)
     await admin.query(`UPDATE milk_bills SET dispute_window_ends = now() - interval '1 minute' WHERE id = $1`, [billId]);
-    const paid = await post(T.desk, `/v1/dairy/milk-bills/${billId}/pay`);
-    expect([paid.status, paid.body.data?.status]).toEqual([201, 'paid']);
     const pays = () => n(`SELECT count(*)::int n FROM ledger_transactions WHERE idempotency_key = $1 AND reference_id = $2`, [`milkbill:${billId}`, billId]);
+    const byApprover = await post(T.check, `/v1/dairy/milk-bills/${billId}/pay`);                    // the approver pays → refused, nothing moves
+    expect([byApprover.status, byApprover.body.error?.code]).toEqual([409, 'DAIRY_BILL_PAYER_IS_APPROVER']);
+    expect(await pays()).toBe(0);
+    const paid = await post(T.desk, `/v1/dairy/milk-bills/${billId}/pay`);                           // the previewer pays (two people suffice — Q2-A)
+    expect([paid.status, paid.body.data?.status]).toEqual([201, 'paid']);
     expect(await pays()).toBe(1);
     expect(await n(`SELECT count(*)::int n FROM audit_log WHERE action = 'dairy.bill.paid' AND entity_id = $1 AND actor_user_id = $2`, [billId, desk])).toBe(1);
     const again = await post(T.desk, `/v1/dairy/milk-bills/${billId}/pay`);              // a NEW key: refused (already paid), nothing more moves

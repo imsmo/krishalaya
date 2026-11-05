@@ -95,7 +95,13 @@ export class MilkBillDisputeService {
    * generation pass rebuilds it from whatever the pours now say. That is the ONLY correction this platform can make:
    * `milk_bills` has no adjustment line and no credit note, so amending the arithmetic in place is not possible and is
    * not faked. `upheld` WITHOUT a void is allowed and means "you were right and the fix is outside this bill" — it
-   * leaves the bill `disputed` and therefore unpayable, which is the honest state for money nobody can yet compute.
+   * leaves the bill `disputed`.
+   *
+   * [PC-56 HOTFIX-11] CORRECTED (survey C-3). This comment used to say a disputed bill was "therefore unpayable". It was
+   * not: `disputed → approved` was a legal transition, the per-bill route accepted it, and once the window shut the bill
+   * was paid with the objection unanswered. From HOTFIX-11 (founder Q4-A) approving a disputed bill is refused by name
+   * (DAIRY_BILL_DISPUTE_UNANSWERED) and the transition is gone, so a disputed bill now really cannot reach the money —
+   * it is answered first: rejected and shown again, or voided and rebuilt.
    */
   async resolve(
     tenantId: string, actor: DairyActor, disputeId: string,
@@ -131,12 +137,15 @@ export class MilkBillDisputeService {
           bill.resolveToPreviewed(now, await this.windowEnd(tx, tenantId, now), membership.farmerUserId, input.outcome,
             await this.noticeVars.billDisputeResolved(tx, {
               periodStart: billProps.periodStart, periodEnd: billProps.periodEnd, outcome: input.outcome, note: input.note,
-            }));
+            }),
+            // [PC-56 HOTFIX-11] Founder Q5-A: whoever answered the objection becomes the bill's previewer.
+            actor.userId);
           await this.bills.update(tx, bill);
           await this.flush(tx, tenantId, bill.id, bill.pullEvents());
         }
         // An UPHELD dispute with no void leaves the bill `disputed` deliberately: the member was right, the correction
-        // is not expressible on this bill, and a bill that cannot be computed correctly must not become payable.
+        // is not expressible on this bill, and a bill that cannot be computed correctly must not become payable —
+        // [PC-56 HOTFIX-11] which is now TRUE: `MilkBill.approve` refuses a disputed bill (founder Q4-A).
 
         await this.audit.write(tx, {
           tenantId, actorUserId: actor.userId, action: 'dairy.bill.dispute_resolved', entityType: 'milk_bill_dispute', entityId: disputeId,

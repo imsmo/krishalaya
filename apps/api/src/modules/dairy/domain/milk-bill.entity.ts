@@ -5,7 +5,14 @@
 import { NoticeVars } from './dairy-notice-vars';
 import { BillStatus, assertTransition } from './milk-bill.state';
 import { DomainEvent, DairyEventType } from './dairy.events';
-import { BillNotPayableError, BillVoidReasonRequiredError, DeductionLinesNotLoadedError, DisputeWindowClosedError, DisputeWindowOpenError } from './dairy.errors';
+import { BillDisputeUnansweredError, BillNotPayableError, BillSecondPersonRequiredError, BillVoidReasonRequiredError, DeductionLinesNotLoadedError, DisputeWindowClosedError, DisputeWindowOpenError } from './dairy.errors';
+
+/**
+ * [PC-56 HOTFIX-11] Is this a PERSON who can sign a milk bill? A missing id or the cadence's `'system'` sentinel is not
+ * (founder H11-1: "a missing or 'system' signer is refused, never counted as a second person").
+ */
+export const isBillSigner = (v: string | null | undefined): v is string =>
+  typeof v === 'string' && v.trim().length > 0 && v.trim().toLowerCase() !== 'system';
 
 /**
  * [PC-56 TENANT-6c-4] ONE deduction line, as the bill sees it.
@@ -47,6 +54,14 @@ export interface MilkBillProps {
   voidedAt: Date | null;
   voidedBy: string | null;
   voidReason: string | null;
+  /** [PC-56 HOTFIX-11] Who showed the bill to the member (preview, or the re-preview after a rejected objection — Q5-A). */
+  previewedBy: string | null;
+  /** [PC-56 HOTFIX-11] The second person, and when. Never the previewer (0233 ck_milk_bill_approver_ne_previewer). */
+  approvedAt: Date | null;
+  approvedBy: string | null;
+  /** [PC-56 HOTFIX-11] Who moved the money, and when. Never the approver (0233 ck_milk_bill_payer_ne_approver). */
+  paidAt: Date | null;
+  paidBy: string | null;
   payoutId: string | null;
   createdAt?: Date;
 }
@@ -67,7 +82,8 @@ export class MilkBill {
     const b = new MilkBill({ id: input.id, tenantId: input.tenantId, membershipId: input.membershipId, cycleId: input.cycleId ?? null, periodStart: input.periodStart,
       periodEnd: input.periodEnd, totalLitresMilli: input.totalLitresMilli, grossMinor: input.grossMinor, deductions, deductionsMinor,
       netMinor, status: 'draft', disputeWindowEnds: input.disputeWindowEnds ?? null,
-      previewedAt: null, voidedAt: null, voidedBy: null, voidReason: null, payoutId: null });
+      previewedAt: null, voidedAt: null, voidedBy: null, voidReason: null,
+      previewedBy: null, approvedAt: null, approvedBy: null, paidAt: null, paidBy: null, payoutId: null });
     b.events.push({ type: DairyEventType.BillGenerated, payload: { billId: b.props.id, membershipId: b.props.membershipId, netMinor: netMinor.toString() } });
     return b;
   }
@@ -105,6 +121,9 @@ export class MilkBill {
     return ends !== null && now.getTime() < ends.getTime();
   }
   get wasPreviewed(): boolean { return this.props.previewedAt !== null; }
+  get previewedBy() { return this.props.previewedBy; }
+  get approvedBy() { return this.props.approvedBy; }
+  get paidBy() { return this.props.paidBy; }
   toProps(): Readonly<MilkBillProps> { return Object.freeze({ ...this.props }); }
   pullEvents(): DomainEvent[] { const e = [...this.events]; this.events.length = 0; return e; }
 
@@ -124,9 +143,14 @@ export class MilkBill {
    * The event carries the member's `userId` and the figures the SMS interpolates, for the reason ADMIN-6b established
    * four waves ago: a notification-map row pointing at a payload with no recipient looks like a fix and sends nothing.
    */
-  preview(at: Date, disputeWindowEnds: Date, farmerUserId: string, notice: NoticeVars): void {
+  preview(at: Date, disputeWindowEnds: Date, farmerUserId: string, notice: NoticeVars, byUserId: string): void {
+    // [PC-56 HOTFIX-11] Legality first, so a refused move stamps nothing.
+    assertTransition(this.props.status, 'previewed');
     this.props.disputeWindowEnds = disputeWindowEnds;
     this.props.previewedAt = at;
+    // [PC-56 HOTFIX-11] WHO showed it. A non-person (`'system'`) is stored as NULL — which `approve` then refuses as
+    // DAIRY_BILL_PREVIEWER_UNKNOWN (fail closed), rather than a sentinel string reaching a uuid column.
+    this.props.previewedBy = isBillSigner(byUserId) ? byUserId : null;
     this.transition('previewed', DairyEventType.BillPreviewed, {
       userId: farmerUserId,
       membershipId: this.props.membershipId,
@@ -160,9 +184,13 @@ export class MilkBill {
    * shown the same figures again and being told why — and a resolution that left the old window expired would answer
    * the objection and simultaneously remove the member's ability to make another.
    */
-  resolveToPreviewed(at: Date, disputeWindowEnds: Date, farmerUserId: string, outcome: string, notice: NoticeVars): void {
+  resolveToPreviewed(at: Date, disputeWindowEnds: Date, farmerUserId: string, outcome: string, notice: NoticeVars, byUserId: string): void {
+    assertTransition(this.props.status, 'previewed');
     this.props.disputeWindowEnds = disputeWindowEnds;
     this.props.previewedAt = at;
+    // [PC-56 HOTFIX-11] Founder Q5-A: the person who ANSWERED the objection and showed the bill again becomes its
+    // previewer, so a different person must approve it.
+    this.props.previewedBy = isBillSigner(byUserId) ? byUserId : null;
     this.transition('previewed', DairyEventType.BillDisputeResolved, {
       userId: farmerUserId,
       membershipId: this.props.membershipId,
@@ -191,14 +219,46 @@ export class MilkBill {
     this.props.voidReason = reason.trim();
     this.transition('voided', DairyEventType.BillVoided, { reason: reason.trim() });
   }
-  approve(): void { this.transition('approved', DairyEventType.BillApproved); }
+  /**
+   * [PC-56 HOTFIX-11] THE SECOND PERSON. Founder H11-1/H11-2 (Q1-A): on EVERY bill — the per-bill route and the cycle
+   * approve's per-bill pass alike, which both reach this method with the person who pressed — the approver is not the
+   * previewer. Order: a disputed bill is refused by name (Q4-A); an illegal move keeps BILL_ILLEGAL_TRANSITION; then
+   * the signer must be a person, the previewer must be known (E-2), and the two must differ. Nothing is stamped on a
+   * refusal.
+   */
+  approve(at: Date, byUserId: string): void {
+    const p = this.props;
+    if (p.status === 'disputed') throw new BillDisputeUnansweredError(p.id);
+    assertTransition(p.status, 'approved');
+    if (!isBillSigner(byUserId)) throw new BillSecondPersonRequiredError(p.id, 'DAIRY_BILL_SIGNER_UNKNOWN');
+    if (!isBillSigner(p.previewedBy)) throw new BillSecondPersonRequiredError(p.id, 'DAIRY_BILL_PREVIEWER_UNKNOWN', { previewedBy: null });
+    if (byUserId === p.previewedBy) throw new BillSecondPersonRequiredError(p.id, 'DAIRY_BILL_APPROVER_IS_PREVIEWER', { previewedBy: p.previewedBy });
+    p.approvedAt = at;
+    p.approvedBy = byUserId;
+    this.transition('approved', DairyEventType.BillApproved);
+  }
+  /**
+   * [PC-56 HOTFIX-11] May THIS person pay this bill? The payer is not the approver (two people suffice — Q2-A: the
+   * previewer may pay what a different person approved). The service calls this RIGHT AFTER its status check and
+   * BEFORE any flag read, consent read, wallet posting or deduction (survey E-4); `markPaid` asserts it again.
+   */
+  assertPayer(byUserId: string): void {
+    const p = this.props;
+    if (p.status !== 'approved') throw new BillNotPayableError(p.status);
+    if (!isBillSigner(byUserId)) throw new BillSecondPersonRequiredError(p.id, 'DAIRY_BILL_SIGNER_UNKNOWN');
+    if (!isBillSigner(p.approvedBy)) throw new BillSecondPersonRequiredError(p.id, 'DAIRY_BILL_APPROVER_UNKNOWN', { approvedBy: null });
+    if (byUserId === p.approvedBy) throw new BillSecondPersonRequiredError(p.id, 'DAIRY_BILL_PAYER_IS_APPROVER', { approvedBy: p.approvedBy });
+  }
   /** Mark paid + stamp the settlement txn (wallet payout posted by the service in the same tx). */
-  markPaid(now: Date): void {
+  markPaid(now: Date, byUserId: string): void {
     if (this.props.status !== 'approved') throw new BillNotPayableError(this.props.status);
+    this.assertPayer(byUserId);
     // [PC-56 TENANT-6c-2] W169 promises the member 24 hours between seeing the bill and the money moving. Before this
     // wave `pay()` checked the status and nothing else, so the window — had anything written it — would have been
     // decoration. The guard lives HERE, on the aggregate, because it is the promise itself and not a route's opinion.
     if (this.isDisputeWindowOpen(now)) throw new DisputeWindowOpenError(this.props.id, this.props.disputeWindowEnds!.toISOString());
+    this.props.paidAt = now;
+    this.props.paidBy = byUserId;
     this.transition('paid', DairyEventType.BillPaid, { netMinor: this.props.netMinor.toString() });
   }
   toJSON() { const v = this.props; return { id: v.id, membershipId: v.membershipId, cycleId: v.cycleId, periodStart: v.periodStart, periodEnd: v.periodEnd,

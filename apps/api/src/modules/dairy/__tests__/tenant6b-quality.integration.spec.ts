@@ -92,6 +92,11 @@ run('PC-56 TENANT-6b · the quality desk\'s money path (integration, real Postgr
   // the approve. These fixtures drive one operator through the whole desk, so they carry both keys; the wave's own
   // spec is where the refusals live.
   const actor = { userId: operator, canManage: true, canCloseSettlement: true };
+  const approverHF11 = randomUUID();
+  // [PC-56 HOTFIX-11] NAMED UPDATE: a SECOND PERSON on every milk bill (founder H11-1, 2026-11-06). The approver is not the previewer
+  // and the payer is not the approver, so this fixture's approvals are signed by a second holder of both keys; the previewer still pays
+  // (two people suffice — Q2-A). The rule's own proof is `src/__tests__/hotfix11-second-person.integration.spec.ts`.
+  const secondPerson = { userId: approverHF11, canManage: true, canCloseSettlement: true };
   let mccId = ''; let membershipId = ''; let membership2 = '';
   let day = '';
 
@@ -103,7 +108,7 @@ run('PC-56 TENANT-6b · the quality desk\'s money path (integration, real Postgr
   beforeAll(async () => {
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
     await makeTenant(admin, tenantA, 'A');
-    await makeUser(admin, operator); await makeUser(admin, farmer); await makeUser(admin, farmer2);
+    await makeUser(admin, operator); await makeUser(admin, farmer); await makeUser(admin, farmer2); await makeUser(admin, approverHF11);
 
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
     pools = new PgPoolProvider(config);
@@ -213,7 +218,7 @@ run('PC-56 TENANT-6b · the quality desk\'s money path (integration, real Postgr
     for (const r of stamped.rows) expect(r.milk_bill_id).toBe(bill.id);   // ← zero-row UPDATE would leave these NULL
 
     await bills.preview(tenantA, actor, bill.id);
-    await bills.approve(tenantA, actor, bill.id);
+    await bills.approve(tenantA, secondPerson, bill.id);   // [PC-56 HOTFIX-11] NAMED UPDATE: the second person approves
     const tBefore = await balTenant(tenantA); const fBefore = await balUser(farmer);
     // [PC-56 TENANT-6c-2] the member's 24h window is now enforced at the payment, so payday is past it.
     await bills.pay(tenantA, actor, bill.id, `idem-${randomUUID()}`, null, new Date(Date.now() + 25 * 3_600_000));

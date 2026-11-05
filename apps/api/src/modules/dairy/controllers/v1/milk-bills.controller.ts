@@ -43,9 +43,10 @@ export class MilkBillsController {
   @Get(':id')
   get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.bills.getById(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
   @Post(':id/preview') @RequirePermissions(DairyPermissions.Manage)
-  preview(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.bills.preview(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
+  // [PC-56 HOTFIX-11] preview and approve now write audit rows, so they carry the caller's ip like void and pay.
+  preview(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string) { return this.bills.preview(ctx.tenantId, this.actor(ctx), id, new Date(), ipOf(r)).then((data) => ({ data })); }
   @Post(':id/approve') @RequirePermissions(DairyPermissions.Manage, DairyPermissions.SettlementClose)
-  approve(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.bills.approve(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
+  approve(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string) { return this.bills.approve(ctx.tenantId, this.actor(ctx), id, ipOf(r)).then((data) => ({ data })); }
   /**
    * [PC-56 TENANT-6c-2] **THE MEMBER'S OWN ROUTE — AND THE ONLY DAIRY ROUTE WITH NO PERMISSION ON IT.**
    *

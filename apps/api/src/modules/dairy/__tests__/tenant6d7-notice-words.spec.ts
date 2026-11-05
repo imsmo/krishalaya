@@ -367,7 +367,7 @@ describe('PC-56 TENANT-6d-7 · the emitted payloads carry every declared variabl
     });
     b.pullEvents();
     b.preview(new Date('2026-07-15T18:00:00Z'), new Date('2026-07-16T03:30:00.000Z'), 'farmer-1',
-      PAYLOADS['dairy.bill_previewed']);
+      PAYLOADS['dairy.bill_previewed'], 'desk-1');   // [PC-56 HOTFIX-11] NAMED UPDATE: the acts name their signer
     const [e] = b.pullEvents();
     has(e.payload as Record<string, unknown>, 'dairy.bill_previewed');
     expect(e.payload.net).toBe('INR 8,412.00');
@@ -394,9 +394,9 @@ describe('PC-56 TENANT-6d-7 · the emitted payloads carry every declared variabl
       totalLitresMilli: 204_526n, grossMinor: 841_200n,
     });
     b.pullEvents();
-    b.preview(new Date('2026-07-15T18:00:00Z'), new Date('2026-07-16T03:30:00.000Z'), 'farmer-1', PAYLOADS['dairy.bill_previewed']);
+    b.preview(new Date('2026-07-15T18:00:00Z'), new Date('2026-07-16T03:30:00.000Z'), 'farmer-1', PAYLOADS['dairy.bill_previewed'], 'desk-1');   // [PC-56 HOTFIX-11] NAMED UPDATE: the acts name their signer
     b.dispute(new Date('2026-07-15T19:00:00Z'), 'short litres'); b.pullEvents();
-    b.resolveToPreviewed(new Date('2026-07-16T02:00:00Z'), new Date('2026-07-18T03:30:00Z'), 'farmer-1', 'rejected', vars);
+    b.resolveToPreviewed(new Date('2026-07-16T02:00:00Z'), new Date('2026-07-18T03:30:00Z'), 'farmer-1', 'rejected', vars, 'op-2');   // [PC-56 HOTFIX-11] NAMED UPDATE
     const [e2] = b.pullEvents();
     has(e2.payload as Record<string, unknown>, 'dairy.bill_dispute_resolved');
     expect(e2.payload.outcomeCode).toBe('rejected');
