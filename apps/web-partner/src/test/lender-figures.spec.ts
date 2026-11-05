@@ -394,3 +394,31 @@ describe('PC-56 PARTNER-5a · NO function in features/partner5/figures.ts can em
     expect(emitted).not.toMatch(/percent|ratio|average/i);
   });
 });
+
+// PC-56 PARTNER-5c · W214 (founder 5c-1): whole seconds → whole hours and minutes; the count after the promise; the page state. Counts and
+// durations only — no percentile is computed here, no share, and nothing emitted carries a percentage sign.
+describe('PC-56 PARTNER-5c · the SLA page\'s figures (pure)', () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { hoursMinutes, slaFigures, slaState } = require('../features/partner5/figures') as typeof import('../features/partner5/figures');
+  const SLA = { decisionPromiseHours: 24, windowDays: 30, decided: 2, medianSec: 36_000, p90Sec: 108_000, withinPromise: 1 };
+  it('durations: whole hours and minutes, rounded to the nearest minute in integer arithmetic; null and a float are no duration', () => {
+    expect(hoursMinutes(36_000)).toEqual({ hours: 10, minutes: 0 });
+    expect(hoursMinutes(5_400)).toEqual({ hours: 1, minutes: 30 });
+    expect(hoursMinutes(89)).toEqual({ hours: 0, minutes: 1 });
+    expect(hoursMinutes(29)).toEqual({ hours: 0, minutes: 0 });
+    expect(hoursMinutes(3 * 86_400 + 59 * 60 + 31)).toEqual({ hours: 73, minutes: 0 });
+    for (const bad of [null, undefined, 1.5, -1]) expect(hoursMinutes(bad as number)).toBeNull();
+  });
+  it('the figures: within and after only when a promise is published; after = decided − within; no durations when nothing was decided', () => {
+    expect(slaFigures(SLA)).toEqual({ promiseHours: 24, days: 30, decided: 2, within: 1, after: 1, median: { hours: 10, minutes: 0 }, p90: { hours: 30, minutes: 0 } });
+    expect(slaFigures({ ...SLA, decisionPromiseHours: null, withinPromise: null })).toMatchObject({ promiseHours: null, within: null, after: null });
+    expect(slaFigures({ ...SLA, withinPromise: 3 })).toMatchObject({ within: null, after: null });   // an impossible answer prints nothing
+    expect(slaFigures({ ...SLA, decided: 0, withinPromise: 0, medianSec: null, p90Sec: null })).toMatchObject({ decided: 0, within: 0, after: 0, median: null, p90: null });
+    expect(slaFigures(null)).toMatchObject({ promiseHours: null, decided: 0, within: null, after: null, median: null, p90: null });
+  });
+  it('the state: off / error from the failure; error with no block; empty when nothing was decided; and nothing emitted carries a "%"', () => {
+    expect([slaState(SLA, null), slaState({ ...SLA, decided: 0 }, null), slaState(null, null), slaState(SLA, 'off'), slaState(SLA, 'error')]).toEqual(['ok', 'empty', 'error', 'off', 'error']);
+    const emitted = JSON.stringify([slaFigures(SLA), hoursMinutes(5_400), slaState(SLA, null)]);
+    expect(emitted).not.toContain('%'); expect(emitted).not.toMatch(/percent|ratio|average|share/i);
+  });
+});

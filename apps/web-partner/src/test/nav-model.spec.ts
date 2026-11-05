@@ -17,7 +17,7 @@ describe('partner nav model (persona-aware)', () => {
     for (const kind of ['bank', 'nbfc', 'mfi', 'gold_loan']) {
       expect([kind, visibleGroups(PARTNER_READS, kind)]).toEqual([kind, ['common', 'lending', 'account']]);
       expect(liveNavForPartner(PARTNER_READS, kind).map((i) => i.href)).toEqual(['/dashboard', '/notifications', '/settlements', '/consents', '/lender/queue', '/lender/products',
-        '/lender/disbursements', '/lender/repayments', '/lender/portfolio', ...ACCOUNT]);   // PC-56 PARTNER-4b added the last two
+        '/lender/disbursements', '/lender/repayments', '/lender/portfolio', '/lender/reports', ...ACCOUNT]);   // PC-56 PARTNER-4b added two; PARTNER-5c (NAMED UPDATE) + SLA & reports
       expect(liveNavForPartner(PARTNER_READS, kind).some((i) => i.href.startsWith('/insurer/'))).toBe(false);
     }
     expect(hasLending(set('partner.applications.read'))).toBe(true);
@@ -86,8 +86,9 @@ describe('partner nav model (persona-aware)', () => {
 
   it('PC-56 PARTNER-4b · the lending group is SIX items — Dashboard · Loan queue · Products · Pay-outs · Repayments · Portfolio — in the canon\'s own sidebar order; `/profile` and `/servicing` are gone and the batch page is in NO nav', () => {
     const lending = PARTNER_NAV.filter((i) => i.group === 'lending');
+    // PC-56 PARTNER-5c · NAMED UPDATE (founder 5c-2): + SLA & reports, after Portfolio — SEVEN items now
     expect(lending.map((i) => [i.href, i.live])).toEqual([['/dashboard', true], ['/lender/queue', true], ['/lender/products', true],
-      ['/lender/disbursements', true], ['/lender/repayments', true], ['/lender/portfolio', true]]);
+      ['/lender/disbursements', true], ['/lender/repayments', true], ['/lender/portfolio', true], ['/lender/reports', true]]);
     // the three routes the nav used to mark `live: true` while they rendered "not yet available" (survey C-18) are not in the map at all
     for (const gone of ['/profile', '/portfolio', '/servicing', '/loan-queue']) expect([gone, PARTNER_NAV.some((i) => i.href === gone)]).toEqual([gone, false]);
     // W218 is reached from the pay-outs page and the lending sub-navigation only — it is in NO nav, and neither is a route pattern
@@ -105,7 +106,7 @@ describe('partner nav model (persona-aware)', () => {
     const FOUR_C = ['/lender/kcc', '/lender/kcc/', '/lender/kcc/[id]', '/lender/kcc/[id]/drawls', '/lender/kcc/pending', '/lender/kcc/pending/drawls'];
     expect(PARTNER_NAV.filter((i) => FOUR_C.includes(i.href))).toEqual([]);
     expect(PARTNER_NAV.filter((i) => /kcc/i.test(i.href) || /kcc/i.test(i.labelKey))).toEqual([]);
-    expect(PARTNER_NAV.filter((i) => i.group === 'lending').length).toBe(6);
+    expect(PARTNER_NAV.filter((i) => i.group === 'lending').length).toBe(7);   // PC-56 PARTNER-5c · NAMED UPDATE: + SLA & reports
     for (const [perms, kind] of [[PARTNER_READS, 'bank'], [PARTNER_READS, 'nbfc'], [PARTNER_READS, 'mfi'], [PARTNER_READS, 'gold_loan'],
       [set(WILDCARD_PERM), 'bank'], [set(WILDCARD_PERM), null], [PARTNER_READS, 'insurer'], [PARTNER_READS, 'amc'], [PARTNER_READS, null], [set(), 'bank']] as const) {
       const all = [...navForPartner(perms, kind), ...liveNavForPartner(perms, kind), ...soonNavForPartner(perms, kind)].map((i) => i.href);
@@ -119,7 +120,7 @@ describe('partner nav model (persona-aware)', () => {
   it('PC-56 PARTNER-5a · /lender/portfolio/aging and /lender/portfolio/writeoffs are in NO sidebar nav, for any kind; both are LIVE in LENDING_SUBNAV; the lending group is unchanged', () => {
     const FIVE_A = ['/lender/portfolio/aging', '/lender/portfolio/writeoffs'];
     expect(PARTNER_NAV.filter((i) => i.group === 'lending').map((i) => i.href)).toEqual(['/dashboard', '/lender/queue', '/lender/products',
-      '/lender/disbursements', '/lender/repayments', '/lender/portfolio']);
+      '/lender/disbursements', '/lender/repayments', '/lender/portfolio', '/lender/reports']);   // PC-56 PARTNER-5c · NAMED UPDATE: + SLA & reports
     expect(PARTNER_NAV.filter((i) => FIVE_A.includes(i.href) || /aging|writeoff|partner5\./i.test(`${i.href} ${i.labelKey}`))).toEqual([]);
     for (const [perms, kind] of [[PARTNER_READS, 'bank'], [PARTNER_READS, 'nbfc'], [PARTNER_READS, 'mfi'], [PARTNER_READS, 'gold_loan'],
       [set(WILDCARD_PERM), 'bank'], [set(WILDCARD_PERM), null], [PARTNER_READS, 'insurer'], [PARTNER_READS, 'amc'], [PARTNER_READS, null], [set(), 'bank']] as const) {
@@ -136,13 +137,34 @@ describe('partner nav model (persona-aware)', () => {
       .toEqual([['/lender/collections', '5b', true, false]]);
     expect(LENDING_SUBNAV.filter((i) => /collections\/|restructure/.test(i.href) || /case|restructure/i.test(i.key))).toEqual([]);
     expect(PARTNER_NAV.filter((i) => i.group === 'lending').map((i) => i.href)).toEqual(['/dashboard', '/lender/queue', '/lender/products',
-      '/lender/disbursements', '/lender/repayments', '/lender/portfolio']);
+      '/lender/disbursements', '/lender/repayments', '/lender/portfolio', '/lender/reports']);   // PC-56 PARTNER-5c · NAMED UPDATE: + SLA & reports
     expect(PARTNER_NAV.filter((i) => /collection|restructur|partner5\./i.test(`${i.href} ${i.labelKey}`))).toEqual([]);
     for (const [perms, kind] of [[PARTNER_READS, 'bank'], [PARTNER_READS, 'nbfc'], [PARTNER_READS, 'mfi'], [PARTNER_READS, 'gold_loan'],
       [set(WILDCARD_PERM), 'bank'], [set(WILDCARD_PERM), null], [PARTNER_READS, 'insurer'], [PARTNER_READS, 'amc'], [PARTNER_READS, null], [set(), 'bank']] as const) {
       const all = [...navForPartner(perms, kind), ...liveNavForPartner(perms, kind), ...soonNavForPartner(perms, kind)].map((i) => i.href);
       for (const h of FIVE_B) expect([kind, h, all.includes(h)]).toEqual([kind, h, false]);
     }
+  });
+  // PC-56 PARTNER-5c (founder 5c-2, survey C-15) · "SLA & reports" (W214, `/lender/reports`) is the canon's own sidebar item: ONE item in the
+  // LENDING group, after Portfolio, live — so every lender kind sees it and an insurer or an asset manager NEVER does, for any permission set
+  // short of the wildcard. M6 (the item added to the insurer's group) kills here.
+  it('PC-56 PARTNER-5c · "SLA & reports" is ONE live lending item after Portfolio; a lender sees it, an insurer and an asset manager never do', () => {
+    const items = PARTNER_NAV.filter((i) => i.href === '/lender/reports');
+    expect(items).toEqual([{ href: '/lender/reports', labelKey: 'nav.slaReports', group: 'lending', live: true }]);
+    const hrefs = PARTNER_NAV.map((i) => i.href);
+    expect(hrefs.indexOf('/lender/reports')).toBe(hrefs.indexOf('/lender/portfolio') + 1);
+    for (const kind of ['bank', 'nbfc', 'mfi', 'gold_loan', null]) expect([kind, liveNavForPartner(PARTNER_READS, kind).some((i) => i.href === '/lender/reports')]).toEqual([kind, true]);
+    for (const [perms, kind] of [[PARTNER_READS, 'insurer'], [PARTNER_READS, 'amc'], [set('partner.insurance.read'), 'insurer'], [set(), 'bank'], [set(FLEET_PERM), null]] as const) {
+      const all = [...navForPartner(perms, kind), ...liveNavForPartner(perms, kind), ...soonNavForPartner(perms, kind)];
+      expect([kind, all.some((i) => i.href === '/lender/reports' || i.labelKey === 'nav.slaReports')]).toEqual([kind, false]);
+    }
+    // never twice, never under another address, and no insurer item carries the label
+    expect(PARTNER_NAV.filter((i) => i.labelKey === 'nav.slaReports').length).toBe(1);
+    expect(PARTNER_NAV.filter((i) => i.group === 'insurer' && /sla|lender/i.test(`${i.href} ${i.labelKey}`))).toEqual([]);
+    // the label is in all three catalogues
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const cats = [require('../i18n/en').en, require('../i18n/hi').hi, require('../i18n/gu').gu] as Record<string, string>[];
+    for (const c of cats) expect(typeof c['nav.slaReports'] === 'string' && c['nav.slaReports'].length > 0).toBe(true);
   });
   it('PC-56 PARTNER-2a · an asset manager sees neither vertical; an unknown kind keeps the lending group and never opens the insurer group', () => {
     expect(visibleGroups(PARTNER_READS, 'amc')).toEqual(['common', 'account']);

@@ -5,6 +5,10 @@
 // English refusal says no; the DELTAs of F-15 / F-16 recorded; i18n parity for partner5.*.
 // NAMED UPDATES (PARTNER-5b, the 4c-7 rule): the 5b-pending verdict value is DELETED, so the cases that pinned 13 pending files, FOUR
 // chains, 72 keys and "no 5b surface carries a refusal yet" now pin 25 decided, EIGHT chains, 162 keys and every 5b surface's refusals.
+// NAMED UPDATES (PARTNER-5c, the 4c-7 rule): the LAST pending verdict value is DELETED — the cases that pinned 6 `pending_5c` files, EIGHT
+// chains / TWENTY files, 162 keys, "no 5c surface carries a refusal yet" and reused keys from partner4 only now pin 31 decided (W214 BUILT
+// (read), W3009–W3010 DECOR, W3011–W3013 PARITY-DECOR), TEN chains / TWENTY-FIVE files, 209 keys, every 5c surface's refusals, and reused
+// keys from partner2 (the W254 packs refusal, by key — brief 5c E3) and partner4.
 import * as fs from 'node:fs';
 import { en } from '../i18n/en';
 import { hi } from '../i18n/hi';
@@ -32,12 +36,14 @@ const SURVEY_C = [
 ];
 const SURFACES_5A: readonly Partner5Surface[] = ['aging', 'writeoffs', 'aging_export', 'aging_act', 'writeoffs_export', 'writeoffs_act'];
 const SURFACES_5B: readonly Partner5Surface[] = ['collections', 'collections_case', 'restructure', 'collections_form', 'collections_act', 'case_act', 'restructure_act'];
+const SURFACES_5C: readonly Partner5Surface[] = ['sla', 'sla_export', 'sla_act'];
 const SURFACES_5AB: readonly Partner5Surface[] = [...SURFACES_5A, ...SURFACES_5B];
+const SURFACES_ALL: readonly Partner5Surface[] = [...SURFACES_5AB, ...SURFACES_5C];
 const chainKeys = (c: { states: readonly string[]; key: (s: string) => string }) => c.states.flatMap((s) => [`${c.key(s)}.title`, `${c.key(s)}.body`]);
 const SAYS_NO = /\bnot\b|\bno\b|\bnever\b|\bnothing\b|\bnone\b|\bcannot\b/i;
 
 describe('PC-56 PARTNER-5a · the PARTNER-5 canon registry', () => {
-  it('31 files — the survey §C list exactly — each with ONE verdict: 5a = 12 decided, 5b = 13 decided, 5c = 6 pending_5c; each exists on disk', () => {
+  it('31 files — the survey §C list exactly — each with ONE verdict: 5a = 12 decided, 5b = 13 decided, 5c = 6 decided; each exists on disk', () => {
     const files = PARTNER5_CANON_FILES.map((f) => f.file);
     expect(files.length).toBe(31); expect(new Set(files).size).toBe(31);
     expect([...files].sort()).toEqual([...SURVEY_C].sort());
@@ -51,18 +57,21 @@ describe('PC-56 PARTNER-5a · the PARTNER-5 canon registry', () => {
     for (const f of ['W219', 'W220', 'W221']) expect([f, v(f)]).toEqual([f, 'BUILT (honest)']);
     for (const f of ['W2914', 'W2915', 'W2916', 'W2917', 'W2918', 'W2919', 'W2920', 'W2999', 'W3000', 'W3001']) expect([f, v(f)]).toEqual([f, 'DECOR']);
     expect(PARTNER5_CANON_FILES.filter((f) => f.wave === '5b').length).toBe(13);
-    expect(PARTNER5_CANON_FILES.filter((f) => !/pending/.test(f.verdict)).length).toBe(25);
-    expect(PARTNER5_CANON_FILES.filter((f) => f.wave === '5c').map((f) => f.verdict)).toEqual(Array(6).fill('pending_5c'));
-    expect(PARTNER5_CANON_FILES.filter((f) => f.verdict === 'pending_5c').every((f) => f.wave === '5c')).toBe(true);
-    // the 4c-7 rule: the 5b-pending value no longer exists — not as a verdict, and not as a string anywhere in the registry's source
-    expect(PARTNER5_CANON_FILES.filter((f) => /pending_5b/.test(f.verdict))).toEqual([]);
-    expect(fs.readFileSync(require.resolve('../features/partner5/refusals'), 'utf8')).not.toMatch(/pending_5b/);
+    // PC-56 PARTNER-5c · NAMED UPDATE: the SLA page, its export chain and its Retry chain
+    expect(v('W214')).toBe('BUILT (read)');
+    for (const f of ['W3009', 'W3010']) expect([f, v(f)]).toEqual([f, 'DECOR']);
+    for (const f of ['W3011', 'W3012', 'W3013']) expect([f, v(f)]).toEqual([f, 'PARITY-DECOR']);
+    expect(PARTNER5_CANON_FILES.filter((f) => f.wave === '5c').length).toBe(6);
+    expect(PARTNER5_CANON_FILES.filter((f) => !/pending/.test(f.verdict)).length).toBe(31);
+    // the 4c-7 rule: NO pending value exists any more — not as a verdict, and not as a string anywhere in the registry's source
+    for (const f of PARTNER5_CANON_FILES) expect([f.file, ['BUILT (read)', 'BUILT (honest)', 'PARITY-DECOR', 'DECOR'].includes(f.verdict)]).toEqual([f.file, true]);
+    expect(fs.readFileSync(require.resolve('../features/partner5/refusals'), 'utf8')).not.toMatch(/pending_\w/);
     for (const f of PARTNER5_CANON_FILES) expect([f.file, /^W\d{3,4}-partner-[a-z0-9-]+\.html$/.test(f.file), f.note.length > 0]).toEqual([f.file, true, true]);
     // every file exists on disk in the canon folder (asserted, not skipped: the canon is on this machine)
     expect(fs.existsSync(CANON)).toBe(true);
     for (const f of files) expect([f, fs.existsSync(`${CANON}/${f}`)]).toEqual([f, true]);
   });
-  it('EIGHT chains, all query states of their pages; the TWENTY chain files (5a\'s ten, 5b\'s ten) recorded exactly once, each a DECOR / PARITY-DECOR file', () => {
+  it('TEN chains, all query states of their pages; the TWENTY-FIVE chain files (5a\'s ten, 5b\'s ten, 5c\'s five) recorded exactly once, each a DECOR / PARITY-DECOR file', () => {
     expect(PARTNER5_CHAINS.map((c) => [c.id, c.wave, c.page, c.param, c.states, c.files, !!c.mailbox])).toEqual([
       ['aging_export', '5a', '/lender/portfolio/aging', 'export', ['queued', 'ready'], ['W2929', 'W2930'], true],
       ['aging_act', '5a', '/lender/portfolio/aging', 'act', ['confirm', 'success', 'failure'], ['W2931', 'W2932', 'W2933'], false],
@@ -73,14 +82,17 @@ describe('PC-56 PARTNER-5a · the PARTNER-5 canon registry', () => {
       ['collections_act', '5b', '/lender/collections', 'act', ['confirm', 'success', 'failure'], ['W2918', 'W2919', 'W2920'], false],
       ['case_act', '5b', '/lender/collections/[id]', 'act', ['confirm', 'success', 'failure'], [], false],
       ['restructure_act', '5b', '/lender/collections/[id]/restructure', 'act', ['confirm', 'success', 'failure'], ['W2999', 'W3000', 'W3001'], false],
+      // PC-56 PARTNER-5c · NAMED UPDATE: the export DECOR with the mailbox; Retry the PARITY-DECOR re-read
+      ['sla_export', '5c', '/lender/reports', 'export', ['queued', 'ready'], ['W3009', 'W3010'], true],
+      ['sla_act', '5c', '/lender/reports', 'act', ['confirm', 'success', 'failure'], ['W3011', 'W3012', 'W3013'], false],
     ]);
     const all = PARTNER5_CHAINS.flatMap((c) => c.files);
-    expect(all.length).toBe(20); expect(new Set(all).size).toBe(20);
+    expect(all.length).toBe(25); expect(new Set(all).size).toBe(25);
     for (const c of PARTNER5_CHAINS) for (const id of c.files) {
       expect([id, PARTNER5_CANON_FILES.some((f) => f.file.startsWith(`${id}-`) && f.wave === c.wave && (f.verdict === 'DECOR' || f.verdict === 'PARITY-DECOR'))]).toEqual([id, true]);
     }
-    // every DECOR / PARITY-DECOR canon file of 5a and 5b is some chain's file
-    for (const f of PARTNER5_CANON_FILES.filter((x) => x.wave !== '5c' && (x.verdict === 'DECOR' || x.verdict === 'PARITY-DECOR'))) {
+    // every DECOR / PARITY-DECOR canon file of 5a, 5b and (PARTNER-5c) 5c is some chain's file
+    for (const f of PARTNER5_CANON_FILES.filter((x) => x.verdict === 'DECOR' || x.verdict === 'PARITY-DECOR')) {
       expect([f.file, all.includes(f.file.slice(0, f.file.indexOf('-')))]).toEqual([f.file, true]);
     }
     // 5a: the export chains are DECOR, the act chains PARITY-DECOR; 5b: every chain is DECOR (the pages read nothing, so no Retry is a re-read)
@@ -103,21 +115,24 @@ describe('PC-56 PARTNER-5a · the PARTNER-5 canon registry', () => {
     const keys = [...PARTNER5_REFUSALS.map((r) => r.key), ...PARTNER5_CHAINS.flatMap(chainKeys),
       'partner5.subnav.writeoffs', 'partner5.subnav.aging', 'partner5.aging.statement', 'partner5.aging.restructuredNote',
       'partner5.writeoffs.statement', 'partner5.writeoffs.lockdownNote', 'partner5.aging.sumCheck', 'partner4.export.notAvailable', 'partner4.chain.back',
-      'partner5.subnav.collections', 'partner5.collections.statement', 'partner5.collections.noSellingBlock', 'partner5.case.statement', 'partner5.restructure.statement'];
+      'partner5.subnav.collections', 'partner5.collections.statement', 'partner5.collections.noSellingBlock', 'partner5.case.statement', 'partner5.restructure.statement',
+      // PC-56 PARTNER-5c
+      'partner5.sla.promise', 'partner5.sla.promiseNone', 'partner5.sla.promiseSetBy', 'partner5.sla.zeroReason', 'nav.slaReports', 'partner1.ops.mailbox'];
     for (const k of keys) {
       expect([k, typeof en[k], typeof hi[k], typeof gu[k]]).toEqual([k, 'string', 'string', 'string']);
       expect([k, vars(hi[k])]).toEqual([k, vars(en[k])]); expect([k, vars(gu[k])]).toEqual([k, vars(en[k])]);
     }
     for (const r of PARTNER5_REFUSALS) expect([r.id, SAYS_NO.test(en[r.key])]).toEqual([r.id, true]);
     expect(new Set(PARTNER5_REFUSALS.map((r) => r.id)).size).toBe(PARTNER5_REFUSALS.length);
-    for (const s of SURFACES_5AB) expect([s, partner5RefusalKeys(s).length > 0]).toEqual([s, true]);
-    // no 5c surface carries a refusal yet: its doors are 5c's
-    for (const s of ['sla', 'sla_export', 'sla_act'] as const) expect([s, partner5RefusalKeys(s)]).toEqual([s, []]);
+    // PC-56 PARTNER-5c · NAMED UPDATE: every surface — 5c's three included — prints at least one refusal; a reused key may be partner2's
+    // (the W254 packs refusal, by key) as well as partner4's
+    for (const s of SURFACES_ALL) expect([s, partner5RefusalKeys(s).length > 0]).toEqual([s, true]);
     for (const r of PARTNER5_REFUSALS) {
-      expect([r.id, r.canon.length > 0, r.why.length > 0, /^partner[45]\.refusal\./.test(r.key), r.surfaces.every((x) => SURFACES_5AB.includes(x))]).toEqual([r.id, true, true, true, true]);
+      expect([r.id, r.canon.length > 0, r.why.length > 0, /^partner[245]\.refusal\./.test(r.key), r.surfaces.every((x) => SURFACES_ALL.includes(x))]).toEqual([r.id, true, true, true, true]);
     }
+    expect(PARTNER5_REFUSALS.filter((r) => r.key.startsWith('partner2.')).map((r) => r.key)).toEqual(['partner2.refusal.reportPack']);
     // one surface never prints the same sentence twice
-    for (const s of SURFACES_5AB) expect([s, new Set(partner5RefusalKeys(s)).size]).toEqual([s, partner5RefusalKeys(s).length]);
+    for (const s of SURFACES_ALL) expect([s, new Set(partner5RefusalKeys(s)).size]).toEqual([s, partner5RefusalKeys(s).length]);
   });
   it('the refusals the brief names are registered — W223\'s, W222\'s, the chain sentences — and the reused PARTNER-4 keys are the real ones', () => {
     expect(PARTNER5_REFUSALS.map((r) => r.id)).toEqual(expect.arrayContaining([
@@ -160,7 +175,7 @@ describe('PC-56 PARTNER-5a · the PARTNER-5 canon registry', () => {
   });
   it('i18n parity: every partner5.* key of en is in hi AND gu, non-empty, placeholders kept, not an English copy; and no value carries "%"', () => {
     const fresh = Object.keys(en).filter((k) => k.startsWith('partner5.'));
-    expect(fresh.length).toBe(162);   // PC-56 PARTNER-5b: 72 + 90
+    expect(fresh.length).toBe(209);   // PC-56 PARTNER-5b: 72 + 90; PARTNER-5c (NAMED UPDATE): + 47 (22 sla, 10 chain, 15 refusal)
     for (const cat of [hi, gu]) expect(Object.keys(cat).filter((k) => k.startsWith('partner5.')).sort()).toEqual([...fresh].sort());
     for (const k of fresh) {
       expect([k, typeof hi[k] === 'string' && hi[k].length > 0, typeof gu[k] === 'string' && gu[k].length > 0]).toEqual([k, true, true]);
@@ -216,5 +231,39 @@ describe('PC-56 PARTNER-5b · the collections refusals, by name and by key', () 
     expect(D('every_id_same_page').built).toMatch(/SAME page/);
     expect(D('case_id_is_loan').built).toMatch(/LOAN id/);
     for (const m of ['W1377–W1379 → W2918–W2920', 'W1380–W1383 → W2914–W2917', 'W1384–W1386 → W2999–W3001']) expect([m, D('fm_chain_ids_5b').built.includes(m)]).toEqual([m, true]);
+  });
+});
+
+describe('PC-56 PARTNER-5c · the SLA page\'s refusals, by name and by key (founder 5c-1)', () => {
+  const p5 = (id: string) => PARTNER5_REFUSALS.find((r) => r.id === id);
+  const p4 = (id: string) => PARTNER4_REFUSALS.find((r) => r.id === id)?.key;
+  const on = (s: Partner5Surface) => PARTNER5_REFUSALS.filter((r) => r.surfaces.includes(s)).map((r) => r.id);
+  it('every refusal the brief names for W214 is registered on the page; the chains carry theirs', () => {
+    expect(on('sla')).toEqual(expect.arrayContaining(['your_contract', 'disbursal_promise', 'data_handling', 'same_scoreboard', 'decision_rate', 'surge_weeks',
+      'docs_pause', 'borrower_satisfaction', 'conduct_count', 'report_packs', 'pack_contents', 'pack_schedule', 'packs_kept', 'manifest_format',
+      'escalations', 'aging_roles', 'plan_settings', 'export_file']));
+    expect(on('sla_export')).toEqual(expect.arrayContaining(['sla_export_file', 'report_packs', 'pack_contents', 'export_file']));
+    expect(on('sla_act')).toEqual(expect.arrayContaining(['packs_kept', 'chain_zero_sum', 'chain_on_call', 'chain_audit']));
+  });
+  it('the reused keys are the earlier waves\' own: the W254 packs refusal (partner2), the four partner roles, plan settings, the export file and the chain sentences (partner4)', () => {
+    expect(p5('report_packs')?.key).toBe('partner2.refusal.reportPack');
+    expect(p5('aging_roles')?.key).toBe(p4('platform_roles'));
+    expect(en['partner4.refusal.platformRoles']).toMatch(/four: administrator, checker, maker and viewer/);
+    for (const id of ['plan_settings', 'export_file', 'chain_zero_sum', 'chain_on_call', 'chain_audit']) expect([id, p5(id)?.key]).toEqual([id, p4(id)]);
+    // no partner5. value copies a reused sentence
+    const reused = new Set(PARTNER5_REFUSALS.filter((r) => !r.key.startsWith('partner5.')).map((r) => en[r.key]));
+    for (const k of Object.keys(en).filter((x) => x.startsWith('partner5.sla.') || x.startsWith('partner5.refusal.'))) expect([k, reused.has(en[k])]).toEqual([k, false]);
+  });
+  it('the 5c DELTAs are recorded: the contract, FM:127 / :128 / :130 / :132, the kebabs, the W13xx chain ids, the query states and the sidebar item', () => {
+    const ids = PARTNER5_DELTAS.map((d) => d.id);
+    expect(ids).toEqual(expect.arrayContaining(['canon_contract', 'fm127_bulkbar', 'fm128_avatar', 'fm130_td_filter', 'fm132_view_dashboard', 'row_kebabs_5c',
+      'fm_chain_ids_5c', 'chain_routes_5c', 'sidebar_item']));
+    expect(new Set(ids).size).toBe(ids.length);
+    const D = (id: string) => PARTNER5_DELTAS.find((d) => d.id === id) as { canon: string; built: string };
+    expect(D('fm130_td_filter').canon).toMatch(/FM:130/);
+    expect(D('fm132_view_dashboard').built).toMatch(/REAL link to `\/dashboard`/);
+    for (const m of ['W1358/W1359 → W3009/W3010', 'W1360–W1362 → W3011–W3013']) expect([m, D('fm_chain_ids_5c').built.includes(m)]).toEqual([m, true]);
+    // the registry never copies the canon's hash fragments
+    expect(fs.readFileSync(require.resolve('../features/partner5/refusals'), 'utf8')).not.toMatch(/sha256:[0-9a-f]|2b1f|88c4|9e07|41aa/);
   });
 });

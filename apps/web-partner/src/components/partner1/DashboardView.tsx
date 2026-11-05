@@ -1,5 +1,9 @@
 // apps/web-partner/src/components/partner1/DashboardView.tsx · PC-56 PARTNER-1a · founder D1 — THE DASHBOARD (canon W205), presentational.
 //
+// PC-56 PARTNER-5c (founder 5c-3, door Q6): the "Paid on time" tile and the approval-rate PERCENTAGE are RETIRED — a punctuality figure has
+// no instalment plan to stand on (P4-B9) and was computed against the farmer (survey C-8 / F-5); approvals print as COUNTS only ("{approved}
+// approved of {decided} decided this month"). The API's `approvalRateBps` / `onTime` fields stay in the machine contract, unprinted. No "%"
+// is printed anywhere on this page (the claims guard forbids it in every `partner1.dash.` value).
 // Renders what `GET /v1/partner/dashboard` computed — six figures and their "as of", the published decision promise beside the actual
 // latency, the organisations routing to the partner (PUBLIC display names; a non-live one is "an organisation"), and "needs you today" (the
 // oldest awaiting applications by reference, product, amount, organisation and age — never an applicant's name). It formats; it never adds
@@ -11,7 +15,7 @@ import { formatMoneyMinor } from '@krishalaya/i18n';
 import type { PartnerDashboard } from '@krishalaya/sdk-js';
 import type { Tr } from '../NotYet';
 import { RefusalList } from './RefusalList';
-import { ageHours, appRef, asOfText, bpsPercentText, fpoLabel, hoursText, type DashboardState } from '../../features/partner1/dashboard';
+import { ageHours, appRef, asOfText, fpoLabel, hoursText, type DashboardState } from '../../features/partner1/dashboard';
 
 function Tile({ id, label, value, hint }: { id: string; label: string; value: string; hint?: string }) {
   return (
@@ -61,8 +65,6 @@ export function DashboardView({ t, lang, state, d, orgName }: { t: Tr; lang: str
     );
   }
   const m = d.decidedThisMonth;
-  const rate = bpsPercentText(m.approvalRateBps);
-  const onTime = bpsPercentText(d.onTime.shareBps);
   const median = hoursText(d.sla.medianSec); const p90 = hoursText(d.sla.p90Sec);
   return (
     <section data-kv-dash="ok">
@@ -72,12 +74,12 @@ export function DashboardView({ t, lang, state, d, orgName }: { t: Tr; lang: str
         <Tile id="awaiting" label={t.t('partner1.dash.awaiting')} value={String(d.awaitingDecision)} hint={t.t('partner1.dash.awaitingHint')} />
         <Tile id="decided" label={t.t('partner1.dash.decided')} value={String(m.decided)}
           hint={t.t('partner1.dash.decidedHint', { approved: m.approved, rejected: m.rejected, amount: money(m.approvedAmountMinor) })} />
-        <Tile id="rate" label={t.t('partner1.dash.rate')} value={rate === null ? t.t('partner1.dash.rateNone') : t.t('partner1.dash.rateValue', { value: rate })} hint={t.t('partner1.dash.rateHint')} />
+        <Tile id="approvals" label={t.t('partner1.dash.approvals')}
+          value={m.decided === 0 ? t.t('partner1.dash.approvalsNone') : t.t('partner1.dash.approvedOf', { approved: m.approved, decided: m.decided })}
+          hint={t.t('partner1.dash.approvalsHint')} />
         <Tile id="outstanding" label={t.t('partner1.dash.outstanding')} value={money(d.portfolio.outstandingMinor)} hint={t.t('partner1.dash.outstandingHint', { count: d.portfolio.activeLoans })} />
-        <Tile id="ontime" label={t.t('partner1.dash.onTime', { days: d.onTime.windowDays })}
-          value={onTime === null ? t.t('partner1.dash.onTimeNone') : t.t('partner1.dash.rateValue', { value: onTime })}
-          hint={t.t('partner1.dash.onTimeHint', { onTime: d.onTime.onTime, due: d.onTime.due })} />
       </div>
+      <p className="kv-muted" data-kv-no-punctuality="true">{t.t('partner1.dash.noPunctuality')}</p>
       {asOf}
 
       <div className="kv-card" data-kv-sla={d.sla.decisionPromiseHours ?? 'none'}>

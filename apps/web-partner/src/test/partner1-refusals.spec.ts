@@ -56,7 +56,8 @@ describe('PC-56 PARTNER-1a · the PARTNER-1 canon registry', () => {
   });
   it('i18n parity (founder D6): every partner1.* key of en is in hi AND gu, non-empty, placeholders kept; hi and gu add nothing en lacks', () => {
     const fresh = Object.keys(en).filter((k) => k.startsWith('partner1.'));
-    expect(fresh.length).toBe(200 + 235);
+    // PC-56 PARTNER-5c · NAMED UPDATE (founder 5c-3): the dashboard's seven rate / on-time keys are deleted and five count keys added (−2)
+    expect(fresh.length).toBe(200 + 235 - 7 + 5);
     for (const k of fresh) {
       expect([k, typeof hi[k] === 'string' && hi[k].length > 0, typeof gu[k] === 'string' && gu[k].length > 0]).toEqual([k, true, true]);
       expect([k, vars(hi[k])]).toEqual([k, vars(en[k])]); expect([k, vars(gu[k])]).toEqual([k, vars(en[k])]);

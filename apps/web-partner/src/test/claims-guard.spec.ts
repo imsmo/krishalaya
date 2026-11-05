@@ -752,7 +752,9 @@ describe('PC-56 PARTNER-5a · claims guard (the book in arrears, as counts)', ()
       'components/partner5/LenderCollectionsView.tsx', 'components/partner5/LenderCollectionsCaseView.tsx', 'components/partner5/LenderRestructureView.tsx',
       'app/lender/collections/page.tsx', 'app/lender/collections/[id]/page.tsx', 'app/lender/collections/[id]/restructure/page.tsx'];
     expect(fs2.readdirSync(path2.join(SRC, 'components', 'partner5')).filter((f) => f.endsWith('.tsx')).sort())
-      .toEqual(['LenderAgingView.tsx', 'LenderChain5.tsx', 'LenderCollectionsCaseView.tsx', 'LenderCollectionsView.tsx', 'LenderRestructureView.tsx', 'LenderWriteoffsView.tsx']);
+      // PC-56 PARTNER-5c · NAMED UPDATE: + LenderReportsView.tsx (W214) — scanned by its own 5c code scan below (its i18n key names the
+      // production-zero REASON, so this scan's `reason` ban is not the right instrument for it)
+      .toEqual(['LenderAgingView.tsx', 'LenderChain5.tsx', 'LenderCollectionsCaseView.tsx', 'LenderCollectionsView.tsx', 'LenderReportsView.tsx', 'LenderRestructureView.tsx', 'LenderWriteoffsView.tsx']);
     for (const rel of files) {
       const code = fs2.readFileSync(path2.join(SRC, rel), 'utf8').split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
       expect([rel, code.length > 300]).toEqual([rel, true]);
@@ -889,6 +891,132 @@ describe('PC-56 PARTNER-5b · claims guard (collections the platform does not do
       for (const [name, re] of [['partnerClient', /partnerClient|api-client|@krishalaya\/sdk-js/], ['mailbox', /mailbox/i], ['<input', /<input|<select|<textarea|<form|<label|htmlFor/],
         ['formatMoney', /formatMoney|formatCount|toFixed|%/], ['borrower field', /borrowerUserId|borrower_user_id|borrowerName|phone/i],
         ['proposal field', /instalment|tenor|rateApr|holiday|caseRef|case_ref|proposedBy|checkerId|mediationAt/i], ['figure', /\{\s*\d|\bcount\b/]] as const) {
+        expect([rel, name, re.test(code)]).toEqual([rel, name, false]);
+      }
+    }
+  });
+});
+
+// ══ PC-56 PARTNER-5c · THE PROMISE THE PLATFORM SETS (founder 5c-1 / 5c-3; doors Q7 + Q6) ════════════════════════════════════════════════════
+// The words of W214 that sell a lender things this platform does not keep: a share of decisions on time, a satisfaction score out of five, a
+// conduct count and a clean quarter, "your contract", a shared scoreboard and a provider-health console, monthly and report packs with
+// hashes, a portfolio-at-risk figure, a consent registry, a partner desk with a response time, a partnership manager and a quarterly review,
+// a same-day answer, a disbursal promise, surge weeks, a documents pause honoured, records that cannot change, a pack on the 1st, a
+// compliance role, plan settings. Each regex is PROVEN on its own canon phrase and narrowed to the canon's AFFIRMATIVE shape only where a
+// reused refusal this scope prints carries the bare words (PARTNER-2b's "No report pack is generated", PARTNER-4's "There are no plan
+// settings"). Applied to every `partner5.sla.` / SLA chain value and `nav.slaReports` AND to every key PARTNER5_REFUSALS prints on a 5c
+// surface, in en, hi and gu. And founder 5c-3: no `%` in ANY `partner1.dash.` value (the guard is how a percentage stays gone — M3 kills here).
+const SCOPE_5C = /^(partner5\.(sla\.|chain\.(slaExport|slaAct)\.)|nav\.slaReports$)/;
+const SURFACES_5C = ['sla', 'sla_export', 'sla_act'] as const;
+const FORBIDDEN_5C: readonly [string, RegExp, string][] = [
+  ['%', /%/, 'Decision SLA (30d) 94%'],
+  ['n / 5', /\d+(\.\d+)?\s*\/\s*5\b/, 'Borrower CSAT 4.6 / 5'],
+  ['CSAT', /CSAT/i, 'Borrower CSAT 4.6 / 5 post-disbursal survey, in Gujarati'],
+  ['conduct flags', /conduct flags?/i, 'Conduct flags 0'],
+  ['clean quarter', /clean quarter/i, 'collections code — clean quarter'],
+  ['your contract', /your contract/i, 'Your contract with the platform, measured (financial_partners.sla)'],
+  ['same scoreboard', /same scoreboard|one scoreboard/i, 'Both sides see the same scoreboard.'],
+  ['provider-health', /provider[- ]health/i, 'The same SLA numbers appear on the platform’s provider-health console'],
+  ['monthly pack', /monthly (performance |report )?packs?/i, 'Download monthly pack (signed)'],
+  // AFFIRMATIVE: PARTNER-2b's reused refusal truthfully says "No report pack is generated on the platform."
+  ['report pack (affirmative)', /report packs? (yet|\(|will|appear)|report packs \(signed/i, 'Monthly report packs (signed exports)'],
+  ['sha256:', /sha256:/i, 'sha256:<hash>'],
+  ['PAR', /\bPAR\b/, 'Originations · repayments · PAR · SLA · consent registry'],
+  ['consent registry', /consent registry/i, 'Originations · repayments · PAR · SLA · consent registry'],
+  ['partner desk', /partner desk/i, 'Integration issues → partner desk, 4h response (P1)'],
+  ['partnership manager', /partnership manager/i, 'Commercial terms → your partnership manager'],
+  ['quarterly review', /quarterly review/i, '(quarterly review 04 Aug)'],
+  ['4h response', /\d+\s*h(ours?)? response/i, 'partner desk, 4h response (P1)'],
+  ['same-day', /same[- ]day/i, 'Data/consent questions → platform compliance, same-day'],
+  ['disbursal promise', /disbursal SLA|disbursal \d+\s*h/i, 'Disbursal SLA 99% · disbursal 48h post-cooling-off'],
+  ['volume-surge', /volume[- ]surge/i, '4 breaches — all volume-surge weeks'],
+  ['docs_pending pause', /docs_pending|pause honoured/i, 'docs_pending pause honoured on every one'],
+  ['immutable', /immutable/i, 'Generated packs are immutable and re-downloadable.'],
+  ['re-downloadable', /re-?downloadable/i, 'Generated packs are immutable and re-downloadable.'],
+  ['generates on the 1st', /generates on the 1st|on the 1st/i, 'Your first monthly pack generates on the 1st'],
+  ['compliance role', /compliance role/i, 'Monthly packs need your bank’s admin or compliance role.'],
+  ['same manifest', /same manifest|manifest format/i, 'same manifest format as the auditor console'],
+  ['claim-free', /claim-free/i, 'claim-free data handling'],
+  ['plan settings (affirmative)', /see plan settings/i, 'This module is switched off for this tenant/plan (feature flag). See plan settings.'],
+  ['breaches', /\bbreach(es)?\b/i, '4 breaches — all volume-surge weeks'],
+];
+/** The honest sentences 5c must NOT ban: the reused refusals that say no to the same things. */
+const PERMITTED_5C = [
+  'No report pack is generated on the platform.',
+  'There are no plan settings for your organisation to open. Nothing on this platform lets a partner switch its own modules on.',
+  'No share of decisions is printed.',
+  'No borrower satisfaction score exists: no survey is sent to a borrower after a loan and no score is kept.',
+];
+/** The three sentences and the zero reason founder 5c-1 pinned, VERBATIM. */
+const PINNED_5C: Readonly<Record<string, string>> = {
+  'partner5.sla.promise': 'The platform has published a decision promise of {hours} hours for your organisation.',
+  'partner5.sla.promiseNone': 'The platform has not published a decision promise for your organisation.',
+  'partner5.sla.promiseSetBy': 'The platform sets this promise; it is not changed from this console.',
+  'partner5.sla.zeroReason': 'These figures count only applications whose applicants consented to show them to you. No consent is recorded on the platform yet, so in production every figure here is zero.',
+};
+const keys5C = (c: Record<string, string>) => [...new Set([...Object.keys(c).filter((k) => SCOPE_5C.test(k)),
+  ...PARTNER5_REFUSALS.filter((r) => r.surfaces.some((x) => (SURFACES_5C as readonly string[]).includes(x))).map((r) => r.key)])];
+
+describe('PC-56 PARTNER-5c · claims guard (the promise the platform sets)', () => {
+  it('every 5c forbidden word is caught when planted once (each regex proven on its own canon phrase); none of the honest sentences trips one', () => {
+    for (const [name, re, planted] of FORBIDDEN_5C) expect([name, re.test(planted)]).toEqual([name, true]);
+    for (const ok of PERMITTED_5C) for (const [name, re] of FORBIDDEN_5C) expect([ok, name, re.test(ok)]).toEqual([ok, name, false]);
+    for (const [k, v] of Object.entries(PINNED_5C)) for (const [name, r] of [...FORBIDDEN_5C, ...FORBIDDEN_5A]) expect([k, name, r.test(v)]).toEqual([k, name, false]);
+    // the narrowed regexes spare the reused refusals verbatim and still catch the canon's own forms
+    const re = (n: string) => (FORBIDDEN_5C.find(([x]) => x === n) as [string, RegExp, string])[1];
+    expect(re('report pack (affirmative)').test(en['partner2.refusal.reportPack'])).toBe(false);
+    for (const canon of ['No report packs yet', 'Monthly report packs (signed exports)']) expect([canon, re('report pack (affirmative)').test(canon)]).toEqual([canon, true]);
+    expect(re('plan settings (affirmative)').test(en['partner4.refusal.planSettings'])).toBe(false);
+  });
+  it.each(Object.entries(CATS))('%s: no 5c claim in any 5c value, nor in any key PARTNER5_REFUSALS prints on a 5c surface; no "%" anywhere', (_l, cat) => {
+    const c = cat as Record<string, string>;
+    const keys = keys5C(c);
+    expect(keys.length).toBeGreaterThan(50);
+    for (const k of keys) {
+      expect([k, typeof c[k]]).toEqual([k, 'string']);
+      for (const [name, re] of [...FORBIDDEN_5C.map(([n, r]) => [n, r] as const), ...FORBIDDEN]) expect([k, name, re.test(c[k])]).toEqual([k, name, false]);
+      expect([k, c[k].includes('%')]).toEqual([k, false]);
+    }
+    for (const k of Object.keys(en).filter((x) => SCOPE_5C.test(x))) expect([k, typeof c[k] === 'string' && c[k].length > 0]).toEqual([k, true]);
+  });
+  it('founder 5c-1 (en, VERBATIM): the promise both ways, who sets it, and the production-zero reason; present and distinct in hi and gu', () => {
+    for (const [k, v] of Object.entries(PINNED_5C)) {
+      expect([k, en[k]]).toEqual([k, v]);
+      expect([k, typeof hi[k] === 'string' && hi[k].length > 30 && hi[k] !== en[k], typeof gu[k] === 'string' && gu[k].length > 30 && gu[k] !== en[k]]).toEqual([k, true, true]);
+      expect([k, hi[k] !== gu[k]]).toEqual([k, true]);
+    }
+    expect(en['partner5.sla.promise']).toContain('{hours}');
+    for (const cat of [hi, gu]) expect((cat as Record<string, string>)['partner5.sla.promise']).toContain('{hours}');
+    // a breach is only a COUNT labelled "after the promise", never a cause; the within/after lines are "N of M", never a share
+    expect(en['partner5.sla.after']).toBe('Decided after the promise: {late} of {n}');
+    expect(en['partner5.sla.within']).toBe('Decided within the promise: {w} of {n}');
+    // no English 5c value ever says "contract", nor offers a percentile, a rate, a ratio or a share as a figure
+    for (const k of Object.keys(en).filter((x) => SCOPE_5C.test(x))) expect([k, /contract|percent|\brate\b|\bratio\b/i.test(en[k])]).toEqual([k, false]);
+  });
+  it.each(Object.entries(CATS))('founder 5c-3 · %s: no "%" in ANY partner1.dash. value; the retired rate and on-time keys are gone; the counts line is in place', (_l, cat) => {
+    const c = cat as Record<string, string>;
+    const dash = Object.keys(c).filter((k) => k.startsWith('partner1.dash.'));
+    expect(dash.length).toBeGreaterThan(30);
+    for (const k of dash) expect([k, c[k].includes('%')]).toEqual([k, false]);
+    for (const k of ['partner1.dash.rate', 'partner1.dash.rateValue', 'partner1.dash.rateNone', 'partner1.dash.rateHint', 'partner1.dash.onTime', 'partner1.dash.onTimeNone', 'partner1.dash.onTimeHint']) {
+      expect([k, k in c]).toEqual([k, false]);
+    }
+    expect(c['partner1.dash.approvedOf']).toMatch(/\{approved\}/); expect(c['partner1.dash.approvedOf']).toMatch(/\{decided\}/);
+  });
+  it('C-8 corrected: the punctuality refusal is true of the console as shipped — no figure anywhere, the due date is the India-time day it was paid', () => {
+    expect(en['partner4.refusal.onTime']).toBe('No punctuality figure is shown anywhere in this console. With no instalment plan on the platform, a repayment’s recorded due date is the India-time day it was paid, so every repayment would count as punctual and the figure would mean nothing.');
+    expect(en['partner4.refusal.onTime']).not.toMatch(/the moment it was paid/);
+    for (const cat of [hi, gu]) expect((cat as Record<string, string>)['partner4.refusal.onTime']).not.toBe(en['partner4.refusal.onTime']);
+  });
+  it('the W214 page and view name no percentage, no float formatter, no division and no latency arithmetic in their CODE; the dashboard view no longer formats a share', () => {
+    const fs2 = require('node:fs') as typeof import('node:fs');
+    const path2 = require('node:path') as typeof import('node:path');
+    const SRC = path2.join(__dirname, '..');
+    for (const rel of ['components/partner5/LenderReportsView.tsx', 'app/lender/reports/page.tsx', 'components/partner1/DashboardView.tsx']) {
+      const code = fs2.readFileSync(path2.join(SRC, rel), 'utf8').split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
+      expect([rel, code.length > 300]).toEqual([rel, true]);
+      for (const [name, re] of [['%', /%/], ['toFixed', /toFixed/], ['percent', /percent/i], ['bpsPercentText', /bpsPercentText|approvalRateBps|shareBps|onTime\./],
+        ['division of figures', /\b(withinPromise|decided|within|medianSec|p90Sec)\s*\//], ['seconds arithmetic', /\/\s*3600|\/\s*60\b|\*\s*100\b/], ['Math', /Math\./]] as const) {
         expect([rel, name, re.test(code)]).toEqual([rel, name, false]);
       }
     }

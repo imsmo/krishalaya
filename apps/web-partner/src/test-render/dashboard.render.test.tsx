@@ -11,18 +11,26 @@ import { partner1RefusalKeys } from '../features/partner1/refusals';
 import { en } from '../i18n/en';
 import { gu } from '../i18n/gu';
 import { EMPTY, FIGURES, text, tr } from './partner1a-fixtures';
+import { percents } from './partner4a-fixtures';
 
 const render = (state: Parameters<typeof DashboardView>[0]['state'], d = FIGURES, cat: Record<string, string> = en) =>
   renderToStaticMarkup(<DashboardView t={tr(cat)} lang="en" state={state} d={d} orgName="Fixture Lending Partner" />);
 
 describe('PC-56 PARTNER-1a · W205 the dashboard (render)', () => {
-  it('the six figures as the server computed them, with the as-of time; money from bigint strings; rates in one-decimal percent', () => {
+  // PC-56 PARTNER-5c · NAMED UPDATE (founder 5c-3, door Q6): the approval-rate percentage and the "Paid on time" tile are RETIRED — the
+  // approvals print as COUNTS, no on-time tile is drawn, and no "%" appears anywhere on the page (the fixture still carries the API's
+  // `approvalRateBps` 7142 and `onTime.shareBps` 7500: the machine contract is unchanged, the console simply stops printing them).
+  it('the figures as the server computed them, with the as-of time; money from bigint strings; approvals as COUNTS; no on-time tile and no "%"', () => {
     const html = render(dashboardState(FIGURES, null)); const w = text(html);
     expect(html).toContain('data-kv-dash="ok"');
-    for (const id of ['awaiting', 'decided', 'rate', 'outstanding', 'ontime']) expect(html).toContain(`data-kv-tile="${id}"`);
+    for (const id of ['awaiting', 'decided', 'approvals', 'outstanding']) expect(html).toContain(`data-kv-tile="${id}"`);
+    for (const gone of ['rate', 'ontime']) expect(html).not.toContain(`data-kv-tile="${gone}"`);
     expect(w).toContain('104');                                  // awaiting — the full count, past a page of 100
-    expect(w).toContain('71.4%');                                // 7142 bps
-    expect(w).toContain('75.0%');                                // on-time 7500 bps
+    expect(w).toContain('5 approved of 7 decided this month');   // counts, never 71.4
+    expect(html).not.toContain('%');
+    expect(percents(w)).toBe(0);
+    expect(w).not.toMatch(/71\.4|75\.0|Paid on time|Approval rate/);
+    expect(w).toContain(en['partner1.dash.noPunctuality']);
     expect(w).toContain('₹9,00,71,99,25,47,409.93');            // 9007199254740993 paise — exact past 2^53, never rounded through a float
     expect(w).toContain('3 active or overdue loans');
     expect(w).toContain('5 approved · 2 rejected');
@@ -30,7 +38,6 @@ describe('PC-56 PARTNER-1a · W205 the dashboard (render)', () => {
     expect(w).toContain('Published promise: a decision within 48 hours');
     expect(w).toContain('median 31.0 hours · 90th percentile 50.0 hours, over 7 decisions');
     expect(w).toContain('Decided within the promise: 6 of 7');
-    expect(w).toContain(en['partner1.dash.onTimeHint'].replace('{onTime}', '3').replace('{due}', '4'));
   });
   it('the organisations by their PUBLIC name; a non-live one is the neutral word; needs-you-today by reference, product, amount, organisation, age', () => {
     const html = render('ok'); const w = text(html);
@@ -46,7 +53,8 @@ describe('PC-56 PARTNER-1a · W205 the dashboard (render)', () => {
     const d = { ...FIGURES, decidedThisMonth: { ...FIGURES.decidedThisMonth, decided: 0, approved: 0, rejected: 0, approvalRateBps: null },
       onTime: { ...FIGURES.onTime, due: 0, onTime: 0, shareBps: null }, sla: { ...FIGURES.sla, decisionPromiseHours: null, decided: 0, medianSec: null, p90Sec: null, withinPromise: null } };
     const w = text(render('ok', d));
-    expect(w).toContain(en['partner1.dash.slaNone']); expect(w).toContain(en['partner1.dash.rateNone']); expect(w).toContain(en['partner1.dash.onTimeNone']);
+    expect(w).toContain(en['partner1.dash.slaNone']); expect(w).toContain(en['partner1.dash.approvalsNone']);   // PC-56 PARTNER-5c · NAMED UPDATE
+    expect(percents(w)).toBe(0);
     expect(w).toContain('No decision in the last 30 days.');
     expect(w).not.toMatch(/NaN|Infinity|undefined/);
   });

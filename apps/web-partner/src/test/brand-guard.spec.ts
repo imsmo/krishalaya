@@ -187,7 +187,9 @@ describe('PC-56 PARTNER-5a · brand guard over the arrears pages (founder 5a-8: 
   const DIRS = [path.join(SRC, 'components', 'partner5'), path.join(SRC, 'features', 'partner5'),
     path.join(SRC, 'app', 'lender', 'portfolio', 'aging'), path.join(SRC, 'app', 'lender', 'portfolio', 'writeoffs'),
     // PC-56 PARTNER-5b · the collections tree (W219 / W220 / W221) joins the floor, recursively
-    path.join(SRC, 'app', 'lender', 'collections')];
+    path.join(SRC, 'app', 'lender', 'collections'),
+    // PC-56 PARTNER-5c · NAMED UPDATE: the SLA page (W214) joins the floor
+    path.join(SRC, 'app', 'lender', 'reports')];
   const mine = files().filter((f) => DIRS.some((d) => f.startsWith(d + path.sep))).map((f) => path.relative(SRC, f)).sort();
   it('the floor holds: six views, five pages, two feature modules — all scanned (PARTNER-5b: + three views, three pages)', () => {
     expect(mine).toEqual(expect.arrayContaining(['components/partner5/LenderAgingView.tsx', 'components/partner5/LenderChain5.tsx',
@@ -195,8 +197,10 @@ describe('PC-56 PARTNER-5a · brand guard over the arrears pages (founder 5a-8: 
       'features/partner5/figures.ts', 'features/partner5/refusals.ts',
       // PC-56 PARTNER-5b
       'components/partner5/LenderCollectionsView.tsx', 'components/partner5/LenderCollectionsCaseView.tsx', 'components/partner5/LenderRestructureView.tsx',
-      'app/lender/collections/page.tsx', 'app/lender/collections/[id]/page.tsx', 'app/lender/collections/[id]/restructure/page.tsx']));
-    expect(mine.length).toBeGreaterThanOrEqual(13);
+      'app/lender/collections/page.tsx', 'app/lender/collections/[id]/page.tsx', 'app/lender/collections/[id]/restructure/page.tsx',
+      // PC-56 PARTNER-5c
+      'components/partner5/LenderReportsView.tsx', 'app/lender/reports/page.tsx']));
+    expect(mine.length).toBeGreaterThanOrEqual(15);
   });
   it('none carries the platform\'s name, a mailbox, a domain, or the canon\'s institution, person, place, phone, loan / case reference, scheme, rainfall figure or sha fragment', () => {
     for (const rel of mine) {

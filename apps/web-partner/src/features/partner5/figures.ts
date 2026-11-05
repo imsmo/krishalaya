@@ -100,3 +100,46 @@ export function writeoffsState(c: AgingCountsShape | null, items: readonly unkno
 export const collectionsHref = () => '/lender/collections';
 export const collectionsCaseHref = (loanId: string) => `/lender/collections/${encodeURIComponent(loanId)}`;
 export const restructureHref = (loanId: string) => `/lender/collections/${encodeURIComponent(loanId)}/restructure`;
+
+// ── PC-56 PARTNER-5c · W214 (`/lender/reports`, founder 5c-1) — the decision promise and the measured decision time ─────────────────────
+// The SERVER computes every figure (PARTNER-1a's `GET /v1/partner/dashboard`, its `sla` block: the published promise in whole hours or
+// null, and over the last N days the count decided, the count within the promise, and the nearest-rank median and nine-in-ten latencies in
+// WHOLE SECONDS). This file only (a) splits whole seconds into whole hours and minutes for printing, and (b) prints the count decided AFTER
+// the promise as `decided − withinPromise` (founder 5c-1: the only "breach" figure allowed, never attributed to a cause). No percentile is
+// computed here, no share, no rate, no average — and no function in this file can emit a percentage sign.
+export const REPORTS_PAGE = '/lender/reports';
+export interface SlaShape {
+  decisionPromiseHours: number | null; windowDays: number; decided: number; medianSec: number | null; p90Sec: number | null; withinPromise: number | null;
+}
+const intOrNull = (v: unknown) => (Number.isInteger(v) && (v as number) >= 0 ? (v as number) : null);
+
+/** Whole seconds → whole hours and minutes, rounded to the nearest minute in integer arithmetic; null → null. Never a float. */
+export function hoursMinutes(seconds: number | null | undefined): { hours: number; minutes: number } | null {
+  const s = intOrNull(seconds);
+  if (s === null) return null;
+  const totalMin = Math.floor((s + 30) / 60);
+  const hours = Math.floor(totalMin / 60);
+  return { hours, minutes: totalMin - hours * 60 };
+}
+
+/** What W214 prints of the `sla` block — counts and durations only. `after` is null when no promise is published (nothing to be after). */
+export function slaFigures(sla: Partial<SlaShape> | null | undefined): {
+  promiseHours: number | null; days: number; decided: number; within: number | null; after: number | null;
+  median: { hours: number; minutes: number } | null; p90: { hours: number; minutes: number } | null;
+} {
+  const promiseHours = intOrNull(sla?.decisionPromiseHours);
+  const decided = int(sla?.decided);
+  const w = promiseHours !== null && promiseHours >= 1 ? intOrNull(sla?.withinPromise) : null;
+  const within = w !== null && w <= decided ? w : null;
+  return {
+    promiseHours: promiseHours !== null && promiseHours >= 1 ? promiseHours : null,
+    days: int(sla?.windowDays), decided, within, after: within === null ? null : decided - within,
+    median: decided > 0 ? hoursMinutes(sla?.medianSec) : null, p90: decided > 0 ? hoursMinutes(sla?.p90Sec) : null,
+  };
+}
+/** W214's state: EMPTY when nothing was decided in the window (the production-zero reason says why). */
+export function slaState(sla: Partial<SlaShape> | null, failure: LenderFailure | null): Lender5State {
+  if (failure) return failure;
+  if (!sla) return 'error';
+  return int(sla.decided) === 0 ? 'empty' : 'ok';
+}

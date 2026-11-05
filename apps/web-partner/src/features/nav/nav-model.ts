@@ -65,6 +65,9 @@ export const PARTNER_NAV: readonly PartnerNavItem[] = [
   { href: '/lender/disbursements', labelKey: 'partner4.nav.payouts', group: 'lending', live: true },
   { href: '/lender/repayments', labelKey: 'partner4.nav.repayments', group: 'lending', live: true },
   { href: '/lender/portfolio', labelKey: 'partner4.nav.portfolio', group: 'lending', live: true },
+  // PC-56 PARTNER-5c (founder 5c-2, survey C-15): + "SLA & reports" (W214 `lender/reports`), the canon's own sidebar item, after Portfolio —
+  // in the LENDING group, so a lender sees it and an insurer never does (and `lenderGate()` sends an insurer who opens it to its own home).
+  { href: '/lender/reports', labelKey: 'nav.slaReports', group: 'lending', live: true },
   // logistics vertical (3PL partners)
   { href: '/shipments', labelKey: 'nav.shipments', group: 'fleet', live: true },
   { href: '/fleet', labelKey: 'nav.fleetSetup', group: 'fleet', live: true },

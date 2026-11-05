@@ -14,14 +14,18 @@
 // `/lender/collections/[id]/restructure`) — and their four DECOR chains: `collections_form` (W2914–W2917, `?form=` on the case page, NO
 // mailbox), `collections_act` (W2918–W2920, `?act=` on `/lender/collections`), `case_act` (`?act=` on the case page, files listed on
 // W219's chain) and `restructure_act` (W2999–W3001). A lender never collects, contacts, ranks or sees a borrower in arrears here (Q5), and
-// nothing of any restructure proposal reaches this console (Q4). The 5c surfaces (`sla`, `sla_export`, `sla_act`) are declared and
-// unused: their doors are 5c's.
+// nothing of any restructure proposal reaches this console (Q4).
+// PC-56 PARTNER-5c · THE PROMISE THE PLATFORM SETS (founder 5c-1 / 5c-2; doors Q6 + Q7) uses the last three surfaces: `sla` (W214,
+// `/lender/reports`) — a READ of PARTNER-1a's dashboard `sla` block (no new route, one audit row per read): the platform's published
+// decision promise and the measured decision time as counts and durations, with the production-zero reason — and its two chains,
+// `sla_export` (W3009–W3010, DECOR + the mailbox line) and `sla_act` (W3011–W3013, PARITY-DECOR: Retry is a genuine re-read). With 5c the
+// PARTNER-5 registry decides all 31 files and no pending verdict value survives (the 4c-7 rule).
 export type Partner5Surface =
   | 'aging' | 'writeoffs' | 'aging_export' | 'aging_act' | 'writeoffs_export' | 'writeoffs_act'
   // PARTNER-5b
   | 'collections' | 'collections_case' | 'restructure'
   | 'collections_form' | 'collections_act' | 'case_act' | 'restructure_act'
-  // PARTNER-5c — declared, unused until 5c
+  // PARTNER-5c
   | 'sla' | 'sla_export' | 'sla_act';
 export interface Partner5Refusal { id: string; canon: string; surfaces: readonly Partner5Surface[]; key: string; why: string }
 
@@ -35,6 +39,8 @@ const PAGES: readonly Partner5Surface[] = ['aging', 'writeoffs'];
 const PAGES_5B: readonly Partner5Surface[] = ['collections', 'collections_case', 'restructure'];
 /** The four DECOR chains of 5b. */
 const CHAINS_5B: readonly Partner5Surface[] = ['collections_form', 'collections_act', 'case_act', 'restructure_act'];
+/** PC-56 PARTNER-5c · the SLA page and its two chains. */
+const SLA_ALL: readonly Partner5Surface[] = ['sla', 'sla_export', 'sla_act'];
 /** The two collections pages (W219, W220) — where the canon's code of conduct and its contact promises are printed. */
 const COLL: readonly Partner5Surface[] = ['collections', 'collections_case'];
 
@@ -54,9 +60,9 @@ export const PARTNER5_REFUSALS: readonly Partner5Refusal[] = Object.freeze([
     key: 'partner5.refusal.computedNightly', why: '"server-computed" is TRUE; "nightly + live-adjusted" is FALSE — no job exists; `partner_loan_dpd()` is a STABLE SQL function evaluated on every request (0232:112) and each answer carries `computedAt`' },
   { id: 'bucket_drilldown', canon: 'FM:32 drill-in "linkless table" on W223 — a bucket row opened to the loans in it', surfaces: ['aging'],
     key: 'partner5.refusal.bucketDrilldown', why: 'refused (founder 5a-5, WALL): a bucket drill-down would list the loans in arrears; a lender never names, ranks or contacts a borrower through this console, so a row is not a link (survey §1F)' },
-  { id: 'aging_roles', canon: 'W223 restricted state "Aging restricted — Risk-committee view; needs credit-risk role." · W222 restricted state "Write-offs restricted — Board-level view …"', surfaces: PAGES,
+  { id: 'aging_roles', canon: 'W223 restricted state "Aging restricted — Risk-committee view; needs credit-risk role." · W222 restricted state "Write-offs restricted — Board-level view …" · (PARTNER-5c) W214 restricted state "Reports restricted — Monthly packs need your bank\'s admin or compliance role."', surfaces: [...PAGES, 'sla'],
     key: 'partner4.refusal.platformRoles', why: 'FALSE: the partner realm has four roles (0225) and `partner.loans.read` covers both pages for all four (0231:142-164); no risk-committee, credit-risk or board role exists — PARTNER-4\'s refusal, reused by key' },
-  { id: 'plan_settings', canon: 'W222 / W223 (and, PARTNER-5b, W219 / W220 / W221) flagged-off state "This module is switched off for this tenant/plan (feature flag) … See plan settings."', surfaces: [...PAGES, ...PAGES_5B],
+  { id: 'plan_settings', canon: 'W222 / W223 (and, PARTNER-5b, W219 / W220 / W221; PARTNER-5c, W214 "Flagged off — SLA & Reports disabled") flagged-off state "This module is switched off for this tenant/plan (feature flag) … See plan settings."', surfaces: [...PAGES, ...PAGES_5B, 'sla'],
     key: 'partner4.refusal.planSettings', why: 'OFF-as-OFF via `partner_console` (`lib/lender.ts:34-37`); no plan-settings surface exists for a partner organisation (the 2a / 2c / 3a / 4a precedent, reused by key)' },
   // ── W222 · written-off loans (founder 5a-3 / 5a-7) ──
   { id: 'written_off_share', canon: 'W222 "2 loans written off FY (₹1,10,000 · 0.16% of book)"', surfaces: ['writeoffs', 'writeoffs_export'],
@@ -90,13 +96,13 @@ export const PARTNER5_REFUSALS: readonly Partner5Refusal[] = Object.freeze([
   // ── the four chains (W2929–W2930, W2931–W2933, W3024–W3025, W3026–W3028) ──
   { id: 'board_pack', canon: 'W222 "Export (board pack)" (FM:168, `chain-export` → W3024–W3025) and the module sentence of W3024 / W3025', surfaces: ['writeoffs', 'writeoffs_export'],
     key: 'partner5.refusal.boardPack', why: 'DECOR (founder 5a-8, 2b-1): no partner export plane exists (P2-B6), and the lender\'s board is not a platform surface — nothing is prepared for one' },
-  { id: 'export_file', canon: 'W2929 / W3024 "audit-stamped, checksummed, delivered by signed URL" · W2930 / W3025 "file name, row count, sha256, generated-at, requester — delivery via 15-min signed URL, every fetch logged" · W223 "Export (signed)"', surfaces: [...EXPORT, ...PAGES],
+  { id: 'export_file', canon: 'W2929 / W3024 "audit-stamped, checksummed, delivered by signed URL" · W2930 / W3025 "file name, row count, sha256, generated-at, requester — delivery via 15-min signed URL, every fetch logged" · W223 "Export (signed)"', surfaces: [...EXPORT, ...PAGES, ...SLA_ALL.filter((x) => x !== 'sla_act')],
     key: 'partner4.refusal.exportFile', why: 'founder 5a-8 / 4a-7 (2b-1): there is no partner export plane in Phase 1 (P2-B6); the console names the partners mailbox instead — PARTNER-4\'s refusal, reused by key' },
-  { id: 'chain_zero_sum', canon: 'W2932 / W3027 "Money-adjacent actions reconcile zero-sum before this page ever shows"', surfaces: [...CHAINS, ...CHAINS_5B],
+  { id: 'chain_zero_sum', canon: 'W2932 / W3027 "Money-adjacent actions reconcile zero-sum before this page ever shows"', surfaces: [...CHAINS, ...CHAINS_5B, 'sla_act'],
     key: 'partner4.refusal.chainZeroSum', why: 'nothing reached from these pages moves a rupee (survey §1 rupee 6), so there is nothing to reconcile — reused by key' },
-  { id: 'chain_on_call', canon: 'W2933 / W3028 "repeated failures page the on-call"', surfaces: [...CHAINS, ...CHAINS_5B],
+  { id: 'chain_on_call', canon: 'W2933 / W3028 "repeated failures page the on-call"', surfaces: [...CHAINS, ...CHAINS_5B, 'sla_act'],
     key: 'partner4.refusal.chainOnCall', why: 'no paging from a partner page exists (survey §1, the shared chain sentences refused by PARTNER-1…4) — reused by key' },
-  { id: 'chain_audit', canon: 'W2931 / W3026 "confirming writes an audit-trail entry with actor, time and reason" · W2932 / W3027 "View audit trail" · "the audit trail has the entry (actor · time · reason · before/after)"', surfaces: [...CHAINS, ...CHAINS_5B],
+  { id: 'chain_audit', canon: 'W2931 / W3026 "confirming writes an audit-trail entry with actor, time and reason" · W2932 / W3027 "View audit trail" · "the audit trail has the entry (actor · time · reason · before/after)"', surfaces: [...CHAINS, ...CHAINS_5B, 'sla_act'],
     key: 'partner4.refusal.chainAudit', why: 'a re-read writes only its own partner-realm read row (one per dpd / counts / list read, counts only — survey E10; PCON partner-console.controller.ts:294-331 are GETs) and the console has no audit-trail page — reused by key' },
   // ══ PC-56 PARTNER-5b · COLLECTIONS THE PLATFORM DOES NOT DO (founder 5b-1 … 5b-5) ══
   // ── the code of conduct, REUSED BY KEY from PARTNER-4b (founder 4b-5: recorded as intent, never as something the platform enforces) ──
@@ -181,6 +187,43 @@ export const PARTNER5_REFUSALS: readonly Partner5Refusal[] = Object.freeze([
     key: 'partner5.refusal.noAcceptanceState', why: 'refused (founder 5b-4, Q4): nothing of a proposal is shown here, and an acceptance cannot be recorded at all until P5-B4' },
   { id: 'starts_from_case', canon: 'W221 state "No restructure in draft — Restructure starts from a collections case — context first, terms second." + "Back to case"', surfaces: ['restructure'],
     key: 'partner5.refusal.startsFromCase', why: 'FALSE: there is no case; a restructure starts from a loan id on the tenant plane (`servicing.controller.ts:90-94`)' },
+  // ══ PC-56 PARTNER-5c · THE PROMISE THE PLATFORM SETS (founder 5c-1, door Q7 option A) ══
+  // ── W214 · the lead line and the KPI tiles ──
+  { id: 'your_contract', canon: 'W214 lead "Your contract with the platform, measured (financial_partners.sla): decision 72h …"', surfaces: ['sla'],
+    key: 'partner5.refusal.yourContract', why: 'founder 5c-1 (survey C-13, §1A): the platform stores no commercial agreement; `sla` is a jsonb with ONE key anybody reads or writes, `decision_hours`, set by the admin realm alone (ADM partner-ops.service.ts:48-63). The page says what the platform PUBLISHED, never "your contract"' },
+  { id: 'disbursal_promise', canon: 'W214 lead "disbursal 48h post-cooling-off" and the KPI "Disbursal SLA 99% — median 6h post-cooling-off"', surfaces: ['sla'],
+    key: 'partner5.refusal.disbursalPromise', why: 'FALSE (survey C-13, P5-B10 refused): no such key exists, and paying a loan out is the cooperative\'s act, never the lender\'s (PARTNER_CANNOT_DISBURSE, founder 4b-4); nothing measures it' },
+  { id: 'data_handling', canon: 'W214 lead "claim-free data handling"', surfaces: ['sla'],
+    key: 'partner5.refusal.dataHandling', why: 'FALSE (survey C-13): not a field of `sla`; nothing publishes or measures a data-handling promise' },
+  { id: 'same_scoreboard', canon: 'W214 "Both sides see the same scoreboard." and the footer "The same SLA numbers appear on the platform\'s provider-health console — one scoreboard, no arguments"', surfaces: ['sla'],
+    key: 'partner5.refusal.sameScoreboard', why: 'FALSE (survey §1A): the admin realm stores and shows the promise (partner-ops) but no admin read computes a partner\'s measured decision time; `providers-ops` is the integration-provider registry' },
+  { id: 'decision_rate', canon: 'W214 KPI "Decision SLA (30d)" printed as a share of decisions', surfaces: ['sla'],
+    key: 'partner5.refusal.decisionRate', why: 'founder 5c-1 / 4b-7 (survey E9): the dashboard read gives counts and whole-second durations (partner-dashboard.service.ts `sla`); a share is a ratio and is not printed — "N of M" instead' },
+  { id: 'surge_weeks', canon: 'W214 KPI "4 breaches — all volume-surge weeks"', surfaces: ['sla'],
+    key: 'partner5.refusal.surgeWeeks', why: 'founder 5c-1: a late decision is printed only as the count decided − withinPromise, labelled "decided after the promise"; nothing records why a decision took the time it did, so no cause is attributed (survey §1A)' },
+  { id: 'docs_pause', canon: 'W214 KPI "docs_pending pause honoured on every one"', surfaces: ['sla'],
+    key: 'partner5.refusal.docsPause', why: 'FALSE (survey §1A, S4 C-9): `docs_pending` is unreachable and no pause exists; the latency is `decision_at − created_at` (partner-dashboard.rules.ts)' },
+  { id: 'borrower_satisfaction', canon: 'W214 KPI "Borrower CSAT 4.6 / 5 — post-disbursal survey, in Gujarati"', surfaces: ['sla'],
+    key: 'partner5.refusal.borrowerSatisfaction', why: 'FALSE (survey §1A): no borrower survey and no score; the only satisfaction table is the support desk\'s (0099), about tickets, not loans' },
+  { id: 'conduct_count', canon: 'W214 KPI "Conduct flags 0 — collections code — clean quarter"', surfaces: ['sla'],
+    key: 'partner5.refusal.conductCount', why: 'FALSE and a trust line (survey §1A; founder 4b-5): there is no conduct check to produce a zero, so "clean" would assert a monitoring that does not exist' },
+  // ── W214 · the monthly packs ──
+  { id: 'report_packs', canon: 'W214 table "Monthly report packs (signed exports)", "Download monthly pack (signed)" (FM:129) and the state "No report packs yet"', surfaces: SLA_ALL,
+    key: 'partner2.refusal.reportPack', why: 'DECOR (founder 5c-1, 2b-1): no pack generator exists (P2-B6) — PARTNER-2b\'s W254 packs refusal (features/partner2/refusals.ts `report_pack`), reused BY KEY' },
+  { id: 'pack_contents', canon: 'W214 rows "Originations · repayments · PAR · SLA · consent registry" with a hash column of sha256 fragments', surfaces: ['sla', 'sla_export'],
+    key: 'partner5.refusal.packContents', why: 'FALSE (survey §1A): no pack, no hash, no generator; the portfolio-at-risk figure is a rate (E9) and the "consent registry" has no writer (P4-B6). The canon\'s hash fragments are never copied' },
+  { id: 'pack_schedule', canon: 'W214 states "Signed monthly performance packs will appear here once the first month closes." · "Your first monthly pack generates on the 1st"', surfaces: ['sla'],
+    key: 'partner5.refusal.packSchedule', why: 'FALSE: no job exists (survey §1A); "SLA numbers accrue live" is TRUE only in the narrow sense that the read is computed on every request — printed as `partner5.sla.liveNote`' },
+  { id: 'packs_kept', canon: 'W214 error state "Couldn\'t load reports — Generated packs are immutable and re-downloadable. Retry."', surfaces: ['sla', 'sla_act'],
+    key: 'partner5.refusal.packsKept', why: 'FALSE: no pack was ever produced, so none is kept or offered again; the word for a record the database refuses to change is reserved for tables with a trigger (founder 4c-5)' },
+  { id: 'manifest_format', canon: 'W214 footer "2 highlighted of 14 monthly packs · same manifest format as the auditor console" (FM:127, `bulkbar`)', surfaces: ['sla'],
+    key: 'partner5.refusal.manifestFormat', why: 'DECOR + FALSE (survey §1A): a static footer, and no file layout is shared with any console because no file is produced' },
+  // ── W214 · the escalation list ──
+  { id: 'escalations', canon: 'W214 "Escalations & contacts": integration issues to a partner desk with a response time; data and consent questions to platform compliance the same day; commercial terms to a named manager at a scheduled review', surfaces: ['sla'],
+    key: 'partner5.refusal.escalations', why: 'FALSE ×3 (survey §1A; S1 B10 named, not built): no partner desk, no response-time promise of the platform\'s, no named manager. PARTNER-1a\'s honest line — the partners mailbox from the platform\'s published facts — is printed instead (`partner1.ops.mailbox`, lib/partners-mailbox.ts)' },
+  // ── W3009–W3010 · the SLA export chain ──
+  { id: 'sla_export_file', canon: 'W3009 "audit-stamped, checksummed, delivered by signed URL" · W3010 "file name, row count, sha256, generated-at, requester — delivery via 15-min signed URL, every fetch logged"', surfaces: ['sla_export'],
+    key: 'partner5.refusal.slaExportFile', why: 'DECOR (founder 5c-1, 2b-1): no export plane exists for a partner (P2-B6); nothing is queued, stamped, fingerprinted or delivered' },
   // ── the collections form chain (W2914–W2917) ──
   { id: 'form_review_checker', canon: 'W2915 "Review before submitting — Maker-checker friendly review step … with the diff against current values" · W2914 "every invalid field is listed with its reason, values you entered are preserved"', surfaces: ['collections_form'],
     key: 'partner5.refusal.formReviewChecker', why: 'DECOR (survey §1G): there is no form, nothing was entered and no second person checks anything; the four canon pages carry no input themselves' },
@@ -244,11 +287,31 @@ export const PARTNER5_DELTAS: readonly { id: string; canon: string; built: strin
     built: 'never copied; the honest gap is the opposite — the terms table exists and nothing of it is applied or shown' },
   { id: 'view_repayments_dead', canon: 'W219 "View repayments" — a dead `data-decor` button inside the "No cases" state',
     built: 'a REAL link to `/lender/repayments`, beside a real link to `/lender/portfolio/aging`, on the page itself (there is no "No cases" state)' },
+  // ── PC-56 PARTNER-5c ──
+  { id: 'canon_contract', canon: 'W214 "Your contract with the platform, measured (financial_partners.sla)"',
+    built: 'the promise the platform PUBLISHED, in its own sentence (`partner5.sla.promise` / `partner5.sla.promiseNone`) beside "the platform sets this promise; it is not changed from this console" — never "your contract"' },
+  { id: 'fm127_bulkbar', canon: 'FM:127 — W214 "2 highlighted of 14 monthly packs · same manifes…" classed `bulkbar` (truncated)',
+    built: 'a static footer, not a selection bar; no table, no selection, no footer is drawn; its claim is refused (`manifest_format`)' },
+  { id: 'fm128_avatar', canon: 'FM:128 — W214 the two-letter avatar `<span>` classed `filter`',
+    built: 'no avatar is drawn; the page carries the lender\'s own name from `/me`' },
+  { id: 'fm130_td_filter', canon: 'FM:130 — W214 "May 2026", a `<td>` of the packs table, classed `filter`',
+    built: 'there is no packs table and no month filter; nothing on the page filters' },
+  { id: 'fm132_view_dashboard', canon: 'FM:132 — W214 "View dashboard", a dead `<button … data-decor>` FM registers as `nav-detail`',
+    built: 'a REAL link to `/dashboard`' },
+  { id: 'row_kebabs_5c', canon: 'W214 row kebabs "Actions for mp 1/2" (aria) — FM omits both',
+    built: 'no rows, so no kebabs' },
+  { id: 'fm_chain_ids_5c', canon: 'FM:129 / FM:131 name the chains by W13xx ids that exist nowhere: W1358/W1359 and W1360–W1362',
+    built: 'the canon\'s own files: W1358/W1359 → W3009/W3010, W1360–W1362 → W3011–W3013 (survey F-15)' },
+  { id: 'chain_routes_5c', canon: 'the chain pages W3009–W3013 as separate files',
+    built: 'query states of `/lender/reports`: `?export=queued|ready` (DECOR + the mailbox line) and `?act=confirm|success|failure` (PARITY-DECOR re-read); Back returns to `/lender/reports`' },
+  { id: 'sidebar_item', canon: 'the canon\'s ten-item lender sidebar, "SLA & reports" under Trust (survey C-15)',
+    built: 'ONE sidebar item "SLA & reports" in the LENDING group, after Portfolio, for a lender only; an insurer never sees it and `lenderGate()` sends an insurer to its own dashboard' },
 ]);
 
 /** Every canon file of PARTNER-5 (31), each with ONE verdict. 5a decided its 12; 5b decides its 13; 5c's 6 wait for their own wave. */
-/** PC-56 PARTNER-5b (the 4c-7 rule): the 5b-pending value is DELETED now that 5b decides its 13; only 5c's pending value survives. */
-export type Partner5Verdict = 'BUILT (read)' | 'BUILT (honest)' | 'PARITY-DECOR' | 'DECOR' | 'pending_5c';
+/** PC-56 PARTNER-5b (the 4c-7 rule): the 5b-pending value is DELETED now that 5b decides its 13. PC-56 PARTNER-5c: the last pending value is
+ *  DELETED too — all 31 are decided and the type keeps only the four verdicts. */
+export type Partner5Verdict = 'BUILT (read)' | 'BUILT (honest)' | 'PARITY-DECOR' | 'DECOR';
 export const PARTNER5_CANON_FILES: readonly { file: string; wave: '5a' | '5b' | '5c'; verdict: Partner5Verdict; note: string }[] = Object.freeze([
   // ── 5a · THE BOOK IN ARREARS, AS COUNTS (12) ──
   { file: 'W223-partner-dpd-aging.html', wave: '5a', verdict: 'BUILT (read)', note: '/lender/portfolio/aging over GET /v1/partner/loans/dpd + GET /v1/partner/loans/counts (two audit rows, counts only): the platform\'s SIX rows — no due date recorded first, with the statement beside it, then not yet due and the four rows past a recorded due date — each a count and a bigint sum; the sum-check sentence with BOTH figures; the restructured count from the windowed counts read with the restructured note; computedAt. Every percentage, "arrears (missed inst.)", the five buckets and "current", "pre-NPA review", the cure-machinery paragraph, "nightly + live-adjusted", the credit-risk role and "plan settings" are refused by name. Export is DECOR + mailbox; Retry is the PARITY-DECOR re-read; "View portfolio" is a real link' },
@@ -277,18 +340,19 @@ export const PARTNER5_CANON_FILES: readonly { file: string; wave: '5a' | '5b' | 
   { file: 'W2999-partner-restructure-mutate-confirm.html', wave: '5b', verdict: 'DECOR', note: '/lender/collections/[id]/restructure?act=confirm — moving a proposal is the cooperative\'s act on the tenant plane, not a lender\'s; nothing is confirmed here' },
   { file: 'W3000-partner-restructure-mutate-success.html', wave: '5b', verdict: 'DECOR', note: '?act=success — nothing happened, so nothing succeeded' },
   { file: 'W3001-partner-restructure-mutate-failure.html', wave: '5b', verdict: 'DECOR', note: '?act=failure — nothing was attempted and nothing changed' },
-  // ── 5c · THE PROMISE THE PLATFORM SETS (6) — decided by 5c ──
-  { file: 'W214-partner-sla-reports.html', wave: '5c', verdict: 'pending_5c', note: 'PARTNER-5c — the promise the platform sets (survey §1A)' },
-  { file: 'W3009-partner-sla-export-queued.html', wave: '5c', verdict: 'pending_5c', note: 'PARTNER-5c — the SLA export chain (survey §1N)' },
-  { file: 'W3010-partner-sla-export-ready.html', wave: '5c', verdict: 'pending_5c', note: 'PARTNER-5c — the SLA export chain' },
-  { file: 'W3011-partner-sla-mutate-confirm.html', wave: '5c', verdict: 'pending_5c', note: 'PARTNER-5c — the SLA mutate chain (survey §1O)' },
-  { file: 'W3012-partner-sla-mutate-success.html', wave: '5c', verdict: 'pending_5c', note: 'PARTNER-5c — the SLA mutate chain' },
-  { file: 'W3013-partner-sla-mutate-failure.html', wave: '5c', verdict: 'pending_5c', note: 'PARTNER-5c — the SLA mutate chain' },
+  // ── 5c · THE PROMISE THE PLATFORM SETS (6) — decided by 5c (founder 5c-1 / 5c-2) ──
+  { file: 'W214-partner-sla-reports.html', wave: '5c', verdict: 'BUILT (read)', note: '/lender/reports (a LENDING sidebar item for a lender only) over PARTNER-1a\'s GET /v1/partner/dashboard — its `sla` block only, one audit row per read, no new route: the platform\'s published decision promise in its own sentence (or that none is published) and "the platform sets this promise; it is not changed from this console"; the measured decision time over the last 30 days as COUNTS (decided; within the promise; after the promise) and two DURATIONS (median, nine in ten); the production-zero reason verbatim; the partners mailbox line in place of packs and escalations; "View dashboard" a real link. "Your contract", the disbursal and data-handling promises, the shared scoreboard, the decision share, the surge weeks and the documents pause, the satisfaction score, the conduct count, the monthly packs with their contents, schedule and keeping, the manifest footer, the three escalation lines, the role names and "plan settings" are refused by name. Export is DECOR + mailbox; Retry is the PARITY-DECOR re-read' },
+  { file: 'W3009-partner-sla-export-queued.html', wave: '5c', verdict: 'DECOR', note: '/lender/reports?export=queued — no partner export plane and no pack: exports are not available, write to the partners mailbox' },
+  { file: 'W3010-partner-sla-export-ready.html', wave: '5c', verdict: 'DECOR', note: '?export=ready — no file, no row count, no fingerprint, no signed link' },
+  { file: 'W3011-partner-sla-mutate-confirm.html', wave: '5c', verdict: 'PARITY-DECOR', note: '/lender/reports?act=confirm — the only trigger is Retry, a genuine re-read of the promise and the decision times: no confirm step, no audit row of its own beyond the read, no money' },
+  { file: 'W3012-partner-sla-mutate-success.html', wave: '5c', verdict: 'PARITY-DECOR', note: '?act=success — the figures were read again; nothing was written' },
+  { file: 'W3013-partner-sla-mutate-failure.html', wave: '5c', verdict: 'PARITY-DECOR', note: '?act=failure — nothing changed' },
 ]);
 
 // ── THE DECOR / PARITY-DECOR CHAINS: each is a query state of its parent page ──
 export type Chain5Id = 'aging_export' | 'aging_act' | 'writeoffs_export' | 'writeoffs_act'
-  | 'collections_form' | 'collections_act' | 'case_act' | 'restructure_act';
+  | 'collections_form' | 'collections_act' | 'case_act' | 'restructure_act'
+  | 'sla_export' | 'sla_act';
 export interface Chain5Def {
   id: Chain5Id; wave: '5a' | '5b' | '5c'; param: string; page: string; surface: Partner5Surface; states: readonly string[];
   key: (state: string) => string; files: readonly string[];
@@ -318,6 +382,11 @@ export const PARTNER5_CHAINS: readonly Chain5Def[] = Object.freeze([
     key: (s: string) => `partner5.chain.caseAct.${s}`, files: [], statement: 'partner5.case.statement' },
   { id: 'restructure_act', wave: '5b', param: 'act', page: '/lender/collections/[id]/restructure', surface: 'restructure_act', states: ['confirm', 'success', 'failure'],
     key: (s: string) => `partner5.chain.restructureAct.${s}`, files: ['W2999', 'W3000', 'W3001'], statement: 'partner5.restructure.statement' },
+  // ── PC-56 PARTNER-5c · the SLA page's two chains (founder 5c-1): the export is DECOR with the mailbox line; Retry is a genuine re-read ──
+  { id: 'sla_export', wave: '5c', mailbox: true, param: 'export', page: '/lender/reports', surface: 'sla_export', states: ['queued', 'ready'],
+    key: (s: string) => `partner5.chain.slaExport.${s}`, files: ['W3009', 'W3010'] },
+  { id: 'sla_act', wave: '5c', param: 'act', page: '/lender/reports', surface: 'sla_act', states: ['confirm', 'success', 'failure'],
+    key: (s: string) => `partner5.chain.slaAct.${s}`, files: ['W3011', 'W3012', 'W3013'] },
 ]);
 export function chain5ById(id: Chain5Id): Chain5Def { return PARTNER5_CHAINS.find((c) => c.id === id) as Chain5Def; }
 /** The chain state a page was opened in (`?act=confirm` …), or null for the page itself / an unknown state. */

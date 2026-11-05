@@ -6,6 +6,9 @@ import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
 import { pgDate } from '../../../core/database/pg-date';
+// PC-56 PARTNER-5c (founder 5c-4, LAW 9; survey F-12): the desk's "today" is the India-time day computed by the database from now(), the
+// same arithmetic as 0232's partner_loan_dpd() — never the session's CURRENT_DATE (domain/lending-day.ts).
+import { LENDING_TODAY_SQL } from '../domain/lending-day';
 // [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date. The shape this file used —
 // `String(row.some_date).slice(0, 10)` — yields "Mon Jul 13" for the JS Date node-pg hands back for a `date`
 // (oid 1082), in EVERY timezone. Verified against the live schema: every column it was applied to here is a
@@ -20,15 +23,15 @@ export class ServicingRepository {
       `SELECT CASE WHEN dpd BETWEEN 1 AND 30 THEN '1-30' WHEN dpd BETWEEN 31 AND 60 THEN '31-60'
                    WHEN dpd BETWEEN 61 AND 90 THEN '61-90' ELSE '90+' END AS bucket,
               COUNT(*)::int AS loans, COALESCE(SUM(outstanding_minor),0)::text AS outstanding_minor
-         FROM (SELECT outstanding_minor, (CURRENT_DATE - next_due_date) AS dpd FROM loans
-                WHERE tenant_id=$1 AND status IN ('active','overdue') AND next_due_date < CURRENT_DATE AND deleted_at IS NULL) t
+         FROM (SELECT outstanding_minor, (${LENDING_TODAY_SQL} - next_due_date) AS dpd FROM loans
+                WHERE tenant_id=$1 AND status IN ('active','overdue') AND next_due_date < ${LENDING_TODAY_SQL} AND deleted_at IS NULL) t
         GROUP BY 1 ORDER BY 1`, [tenantId]);
     return r.rows.map((x: any) => ({ bucket: x.bucket, loans: x.loans, outstandingMinor: x.outstanding_minor }));
   }
   async collectionsQueue(tenantId: string, limit: number): Promise<Array<Record<string, unknown>>> {
     const r = await this.replica.forTenant(tenantId).query(
-      `SELECT id, borrower_user_id, partner_id, outstanding_minor::text, next_due_date, (CURRENT_DATE - next_due_date)::int AS dpd, status
-         FROM loans WHERE tenant_id=$1 AND status IN ('active','overdue') AND next_due_date < CURRENT_DATE AND deleted_at IS NULL
+      `SELECT id, borrower_user_id, partner_id, outstanding_minor::text, next_due_date, (${LENDING_TODAY_SQL} - next_due_date)::int AS dpd, status
+         FROM loans WHERE tenant_id=$1 AND status IN ('active','overdue') AND next_due_date < ${LENDING_TODAY_SQL} AND deleted_at IS NULL
         ORDER BY next_due_date ASC LIMIT $2`, [tenantId, limit]);
     return r.rows.map((x: any) => ({ loanId: x.id, borrowerUserId: x.borrower_user_id, partnerId: x.partner_id, outstandingMinor: x.outstanding_minor, nextDueDate: pgDate(x.next_due_date), dpd: x.dpd, status: x.status }));
   }

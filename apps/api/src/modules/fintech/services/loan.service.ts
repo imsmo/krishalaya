@@ -20,6 +20,9 @@ import { LoanRepaymentRepository } from '../repositories/loan-repayment.reposito
 import { RepayLoanDto } from '../dto/create-loan-repayment.dto';
 import { LoanNotFoundError, FintechForbiddenError, LoanRepayOwnWalletOnlyError } from '../domain/fintech.errors';
 import { FintechActor } from './loan-application.service';
+// PC-56 PARTNER-5c (founder 5c-4, LAW 9): a repayment's due date is the INDIA-TIME day of `now` on both rails (repay and the milk-bill
+// deduction), never the UTC day — see domain/lending-day.ts. Nothing else here changed: amounts, ledger legs and gates are untouched.
+import { lendingDayOf } from '../domain/lending-day';
 
 const tenantMain = (tenantId: string): AccountRef => ({ kind: 'tenant', tenantId, accountCode: TenantAccount.Main, currencyCode: 'INR' });
 
@@ -52,7 +55,7 @@ export class LoanService {
           loan.repay(amount, new Date());   // throws OverRepayment / not-servicing; closes at zero
           await this.loans.update(tx, loan);
           const now = new Date();
-          const rep = LoanRepayment.record({ id: uuidv7(), loanId, tenantId, dueDate: now.toISOString().slice(0, 10), amountDueMinor: amount, amountPaidMinor: amount, paidAt: now, channel: dto.channel });
+          const rep = LoanRepayment.record({ id: uuidv7(), loanId, tenantId, dueDate: lendingDayOf(now), amountDueMinor: amount, amountPaidMinor: amount, paidAt: now, channel: dto.channel });
           await this.repayments.insert(tx, rep);
           // Borrower repays into the FPO/tenant lending pool — a balanced, idempotent transfer (Law 2).
           await this.wallet.post(tx, { tenantId, txnType: 'loan_repayment', idempotencyKey: `loan-repay:${rep.id}`, referenceType: 'loan', referenceId: loanId, initiatedBy: actor.userId,
@@ -103,7 +106,7 @@ export class LoanService {
     loan.repay(input.amountMinor, now);          // throws OverRepayment / not-servicing; closes the loan at zero
     await this.loans.update(tx, loan);
     const rep = LoanRepayment.record({
-      id: uuidv7(), loanId: input.loanId, tenantId, dueDate: now.toISOString().slice(0, 10),
+      id: uuidv7(), loanId: input.loanId, tenantId, dueDate: lendingDayOf(now),
       amountDueMinor: input.amountMinor, amountPaidMinor: input.amountMinor, paidAt: now,
       // The channel `0011` named and nothing ever wrote.
       channel: 'milk_bill_deduction',

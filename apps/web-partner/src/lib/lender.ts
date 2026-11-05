@@ -4,17 +4,19 @@
 // `fintech` flag is a TENANT module switch: the partner realm does not read it (the 1a dashboard does not either).
 import 'server-only';
 import { redirect } from 'next/navigation';
-import { SdkError } from '@krishalaya/sdk-js';
+import { SdkError, type PartnerMe } from '@krishalaya/sdk-js';
 import { anonClient, partnerClient } from './api-client';
 import { partnerConsoleSwitch } from './console-flag';
 import { failureOf } from '../features/partner1/dashboard';
 import { wrongConsole } from '../features/partner2/figures';
 import { lenderSwitchState, type LenderHonestState } from '../features/partner4/figures';
 
-/** Read `/me`; send an insurer to its own dashboard. A failed `/me` opens or closes nothing by a guess (the page's own read answers). */
-export async function lenderGate(): Promise<void> {
+/** Read `/me`; send an insurer to its own dashboard. A failed `/me` opens or closes nothing by a guess (the page's own read answers).
+ *  PC-56 PARTNER-5c: it RETURNS what `/me` answered (or null), so a page that prints the partner's own name (W214) reads `/me` once. */
+export async function lenderGate(): Promise<PartnerMe | null> {
   const me = await partnerClient().partner.me().catch(() => null);
   if (wrongConsole(me?.organisation?.kind, 'lender')) redirect('/insurer/dashboard');
+  return me;
 }
 
 /**
