@@ -11,7 +11,11 @@ const NAV: ReadonlyArray<{ href: string; labelKey: string; sub?: boolean }> = [
   { href: '/equipment', labelKey: 'nav.equipment' }, // OW-3
   { href: '/dairy', labelKey: 'nav.dairy' }, // OW-4
   { href: '/payout', labelKey: 'nav.payout', sub: true }, // PC-56 OPS-1a · W367 (the dairy section)
-  { href: '/money', labelKey: 'nav.money' }, // OW-5 (PC-55 B3)
+  { href: '/aeps/home', labelKey: 'nav.aeps' }, // PC-56 OPS-1b · W390 (OW-5's `/money` answers a 307 to /aeps/withdrawal)
+  { href: '/aeps/withdrawal', labelKey: 'nav.aepsRecord', sub: true }, // PC-56 OPS-1b · W391
+  { href: '/aeps/exceptions', labelKey: 'nav.aepsExceptions', sub: true }, // PC-56 OPS-1b · W392
+  { href: '/attendance/face-enroll', labelKey: 'nav.attendance' }, // PC-56 OPS-1b · W397 (W398 linked from it)
+  { href: '/canon/biometric', labelKey: 'nav.biometric', sub: true }, // PC-56 OPS-1b · W399 (a platform page — never under Dairy)
   { href: '/insights', labelKey: 'nav.insights' }, // OW-6
   { href: '/devices', labelKey: 'nav.devices' }, // OW-7 (PC-55 B4)
   // OW-1 kiosk · OW-2 warehouse · OW-3 equipment/CHC · OW-4 dairy POS · OW-5 assisted money · OW-6 insights

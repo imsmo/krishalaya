@@ -48,18 +48,20 @@ describe('HOTFIX-10 · H10-1 · the kiosk outcome', () => {
 });
 
 describe('HOTFIX-10 · H10-2 · the device-certified box is unticked by default', () => {
-  it('money/page.tsx: the deviceCertified checkbox carries no defaultChecked / checked', () => {
-    const src = code(read('app/money/page.tsx'));
+  // NAMED UPDATE (PC-56 OPS-1b): the record form MOVED from app/money/page.tsx (deleted; /money now answers a 307) to the W391 view
+  // components/ops1/AepsViews.tsx, and its keys from `aeps.*` to `ops1.aeps.record.*`. The same pins, on the new home — unweakened.
+  it('the W391 record view: the deviceCertified checkbox carries no defaultChecked / checked', () => {
+    const src = code(read('components/ops1/AepsViews.tsx'));
     const tags = [...src.matchAll(/<input[^>]*name="deviceCertified"[^>]*\/>/g)].map((m) => m[0]);
     expect(tags).toHaveLength(1);
     expect(tags[0]).not.toMatch(/defaultChecked|\bchecked\b/);
     expect(tags[0]).toMatch(/type="checkbox"/);
   });
   it('the hint ×3 no longer tells the operator to UNcheck a pre-ticked box', () => {
-    expect(en['aeps.deviceHint']).toMatch(/^Tick this only if/);
-    expect(en['aeps.deviceHint']).toMatch(/cannot check the device/);
-    expect(en['aeps.deviceHint']).not.toMatch(/Uncheck only/);
-    for (const cat of [hi, gu]) expect(cat['aeps.deviceHint']).not.toBe(en['aeps.deviceHint']);
+    expect(en['ops1.aeps.record.deviceHint']).toMatch(/^Tick this only if/);
+    expect(en['ops1.aeps.record.deviceHint']).toMatch(/cannot check a device/);
+    expect(en['ops1.aeps.record.deviceHint']).not.toMatch(/Uncheck only/);
+    for (const cat of [hi, gu]) { expect(cat['ops1.aeps.record.deviceHint']).toBeTruthy(); expect(cat['ops1.aeps.record.deviceHint']).not.toBe(en['ops1.aeps.record.deviceHint']); }
   });
 });
 

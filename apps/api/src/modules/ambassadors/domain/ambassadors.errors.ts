@@ -59,3 +59,19 @@ export function namedRunRefusal(e: unknown): unknown {
   if ((e as { code?: string })?.code === '23505' && /uq_apr_one_open_run/.test(String((e as Error)?.message ?? ''))) return new AmbassadorRunRefusedError(RUN_TRIGGER_CODES.AMB_RUN_ALREADY_OPEN.code, RUN_TRIGGER_CODES.AMB_RUN_ALREADY_OPEN.message, 409);
   return e;
 }
+
+/** PC-56 OPS-1b · Q7-A (founder, 2026-11-05: "the AePS record keeps the least"). An AePS record no longer carries ANY Aadhaar digit and is no
+ *  longer linked to a platform account. A body that carries either field is refused BY NAME before anything is read or written — never
+ *  stripped silently, so the desk learns the rule instead of believing the digits were kept. 400 (the request names a field the platform
+ *  refuses to record). The columns stay in 0071 (a shipped column is never dropped in a wave); the repository writes NULL into both. */
+export const AEPS_AADHAAR_NOT_RECORDED_SENTENCE = 'Aadhaar digits are not recorded on this platform. Remove the Aadhaar field and record the event without it. Nothing was recorded.';
+export const AEPS_CUSTOMER_LINK_NOT_RECORDED_SENTENCE = 'An AePS record is not linked to a platform account. Remove the customer field and record the event without it. Nothing was recorded.';
+export class AepsAadhaarNotRecordedError extends DomainError { constructor() { super('AEPS_AADHAAR_NOT_RECORDED', AEPS_AADHAAR_NOT_RECORDED_SENTENCE, 400, { field: 'aadhaarLast4' }); } }
+export class AepsCustomerLinkNotRecordedError extends DomainError { constructor() { super('AEPS_CUSTOMER_LINK_NOT_RECORDED', AEPS_CUSTOMER_LINK_NOT_RECORDED_SENTENCE, 400, { field: 'customerUserId' }); } }
+/** PURE: the Q7-A refusal over a raw request body — the FIRST thing the record route does with it. Presence is enough (null, '' and a
+ *  well-formed value are all refused): the field itself is what the platform no longer accepts. */
+export function refuseAepsQ7aFields(body: unknown): void {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return;
+  if (Object.prototype.hasOwnProperty.call(body, 'aadhaarLast4')) throw new AepsAadhaarNotRecordedError();
+  if (Object.prototype.hasOwnProperty.call(body, 'customerUserId')) throw new AepsCustomerLinkNotRecordedError();
+}

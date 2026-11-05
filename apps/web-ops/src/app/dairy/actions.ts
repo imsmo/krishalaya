@@ -47,7 +47,9 @@ export async function generateBillAction(formData: FormData): Promise<void> {
 
 /**
  * PC-56 OPS-1a (founder 1a-1, Q2-A): the ops console READS milk bills and never approves or pays one — "Bills are approved and paid by your
- * organisation's dairy desk, not from this console." (founder 2026-11-06: "with two people" dropped until a second person per bill is enforced — paying is one person today." The approve and pay acts are REMOVED from this file (and their buttons
+ * organisation's dairy desk, with two people, not from this console." ("with two people" was dropped on 2026-11-06 until it was true, and RESTORED by
+ * the founder once HOTFIX-11 `8529d5d4` made it true: on every bill the previewer cannot approve and the approver cannot pay —
+ * `milk-bill.entity.ts` approve / assertPayer.) The approve and pay acts are REMOVED from this file (and their buttons
  * from the page). PREVIEW stays: it moves a draft bill to `previewed`, opens the member's dispute window and queues her notice — a state step
  * with no ledger posting (`milk-bill.service.ts` preview writes no wallet leg), so it is not a money act. GENERATE stays for the same reason:
  * the server prices the bill from recorded pours and nothing moves.

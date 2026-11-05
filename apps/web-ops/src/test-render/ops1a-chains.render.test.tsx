@@ -5,10 +5,12 @@ import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Ops1Chain } from '../components/ops1/Ops1Chain';
 import { en } from '../i18n/en';
-import { chain1State, OPS1_CHAINS } from '../features/ops1/refusals';
+import { chain1State, OPS1_CHAINS as ALL_CHAINS } from '../features/ops1/refusals';
 import { CONTROLS, FALSE_1A, text, tr, visible } from './ops1a-fixtures';
 
 const T = tr(en);
+// NAMED UPDATE (PC-56 OPS-1b): OPS1_CHAINS now also holds 1b's REAL aeps chain (pinned in ops1b-chain.render); this spec keeps to 1a's two DECOR ones.
+const OPS1_CHAINS = ALL_CHAINS.filter((c) => c.wave === '1a');
 describe('PC-56 OPS-1a · the two DECOR chains', () => {
   it('two chains, three states each, six canon files listed once', () => {
     expect(OPS1_CHAINS.map((c) => [c.id, c.page, c.states.join('|'), c.files.join('|')])).toEqual([

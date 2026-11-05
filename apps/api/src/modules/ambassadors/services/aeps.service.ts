@@ -11,6 +11,8 @@
 //     written the read fails, it is never served unrecorded (the TENANT-1b reveal rule).
 // Neither row carries a customer digit, a bank name, an amount or a customer id: only what kind of event, its outcome, and (for a
 // read) the filters and how many rows were shown. The operator's own `…/events/mine` is her own log and is not audited (E10).
+// PC-56 OPS-1b · Q7-A: the supervisor read above now carries no Aadhaar digit and no customer id at all (the repository returns neither; the
+// controller refuses a record carrying either) — what it shows is bank, account last 4, amount, outcome and the operator's notes.
 import { Inject, Injectable } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork } from '../../../core/database/unit-of-work';
 import { AuditWriter } from '../../../core/audit/audit.writer';

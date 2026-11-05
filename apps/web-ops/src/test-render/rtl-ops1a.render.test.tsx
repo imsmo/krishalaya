@@ -9,13 +9,15 @@ import { PayoutView } from '../components/ops1/PayoutView';
 import { PayoutBillView } from '../components/ops1/PayoutBillView';
 import { WithdrawalView } from '../components/ops1/WithdrawalView';
 import { Ops1Chain } from '../components/ops1/Ops1Chain';
-import { OPS1_CHAINS } from '../features/ops1/refusals';
+import { OPS1_CHAINS as ALL_CHAINS } from '../features/ops1/refusals';
 import { en } from '../i18n/en';
 import { hi } from '../i18n/hi';
 import { gu } from '../i18n/gu';
 import { BILLS_1A, CODES_1A, percents, text, tr } from './ops1a-fixtures';
 
 const CATS = { en, hi, gu } as const;
+// NAMED UPDATE (PC-56 OPS-1b): 1a's two chains only — the aeps chain is covered by rtl-ops1b.render.
+const OPS1_CHAINS = ALL_CHAINS.filter((c) => c.wave === '1a');
 const rtl = (node: React.ReactElement) => renderToStaticMarkup(<div dir="rtl" lang="hi">{node}</div>);
 const PHYSICAL = /margin-left|margin-right|padding-left|padding-right|\bleft:\s|\bright:\s|text-align:\s*(left|right)|float:\s*(left|right)|style="/i;
 const ARROWS = /[←→⇐⇒⟵⟶➔➜↩↪«»‹›]/;

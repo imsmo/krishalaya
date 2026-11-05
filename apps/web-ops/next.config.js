@@ -43,6 +43,14 @@ const nextConfig = {
   // `import.meta.webpackHot`) to their pre-compiled CJS dist → "Cannot use 'import.meta' outside a module".
   // symlinks:false keeps the node_modules identity so they're consumed as ordinary (pre-built) deps.
   webpack: (config) => { config.resolve.symlinks = false; return config; },
+  // PC-56 OPS-1b (survey E2): the OW-5 AePS addresses moved to the canon's own `aeps/*` paths — a real HTTP 307 (permanent: false) answered
+  // before any page runs. Mirrors OPS1B_REDIRECTS in src/features/ops1/aeps.ts (pinned equal by src/test/ops1b-pages.spec.ts).
+  async redirects() {
+    return [
+      { source: '/money', destination: '/aeps/withdrawal', permanent: false },
+      { source: '/money/oversight', destination: '/aeps/exceptions?view=all', permanent: false },
+    ];
+  },
   async headers() {
     return [{
       source: '/:path*',

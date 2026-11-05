@@ -7,10 +7,14 @@ import {
   buildAepsEvent, nextStep, moneyUntouched, attemptsLeft, maskLast4,
 } from '../features/aeps/service';
 import { parseMajorToMinor } from '../features/money';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
+// NAMED UPDATE (PC-56 OPS-1b, founder Q7-A 2026-11-05): the form carries no `aadhaarLast4` and no `customerUserId` any more — the builder has
+// neither field. The Law 2 cases that typed an Aadhaar now prove the digits are DROPPED from what is sent, never recorded (below).
 const form = (over: Partial<Record<string, string | boolean>> = {}) => ({
   serviceKind: 'cash_withdrawal', status: 'success', attemptNo: '1', deviceCertified: true,
-  customerUserId: '', bankName: 'SBI', accountLast4: '4321', aadhaarLast4: '9876',
+  bankName: 'SBI', accountLast4: '4321',
   amountMajor: '2000', balanceAfterMajor: '', exceptionCode: '', npciRrn: '', escalationNote: '',
   ...over,
 } as Parameters<typeof buildAepsEvent>[0]);
@@ -35,12 +39,10 @@ describe('vocabularies mirror the API exactly', () => {
 
 describe('LAW 2 — masked identifiers only', () => {
   it('accepts exactly four digits, or nothing', () => {
-    expect(build({ accountLast4: '', aadhaarLast4: '' }).ok).toBe(true);
+    expect(build({ accountLast4: '' }).ok).toBe(true);
     expect(build({ accountLast4: '4321' }).ok).toBe(true);
   });
-  it('refuses anything longer — a full Aadhaar can never be recorded', () => {
-    expect(build({ aadhaarLast4: '123456789012' })).toEqual({ ok: false, error: 'last4Aadhaar' });
-    expect(build({ aadhaarLast4: '12345' })).toEqual({ ok: false, error: 'last4Aadhaar' });
+  it('refuses a longer account number', () => {
     expect(build({ accountLast4: '12345678' })).toEqual({ ok: false, error: 'last4Account' });
     expect(build({ accountLast4: '43a1' })).toEqual({ ok: false, error: 'last4Account' });
   });
@@ -149,13 +151,35 @@ describe('cross-field rules and the operator’s next step', () => {
   });
   it('optional fields are validated rather than silently dropped', () => {
     expect(build({ npciRrn: 'x'.repeat(41) })).toEqual({ ok: false, error: 'rrn' });
-    expect(build({ customerUserId: 'nope' })).toEqual({ ok: false, error: 'customer' });
-    const walkIn = build({ customerUserId: '   ' });
-    expect(walkIn.ok && 'customerUserId' in walkIn.value).toBe(false);   // a walk-in needs no account
   });
   it('a bank outage is retryable; a settled event needs no chasing', () => {
     expect(nextStep({ exceptionCode: 'bank_server_down' })).toBe('retry_allowed');
     expect(nextStep({ status: 'success' })).toBe('none');
     expect(nextStep({ status: 'declined', exceptionCode: 'bank_declined' })).toBe('none');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// PC-56 OPS-1b · Q7-A (founder 2026-11-05) — the AePS record keeps the least, and the device box starts UNTICKED
+// ---------------------------------------------------------------------------
+
+describe('OPS-1b · Q7-A · no Aadhaar digit and no customer link ever leave the console', () => {
+  it('even if a raw form somehow carries them (a stale page, a hand-made POST), the built event carries neither key', () => {
+    const r = buildAepsEvent({ ...form(), aadhaarLast4: '9876', customerUserId: '0190a000-0000-7000-8000-00000000c0de' } as Parameters<typeof buildAepsEvent>[0], parseMajorToMinor);
+    expect(r.ok).toBe(true);
+    if (r.ok) { expect(Object.keys(r.value).filter((k) => /aadhaar|customer/i.test(k))).toEqual([]); expect(JSON.stringify(r.value)).not.toMatch(/9876|c0de/); }
+  });
+  it('the record action reads no Aadhaar or customer field from the form, and the record view has no such input', () => {
+    const src = (rel: string) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8').split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*|\{\/\*)/.test(l)).join('\n');
+    for (const rel of ['app/aeps/withdrawal/actions.ts', 'components/ops1/AepsViews.tsx']) expect([rel, /aadhaar|customerUserId|customer_user/i.test(src(rel))]).toEqual([rel, false]);
+  });
+  it('the device box is UNTICKED by default: no defaultChecked / checked on it in the view', () => {
+    const v = fs.readFileSync(path.join(__dirname, '..', 'components/ops1/AepsViews.tsx'), 'utf8');
+    const box = v.slice(v.indexOf('name="deviceCertified"') - 200, v.indexOf('name="deviceCertified"') + 200);
+    expect(box).toContain('type="checkbox"');
+    expect(/defaultChecked|\bchecked\b/.test(box)).toBe(false);
+  });
+  it('the old /money pages are gone (moved to /aeps/withdrawal and /aeps/exceptions)', () => {
+    for (const rel of ['app/money/page.tsx', 'app/money/actions.ts', 'app/money/oversight/page.tsx']) expect([rel, fs.existsSync(path.join(__dirname, '..', rel))]).toEqual([rel, false]);
   });
 });

@@ -62,8 +62,11 @@ run('PC-56 HOTFIX-10 · the desk learns nothing it should not (integration, real
     else await admin.query(`UPDATE feature_flags SET is_enabled = $1, rollout_pct = $2, rules = $3::jsonb WHERE key = 'ambassadors'`, [flagBackup!.is_enabled, flagBackup!.rollout_pct, JSON.stringify(flagBackup!.rules ?? {})]);
     for (const c of ['flag:ambassadors', 'flagstale:ambassadors', 'flags:all', `flagctx:${A}`, `flagctx:${B}`]) await cache.del(c);
   }
+  // NAMED UPDATE (PC-56 OPS-1b, founder Q7-A 2026-11-05): the record no longer accepts `aadhaarLast4` (a body carrying it is refused BY NAME,
+  // 400 AEPS_AADHAAR_NOT_RECORDED — pinned in ops1b-aeps-biometric (1)). Without this edit (4)'s three bodies would be refused by Q7-A instead of
+  // by the rule each one pins, and (2)'s record would never be written. AADHAAR4 stays in the leak lists below: the digits must still appear nowhere.
   const aeps = (over: Record<string, unknown> = {}) => ({ serviceKind: 'cash_withdrawal', amountMinor: '200000', bankName: 'Bank of Baroda', accountLast4: ACCOUNT4,
-    aadhaarLast4: AADHAAR4, status: 'success', attemptNo: 1, deviceCertified: true, npciRrn: 'RRN-HF10-1', ...over });
+    status: 'success', attemptNo: 1, deviceCertified: true, npciRrn: 'RRN-HF10-1', ...over });
   const aepsRows = () => n(`SELECT count(*)::int n FROM aeps_service_events WHERE ambassador_id = $1`, [ambassadorId]);
   const auditRows = (action: string, actor: string) => n(`SELECT count(*)::int n FROM audit_log WHERE action = $1 AND actor_user_id = $2`, [action, actor]);
 
@@ -178,7 +181,8 @@ run('PC-56 HOTFIX-10 · the desk learns nothing it should not (integration, real
     const read = await get(T.sup, '/v1/ambassadors/aeps/events');
     expect([read.status, read.body.data.length]).toEqual([200, 1]);
     for (const row of read.body.data) {                                                    // masked fields only
-      expect(row.aadhaarLast4 === null || /^\d{4}$/.test(row.aadhaarLast4)).toBe(true);
+      // NAMED UPDATE (OPS-1b Q7-A): the read no longer returns the Aadhaar or customer key at all (was: null or four digits) — stronger.
+      expect(['aadhaarLast4', 'customerUserId'].filter((k) => k in row)).toEqual([]);
       expect(row.accountLast4 === null || /^\d{4}$/.test(row.accountLast4)).toBe(true);
       expect(JSON.stringify(row)).not.toMatch(/"(aadhaar|account)[A-Za-z0-9]*":"\d{5,}"/);
     }

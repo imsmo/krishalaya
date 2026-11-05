@@ -15,7 +15,9 @@ import { parsePageSize, parseCursor, payoutState, payoutHref } from '../features
 import { BILLS_1A, CODES_1A, FALSE_1A, INPUTS, percents, text, tr, visible } from './ops1a-fixtures';
 
 const T = tr(en);
-const STATEMENT = 'Bills are approved and paid by your organisation\'s dairy desk, not from this console. Nothing is approved or paid here.';
+// NAMED UPDATE (PC-56 OPS-1b, founder 2026-11-06): "with two people" RESTORED — HOTFIX-11 `8529d5d4` made it true (the previewer cannot approve,
+// the approver cannot pay, on every bill). The page prints the founder's original sentence.
+const STATEMENT = 'Bills are approved and paid by your organisation\'s dairy desk, with two people, not from this console. Nothing is approved or paid here.';
 const page = (state: Parameters<typeof PayoutView>[0]['state'], bills = BILLS_1A, nextCursor: string | null = null) =>
   renderToStaticMarkup(<PayoutView t={T} lang="en" state={state} bills={bills} memberCodes={CODES_1A} size={25} nextCursor={nextCursor} />);
 const money = (m: string | bigint) => formatMoneyMinor(String(m), 'INR', 'en');

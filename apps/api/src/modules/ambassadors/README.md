@@ -54,6 +54,12 @@ Referrals (any user): `POST /v1/ambassadors/referrals` (Idempotency-Key), `POST 
 Milestone-bonus + 60-day inactivity-reassignment jobs; AePS/micro-ATM + kiosk operations; monthly stipend
 disbursement; tier auto-promotion; `sale_trail` loyalty tier after N sales (only `first_sale_facilitated` wired).
 
+> **Correction (PC-56 OPS-1b, survey OPS-1 C-2 / C-8).** "AePS/micro-ATM" above is stale in part. The AePS **log** is built:
+> `controllers/v1/aeps.controller.ts` (record, own events, supervisor read), behind `ambassadors` (HOTFIX-10), audited (HOTFIX-10).
+> Since OPS-1b (founder Q7-A) a record carries **no Aadhaar digit and no customer account link**: a body naming either field is refused
+> by name (400 `AEPS_AADHAAR_NOT_RECORDED` / `AEPS_CUSTOMER_LINK_NOT_RECORDED`), and the reads return neither. What stays deferred is a
+> real AePS service (a bank or BC provider, a device, NPCI). This platform moves no AePS money.
+
 ## Tests
 
 `__tests__/ambassadors-domain.spec.ts` (commission compute, referral state machine, guards),

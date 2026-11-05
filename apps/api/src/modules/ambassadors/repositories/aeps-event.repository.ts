@@ -2,18 +2,24 @@
 // THE LAW (0071 header + Appendix 3): this table is a LOG ONLY — AePS cash moves in the BANK's systems via
 // NPCI; nothing here ever touches the platform ledger. Masked fields only (last4s — never raw Aadhaar,
 // never fingerprint material, Law 10). Partitioned hot table: reads pin occurred_at.
+// [PC-56 OPS-1b correction of "Masked fields only (last4s — …)": since Q7-A only the ACCOUNT's last 4 is kept.]
+// PC-56 OPS-1b · Q7-A (founder 2026-11-05): the record keeps the least. `aadhaar_last4` and `customer_user_id` are written NULL on every insert
+// (the controller has already refused a body carrying either, by name), and NEITHER is returned by any read — existing rows included (no
+// backfill: there is no production data). The columns stay in 0071 (a shipped column is never dropped here); dropping them, and a retention
+// period, are a lawyer's and the founder's (no migration in this wave).
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
 
 export interface AepsEventInput {
-  tenantId: string; ambassadorId: string; customerUserId?: string; serviceKind: string; bankName?: string;
-  accountLast4?: string; aadhaarLast4?: string; amountMinor?: string; balanceAfterMinor?: string;
+  tenantId: string; ambassadorId: string; serviceKind: string; bankName?: string;   // OPS-1b Q7-A: no customerUserId, no aadhaarLast4
+  accountLast4?: string; amountMinor?: string; balanceAfterMinor?: string;
   status: string; exceptionCode?: string; attemptNo: number; deviceCertified: boolean; npciRrn?: string; escalationNote?: string;
 }
 const toRow = (x: any) => ({
-  id: String(x.id), ambassadorId: x.ambassador_id, customerUserId: x.customer_user_id, serviceKind: x.service_kind,
-  bankName: x.bank_name, accountLast4: x.account_last4, aadhaarLast4: x.aadhaar_last4,
+  // OPS-1b Q7-A: `customer_user_id` and `aadhaar_last4` are NEVER returned (not even as null) — the read carries neither key.
+  id: String(x.id), ambassadorId: x.ambassador_id, serviceKind: x.service_kind,
+  bankName: x.bank_name, accountLast4: x.account_last4,
   amountMinor: x.amount_minor != null ? String(x.amount_minor) : null, balanceAfterMinor: x.balance_after_minor != null ? String(x.balance_after_minor) : null,
   status: x.status, exceptionCode: x.exception_code, attemptNo: x.attempt_no, deviceCertified: x.device_certified,
   npciRrn: x.npci_rrn, escalationNote: x.escalation_note, occurredAt: new Date(x.occurred_at).toISOString(),
@@ -30,7 +36,8 @@ export class AepsEventRepository {
       `INSERT INTO aeps_service_events (tenant_id, ambassador_id, customer_user_id, service_kind, bank_name, account_last4, aadhaar_last4,
          amount_minor, balance_after_minor, status, exception_code, attempt_no, device_certified, npci_rrn, escalation_note, synced_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,now()) RETURNING id::text AS id`,
-      [e.tenantId, e.ambassadorId, e.customerUserId ?? null, e.serviceKind, e.bankName ?? null, e.accountLast4 ?? null, e.aadhaarLast4 ?? null,
+      // $3 customer_user_id and $7 aadhaar_last4 are NULL by law (Q7-A), whatever the caller's object carries.
+      [e.tenantId, e.ambassadorId, null, e.serviceKind, e.bankName ?? null, e.accountLast4 ?? null, null,
        e.amountMinor ?? null, e.balanceAfterMinor ?? null, e.status, e.exceptionCode ?? null, e.attemptNo, e.deviceCertified, e.npciRrn ?? null, e.escalationNote ?? null]);
     return r.rows[0].id;
   }

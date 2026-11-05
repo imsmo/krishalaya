@@ -7,8 +7,9 @@
 // THE FIVE LAWS THIS FILE EXISTS TO KEEP (Appendix 3, from canon W390–W392):
 //   1. LOG ONLY. AePS cash moves in the BANK's systems over NPCI. Nothing here is a money primitive: there is no
 //      wallet, no ledger, no commission. The amount recorded is what the bank did, reported after the fact.
-//   2. MASKED IDENTIFIERS ONLY. Four digits of an account, four of an Aadhaar — never more. The form cannot accept
-//      more, so a full Aadhaar cannot be typed into this platform even by mistake.
+//   2. MASKED IDENTIFIERS ONLY. Four digits of an account — never more. [PC-56 OPS-1b · Q7-A (founder 2026-11-05): NO Aadhaar digit is
+//      recorded at all any more, and a record is NOT linked to a platform account — the form has neither box, this builder has neither
+//      field, and the API refuses a body carrying either BY NAME (400 AEPS_AADHAAR_NOT_RECORDED / AEPS_CUSTOMER_LINK_NOT_RECORDED).]
 //   3. THREE ATTEMPTS, AND NO OTP FALLBACK. A fingerprint may be tried at most three times. There is no
 //      "send an OTP instead" path in this taxonomy, and inventing one would be inventing a security model.
 //   4. AN UNCERTIFIED DEVICE BLOCKS. A non-RD-certified reader may record exactly one thing: a blocked event with
@@ -51,14 +52,14 @@ export function amountExpected(serviceKind: string): boolean { return serviceKin
 
 export interface AepsEventInput {
   serviceKind: ServiceKind; status: EventStatus; attemptNo: number; deviceCertified: boolean;
-  customerUserId?: string; bankName?: string; accountLast4?: string; aadhaarLast4?: string;
+  bankName?: string; accountLast4?: string;   // OPS-1b Q7-A: no customer link, no Aadhaar digit
   amountMinor?: string; balanceAfterMinor?: string; exceptionCode?: ExceptionCode;
   npciRrn?: string; escalationNote?: string;
 }
 
 export type AepsFormError =
   | 'serviceKind' | 'status' | 'attempt' | 'exception' | 'amountMissing' | 'amountNotAllowed' | 'amount'
-  | 'balance' | 'last4Account' | 'last4Aadhaar' | 'uncertified' | 'escalation' | 'successException' | 'rrn' | 'customer';
+  | 'balance' | 'last4Account' | 'uncertified' | 'escalation' | 'successException' | 'rrn';
 export type AepsFormResult = { ok: true; value: AepsEventInput } | { ok: false; error: AepsFormError };
 
 const LAST4 = /^\d{4}$/;
@@ -68,7 +69,7 @@ const MINOR = /^\d{1,15}$/;
  *  operator's error message and the API's refusal can never disagree about which rule was broken. */
 export function buildAepsEvent(raw: {
   serviceKind: string; status: string; attemptNo: string; deviceCertified: boolean;
-  customerUserId: string; bankName: string; accountLast4: string; aadhaarLast4: string;
+  bankName: string; accountLast4: string;
   amountMajor: string; balanceAfterMajor: string; exceptionCode: string; npciRrn: string; escalationNote: string;
 }, toMinor: (major: string) => string | undefined): AepsFormResult {
   if (!isServiceKind(raw.serviceKind)) return { ok: false, error: 'serviceKind' };
@@ -116,22 +117,12 @@ export function buildAepsEvent(raw: {
     value.balanceAfterMinor = balanceAfterMinor;
   }
 
-  // Law 2: exactly four digits, or nothing at all.
+  // Law 2: exactly four digits of the ACCOUNT, or nothing at all. (OPS-1b Q7-A: there is no Aadhaar box and no customer link — the value
+  // built below never carries `aadhaarLast4` or `customerUserId`, whatever else the raw form held.)
   const accountLast4 = raw.accountLast4.trim();
   if (accountLast4) {
     if (!LAST4.test(accountLast4)) return { ok: false, error: 'last4Account' };
     value.accountLast4 = accountLast4;
-  }
-  const aadhaarLast4 = raw.aadhaarLast4.trim();
-  if (aadhaarLast4) {
-    if (!LAST4.test(aadhaarLast4)) return { ok: false, error: 'last4Aadhaar' };
-    value.aadhaarLast4 = aadhaarLast4;
-  }
-
-  const customerUserId = raw.customerUserId.trim();
-  if (customerUserId) {
-    if (!/^[0-9a-fA-F-]{36}$/.test(customerUserId)) return { ok: false, error: 'customer' };
-    value.customerUserId = customerUserId;
   }
   const bankName = raw.bankName.trim();
   if (bankName) value.bankName = bankName.slice(0, 120);
