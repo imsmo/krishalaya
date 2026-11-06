@@ -1,9 +1,10 @@
 // modules/warehousing/warehousing.module.ts
 // Warehousing & WDRA receipts (PRD M21): farmers/traders deposit produce in accredited warehouses, get a
 // quality assay, and receive an electronic Negotiable Warehouse Receipt (eNWR) they can later use as loan
-// collateral. The warehouse operator collects a STORAGE FEE at release (quantity × rate/qtl/month × months)
+// collateral. A STORAGE FEE would be collected at release (quantity in quintals × rate/qtl/month × months)
 // through the wallet boundary (depositor userMain → operator userMain, txnType 'storage_fee', zero-sum +
-// idempotent — Law 2). Gated by the `warehousing` feature flag (default OFF).
+// idempotent — Law 2) — but release is REFUSED BY NAME since PC-56 OPS-1a (paused until the depositor confirms
+// it herself; README "The money path"). Gated by the `warehousing` feature flag (default OFF).
 //
 // SCOPE (this build): warehouses (incl. platform-global/independent WDRA, cross-tenant visible) + storage
 // bookings (request → confirm → store → release w/ storage-fee settlement) + accredited assays + eNWR

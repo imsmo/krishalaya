@@ -1,6 +1,6 @@
 // modules/warehousing/services/storage-booking.service.ts · the deposit lifecycle + THE STORAGE-FEE MONEY PATH.
 // request (depositor) → confirm → store (operator) → release (operator — PAUSED by PC-56 OPS-1a, founder Q3-A: refused by name, see release()): on release the storage fee
-// (quantity × rate/qtl/month × months, float-free) is collected depositor userMain → operator userMain via
+// (quantity in quintals × rate/qtl/month × months, float-free; a booking is made in quintals only — PC-56 OPS-2c B5) is collected depositor userMain → operator userMain via
 // the wallet boundary (txnType 'storage_fee', zero-sum + idempotent — Law 2). Every write: one ACID tx
 // (UoW), state via the machine (Law 5), outbox in-tx (Law 4), idempotent money mutations (Law 3), authz
 // THROWS (Law 6). No version column → bookings lock FOR UPDATE.
@@ -18,7 +18,8 @@ import { DomainEvent } from '../domain/warehousing.events';
 import { StorageBookingRepository } from '../repositories/storage-booking.repository';
 import { WarehouseRepository } from '../repositories/warehouse.repository';
 import { RequestBookingDto } from '../dto/create-storage-booking.dto';
-import { BookingNotFoundError, WarehouseNotFoundError, NoWarehouseOperatorError, WarehousingForbiddenError, StorageReleaseAwaitsDepositorError } from '../domain/warehousing.errors';
+import { BookingNotFoundError, WarehouseNotFoundError, NoWarehouseOperatorError, WarehousingForbiddenError, StorageReleaseAwaitsDepositorError, StorageUnitNotQuintalError } from '../domain/warehousing.errors';
+import { STORAGE_FEE_UNIT } from '../domain/quantity';
 import { WhActor } from './warehouse.service';
 
 const parseScaled = (s: string, dec: number): bigint => { const [i, f = ''] = s.split('.'); return BigInt(i + (f + '0'.repeat(dec)).slice(0, dec)); };
@@ -38,6 +39,9 @@ export class StorageBookingService {
 
   async request(tenantId: string, actor: WhActor, idemKey: string, dto: RequestBookingDto) {
     if (!actor.canStore) throw new WarehousingForbiddenError('requires warehouse.store');
+    // PC-56 OPS-2c · OPS2-B5 (founder Q2-A): the fee reads the quantity as quintals, so any other unit is refused BY NAME here — after the
+    // permission check, BEFORE the idempotency record (`idem.remember`), the unit of work and any write. A replay gets the same refusal.
+    if (dto.unitCode !== STORAGE_FEE_UNIT) throw new StorageUnitNotQuintalError(dto.unitCode);
     return this.idem.remember(idemKey, actor.userId, 'warehousing.booking.request', () =>
       timed(this.metrics, 'warehousing.booking.request', { tenant: tenantId }, () =>
         this.uow.run(tenantId, async (tx) => {

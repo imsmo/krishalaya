@@ -10,6 +10,8 @@ const NAV: ReadonlyArray<{ href: string; labelKey: string; sub?: boolean }> = [
   { href: '/kiosk/ambassador', labelKey: 'nav.kioskEarnings', sub: true }, // PC-56 OPS-1c · W389 (her own earnings)
   { href: '/warehouse', labelKey: 'nav.warehouse' }, // OW-2
   { href: '/warehouse/withdrawal', labelKey: 'nav.withdrawal', sub: true }, // PC-56 OPS-1a · W377 (the warehouse section)
+  { href: '/warehouse/billing', labelKey: 'nav.whBilling', sub: true }, // PC-56 OPS-2c · W378 (the rate on file; nothing is billed)
+  { href: '/warehouse/insights', labelKey: 'nav.whInsights', sub: true }, // PC-56 OPS-2c · W379 (honest; reads nothing)
   { href: '/equipment', labelKey: 'nav.equipment' }, // OW-3
   { href: '/dairy', labelKey: 'nav.dairy' }, // OW-4
   { href: '/payout', labelKey: 'nav.payout', sub: true }, // PC-56 OPS-1a · W367 (the dairy section)

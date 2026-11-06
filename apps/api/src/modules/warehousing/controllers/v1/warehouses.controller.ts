@@ -36,5 +36,5 @@ export class WarehousesController {
   @Get(':id')
   get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.getById(ctx.tenantId, id).then((data) => ({ data })); }
   @Patch(':id') @RequirePermissions(WarehousingPermissions.Manage)
-  update(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(UpdateWarehouseSchema) dto: UpdateWarehouseDto) { return this.svc.update(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data })); }
+  update(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(UpdateWarehouseSchema) dto: UpdateWarehouseDto) { return this.svc.update(ctx.tenantId, this.actor(ctx), id, dto, ipOf(r)).then((data) => ({ data })); }
 }

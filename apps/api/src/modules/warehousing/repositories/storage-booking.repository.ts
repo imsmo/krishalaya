@@ -3,13 +3,15 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
+import { parseQuantityMilli, formatQuantityMilli } from '../domain/quantity';
 import { StorageBooking } from '../domain/storage-booking.entity';
 import { BookingStatus } from '../domain/storage-booking.state';
 
 const COLS = `id, tenant_id, warehouse_id, depositor_user_id, product_id, quantity, unit_code, expected_arrival, status, stored_at, released_at, created_at`;
 const d = (v: any): string | null => (v == null ? null : v instanceof Date ? v.toISOString().slice(0, 10) : String(v));
-const toMilli = (v: any): bigint => BigInt(Math.round(Number(v) * 1000));
-const milliToNum = (m: bigint) => (Number(m) / 1000).toFixed(3);
+// PC-56 OPS-2c · OPS2-B23 (F-13): the numeric(12,3) quantity is parsed from and printed to its STRING, digit by digit — never through a float.
+const toMilli = (v: string): bigint => parseQuantityMilli(v);
+const milliToNum = (m: bigint): string => formatQuantityMilli(m);
 function toDomain(r: any): StorageBooking {
   return StorageBooking.rehydrate({ id: r.id, tenantId: r.tenant_id, warehouseId: r.warehouse_id, depositorUserId: r.depositor_user_id, productId: r.product_id,
     quantityMilli: toMilli(r.quantity), unitCode: r.unit_code, expectedArrival: d(r.expected_arrival), status: r.status as BookingStatus, storedAt: r.stored_at, releasedAt: r.released_at, createdAt: r.created_at });

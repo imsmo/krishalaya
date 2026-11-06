@@ -4,7 +4,8 @@
 import { StorageBookingService } from '../services/storage-booking.service';
 import { StorageBooking } from '../domain/storage-booking.entity';
 import { Warehouse } from '../domain/warehouse.entity';
-import { StorageReleaseAwaitsDepositorError, STORAGE_RELEASE_AWAITS_DEPOSITOR_SENTENCE } from '../domain/warehousing.errors';
+import { StorageReleaseAwaitsDepositorError, STORAGE_RELEASE_AWAITS_DEPOSITOR_SENTENCE, StorageUnitNotQuintalError, STORAGE_UNIT_NOT_QUINTAL_SENTENCE } from '../domain/warehousing.errors';
+import { STORAGE_FEE_UNIT } from '../domain/quantity';
 
 const warehouse = (over: any = {}) => Warehouse.rehydrate({ id: 'w1', tenantId: 't1', operatorUserId: 'op1', defaultName: 'W', wdraRegNo: null, addressId: null, capacityMt: null, storageKinds: [], commoditiesAccepted: [], ratePerQtlMonthMinor: 5000n, insurancePolicyRef: null, isActive: true, ...over });
 function storedBooking() {
@@ -69,5 +70,55 @@ describe('release — PAUSED: refused by name before any lock, fee or write (OPS
     h.repo.getForUpdate.mockImplementationOnce(async () => { const b = StorageBooking.request({ id: 'b2', tenantId: 't1', warehouseId: 'w1', depositorUserId: 'dep1', productId: 'p1', quantityMilli: 1000n, unitCode: 'quintal', expectedArrival: null }); b.pullEvents(); return b; });
     const out = await h.svc.confirm('t1', op, 'b2');
     expect(out.status).toBe('confirmed'); expect(h.repo.update).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ── PC-56 OPS-2c · OPS2-B5 (founder Q2-A, 2026-11-06): a storage booking is made in QUINTALS only ──────────────────────────────────────────
+// The refusal must come after the permission check and BEFORE the idempotency record (`idem.remember`) — the OPS-1a M2 lesson: a refusal moved
+// inside the remembered unit of work would still roll the booking back, so only an ORDERING assertion can see it. The spy below records the
+// order of every call; the refusal must leave it EMPTY.
+function requestHarness() {
+  const calls: string[] = [];
+  const tx = { query: jest.fn(async () => { calls.push('tx.query'); return { rows: [], rowCount: 0 }; }) };
+  const uow = { run: jest.fn(async (_t: string, fn: any) => { calls.push('uow.run'); return fn(tx); }) };
+  const idem = { remember: jest.fn(async (_k: string, _u: string, _e: string, fn: any) => { calls.push('idem.remember'); return fn(); }) };
+  const outbox = { write: jest.fn(async () => { calls.push('outbox.write'); }) };
+  const metrics = { inc: jest.fn(), observe: jest.fn() }; const audit = { write: jest.fn(async () => { calls.push('audit.write'); }) };
+  const wallet = { post: jest.fn(), balanceMinor: jest.fn() };
+  const repo = { insert: jest.fn(async () => { calls.push('repo.insert'); }) };
+  const warehouses = { getBookable: jest.fn(async () => { calls.push('warehouses.getBookable'); return warehouse(); }) };
+  const svc = new StorageBookingService(uow as any, outbox as any, idem as any, metrics as any, audit as any, wallet as any, repo as any, warehouses as any);
+  return { svc, calls, idem, uow, repo, outbox, warehouses };
+}
+const depositor = { userId: 'dep1', canManage: false, canStore: true, isAdmin: false };
+const req = (unitCode: string) => ({ warehouseId: 'w1', productId: 'p1', quantity: '62.600', unitCode });
+
+describe('PC-56 OPS-2c · B5 — request(): any unit but quintal is refused BY NAME, before idem.remember', () => {
+  it('the fee unit is one constant, and it is quintal', () => { expect(STORAGE_FEE_UNIT).toBe('quintal'); });
+  it.each(['kg', 'ton', 'litre', 'piece', 'Quintal', 'qtl', ' quintal'])('unitCode %p → 422 STORAGE_UNIT_NOT_QUINTAL with the sentence; NOTHING was called (ordering spy empty)', async (unit) => {
+    const h = requestHarness();
+    const e: any = await h.svc.request('t1', depositor, 'idem-k', req(unit) as any).catch((x) => x);
+    expect(e).toBeInstanceOf(StorageUnitNotQuintalError);
+    expect([e.code, e.httpStatus, e.message]).toEqual(['STORAGE_UNIT_NOT_QUINTAL', 422, STORAGE_UNIT_NOT_QUINTAL_SENTENCE]);
+    expect(e.message).toBe('Storage is booked in quintals only, because the storage fee is computed on the quantity in quintals. Nothing was booked.');
+    expect(e.details).toEqual({ unitCode: unit, required: 'quintal' });
+    expect(h.calls).toEqual([]);                                        // not idem.remember, not the uow, not the warehouse read, not an insert
+  });
+  it('a replay with the same key is refused the same way (nothing was remembered to replay)', async () => {
+    const h = requestHarness();
+    for (let i = 0; i < 2; i++) await expect(h.svc.request('t1', depositor, 'idem-same', req('kg') as any)).rejects.toBeInstanceOf(StorageUnitNotQuintalError);
+    expect(h.idem.remember).not.toHaveBeenCalled();
+  });
+  it('the permission check still comes first: no warehouse.store → 403, not the unit refusal', async () => {
+    const h = requestHarness();
+    const e: any = await h.svc.request('t1', { ...depositor, canStore: false }, 'idem-p', req('kg') as any).catch((x) => x);
+    expect([e.code, e.httpStatus]).toEqual(['WAREHOUSING_FORBIDDEN', 403]);
+    expect(h.calls).toEqual([]);
+  });
+  it('quintal goes through, in order: idem.remember → uow.run → the warehouse read → the insert → the outbox (the control for the empty spy above)', async () => {
+    const h = requestHarness();
+    const out = await h.svc.request('t1', depositor, 'idem-q', req('quintal') as any);
+    expect([out.unitCode, out.quantity, out.status]).toEqual(['quintal', '62.600', 'requested']);
+    expect(h.calls).toEqual(['idem.remember', 'uow.run', 'warehouses.getBookable', 'repo.insert', 'outbox.write']);
   });
 });

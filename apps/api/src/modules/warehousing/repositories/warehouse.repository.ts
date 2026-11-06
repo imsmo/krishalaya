@@ -43,6 +43,13 @@ export class WarehouseRepository {
       [p.id, p.tenantId, p.operatorUserId, p.defaultName, p.wdraRegNo, p.addressId, p.capacityMt, JSON.stringify(p.storageKinds), JSON.stringify(p.commoditiesAccepted), p.ratePerQtlMonthMinor?.toString() ?? null, p.insurancePolicyRef, p.isActive]);
   }
 
+  /** PC-56 OPS-2c · OPS2-B6: is this user an ACTIVE member of the tenant (any active role, not deleted)? Read in the caller's transaction. */
+  async isActiveTenantMember(tx: TxContext, tenantId: string, userId: string): Promise<boolean> {
+    const r = await tx.query(`SELECT 1 FROM user_tenant_roles utr JOIN users u ON u.id = utr.user_id
+       WHERE utr.tenant_id=$1 AND utr.user_id=$2 AND utr.is_active AND utr.deleted_at IS NULL AND u.deleted_at IS NULL LIMIT 1`, [tenantId, userId]);
+    return (r.rowCount ?? 0) > 0;
+  }
+
   async listFor(tenantId: string, q: WarehouseListQuery): Promise<Warehouse[]> {
     const params: unknown[] = [tenantId];
     let where = `deleted_at IS NULL`;

@@ -5,6 +5,7 @@
 import { NwrStatus, assertTransition } from './nwr-receipt.state';
 import { NwrRepository, DomainEvent, WarehousingEventType } from './warehousing.events';
 import { InvalidNwrError } from './warehousing.errors';
+import { formatQuantityMilli } from './quantity';   // PC-56 OPS-2c B23: printed from the scaled integer, never a float
 
 export interface NwrReceiptProps {
   id: string; tenantId: string; storageBookingId: string; repository: NwrRepository; enwrNo: string; holderUserId: string;
@@ -31,5 +32,5 @@ export class NwrReceipt {
   release(): void { this.transition('released', WarehousingEventType.NwrReleased); }
   cancel(): void { this.transition('cancelled', WarehousingEventType.NwrCancelled); }
   toJSON() { const v = this.props; return { id: v.id, storageBookingId: v.storageBookingId, repository: v.repository, enwrNo: v.enwrNo, holderUserId: v.holderUserId,
-    quantity: (Number(v.quantityMilli) / 1000).toFixed(3), valuationMinor: v.valuationMinor.toString(), status: v.status, pledgedLoanId: v.pledgedLoanId, issuedAt: v.issuedAt, expiresAt: v.expiresAt, createdAt: v.createdAt }; }
+    quantity: formatQuantityMilli(v.quantityMilli), valuationMinor: v.valuationMinor.toString(), status: v.status, pledgedLoanId: v.pledgedLoanId, issuedAt: v.issuedAt, expiresAt: v.expiresAt, createdAt: v.createdAt }; }
 }

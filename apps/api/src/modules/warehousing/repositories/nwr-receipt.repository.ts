@@ -3,14 +3,16 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
+import { parseQuantityMilli, formatQuantityMilli } from '../domain/quantity';
 import { NwrReceipt } from '../domain/nwr-receipt.entity';
 import { NwrRepository } from '../domain/warehousing.events';
 import { NwrStatus } from '../domain/nwr-receipt.state';
 
 const COLS = `id, tenant_id, storage_booking_id, repository, enwr_no, holder_user_id, quantity, valuation_minor, status, pledged_loan_id, issued_at, expires_at, created_at`;
 const d = (v: any): string | null => (v == null ? null : v instanceof Date ? v.toISOString().slice(0, 10) : String(v));
-const toMilli = (v: any): bigint => BigInt(Math.round(Number(v) * 1000));
-const milliToNum = (m: bigint) => (Number(m) / 1000).toFixed(3);
+// PC-56 OPS-2c · OPS2-B23 (F-13): the numeric(12,3) quantity is parsed from and printed to its STRING, digit by digit — never through a float.
+const toMilli = (v: string): bigint => parseQuantityMilli(v);
+const milliToNum = (m: bigint): string => formatQuantityMilli(m);
 function toDomain(r: any): NwrReceipt {
   return NwrReceipt.rehydrate({ id: r.id, tenantId: r.tenant_id, storageBookingId: r.storage_booking_id, repository: r.repository as NwrRepository, enwrNo: r.enwr_no, holderUserId: r.holder_user_id,
     quantityMilli: toMilli(r.quantity), valuationMinor: BigInt(r.valuation_minor), status: r.status as NwrStatus, pledgedLoanId: r.pledged_loan_id, issuedAt: r.issued_at, expiresAt: d(r.expires_at), createdAt: r.created_at });

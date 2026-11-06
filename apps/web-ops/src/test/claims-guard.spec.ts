@@ -117,6 +117,82 @@ const SOURCES_1C = ['components/ops1/KioskViews.tsx', 'features/ops1/kiosk.ts', 
   'app/kiosk/session-start/actions.ts', 'app/kiosk/profile/page.tsx', 'app/kiosk/land-crops/page.tsx', 'app/kiosk/kyc/page.tsx', 'app/kiosk/bank/page.tsx',
   'app/kiosk/first-listing/page.tsx', 'app/kiosk/schemes/page.tsx', 'app/kiosk/summary/page.tsx', 'app/kiosk/ambassador/page.tsx'];
 
+// ── PC-56 OPS-2c (brief §E6): the money-of-storage guards over the `ops2.` scope (and the two new nav labels). Each is proven on its own canon
+// phrase and NARROWED TO THE AFFIRMATIVE (a sentence that carries a negation passes — "There is no rate card with versions" — while the canon's
+// "Billed monthly in arrears at the versioned tariff on file" is caught); each affirmative guard is ALSO proven to let its negated form through.
+// Plus plain guards for the chain and arithmetic words, the founder's sentences PINNED in every language, and a brand guard over the 2c sources.
+const NAV_2 = ['nav.whBilling', 'nav.whInsights'];
+const scoped2 = (cat: Record<string, string>) => Object.entries(cat).filter(([k]) => k.startsWith('ops2.') || NAV_2.includes(k));
+const GUARDS_2C: ReadonlyArray<[name: string, hit: (v: string) => boolean, canon: string, negated?: string]> = [
+  ['% (affirmative)', affirmative(/%/), 'Occupancy 3,812 MT of 5,000 MT — 76.2% occupied.', 'No percentage is shown, not even 0%.'],
+  ['billed monthly (affirmative)', affirmative(/billed monthly/i), 'Billed monthly in arrears at the versioned tariff on file.', 'Nothing is billed monthly.'],
+  ['in arrears (affirmative)', affirmative(/in arrears/i), 'Billed monthly in arrears at the versioned tariff on file.', 'No fee is charged in arrears.'],
+  ['versioned (affirmative)', affirmative(/versioned/i), 'Tariff ₹9/qtl/mo · versioned rate card', 'There is no versioned rate card.'],
+  ['promo (affirmative)', affirmative(/promo/i), 'Free-storage promo first 14 days · tenant policy flag · currently ON', 'No promotion switch exists.'],
+  ['free storage (affirmative)', affirmative(/free[- ]storage/i), 'Free-storage promo first 14 days', 'No free storage is offered.'],
+  ['first 14 days (affirmative)', affirmative(/first 14 days/i), 'First 14 days are free under the current tenant promo (feature flag)', 'The first 14 days are not free.'],
+  ['revenue (affirmative)', affirmative(/revenue/i), 'Month-to-date revenue ₹1,84,230.00 across 341 receipts + non-NWR lots', 'No revenue is shown.'],
+  ['occupan (affirmative)', affirmative(/occupan/i), 'Occupancy 3,812 MT of 5,000 MT — 76.2% occupied.', 'No occupancy is shown.'],
+  ['pledge rate (affirmative)', affirmative(/pledge rate/i), 'e-NWR pledge rate 41% of receipts', 'No pledge rate exists.'],
+  ['turnaround (affirmative)', affirmative(/turnaround/i), 'Assay median turnaround 3.1h', 'No turnaround is measured.'],
+  ['audit-stamped (affirmative)', affirmative(/audit-stamped/i), 'Export (audit-stamped)', 'Nothing here is audit-stamped.'],
+  // The canon's promise is itself worded with "nothing", so the affirmative narrowing would let it through: this one is PLAIN on the promise's own
+  // words (a refusal never says them); its negated sibling ("No fee is charged at all") passes.
+  ['nothing is charged twice (the promise, plain)', plain(/nothing is charged twice/i), 'Last successfully billed cycle stands; nothing is charged twice and nothing is silently skipped.', 'No fee is charged at all here.'],
+  ['zero-sum', plain(/zero-sum/i), 'Money-adjacent actions reconcile zero-sum before this page ever shows.'],
+  ['reconcil', plain(/reconcil/i), 'Money-adjacent actions reconcile zero-sum before this page ever shows.'],
+  ['on-call', plain(/on-call/i), 'repeated failures page the on-call.'],
+  ['plan settings', plain(/plan settings/i), 'Nothing is broken — it is not enabled. See plan settings.'],
+  ['× or = (any)', plain(/[×=]/), '62.60 qtl stored quantity × ₹9 rate/qtl/month = ₹563.40'],
+  ['a rupee figure (any)', plain(/₹\s?\d/), 'Tariff ₹9/qtl/mo'],
+];
+const BRAND_2C: ReadonlyArray<[RegExp, string]> = [
+  [/Gondal/i, 'Gondal Agri Warehouse'], [/Anand FPO/i, 'Anand FPO · warehouse ops'], [/Ramesh|Patel/i, 'Ramesh Patel — SB-2026-0871'], [/Paresh/i, 'the centre manager\'s (Paresh V.)'],
+  [/AgriQual/i, 'AgriQual Labs'], [/Krishalaya Ops/i, 'Krishalaya Ops Console'], [/GJ-0412/, 'WDRA reg ••GJ-0412'], [/SB-20\d{2}-/, 'SB-2026-0871'], [/NERL-\d{2}-/, 'NERL-26-GJ-88214'],
+  [/Bhavesh|Kanti|Meera|Ishwar/i, 'Bhavesh D.'], [/\b563\.40\b|1,84,230|3,812|76\.2/, '₹563.40'],
+];
+const SOURCES_2C = ['components/ops2/BillingView.tsx', 'components/ops2/InsightsView.tsx', 'components/ops2/Ops2Chain.tsx', 'app/warehouse/billing/page.tsx',
+  'app/warehouse/insights/page.tsx', 'features/ops2/billing.ts', 'components/Sidebar.tsx'];
+
+describe('PC-56 OPS-2c · the claims guard (ops2. scope, the money of storage)', () => {
+  it('each guard is proven on its own canon phrase; each affirmative guard lets its negated form through', () => {
+    for (const [name, hit, canon, negated] of GUARDS_2C) {
+      expect([name, hit(canon)]).toEqual([name, true]);
+      if (negated) expect([name, 'negated', hit(negated)]).toEqual([name, 'negated', false]);
+    }
+    for (const [re, phrase] of BRAND_2C) expect([String(re), re.test(phrase)]).toEqual([String(re), true]);
+  });
+  it.each(Object.entries(CATS))('%s: no ops2. value (or 2c nav label) trips a 2c guard or brand regex', (_lang, cat) => {
+    expect(scoped2(cat).length).toBe(76);
+    for (const [k, v] of scoped2(cat)) {
+      for (const [name, hit] of GUARDS_2C) expect([k, name, hit(v)]).toEqual([k, name, false]);
+      for (const [re] of BRAND_2C) expect([k, String(re), re.test(v)]).toEqual([k, String(re), false]);
+    }
+  });
+  it('the founder\'s Q1-A sentence is PINNED verbatim in English, and "own wallet" is said in EVERY language (who would receive the fee today)', () => {
+    expect(en['ops2.billing.payee']).toBe('Today, if release were switched on, the fee would be paid from the depositor\'s wallet into the warehouse operator\'s own wallet. Release is paused: it has been decided that the fee will go to your organisation\'s account, and release does not come back until that is built and the depositor can confirm it herself.');
+    expect([/operator's own wallet/.test(en['ops2.billing.payee']), /संचालक के अपने ही वॉलेट/.test(hi['ops2.billing.payee']), /સંચાલકના પોતાના જ વૉલેટ/.test(gu['ops2.billing.payee'])]).toEqual([true, true, true]);
+    // release is paused, in every language
+    // PC-56 OPS-2c · founder 2026-11-06 (payee wording): no tenant organisation decided this on the platform — the drafted
+    // "your organisation has decided" is refused in every language.
+    expect([/organisation has decided/.test(en['ops2.billing.payee']), /संस्था ने तय किया/.test(hi['ops2.billing.payee']), /સંસ્થાએ નક્કી કર્યું/.test(gu['ops2.billing.payee'])]).toEqual([false, false, false]);
+    expect([/Release is paused/.test(en['ops2.billing.payee']), /रिलीज़ रुकी है/.test(hi['ops2.billing.payee']), /રિલીઝ અટકેલી છે/.test(gu['ops2.billing.payee'])]).toEqual([true, true, true]);
+  });
+  it('the Q2-A rule is PINNED in words (once, at release; the rate then; whole 30-day periods rounded up, minimum one; quintals) in every language', () => {
+    expect(en['ops2.billing.rule']).toBe('The fee is computed once, at release, from the rate on file at that moment, for whole 30-day periods rounded up (minimum one), on the quantity in quintals.');
+    expect([/30-दिन/.test(hi['ops2.billing.rule']) && /क्विंटल/.test(hi['ops2.billing.rule']) && /एक ही बार/.test(hi['ops2.billing.rule']),
+      /30-દિવસ/.test(gu['ops2.billing.rule']) && /ક્વિન્ટલ/.test(gu['ops2.billing.rule']) && /એક જ વાર/.test(gu['ops2.billing.rule'])]).toEqual([true, true]);
+    expect(en['ops2.billing.rateLabel']).toBe('on file now; the rate at release is used, not the rate when the goods arrived');
+    expect(en['ops2.billing.wdraAsEntered']).toBe('{wdra} (as entered, not checked with WDRA)');
+  });
+  it('brand guard over every new 2c source (pages, views, helpers, the sidebar)', () => {
+    for (const rel of SOURCES_2C) {
+      const src = fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
+      for (const [re] of BRAND_2C.filter(([r]) => !/Krishalaya Ops/.test(String(r)) || rel !== 'components/Sidebar.tsx')) expect([rel, String(re), re.test(src)]).toEqual([rel, String(re), false]);
+    }
+  });
+});
+
 describe('PC-56 OPS-1c · the claims guard (ops1. scope, the kiosk)', () => {
   it('each guard is proven on its own canon phrase; each affirmative guard lets its negated form through', () => {
     for (const [name, hit, canon, negated] of GUARDS_1C) {

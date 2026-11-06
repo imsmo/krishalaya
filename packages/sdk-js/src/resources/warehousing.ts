@@ -6,7 +6,17 @@
 import { HttpClient } from '../http';
 import { Page } from '../types';
 
-export interface Warehouse { id: string; defaultName: string; regionId?: string | null; capacity?: string | null; capacityUnit?: string | null; isActive?: boolean; createdAt?: string; }
+// PC-56 OPS-2c (survey F-9 / C-16, a minimal deviation recorded in the wave report): W378 reads the operator's OWN warehouses and their rate on
+// file, so `warehouses()` gains `box` and the type gains the fields the API's `toJSON` returns that W378 prints. The rest of the type drift and
+// the bookings / receipts `box` are OPS-2a's (OPS2-B7, E13).
+export interface Warehouse {
+  id: string; defaultName: string; regionId?: string | null; capacity?: string | null; capacityUnit?: string | null; isActive?: boolean; createdAt?: string;
+  operatorUserId?: string | null; wdraRegNo?: string | null; capacityMt?: string | null;
+  /** The storage rate on file NOW, per quintal per month, a bigint minor-unit STRING (null: none set). Never computed on a client. */
+  ratePerQtlMonthMinor?: string | null;
+}
+/** `mine` = warehouses the caller operates (tenant-scoped); `browse` (the API default) = the tenant's + platform-global; `all` = needs booking.manage. */
+export type WarehouseBox = 'mine' | 'browse' | 'all';
 export interface StorageBooking {
   id: string; warehouseId: string; productId: string; quantity: string; unitCode: string; status: string;
   expectedArrival?: string | null; storedAt?: string | null; releasedAt?: string | null; feeMinor?: string | null; createdAt?: string;
@@ -19,8 +29,8 @@ export class WarehousingResource {
   constructor(private readonly http: HttpClient) {}
 
   // --- warehouses ---
-  async warehouses(params: { cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<Warehouse>> {
-    const r = await this.http.request<Warehouse[]>('GET', 'warehousing/warehouses', { query: { cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+  async warehouses(params: { box?: WarehouseBox; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<Warehouse>> {
+    const r = await this.http.request<Warehouse[]>('GET', 'warehousing/warehouses', { query: { box: params.box, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
   async createWarehouse(input: { defaultName: string; regionId?: string; capacity?: string; capacityUnit?: string }): Promise<Warehouse> {

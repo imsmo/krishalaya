@@ -5,12 +5,13 @@
 import { BookingStatus, assertTransition } from './storage-booking.state';
 import { DomainEvent, WarehousingEventType } from './warehousing.events';
 import { InvalidBookingError } from './warehousing.errors';
+import { formatQuantityMilli } from './quantity';   // PC-56 OPS-2c B23: printed from the scaled integer, never a float
 
 function roundDiv(num: bigint, den: bigint): bigint { return (num + den / 2n) / den; }
 
 export interface StorageBookingProps {
   id: string; tenantId: string; warehouseId: string; depositorUserId: string; productId: string;
-  quantityMilli: bigint;            // quantity ×1000 (interpreted in quintals for fee purposes)
+  quantityMilli: bigint;            // quantity ×1000 — IN QUINTALS: the request refuses any other unit (PC-56 OPS-2c B5, STORAGE_FEE_UNIT)
   unitCode: string; expectedArrival: string | null; status: BookingStatus; storedAt: Date | null; releasedAt: Date | null; createdAt?: Date;
 }
 export class StorageBooking {
@@ -56,5 +57,5 @@ export class StorageBooking {
     return roundDiv(this.props.quantityMilli * ratePerQtlMonthMinor * BigInt(months), 1000n);
   }
   toJSON() { const v = this.props; return { id: v.id, warehouseId: v.warehouseId, depositorUserId: v.depositorUserId, productId: v.productId,
-    quantity: (Number(v.quantityMilli) / 1000).toFixed(3), unitCode: v.unitCode, status: v.status, storedAt: v.storedAt, releasedAt: v.releasedAt, createdAt: v.createdAt }; }
+    quantity: formatQuantityMilli(v.quantityMilli), unitCode: v.unitCode, status: v.status, storedAt: v.storedAt, releasedAt: v.releasedAt, createdAt: v.createdAt }; }
 }
