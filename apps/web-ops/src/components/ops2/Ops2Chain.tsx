@@ -3,7 +3,11 @@
 // first, its own sentence (nothing queued, nothing to confirm, nothing ran, nothing attempted), its refusals BY NAME — the canon's zero-sum sentence
 // among them, refused with its own words and NEVER printed — and links back to the TRIGGERING page. No form, no act, no money.
 // Also the surfaces' refusal list (`Ops2Refusals`), printed BY NAME from features/ops2/refusals.ts.
+// PC-56 OPS-2b: the same component prints the 2b chains — the REAL assay act chain (W3297–W3299: the confirm state carries the record form as its
+// child, the failure state the server's named reason) and the DECOR assay export / enwr chains. `back` is the page that opened the chain when that
+// page carries its own ids (W372 / W373: `features/ops2/receipts.ts` chain2bBack); otherwise the chain's page.
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { chain2ById, OPS2_REFUSALS, type Chain2Id, type Ops2Surface, type Tr } from '../../features/ops2/refusals';
 
 export function Ops2Refusals({ t, surface }: { t: Tr; surface: Ops2Surface }) {
@@ -17,16 +21,18 @@ export function Ops2Refusals({ t, surface }: { t: Tr; surface: Ops2Surface }) {
   );
 }
 
-export function Ops2Chain({ t, chain, state }: { t: Tr; chain: Chain2Id; state: string }) {
+export function Ops2Chain({ t, chain, state, back, children }: { t: Tr; chain: Chain2Id; state: string; back?: string; children?: ReactNode }) {
   const c = chain2ById(chain);
   const k = c.key(state);
+  const href = back ?? c.page;
   return (
     <section className="kv-card kv-chain" data-kv-chain={chain} data-kv-chain-kind={c.kind} data-kv-chain-state={state} role="status">
       <h1>{t.t(`${k}.title`)}</h1>
       <p className="kv-statement" data-kv-statement={c.statement}>{t.t(c.statement)}</p>
       <p>{t.t(`${k}.body`)}</p>
+      {children}
       <Ops2Refusals t={t} surface={c.surface} />
-      <p className="kv-pager"><Link className="kv-btn" href={c.page} data-kv-back={c.page}>{t.t('ops2.chain.back')}</Link></p>
+      <p className="kv-pager"><Link className="kv-btn" href={href} data-kv-back={href}>{t.t('ops2.chain.back')}</Link></p>
     </section>
   );
 }

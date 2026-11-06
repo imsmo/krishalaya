@@ -1,7 +1,8 @@
-// modules/warehousing/domain/nwr-receipt.entity.ts · the nwr_receipts aggregate (electronic Negotiable
-// Warehouse Receipt). Lifecycle via nwr-receipt.state (issued → released | cancelled; pledge→loan deferred).
-// valuation_minor is bigint minor units (Law 2) — the collateral value; auto-valuation from assay + mandi
-// price is deferred (operator supplies it at issuance).
+// modules/warehousing/domain/nwr-receipt.entity.ts · the nwr_receipts aggregate — a RECORD of an electronic Negotiable Warehouse Receipt number.
+// Lifecycle via nwr-receipt.state (issued → released | cancelled; nothing else is reachable). PC-56 OPS-2b (survey C-5, C-10; founder Q3-A, Q4-A,
+// Q5-A): this platform does not issue an eNWR (`issue` is refused by name in the service; `NwrReceipt.issue` survives only for that kept body and
+// the domain spec), a receipt is never released on its own (refused by name), and cancel is the named operator's audited act. valuation_minor is
+// bigint minor units (Law 2), operator-typed at the time with no basis — it values nothing and the ops console never renders it; nothing is pledged.
 import { NwrStatus, assertTransition } from './nwr-receipt.state';
 import { NwrRepository, DomainEvent, WarehousingEventType } from './warehousing.events';
 import { InvalidNwrError } from './warehousing.errors';
@@ -24,6 +25,7 @@ export class NwrReceipt {
   static rehydrate(props: NwrReceiptProps): NwrReceipt { return new NwrReceipt(props); }
   get id() { return this.props.id; }
   get tenantId() { return this.props.tenantId; }
+  get storageBookingId() { return this.props.storageBookingId; }
   get holderUserId() { return this.props.holderUserId; }
   get status() { return this.props.status; }
   toProps(): Readonly<NwrReceiptProps> { return Object.freeze({ ...this.props }); }

@@ -1,6 +1,7 @@
 // apps/web-ops/src/test-render/wh-insights.render.test.tsx · PC-56 OPS-2c · W379 /warehouse/insights — AN HONEST PAGE THAT READS NOTHING. The
 // statement ×3; zero inputs; no figure (no digit at all in the visible text), no percentage; occupancy, intake, turnaround, pledge rate and re-assay
-// counts refused by name; the assay page named in a SENTENCE and never linked (it is not built); export DECOR; a real link to the billing page.
+// counts refused by name; the assay page named in a sentence — NAMED UPDATE (PC-56 OPS-2b): W372 is built, so the sentence carries a REAL link to
+// it (the OPS-2c rule "no link to an unbuilt route" stands: the assay page exists and the test proves it); export DECOR; a real link to billing.
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as React from 'react';
@@ -34,9 +35,9 @@ describe('PC-56 OPS-2c · /warehouse/insights is honest and reads nothing', () =
       expect([id, html.includes(`data-kv-refusal="${id}"`)]).toEqual([id, true]);
     for (const r of OPS2_REFUSALS.filter((x) => x.surfaces.includes('wh_insights'))) expect([r.id, html.includes(`data-kv-refusal="${r.id}"`)]).toEqual([r.id, true]);
   });
-  it('the only links: the billing page (built) and the export chain on THIS page; never the assay page (not built)', () => {
+  it('the only links: the assay page (built in OPS-2b), the billing page (built) and the export chain on THIS page', () => {
     const hrefs = Array.from(html.matchAll(/href="([^"]+)"/g)).map((m) => m[1]);
-    expect(hrefs).toEqual(['/warehouse/billing', '/warehouse/insights?export=queued']);
-    expect(fs.existsSync(path.join(__dirname, '..', 'app/warehouse/assay/page.tsx'))).toBe(false);
+    expect(hrefs).toEqual(['/warehouse/assay', '/warehouse/billing', '/warehouse/insights?export=queued']);
+    for (const h of ['/warehouse/assay', '/warehouse/billing']) expect([h, fs.existsSync(path.join(__dirname, '..', 'app', h, 'page.tsx'))]).toEqual([h, true]);
   });
 });

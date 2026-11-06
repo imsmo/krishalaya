@@ -1,6 +1,8 @@
-// modules/warehousing/controllers/v1/nwr.controller.ts · electronic NWR issuance + holder views. `warehousing` flag.
-// issue/release/cancel = operator (warehouse.manage); list/get = the holder's own or staff.
-import { Controller, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
+// modules/warehousing/controllers/v1/nwr.controller.ts · electronic NWR receipts: holder/staff reads + the one hardened act. `warehousing` flag.
+// PC-56 OPS-2b (founder Q3-A, Q5-A, Q11-A): issue → 409 ENWR_ISSUE_NOT_ON_PLATFORM and release → 409 ENWR_RELEASE_NOT_STANDALONE, both refused by
+// name in the service before anything is read or written; cancel = the warehouse's named operator only, Idempotency-Key (400 without) + a reason
+// (400 ENWR_CANCEL_REASON_REQUIRED without), one audit row. list/get = the holder's own or staff (unchanged).
+import { Body, Controller, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
@@ -38,5 +40,8 @@ export class NwrController {
   @Post(':id/release') @RequirePermissions(WarehousingPermissions.Manage)
   release(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.release(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
   @Post(':id/cancel') @RequirePermissions(WarehousingPermissions.Manage)
-  cancel(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.cancel(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
+  cancel(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @Headers('idempotency-key') key: string, @Body('reason') reason?: unknown) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return this.svc.cancel(ctx.tenantId, this.actor(ctx), id, key, typeof reason === 'string' ? reason : null, ipOf(r)).then((data) => ({ data }));
+  }
 }

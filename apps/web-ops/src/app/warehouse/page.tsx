@@ -1,6 +1,8 @@
 // apps/web-ops/src/app/warehouse/page.tsx · warehouse operations home (PC-32 OW-2): storage bookings across
 // the tenant's warehouses (status filter in the URL, keyset paging preserving it) + the eNWR receipt register.
-// Row → /warehouse/[id] where the deposit lifecycle + assay + eNWR issue live. Sections degrade independently.
+// Row → /warehouse/[id] where the deposit lifecycle lives. Sections degrade independently.
+// PC-56 OPS-2b (founder Q4-A "no valuation anywhere on the ops console"; Q3-A): the receipt list prints no valuation column, each record is
+// "recorded, not confirmed", and the organisation's full register is W376 (/warehouse/enwr/registry). The bookings `box` (C-3) is OPS-2a's.
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireSession } from '../../lib/session';
@@ -71,6 +73,7 @@ export default async function WarehousePage({ searchParams }: { searchParams: { 
       {nextCursor && <p className="kv-pager"><a href={pager(nextCursor)} className="kv-btn--link">{t.t('common.nextPage')}</a></p>}
 
       <h2>{t.t('wh.nwrs')}</h2>
+      <p className="kv-field__hint"><Link href="/warehouse/enwr/registry" className="kv-link">{t.t('wh.registerLink')}</Link></p>
       {nwrsFailed ? <p className="kv-error" role="alert">{t.t('wh.loadError')}</p> : (
         <DataTable
           rows={nwrs}
@@ -78,8 +81,8 @@ export default async function WarehousePage({ searchParams }: { searchParams: { 
           columns={[
             { header: t.t('wh.colEnwr'), cell: (n) => <span className="kv-mono">{n.enwrNo}</span> },
             { header: t.t('wh.colRepo'), cell: (n) => <span className="kv-badge">{n.repository}</span> },
-            { header: t.t('wh.colValuation'), cell: (n) => formatMoneyMinor(n.valuationMinor, 'INR', lang) },
             { header: t.t('wh.colStatus'), cell: (n) => <span className="kv-badge">{n.status}</span> },
+            { header: t.t('wh.colStanding'), cell: () => t.t('ops2.enwr.recordedNotConfirmed') },
             { header: t.t('wh.colExpires'), cell: (n) => (n.expiresAt ? formatDate(n.expiresAt, lang) : t.t('common.dash')) },
           ]}
         />

@@ -1,10 +1,9 @@
 // apps/web-ops/src/features/warehouse/manage.ts · PURE warehouse-wave logic (PC-32 OW-2). Mirrors the
 // storage-booking state machine (requested → confirmed → stored → released; cancel from requested|confirmed)
-// and the eNWR issue DTO. Money float-free. No IO → unit-tested.
-import { parseMajorToMinor } from '../money';
+// and the assay record DTO. No IO → unit-tested. PC-56 OPS-2b (founder Q3-A): `canIssueNwr`, `buildNwr` and `NWR_REPOSITORIES` are REMOVED —
+// this platform does not issue an eNWR and the console offers no issue form.
 
 export const BOOKING_STATUSES = ['requested', 'confirmed', 'stored', 'released', 'cancelled'] as const;
-export const NWR_REPOSITORIES = ['NERL', 'CCRL'] as const;
 
 export function isBookingStatus(v: string | undefined | null): boolean {
   return !!v && (BOOKING_STATUSES as readonly string[]).includes(v);
@@ -13,29 +12,6 @@ export function canConfirm(status: string | undefined | null): boolean { return 
 export function canStore(status: string | undefined | null): boolean { return status === 'confirmed'; }
 export function canRelease(status: string | undefined | null): boolean { return status === 'stored'; }
 export function canCancel(status: string | undefined | null): boolean { return status === 'requested' || status === 'confirmed'; }
-/** eNWR can only be issued against goods that are physically IN the warehouse. */
-export function canIssueNwr(status: string | undefined | null): boolean { return status === 'stored'; }
-
-export type NwrResult =
-  | { ok: true; value: { storageBookingId: string; repository: string; enwrNo: string; valuationMinor: string; expiresAt?: string } }
-  | { ok: false; error: 'booking' | 'repo' | 'enwrno' | 'valuation' | 'expires' };
-
-export function buildNwr(raw: { storageBookingId: string; repository: string; enwrNo: string; valuationMajor: string; expiresAt: string }): NwrResult {
-  const storageBookingId = raw.storageBookingId.trim();
-  if (!storageBookingId) return { ok: false, error: 'booking' };
-  if (!(NWR_REPOSITORIES as readonly string[]).includes(raw.repository)) return { ok: false, error: 'repo' };
-  const enwrNo = raw.enwrNo.trim();
-  if (enwrNo.length < 3 || enwrNo.length > 60) return { ok: false, error: 'enwrno' };
-  const valuationMinor = parseMajorToMinor(raw.valuationMajor);
-  if (valuationMinor === undefined || valuationMinor === '0') return { ok: false, error: 'valuation' };
-  const expiresAt = raw.expiresAt.trim();
-  if (expiresAt && !/^\d{4}-\d{2}-\d{2}$/.test(expiresAt)) return { ok: false, error: 'expires' };
-  const out: { storageBookingId: string; repository: string; enwrNo: string; valuationMinor: string; expiresAt?: string } =
-    { storageBookingId, repository: raw.repository, enwrNo, valuationMinor };
-  if (expiresAt) out.expiresAt = expiresAt;
-  return { ok: true, value: out };
-}
-
 /** Assay parameters arrive as a plain-text "name = value" list (one per line — works in any textarea).
  *  Values parse to number/boolean when they look like one; anything else stays a string. ≤30 params. */
 export type AssayResult =

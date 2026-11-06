@@ -1,8 +1,8 @@
 // @krishalaya/sdk-js · warehousing resource (PC-32 OW-2). Warehouses, storage bookings (deposit lifecycle:
 // requested → confirmed → stored → released, +cancel pre-storage), assay reports, and eNWR receipts (NERL/CCRL).
 // Ops writes are gated server-side by warehousing.manage (deposit REQUEST is the depositor's warehousing.store).
-// Money is bigint minor-unit STRINGS (Law 2: eNWR valuation; storage fees are server-computed). eNWR issue and
-// booking release are Idempotency-Keyed (Law 3 — a receipt or a release must never double-fire).
+// Money is bigint minor-unit STRINGS (Law 2; storage fees are server-computed). Booking release and receipt cancel are Idempotency-Keyed
+// (Law 3). PC-56 OPS-2b: eNWR issue and standalone receipt release are refused by the API and no longer offered here.
 import { HttpClient } from '../http';
 import { Page } from '../types';
 
@@ -22,8 +22,15 @@ export interface StorageBooking {
   expectedArrival?: string | null; storedAt?: string | null; releasedAt?: string | null; feeMinor?: string | null; createdAt?: string;
   productName?: string | null; warehouseName?: string | null;
 }
-export interface AssayReport { id: string; storageBookingId: string; assayerName: string; parameters: Record<string, string | number | boolean>; gradeOptionId?: string | null; reportMediaId?: string | null; validUntil?: string | null; createdAt?: string; }
-export interface NwrReceipt { id: string; storageBookingId: string; repository: string; enwrNo: string; valuationMinor: string; status: string; expiresAt?: string | null; createdAt?: string; }
+export interface AssayReport { id: string; storageBookingId: string; assayerName: string; parameters: Record<string, string | number | boolean>; gradeOptionId?: string | null; reportMediaId?: string | null; assayedAt?: string | null; validUntil?: string | null; createdAt?: string; }
+/**
+ * PC-56 OPS-2b (founder Q3-A, Q4-A, Q9-A): a RECORD of a receipt number — this platform issues none. The API body also carries `holderUserId` and
+ * `valuationMinor`; they are deliberately NOT in this type, so no console can print a holder or a valuation from it. `quantity` is the decimal
+ * string the API prints (three places), copied from the booking at the time; the receipt itself stores no unit.
+ */
+export interface NwrReceipt { id: string; storageBookingId: string; repository: string; enwrNo: string; quantity?: string | null; status: string; issuedAt?: string | null; expiresAt?: string | null; createdAt?: string; }
+/** `mine` (the API default) = receipts the caller holds; `all` = the organisation's records (warehouse.manage). */
+export type NwrBox = 'mine' | 'all';
 
 export class WarehousingResource {
   constructor(private readonly http: HttpClient) {}
@@ -72,18 +79,18 @@ export class WarehousingResource {
     return (await this.http.request<AssayReport[]>('GET', `warehousing/storage-bookings/${encodeURIComponent(bookingId)}/assays`, { signal })).data;
   }
 
-  // --- eNWR receipts ---
-  async issueNwr(input: { storageBookingId: string; repository: string; enwrNo: string; valuationMinor: string; expiresAt?: string }, idempotencyKey: string): Promise<NwrReceipt> {
-    return (await this.http.request<NwrReceipt>('POST', 'warehousing/nwr', { idempotencyKey, body: input })).data;
-  }
-  async nwrs(params: { status?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<NwrReceipt>> {
-    const r = await this.http.request<NwrReceipt[]>('GET', 'warehousing/nwr', { query: { status: params.status, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+  // --- eNWR receipt RECORDS (PC-56 OPS-2b: `issueNwr` and `releaseNwr` are removed — the API refuses both by name, ENWR_ISSUE_NOT_ON_PLATFORM /
+  // ENWR_RELEASE_NOT_STANDALONE; no console offers either) ---
+  async nwrs(params: { box?: NwrBox; status?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<NwrReceipt>> {
+    const r = await this.http.request<NwrReceipt[]>('GET', 'warehousing/nwr', { query: { box: params.box, status: params.status, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
-  async releaseNwr(id: string): Promise<NwrReceipt> {
-    return (await this.http.request<NwrReceipt>('POST', `warehousing/nwr/${encodeURIComponent(id)}/release`, {})).data;
+  /** One receipt record (the holder's own, or staff's; 404 otherwise — no IDOR). */
+  async nwr(id: string, signal?: AbortSignal): Promise<NwrReceipt> {
+    return (await this.http.request<NwrReceipt>('GET', `warehousing/nwr/${encodeURIComponent(id)}`, { signal })).data;
   }
-  async cancelNwr(id: string): Promise<NwrReceipt> {
-    return (await this.http.request<NwrReceipt>('POST', `warehousing/nwr/${encodeURIComponent(id)}/cancel`, {})).data;
+  /** The warehouse's NAMED operator cancels a receipt record — Idempotency-Keyed, with a reason; audited (PC-56 OPS-2b, Q5-A). No console calls it in OPS-2b. */
+  async cancelNwr(id: string, reason: string, idempotencyKey: string): Promise<NwrReceipt> {
+    return (await this.http.request<NwrReceipt>('POST', `warehousing/nwr/${encodeURIComponent(id)}/cancel`, { idempotencyKey, body: { reason } })).data;
   }
 }

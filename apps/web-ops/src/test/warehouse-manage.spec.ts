@@ -1,4 +1,6 @@
-import { canConfirm, canStore, canRelease, canCancel, canIssueNwr, buildNwr, buildAssay, isBookingStatus } from '../features/warehouse/manage';
+import * as manage from '../features/warehouse/manage';
+import { canConfirm, canStore, canRelease, canCancel, buildAssay, isBookingStatus } from '../features/warehouse/manage';
+import { canRecordAssay } from '../features/ops2/receipts';
 
 describe('features/warehouse/manage (OW-2)', () => {
   it('gates mirror the booking state machine', () => {
@@ -6,17 +8,17 @@ describe('features/warehouse/manage (OW-2)', () => {
     expect(canStore('confirmed')).toBe(true); expect(canStore('requested')).toBe(false);
     expect(canRelease('stored')).toBe(true); expect(canRelease('released')).toBe(false);
     expect(canCancel('requested')).toBe(true); expect(canCancel('confirmed')).toBe(true); expect(canCancel('stored')).toBe(false);
-    expect(canIssueNwr('stored')).toBe(true); expect(canIssueNwr('confirmed')).toBe(false);
+    // PC-56 OPS-2b · NAMED UPDATE (founder Q3-A): `canIssueNwr('stored')` was true — the console offered eNWR issue. It is GONE (survey §7:
+    // "canIssueNwr gone"); the assay gate is `stored` AND the named operator only (F-16, Q11-A).
+    expect('canIssueNwr' in manage).toBe(false);
+    expect([canRecordAssay('stored', true), canRecordAssay('confirmed', true), canRecordAssay('stored', false), canRecordAssay('requested', true)]).toEqual([true, false, false, false]);
     expect(isBookingStatus('stored')).toBe(true); expect(isBookingStatus('nope')).toBe(false);
   });
 
-  it('buildNwr: repo enum, enwrNo 3–60, positive float-free valuation, optional date', () => {
-    expect(buildNwr({ storageBookingId: 'b1', repository: 'NERL', enwrNo: 'NERL-2026-0042', valuationMajor: '150000.50', expiresAt: '2027-03-31' }))
-      .toEqual({ ok: true, value: { storageBookingId: 'b1', repository: 'NERL', enwrNo: 'NERL-2026-0042', valuationMinor: '15000050', expiresAt: '2027-03-31' } });
-    expect(buildNwr({ storageBookingId: 'b1', repository: 'XXXX', enwrNo: 'abc', valuationMajor: '1', expiresAt: '' })).toEqual({ ok: false, error: 'repo' });
-    expect(buildNwr({ storageBookingId: 'b1', repository: 'CCRL', enwrNo: 'ab', valuationMajor: '1', expiresAt: '' })).toEqual({ ok: false, error: 'enwrno' });
-    expect(buildNwr({ storageBookingId: 'b1', repository: 'CCRL', enwrNo: 'abc', valuationMajor: '0', expiresAt: '' })).toEqual({ ok: false, error: 'valuation' });
-    expect(buildNwr({ storageBookingId: 'b1', repository: 'CCRL', enwrNo: 'abc', valuationMajor: '10', expiresAt: '31-03-2027' })).toEqual({ ok: false, error: 'expires' });
+  // PC-56 OPS-2b · NAMED UPDATE (founder Q3-A): `buildNwr` (the issue form's builder, with a typed valuation) is REMOVED with the form; the
+  // console builds no receipt and sends no valuation.
+  it('buildNwr and NWR_REPOSITORIES are gone (no receipt is built on this console)', () => {
+    expect(['buildNwr' in manage, 'NWR_REPOSITORIES' in manage]).toEqual([false, false]);
   });
 
   it('buildAssay: name=value lines → typed parameters; number/boolean coercion; honest failures', () => {

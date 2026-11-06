@@ -65,8 +65,10 @@ describe('PC-56 OPS-2c · E7 / E2 / E14', () => {
     for (const h of ['/warehouse/billing', '/warehouse/insights']) expect(hrefs).toContain(h);
     for (const h of hrefs) expect([h, fs.existsSync(path.join(SRC, 'app', h, 'page.tsx'))]).toEqual([h, true]);
   });
-  it('no 2c source links a warehouse route that is not built (dashboard, assay, weighbridge, stacking, enwr)', () => {
-    for (const rel of ALL_2C.filter((r) => r !== 'features/ops2/refusals.ts')) expect([rel, /href=\{?['"`]\/warehouse\/(dashboard|assay|weighbridge|stacking|enwr)/.test(read(rel))]).toEqual([rel, false]);
+  // NAMED UPDATE (PC-56 OPS-2b): `assay` and `enwr` are built now (W372, W373, W375, W376), so they leave the "not built" list; the rule is unchanged
+  // for the three still unbuilt (OPS-2a's dashboard, weighbridge, stacking). W379's assay link is now real (wh-insights.render pins it).
+  it('no 2c source links a warehouse route that is not built (dashboard, weighbridge, stacking)', () => {
+    for (const rel of ALL_2C.filter((r) => r !== 'features/ops2/refusals.ts')) expect([rel, /href=\{?['"`]\/warehouse\/(dashboard|weighbridge|stacking)/.test(read(rel))]).toEqual([rel, false]);
   });
   it('E14: the web-ops fee unit equals the API\'s one constant (read from its file)', () => {
     const api = fs.readFileSync(path.join(SRC, '..', '..', 'api', 'src', 'modules', 'warehousing', 'domain', 'quantity.ts'), 'utf8');

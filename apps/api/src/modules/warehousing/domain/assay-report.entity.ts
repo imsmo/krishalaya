@@ -1,5 +1,7 @@
-// modules/warehousing/domain/assay-report.entity.ts · the assay_reports aggregate (accredited quality assay).
-// Drives NWR valuation. Quality parameters are an opaque jsonb bag (moisture/fm/broken…). No money here.
+// modules/warehousing/domain/assay-report.entity.ts · the assay_reports aggregate — the warehouse's own assay entry.
+// PC-56 OPS-2b (survey C-10, founder Q13-A): NOT a lab certificate and it sets no price — `assayer_name` is free text (no lab registry, no
+// accreditation), and nothing reads an assay to value anything (eNWR issue is refused by name; no fee or price reads it). Quality parameters are
+// an opaque jsonb bag, printed as entered. No money here.
 import { DomainEvent, WarehousingEventType } from './warehousing.events';
 import { InvalidAssayError } from './warehousing.errors';
 

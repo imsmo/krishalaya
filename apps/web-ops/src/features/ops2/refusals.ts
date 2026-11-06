@@ -14,6 +14,18 @@
 //     in words, never a sum. No arithmetic, no depositor, no bill, no export (Q10-A).
 //   • `wh_insights` (W379, `/warehouse/insights`) — HONEST, reads nothing: there are no warehouse insights here yet, and why.
 //   • `storage_export` (W3350–W3351), `storage_act` (W3352–W3354), `wh_export` (W3360–W3361) — DECOR chains (query states), Back → the trigger.
+//
+// OPS-2b · RECEIPTS AND QUALITY (founder Q3-A, Q4-A, Q5-A, Q7-A, Q9-A, Q10-A, Q11-A, Q13-A, Q14-A, 2026-11-06) builds:
+//   • `assay_lab` (W372, `/warehouse/assay?booking=<id>`) — a READ of one booking's assays + the record act (REAL), every entry labelled with the
+//     founder's Q13-A words "the warehouse's own entry — not a lab certificate, and it sets no price"; the form only for that warehouse's named
+//     operator, on a stored booking; `assay_act` (W3297–W3299) is the act's own states, Back → W372.
+//   • `assay_record` (W373, `/warehouse/assay/certificate?booking=&assay=`) — a READ of one entry, titled "Assay record", never "certificate";
+//     `assay_export` (W3295–W3296) DECOR, Back → W373 (the trigger).
+//   • `enwr_issue` (W375, `/warehouse/enwr/issue`) — HONEST, reads nothing: "This platform does not issue an eNWR. No receipt is recorded here in
+//     a depositor's name."; `enwr_act` (W3315–W3317) DECOR.
+//   • `enwr_registry` (W376, `/warehouse/enwr/registry`) — a READ of the organisation's receipt records (`box=all`, keyset, a GET page-size select),
+//     each "recorded, not confirmed"; no holder, no value; `enwr_export` (W3313–W3314) DECOR, Back → W376 (the trigger).
+//   • `enwr_receipt` (`/warehouse/enwr/[id]`) — the drill-in, a READ of one record; zero inputs; no release or cancel button.
 export interface Tr { t(key: string, vars?: Record<string, string | number>): string }
 
 export type Ops2Surface =
@@ -24,6 +36,12 @@ export type Ops2Surface =
   | 'enwr_act' | 'enwr_export' | 'storage_act' | 'storage_export';
 export interface Ops2Refusal { id: string; canon: string; surfaces: readonly Ops2Surface[]; key: string; why: string }
 
+/** The surfaces OPS-2b builds. */
+export const SURFACES_2B: readonly Ops2Surface[] = ['assay_lab', 'assay_record', 'assay_act', 'assay_export', 'enwr_issue', 'enwr_registry', 'enwr_receipt', 'enwr_act', 'enwr_export'];
+/** The pages OPS-2b builds that READ NOTHING (E7, E11). */
+export const HONEST_2B: readonly Ops2Surface[] = ['enwr_issue'];
+const RECEIPT_PAGES: readonly Ops2Surface[] = ['enwr_issue', 'enwr_registry', 'enwr_receipt'];
+const RECEIPT_READS: readonly Ops2Surface[] = ['enwr_registry', 'enwr_receipt'];
 /** The surfaces OPS-2c builds. */
 export const SURFACES_2C: readonly Ops2Surface[] = ['billing', 'wh_insights', 'storage_export', 'storage_act', 'wh_export'];
 /** The pages OPS-2c builds that READ NOTHING (E7, E11) — zero inputs, no API client, no error state. */
@@ -31,6 +49,7 @@ export const HONEST_2C: readonly Ops2Surface[] = ['wh_insights'];
 const BILLING_ALL: readonly Ops2Surface[] = ['billing', 'storage_export', 'storage_act'];
 const STORAGE_CHAINS: readonly Ops2Surface[] = ['storage_export', 'storage_act'];
 const EXPORTS_2C: readonly Ops2Surface[] = ['storage_export', 'wh_export'];
+const EXPORTS_ALL: readonly Ops2Surface[] = ['storage_export', 'wh_export', 'assay_export', 'enwr_export'];   // NAMED WIDENING (OPS-2b): the two 2b export chains
 
 export const OPS2_REFUSALS: readonly Ops2Refusal[] = Object.freeze([
   // ══ W378 · Storage billing (founder Q1-A, Q2-A, Q9-A, Q10-A) ══
@@ -70,7 +89,7 @@ export const OPS2_REFUSALS: readonly Ops2Refusal[] = Object.freeze([
   { id: 'pledge_rate', canon: 'W379 "e-NWR pledge rate 41% of receipts"', surfaces: ['wh_insights'],
     key: 'ops2.refusal.pledgeRate', why: 'FALSE: `pledged` has no transition and `pledged_loan_id` is never set — nothing can be pledged; a percentage refused' },
   { id: 'reassay_due', canon: 'W379 "Re-assay due (30 days) 28 · View list" (→ W372)', surfaces: ['wh_insights'],
-    key: 'ops2.refusal.reassayDue', why: 'GAP-BE: no query over `valid_until`; W372 is not built yet (OPS-2b), so the link is a sentence, never an href to an unbuilt route' },
+    key: 'ops2.refusal.reassayDue', why: 'GAP-BE: no query over `valid_until`; the page links the assay page (W372, built in OPS-2b), where assays are read one booking at a time' },
   { id: 'overnight_compute', canon: 'W379 states "No data yet" · "First month of data" · "Stale compute — as of last night (as-of law)"', surfaces: ['wh_insights'],
     key: 'ops2.refusal.overnightCompute', why: 'FALSE: no compute exists, overnight or otherwise' },
   { id: 'aggregate_view', canon: 'W379 "Aggregate-only view — Gate and lab staff see aggregate insights only; per-farmer drill-down is the centre manager\'s (Paresh V.), recorded."', surfaces: ['wh_insights'],
@@ -86,10 +105,99 @@ export const OPS2_REFUSALS: readonly Ops2Refusal[] = Object.freeze([
     key: 'ops2.refusal.storageOnCall', why: 'no paging exists for these pages' },
   { id: 'storage_audit_trail', canon: 'W3352 "confirming writes an audit-trail entry with actor, time and reason" · W3353 "View audit trail"', surfaces: ['storage_act'],
     key: 'ops2.refusal.storageAuditTrail', why: 'no act is taken, so nothing is recorded; no ops audit surface exists' },
-  { id: 'export_receipt', canon: 'W3350 / W3360 "audit-stamped, checksummed, delivered by signed URL" · W3351 / W3361 "Audit-stamped receipt: file name, row count, sha256 … 15-min signed URL, every fetch logged"', surfaces: EXPORTS_2C,
+  { id: 'export_receipt', canon: 'W3350 / W3360 "audit-stamped, checksummed, delivered by signed URL" · W3351 / W3361 "Audit-stamped receipt: file name, row count, sha256 … 15-min signed URL, every fetch logged"', surfaces: EXPORTS_ALL,
     key: 'ops2.refusal.exportReceipt', why: 'TRUE of CORE\'s export plane in mechanism, but no warehousing dataset is registered (OPS2-B20) — refused on these pages' },
-  { id: 'export_queue', canon: 'W3350 / W3360 "this job is queued with a position and ETA"', surfaces: EXPORTS_2C,
+  { id: 'export_queue', canon: 'W3350 / W3360 / W3295 / W3313 "this job is queued with a position and ETA"', surfaces: EXPORTS_ALL,
     key: 'ops2.refusal.exportQueue', why: 'no job is created' },
+
+  // ══ OPS-2b · W372 Assay lab (founder Q13-A, Q11-A) ══
+  { id: 'sample_object', canon: 'W372 heading "Assay lab — sample [ref]" · state "Sample queue empty — Samples queue here the moment a weighbridge slip is closed"', surfaces: ['assay_lab'],
+    key: 'ops2.refusal.sampleObject', why: 'FALSE: no sample object or queue exists; an assay belongs to a booking, and no weighbridge record exists (F-4)' },
+  { id: 'accredited_lab', canon: 'W372 "[lab] Labs (accredited — per certificate face)" · W373 "Issuing lab [lab] (accredited …)"', surfaces: ['assay_lab', 'assay_record'],
+    key: 'ops2.refusal.accreditedLab', why: 'FALSE, LEGAL: `assayer_name` is free text; no lab registry, no accreditation (survey C-10, F-7)' },
+  { id: 'price_birth', canon: 'W372 "the assay is the price\'s birth certificate"', surfaces: ['assay_lab', 'assay_record'],
+    key: 'ops2.refusal.priceBirth', why: 'FALSE (MONEY): no price, valuation or fee reads `assay_reports` (C-10); founder Q13-A: "it sets no price"' },
+  { id: 'percent_added', canon: 'W372 "Moisture [n]% · Foreign matter [n]% · Damaged [n]% · Oil content [n]%"', surfaces: ['assay_lab', 'assay_record'],
+    key: 'ops2.refusal.percentAdded', why: 'E3/E6: `parameters` holds name and value as entered; the "%" is the canon\'s, never added' },
+  { id: 'validity_rule', canon: 'W372 "valid for 90 days … a fresh sample is required after …" · W373 "90-day re-assay rule" · W372 state "Re-assay due (90-day) — … required to keep issuing or pledging against it"', surfaces: ['assay_lab', 'assay_record'],
+    key: 'ops2.refusal.validityRule', why: 'FALSE: `valid_until` is optional, typed, and checked by nothing; nothing is issued or pledged against an assay' },
+  { id: 'analyzer', canon: 'W372 state "Analyzer under maintenance" + "View maintenance log" (FM:67) · "Couldn\'t reach the analyzer … Retry" (FM:66)', surfaces: ['assay_lab'],
+    key: 'ops2.refusal.analyzer', why: 'FALSE: no analyzer; FM:66 "Retry" becomes the record act\'s own states (E4, REAL chain W3297–W3299)' },
+  { id: 'technician_only', canon: 'W372 state "Certificate issuance is technician-only — … only the certified lab technician can issue or sign a certificate"', surfaces: ['assay_lab'],
+    key: 'ops2.refusal.technicianOnly', why: 'FALSE: no technician role (0004); the warehouse\'s named operator records the entry (Q11-A, strict on this act)' },
+  // ══ W373 Assay record (never "certificate") ══
+  { id: 'certificate_title', canon: 'W373 heading "Assay certificate — [ref]"; "Document-of-record … a certificate that can\'t be verified is a rumour with a border."', surfaces: ['assay_record'],
+    key: 'ops2.refusal.certificateTitle', why: 'FALSE, LEGAL: no certificate number, issuer or verification exists — the page is titled "Assay record" (Q13-A)' },
+  { id: 'certificate_number', canon: 'W373 "Certificate no. [ref]"', surfaces: ['assay_record'],
+    key: 'ops2.refusal.certificateNumber', why: 'FALSE: no certificate number exists' },
+  { id: 'verify_code', canon: 'W373 "verified · QR · verify at [platform]/c/[ref]"', surfaces: ['assay_record'],
+    key: 'ops2.refusal.verifyCode', why: 'FALSE, LEGAL: no verification route, no QR, no public page (pinned live: GET /c/:certNo → 404)' },
+  { id: 'depositor_kyc', canon: 'W373 "Depositor [name] · [FPO] KYC verified"', surfaces: ['assay_record', 'assay_lab'],
+    key: 'ops2.refusal.depositorKyc', why: 'WALL (founder Q9-A): no depositor name and no identity check at a warehouse desk' },
+  { id: 'expiry_revoke', canon: 'W373 states "Certificate expired — re-assay required …" · "Pending verification … against [lab]\'s issued-certificates register" · "Revoked, with reason" · "Revocation is lab-authority-only"', surfaces: ['assay_record'],
+    key: 'ops2.refusal.expiryRevoke', why: 'FALSE: no expiry rule, no register, no revoke route' },
+  { id: 'download_pdf', canon: 'W373 "Download PDF" (FM:68 → W3295–W3296)', surfaces: ['assay_record', 'assay_export'],
+    key: 'ops2.refusal.downloadPdf', why: 'GAP-BE + Q10-A: no PDF producer; `report_media_id` has no writer from the console (pinned live: …/certificate.pdf → 404)' },
+  { id: 'issuer_retry', canon: 'W373 state "Couldn\'t confirm with the issuer … Retry" (FM:70)', surfaces: ['assay_record'],
+    key: 'ops2.refusal.issuerRetry', why: 'FALSE: no issuer is called; the assay act chain lives on W372' },
+  // ══ the assay act chain (W3297–W3299, REAL) ══
+  { id: 'assay_zero_sum', canon: 'W3298 "Money-adjacent actions reconcile zero-sum before this page ever shows."', surfaces: ['assay_act'],
+    key: 'ops2.refusal.assayZeroSum', why: 'FALSE: recording an assay moves no money — refused BY NAME' },
+  { id: 'assay_on_call', canon: 'W3299 "repeated failures page the on-call"', surfaces: ['assay_act'],
+    key: 'ops2.refusal.assayOnCall', why: 'no paging exists for these pages' },
+  { id: 'assay_audit_view', canon: 'W3298 "View audit trail"', surfaces: ['assay_act'],
+    key: 'ops2.refusal.assayAuditView', why: 'TRUE that the act writes one audit row (B4); no ops audit surface exists to view it' },
+  // ══ W375 eNWR issue — HONEST (founder Q3-A, Q4-A, Q9-A) ══
+  { id: 'issue_act', canon: 'the built "Issue eNWR receipt" form on `/warehouse/[id]` (survey C-5, F-2) · "eNWR receipt issued."', surfaces: ['enwr_issue'],
+    key: 'ops2.refusal.issueAct', why: 'founder Q3-A: the form is removed; the API refuses issue BY NAME (ENWR_ISSUE_NOT_ON_PLATFORM)' },
+  { id: 'send_otp', canon: 'W375 "Send OTP to farmer" (FM:77 → W3315–W3317) · state "Consent pending (OTP) …"', surfaces: ['enwr_issue', 'enwr_act'],
+    key: 'ops2.refusal.sendOtp', why: 'GAP-BE (OPS2-B25): no depositor code primitive exists (pinned live: …/nwr/:id/otp → 404)' },
+  { id: 'prepared_steps', canon: 'W375 state "No status updates yet — Steps … prepared, OTP sent, signed …" · "The platform prepares the receipt; NERL issues it"', surfaces: ['enwr_issue'],
+    key: 'ops2.refusal.preparedSteps', why: 'FALSE of the code: nothing is prepared, sent or signed; the platform records a number at most' },
+  { id: 'holder_name', canon: 'W375 table Holder "[name] · [FPO]" · W376 column "Holder"', surfaces: RECEIPT_PAGES,
+    key: 'ops2.refusal.holderName', why: 'WALL (founder Q9-A): the API body carries `holderUserId`; no page prints it or any name' },
+  { id: 'receipt_value', canon: 'W375 "[n] qtl × ₹[n]/qtl = ₹[n]" (the valuation) · W376 "sanction … vs valuation …"', surfaces: RECEIPT_PAGES,
+    key: 'ops2.refusal.receiptValue', why: 'founder Q4-A: no valuation anywhere on the ops console; the API body carries `valuationMinor` and the SDK type omits it' },
+  { id: 'grade_link', canon: 'W375 "Grade A · certificate [ref]" (as linked to the receipt)', surfaces: ['enwr_issue', 'enwr_receipt'],
+    key: 'ops2.refusal.gradeLink', why: 'FALSE: issue never read an assay; no receipt is linked to one' },
+  { id: 'market_reference', canon: 'W375 "Haircut note — … the assay-grade market reference … Any lender applies its own margin … (see KCC/loan pledge flow)"', surfaces: ['enwr_issue'],
+    key: 'ops2.refusal.marketReference', why: 'FALSE, LEGAL: no market reference and no pledge flow (C-11; founder Q7-A refuses `nwrId` on a loan application)' },
+  { id: 'repository_link', canon: 'W375 state "Repository down — queued, not issued … a receipt is never marked issued until NERL confirms it." + "Retry connection" (FM:76)', surfaces: ['enwr_issue', 'enwr_act'],
+    key: 'ops2.refusal.repositoryLink', why: 'FALSE: no repository is called anywhere (README deferral); nothing is queued' },
+  { id: 'value_stale', canon: 'W375 state "Valuation stale — assay over 90 days … Issue is blocked"', surfaces: ['enwr_issue'],
+    key: 'ops2.refusal.valueStale', why: 'FALSE: nothing is valued or issued here' },
+  { id: 'manager_restricted', canon: 'W375 state "Issuing the e-NWR is manager-restricted — … only the warehouse manager can trigger issuance once the depositor\'s OTP is confirmed."', surfaces: ['enwr_issue'],
+    key: 'ops2.refusal.managerRestricted', why: 'FALSE: no manager role; issue is refused for everyone' },
+  { id: 'repository_confirmed', canon: 'W376 "once NERL confirms issue" · "Pledges and releases already confirmed with NERL" · W375 "Prepared receipt … \'prepared\' is not yet \'issued\'"', surfaces: RECEIPT_PAGES,
+    key: 'ops2.refusal.repositoryConfirmed', why: 'FALSE: no record here was confirmed with any repository — each is labelled "recorded, not confirmed" (founder Q3-A)' },
+  // ══ W376 eNWR registry + the drill-in (founder Q4-A, Q5-A, Q9-A, Q10-A) ══
+  { id: 'pledged_loan', canon: 'W376 row "[ref] · pledged · [bank] loan · sanction ₹[n] vs valuation ₹[n] — LTV [n]%" (FM:82)', surfaces: RECEIPT_READS,
+    key: 'ops2.refusal.pledgedLoan', why: 'FALSE: `pledged` has no transition and `pledged_loan_id` is never set; a ratio refused (E3)' },
+  { id: 'partly_released', canon: 'W376 row "[ref] · partially_released · [n] qtl released, [n] qtl remain" (FM:81)', surfaces: RECEIPT_READS,
+    key: 'ops2.refusal.partlyReleased', why: 'FALSE: unreachable state; page subtraction refused (pinned live: …/partial-release → 404)' },
+  { id: 'goods_withdrawn', canon: 'W376 row "[ref] · released · fully withdrawn [date]" (FM:80)', surfaces: RECEIPT_READS,
+    key: 'ops2.refusal.goodsWithdrawn', why: 'C-7: a receipt\'s status was never tied to its goods; and standalone release is now refused (founder Q5-A)' },
+  { id: 'default_auction', canon: 'W376 row "[ref] · defaulted · lender-initiated auction path opened — quiet review, not public listing" (FM:79)', surfaces: RECEIPT_READS,
+    key: 'ops2.refusal.defaultAuction', why: 'FALSE, LEGAL: unreachable state; no auction exists' },
+  { id: 'register_total', canon: 'W376 "Showing 5 of 341 receipts · Page size · Page 1 of 14" (FM:85)', surfaces: ['enwr_registry'],
+    key: 'ops2.refusal.registerTotal', why: 'E3: no total exists in the API answer; the register is keyset-paged (the GET page-size select is REAL)' },
+  { id: 'repository_feed', canon: 'W376 state "Registry feed degraded — Showing the register as of the last successful NERL sync …" + "Retry" (FM:84 → W3315–W3317)', surfaces: ['enwr_registry'],
+    key: 'ops2.refusal.repositoryFeed', why: 'FALSE: no sync exists; "Retry" is a plain re-read of this page' },
+  { id: 'lender_scope', canon: 'W376 state "Lender scope — pledged-only — A lender partner sees only the receipts pledged to them, never the full registry"', surfaces: ['enwr_registry'],
+    key: 'ops2.refusal.lenderScope', why: 'FALSE as stated; the truth is stricter: no lender reads any receipt (0225:318)' },
+  { id: 'export_register', canon: 'W376 "Export register" (FM:78 → W3313–W3314)', surfaces: ['enwr_registry', 'enwr_export'],
+    key: 'ops2.refusal.exportRegister', why: 'GAP-BE + founder Q10-A: no export in OPS-2; no warehousing dataset is registered' },
+  { id: 'receipt_acts', canon: 'W376 five row kebabs "Actions for receipt …" (release / cancel)', surfaces: RECEIPT_READS,
+    key: 'ops2.refusal.receiptActs', why: 'founder Q5-A: release refused BY NAME at the API; cancel is the named operator\'s keyed, audited API act and no console button calls it in OPS-2b (deviation)' },
+  { id: 'holding_transfer', canon: 'survey §1G "transfer of holding" (no route changes `holder_user_id`)', surfaces: RECEIPT_READS,
+    key: 'ops2.refusal.holdingTransfer', why: 'GAP-BE: no transfer route (pinned live: …/transfer → 404)' },
+  // ══ the enwr act chain (W3315–W3317, DECOR) ══
+  { id: 'enwr_zero_sum', canon: 'W3316 "Money-adjacent actions reconcile zero-sum before this page ever shows."', surfaces: ['enwr_act'],
+    key: 'ops2.refusal.enwrZeroSum', why: 'FALSE on a DECOR chain over a document of title: nothing was sent or recorded — refused BY NAME' },
+  { id: 'enwr_on_call', canon: 'W3317 "repeated failures page the on-call"', surfaces: ['enwr_act'],
+    key: 'ops2.refusal.enwrOnCall', why: 'no paging exists for these pages' },
+  { id: 'enwr_audit_trail', canon: 'W3315 "confirming writes an audit-trail entry with actor, time and reason" · W3316 "View audit trail"', surfaces: ['enwr_act'],
+    key: 'ops2.refusal.enwrAuditTrail', why: 'no act is taken, so nothing is recorded; no ops audit surface exists' },
 ]);
 export function ops2RefusalKeys(surface: Ops2Surface): string[] { return OPS2_REFUSALS.filter((r) => r.surfaces.includes(surface)).map((r) => r.key); }
 
@@ -104,13 +212,25 @@ export const OPS2_DELTAS: readonly { id: string; canon: string; built: string }[
   { id: 'storage_chain_back', canon: 'W3350–W3354 Back / "Back to the screen" → W378; W3354 "Retry — back to confirm" → W3352', built: 'Back → `/warehouse/billing`; the failure state\'s retry is not offered (there is no run to retry)' },
   { id: 'fm_chain_ids_2', canon: 'FM :89-94 name W1793–W1831-range chain targets (survey C-15)', built: 'those files do not exist; the real chains are W3350–W3354 (storage) and W3360–W3361 (wh export)' },
   { id: 'fm_filter_spans_2', canon: 'FM :90, :93 "PV" as `filter`', built: 'avatar `<span>`s, not filters — not built (DECOR, DELTA)' },
-  { id: 'w379_assay_link', canon: 'W379 "View list" → W372 (FM omits it)', built: 'a SENTENCE only: W372 (`/warehouse/assay`) is OPS-2b\'s and not built, and no link goes to an unbuilt route' },
+  { id: 'w379_assay_link', canon: 'W379 "View list" → W372 (FM omits it)', built: 'OPS-2c: a SENTENCE only (W372 not built). NAMED UPDATE (OPS-2b): W372 is built, so the sentence carries a REAL link to `/warehouse/assay`' },
   { id: 'w378_payee_today', canon: 'W378 (missing from canon, true and binding — survey §1H) who receives the fee',
     built: 'the founder\'s Q1-A sentence: today the fee would go from the depositor\'s wallet into the warehouse operator\'s OWN wallet (`storage-booking.service.ts` release legs; by default the administrator who listed it); release is paused' },
+  // ── OPS-2b ──
+  { id: 'route_assay', canon: 'W372 canon route `warehouse/assay` (a sample page)', built: '`/warehouse/assay?booking=<id>` — an assay belongs to a booking; the booking travels in the URL as an id only (a UUID, else dropped); the record act moved here from `/warehouse/[id]`' },
+  { id: 'route_assay_record', canon: 'W373 canon route `warehouse/assay/certificate`', built: 'the canon address, titled "Assay record"; one entry picked from the booking\'s list (`?booking=&assay=`) — no read-by-id exists' },
+  { id: 'route_enwr', canon: 'W375 `warehouse/enwr/issue`, W376 `warehouse/enwr/registry`, FM:22 drill-in', built: 'the canon addresses + `/warehouse/enwr/[id]` over the existing `GET …/nwr/:id` (the register\'s rows link it)' },
+  { id: 'assay_export_back', canon: 'W3295 / W3296 Back → W372 (the donor), though the trigger is W373 "Download PDF" (survey §1L)', built: 'Back returns to the TRIGGERING page, W373 (`/warehouse/assay/certificate?booking=&assay=`)' },
+  { id: 'enwr_export_back', canon: 'W3313 / W3314 Back → W375 (the donor), though the trigger is W376 "Export register" (survey §1N)', built: 'Back returns to the TRIGGERING page, W376 (`/warehouse/enwr/registry`)' },
+  { id: 'w372_retry', canon: 'FM:66 W372 "Retry" (`chain-mutate` → W3297–W3299)', built: 'the record act\'s own confirm / success / failure states (`?booking=&act=`), REAL (E4); failure names the server\'s reason' },
+  { id: 'enwr_cancel_not_offered', canon: 'survey §1G / brief §E: cancel by the operator (founder Q5-A)', built: 'DEVIATION (brief): the API act exists, hardened (named operator, key, reason, one audit row); NO console button calls it in OPS-2b' },
+  { id: 'receipt_quantity_unit', canon: 'brief §E "quantity (quintals)"; survey F-11 (the receipt has no unit column)', built: 'PREMISE NOT PROVEN for every record: a receipt copies the booking\'s number with no unit, and bookings in other units were accepted before OPS-2c B5 — the register prints the quantity as recorded, labelled "the receipt stores no unit"; the drill-in prints its booking\'s unit from the booking\'s own read' },
+  { id: 'issue_form_removed', canon: 'the built `/warehouse/[id]` "Issue eNWR receipt" form + assay form (PC-32 OW-2)', built: 'the issue form is removed (founder Q3-A); the assay table and form moved to W372 (a link from the booking); `/warehouse` prints no valuation column (founder Q4-A, "anywhere")' },
+  { id: 'fm_filter_cells_2b', canon: 'FM :79-82 four receipt numbers as `filter`', built: 'table cells — each row\'s number links the receipt\'s own read (the drill-in)' },
 ]);
 
 /** The verdict values. `pending_2b` / `pending_2a` are deleted from the type by the wave that decides the last of their files. */
-export type Ops2Verdict = 'BUILT (read)' | 'BUILT (honest)' | 'REAL' | 'DECOR' | 'PARITY-DECOR' | 'pending_2b' | 'pending_2a';
+// NAMED UPDATE (PC-56 OPS-2b): `pending_2b` is deleted from the type — 2b decides the last of its files (the 4c-7 rule).
+export type Ops2Verdict = 'BUILT (read)' | 'BUILT (honest)' | 'REAL' | 'DECOR' | 'PARITY-DECOR' | 'pending_2a';
 export type Ops2Wave = '2a' | '2b' | '2c';
 /** Every canon file of OPS-2 (45), each with ONE verdict: 2c decides its 9; 2b's 14 and 2a's 22 are pending until their waves. */
 export const OPS2_CANON_FILES: readonly { file: string; wave: Ops2Wave; module: string; verdict: Ops2Verdict; note: string }[] = Object.freeze([
@@ -124,12 +244,21 @@ export const OPS2_CANON_FILES: readonly { file: string; wave: Ops2Wave; module: 
   { file: 'W3354-ops-storage-mutate-failure.html', wave: '2c', module: 'warehouse', verdict: 'DECOR', note: '?act=failure — nothing was attempted; nobody is paged; Back → /warehouse/billing' },
   { file: 'W3360-ops-wh-export-queued.html', wave: '2c', module: 'warehouse', verdict: 'DECOR', note: '/warehouse/insights?export=queued — "Export (audit-stamped)" refused (Q10-A); Back → W379, the trigger (the canon\'s Back → W370 is a defect, DELTA `wh_export_back`)' },
   { file: 'W3361-ops-wh-export-ready.html', wave: '2c', module: 'warehouse', verdict: 'DECOR', note: '?export=ready — no file was made; the export receipt refused' },
-  // ── 2b · RECEIPTS AND QUALITY (14) — pending ──
-  ...['W372-ops-assay-lab.html', 'W373-ops-assay-certificate.html', 'W3295-ops-assay-export-queued.html', 'W3296-ops-assay-export-ready.html',
-    'W3297-ops-assay-mutate-confirm.html', 'W3298-ops-assay-mutate-success.html', 'W3299-ops-assay-mutate-failure.html', 'W375-ops-enwr-issue.html',
-    'W376-ops-enwr-registry.html', 'W3313-ops-enwr-export-queued.html', 'W3314-ops-enwr-export-ready.html', 'W3315-ops-enwr-mutate-confirm.html',
-    'W3316-ops-enwr-mutate-success.html', 'W3317-ops-enwr-mutate-failure.html']
-    .map((file) => ({ file, wave: '2b' as const, module: 'warehouse', verdict: 'pending_2b' as const, note: 'OPS-2b · RECEIPTS AND QUALITY (founder Q3-A, Q4-A, Q5-A, Q7-A, Q9-A, Q13-A) — not yet built' })),
+  // ── 2b · RECEIPTS AND QUALITY (14) — decided (founder Q3-A, Q4-A, Q5-A, Q7-A, Q9-A, Q10-A, Q11-A, Q13-A) ──
+  { file: 'W372-ops-assay-lab.html', wave: '2b', module: 'warehouse', verdict: 'REAL', note: 'BUILT (read) + REAL: /warehouse/assay?booking=<id> — a READ of one booking\'s assays (GET …/storage-bookings/:id/assays), each labelled "the warehouse\'s own entry — not a lab certificate, and it sets no price" (Q13-A), parameters "name = value" as entered; the record form (POST …/:id/assays, audited) only for that warehouse\'s named operator, on a stored booking' },
+  { file: 'W373-ops-assay-certificate.html', wave: '2b', module: 'warehouse', verdict: 'BUILT (read)', note: '/warehouse/assay/certificate?booking=&assay= — a READ of one recorded entry from the booking\'s list, titled "Assay record", never "certificate"; the Q13-A label first; no number, lab, QR, PDF, verification or price; zero inputs' },
+  { file: 'W3295-ops-assay-export-queued.html', wave: '2b', module: 'warehouse', verdict: 'DECOR', note: '/warehouse/assay/certificate?…&export=queued — "Download PDF" refused (Q10-A): nothing queued; Back → W373, the trigger (DELTA `assay_export_back`)' },
+  { file: 'W3296-ops-assay-export-ready.html', wave: '2b', module: 'warehouse', verdict: 'DECOR', note: '?export=ready — no file was made; the export receipt refused; Back → W373' },
+  { file: 'W3297-ops-assay-mutate-confirm.html', wave: '2b', module: 'warehouse', verdict: 'REAL', note: '/warehouse/assay?booking=&act=confirm — the record form under the confirm sentence (Q13-A label); its submit IS the act' },
+  { file: 'W3298-ops-assay-mutate-success.html', wave: '2b', module: 'warehouse', verdict: 'REAL', note: '?act=success — "Recorded as the warehouse\'s own entry" (the API answered 201; one audit row); the zero-sum sentence refused BY NAME; Back → W372' },
+  { file: 'W3299-ops-assay-mutate-failure.html', wave: '2b', module: 'warehouse', verdict: 'REAL', note: '?act=failure&reason=… — "Nothing was recorded" with the server\'s named reason (409 not stored · 403 not the named operator · 404 · 400/422) or the console\'s pre-check; Back → W372, never W373' },
+  { file: 'W375-ops-enwr-issue.html', wave: '2b', module: 'warehouse', verdict: 'BUILT (honest)', note: '/warehouse/enwr/issue — HONEST, reads nothing: "This platform does not issue an eNWR. No receipt is recorded here in a depositor\'s name."; zero inputs; the issue form, "Send OTP to farmer", the valuation and "repository confirmed" refused by name' },
+  { file: 'W376-ops-enwr-registry.html', wave: '2b', module: 'warehouse', verdict: 'BUILT (read)', note: '/warehouse/enwr/registry — a READ of the organisation\'s receipt records (GET …/nwr?box=all, keyset, a GET page-size select): number → /warehouse/enwr/[id], repository as recorded, quantity as recorded, status verbatim, dates, each "recorded, not confirmed"; no holder, no value' },
+  { file: 'W3313-ops-enwr-export-queued.html', wave: '2b', module: 'warehouse', verdict: 'DECOR', note: '/warehouse/enwr/registry?export=queued — "Export register" refused (Q10-A); Back → W376, the trigger (DELTA `enwr_export_back`)' },
+  { file: 'W3314-ops-enwr-export-ready.html', wave: '2b', module: 'warehouse', verdict: 'DECOR', note: '?export=ready — no file was made; the export receipt refused' },
+  { file: 'W3315-ops-enwr-mutate-confirm.html', wave: '2b', module: 'warehouse', verdict: 'DECOR', note: '/warehouse/enwr/issue?act=confirm — "Send OTP to farmer" and "Retry connection" refused: nothing to confirm' },
+  { file: 'W3316-ops-enwr-mutate-success.html', wave: '2b', module: 'warehouse', verdict: 'DECOR', note: '?act=success — nothing was sent or recorded; the zero-sum sentence refused BY NAME (`enwr_zero_sum`)' },
+  { file: 'W3317-ops-enwr-mutate-failure.html', wave: '2b', module: 'warehouse', verdict: 'DECOR', note: '?act=failure — nothing was attempted; nobody is paged; Back → /warehouse/enwr/issue' },
   // ── 2a · INTAKE (22) — pending ──
   ...['W370-ops-wh-dashboard.html', 'W3362-ops-wh-form-form-error.html', 'W3363-ops-wh-form-review.html', 'W3364-ops-wh-form-success.html',
     'W3365-ops-wh-form-failure.html', 'W3366-ops-wh-mutate-confirm.html', 'W3367-ops-wh-mutate-success.html', 'W3368-ops-wh-mutate-failure.html',
@@ -151,8 +280,9 @@ export const OPS2_CHAIN_GROUPS: readonly { id: string; donor: string; wave: Ops2
   { id: 'storage', donor: 'W378', wave: '2c', files: ['W3350', 'W3351', 'W3352', 'W3353', 'W3354'] },
 ]);
 
-// ── THE BUILT CHAINS: each is a query state of its parent page (the OPS-1 `Ops1Chain` shape). All three of 2c's are DECOR. ──
-export type Chain2Id = 'storage_export' | 'storage_act' | 'wh_export';
+// ── THE BUILT CHAINS: each is a query state of its parent page (the OPS-1 `Ops1Chain` shape). All three of 2c's are DECOR; of 2b's four, the assay
+// act chain is REAL (the record act's own states) and the other three DECOR. ──
+export type Chain2Id = 'storage_export' | 'storage_act' | 'wh_export' | 'assay_act' | 'assay_export' | 'enwr_export' | 'enwr_act';
 export interface Chain2Def {
   id: Chain2Id; wave: Ops2Wave; kind: 'DECOR' | 'REAL'; param: 'act' | 'export'; page: string; surface: Ops2Surface; states: readonly string[];
   key: (state: string) => string; files: readonly string[]; statement: string;
@@ -164,6 +294,14 @@ export const OPS2_CHAINS: readonly Chain2Def[] = Object.freeze([
     key: (s: string) => `ops2.chain.storageAct.${s}`, files: ['W3352', 'W3353', 'W3354'], statement: 'ops2.billing.payee' },
   { id: 'wh_export', wave: '2c', kind: 'DECOR', param: 'export', page: '/warehouse/insights', surface: 'wh_export', states: ['queued', 'ready'],
     key: (s: string) => `ops2.chain.whExport.${s}`, files: ['W3360', 'W3361'], statement: 'ops2.insights.statement' },
+  { id: 'assay_act', wave: '2b', kind: 'REAL', param: 'act', page: '/warehouse/assay', surface: 'assay_act', states: ['confirm', 'success', 'failure'],
+    key: (s: string) => `ops2.chain.assayAct.${s}`, files: ['W3297', 'W3298', 'W3299'], statement: 'ops2.assay.label' },
+  { id: 'assay_export', wave: '2b', kind: 'DECOR', param: 'export', page: '/warehouse/assay/certificate', surface: 'assay_export', states: ['queued', 'ready'],
+    key: (s: string) => `ops2.chain.assayExport.${s}`, files: ['W3295', 'W3296'], statement: 'ops2.assay.label' },
+  { id: 'enwr_export', wave: '2b', kind: 'DECOR', param: 'export', page: '/warehouse/enwr/registry', surface: 'enwr_export', states: ['queued', 'ready'],
+    key: (s: string) => `ops2.chain.enwrExport.${s}`, files: ['W3313', 'W3314'], statement: 'ops2.enwrIssue.statement' },
+  { id: 'enwr_act', wave: '2b', kind: 'DECOR', param: 'act', page: '/warehouse/enwr/issue', surface: 'enwr_act', states: ['confirm', 'success', 'failure'],
+    key: (s: string) => `ops2.chain.enwrAct.${s}`, files: ['W3315', 'W3316', 'W3317'], statement: 'ops2.enwrIssue.statement' },
 ]);
 export function chain2ById(id: Chain2Id): Chain2Def { return OPS2_CHAINS.find((c) => c.id === id) as Chain2Def; }
 /** The chain state a page was opened in (`?act=confirm`, `?export=queued` …), or null for the page itself / an unknown state. */

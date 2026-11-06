@@ -77,3 +77,14 @@ export class LoanRepayOwnWalletOnlyError extends AppError {
       403);
   }
 }
+/**
+ * PC-56 OPS-2b · OPS2-B8 (founder Q7-A, 2026-11-06; survey F-8, C-11) — A LOAN APPLICATION CANNOT NAME A WAREHOUSE RECEIPT. `nwrId` was stored as
+ * given: any receipt UUID — someone else's, or a cancelled one — with no holder, status or uniqueness check, and the receipt never became `pledged`.
+ * Pledging a warehouse receipt is not on this platform, so an application carrying `nwrId` is refused BY NAME after the permission check, BEFORE
+ * the idempotency record, the quota and any read or write: nothing is applied for. Without `nwrId` the application is unchanged.
+ */
+export const LOAN_ENWR_PLEDGE_NOT_ON_PLATFORM_SENTENCE =
+  'A loan application cannot name a warehouse receipt: pledging a warehouse receipt is not on this platform. Nothing was applied for.';
+export class LoanEnwrPledgeNotOnPlatformError extends DomainError {
+  constructor() { super('LOAN_ENWR_PLEDGE_NOT_ON_PLATFORM', LOAN_ENWR_PLEDGE_NOT_ON_PLATFORM_SENTENCE, 422, {}); }
+}

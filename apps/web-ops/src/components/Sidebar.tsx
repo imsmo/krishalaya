@@ -12,6 +12,9 @@ const NAV: ReadonlyArray<{ href: string; labelKey: string; sub?: boolean }> = [
   { href: '/warehouse/withdrawal', labelKey: 'nav.withdrawal', sub: true }, // PC-56 OPS-1a · W377 (the warehouse section)
   { href: '/warehouse/billing', labelKey: 'nav.whBilling', sub: true }, // PC-56 OPS-2c · W378 (the rate on file; nothing is billed)
   { href: '/warehouse/insights', labelKey: 'nav.whInsights', sub: true }, // PC-56 OPS-2c · W379 (honest; reads nothing)
+  { href: '/warehouse/assay', labelKey: 'nav.whAssay', sub: true }, // PC-56 OPS-2b · W372 (one booking's assays; W373 is reached from it)
+  { href: '/warehouse/enwr/registry', labelKey: 'nav.whEnwrRegistry', sub: true }, // PC-56 OPS-2b · W376 (the receipt records; read only)
+  { href: '/warehouse/enwr/issue', labelKey: 'nav.whEnwrIssue', sub: true }, // PC-56 OPS-2b · W375 (honest; this platform issues none)
   { href: '/equipment', labelKey: 'nav.equipment' }, // OW-3
   { href: '/dairy', labelKey: 'nav.dairy' }, // OW-4
   { href: '/payout', labelKey: 'nav.payout', sub: true }, // PC-56 OPS-1a · W367 (the dairy section)

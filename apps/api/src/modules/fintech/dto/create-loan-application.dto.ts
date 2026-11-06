@@ -6,7 +6,7 @@ export const ApplyLoanSchema = z.object({
   productId: z.string().uuid(),
   amountRequestedMinor: minorStr,
   purposeText: z.string().max(300).optional(),
-  nwrId: z.string().uuid().optional(),
+  nwrId: z.string().uuid().optional(),   // PC-56 OPS-2b · B8: accepted by the schema ONLY so the service can refuse it BY NAME (LOAN_ENWR_PLEDGE_NOT_ON_PLATFORM)
 }).strict();
 export type ApplyLoanDto = z.infer<typeof ApplyLoanSchema>;
 

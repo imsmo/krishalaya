@@ -163,7 +163,8 @@ describe('PC-56 OPS-2c · the claims guard (ops2. scope, the money of storage)',
     for (const [re, phrase] of BRAND_2C) expect([String(re), re.test(phrase)]).toEqual([String(re), true]);
   });
   it.each(Object.entries(CATS))('%s: no ops2. value (or 2c nav label) trips a 2c guard or brand regex', (_lang, cat) => {
-    expect(scoped2(cat).length).toBe(76);
+    // NAMED UPDATE (PC-56 OPS-2b): the 2b `ops2.` keys join this scope (a WIDENING — every 2c guard now also covers them): 76 → 243.
+    expect(scoped2(cat).length).toBe(243);
     for (const [k, v] of scoped2(cat)) {
       for (const [name, hit] of GUARDS_2C) expect([k, name, hit(v)]).toEqual([k, name, false]);
       for (const [re] of BRAND_2C) expect([k, String(re), re.test(v)]).toEqual([k, String(re), false]);
@@ -189,6 +190,74 @@ describe('PC-56 OPS-2c · the claims guard (ops2. scope, the money of storage)',
     for (const rel of SOURCES_2C) {
       const src = fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
       for (const [re] of BRAND_2C.filter(([r]) => !/Krishalaya Ops/.test(String(r)) || rel !== 'components/Sidebar.tsx')) expect([rel, String(re), re.test(src)]).toEqual([rel, String(re), false]);
+    }
+  });
+});
+
+// ── PC-56 OPS-2b (brief §E6): the receipts-and-quality guards over the `ops2.` scope, the three new nav labels and every `wh.` value (a widening:
+// the booking pages lost the issue form and the valuation in this wave). Each is proven on its own canon phrase (persons, labs, places and
+// references anonymised — the 4a rule) and, where affirmative, also proven to let its negated form through. The founder's words are PINNED.
+const NAV_2B = ['nav.whAssay', 'nav.whEnwrRegistry', 'nav.whEnwrIssue'];
+const scoped2b = (cat: Record<string, string>) => Object.entries(cat).filter(([k]) => k.startsWith('ops2.') || k.startsWith('wh.') || NAV_2B.includes(k));
+const GUARDS_2B: ReadonlyArray<[name: string, hit: (v: string) => boolean, canon: string, negated?: string]> = [
+  ['certificate (affirmative)', affirmative(/certificat/i), 'Assay certificate — [ref]', 'This page is not a certificate.'],
+  ['verified (affirmative)', affirmative(/\bverif(ied|y|ication)\b/i), 'verified · QR · verify at [platform]/c/[ref]', 'Nothing here is verified.'],
+  ['accredit (affirmative)', affirmative(/accredit/i), '[lab] Labs (accredited — per certificate face)', 'No lab is accredited here.'],
+  ['NABL', plain(/\bNABL\b/), 'Lab registry / accreditation / certificate verification / PDF — legal (NABL)'],
+  ['sets the price', plain(/sets the price|price'?s birth certificate/i), 'the assay is the price\'s birth certificate'],
+  ['QR', plain(/\bQR\b/), 'verified · QR · verify at [platform]/c/[ref]'],
+  ['issued, of an eNWR (affirmative)', affirmative(/\b(e-?NWR|receipt)s?\b.*\bissued\b|\bissued\b.*\b(e-?NWR|receipt)s?\b/i), 'eNWR receipt issued.', 'No receipt is issued here.'],
+  ['repository confirmed (affirmative)', affirmative(/repositor\w* confirm|(NERL|CCRL) confirm|confirm(ed|s)? (with|by) (the )?(NERL|CCRL|repositor)/i), 'e-NWRs appear here once NERL confirms issue', 'No receipt is confirmed with the repository.'],
+  ['legally / document of record (affirmative)', affirmative(/\blegal(ly)?\b|document[- ]of[- ]record/i), 'Document-of-record', 'No document of record exists here.'],
+  ['negotiable (affirmative)', affirmative(/negotiable/i), 'e-NWR (electronic Negotiable Warehouse Receipt)', 'Nothing here is negotiable.'],
+  ['pledge (affirmative)', affirmative(/pledg/i), '[ref] · pledged · [bank] loan · sanction vs valuation', 'No receipt is pledged here.'],
+  ['transfer (affirmative)', affirmative(/transfer/i), 'the transfer of holding to the buyer', 'There is no transfer.'],
+  ['OTP (affirmative)', affirmative(/\bOTP\b/), 'Send OTP to farmer', 'No OTP is sent.'],
+  ['valuation (affirmative)', affirmative(/valuation|\bvalued\b/i), 'Valuation [n] qtl × [rate]/qtl', 'No receipt is valued here.'],
+  ['₹ (any)', plain(/₹/), 'sanction ₹[n] vs valuation ₹[n]'],
+];
+const BRAND_2B: ReadonlyArray<[RegExp, string]> = [
+  ...BRAND_2C, [/AQ-26-/, 'AQ-26-3308'], [/NERL-26-/, 'NERL-26-GJ-87102'], [/SGB/, 'SGB loan'], [/krishalaya\.in\/c/i, 'krishalaya.in/c/AQ-26-3308'], [/3,90,624|6,240|2,80,000|4,10,000|68\.3/, '₹3,90,624'],
+];
+const SOURCES_2B = ['components/ops2/AssayViews.tsx', 'components/ops2/EnwrViews.tsx', 'components/ops2/Ops2Chain.tsx', 'features/ops2/receipts.ts',
+  'app/warehouse/assay/page.tsx', 'app/warehouse/assay/actions.ts', 'app/warehouse/assay/certificate/page.tsx', 'app/warehouse/enwr/issue/page.tsx',
+  'app/warehouse/enwr/registry/page.tsx', 'app/warehouse/enwr/[id]/page.tsx', 'app/warehouse/[id]/page.tsx', 'app/warehouse/page.tsx', 'app/warehouse/actions.ts'];
+
+describe('PC-56 OPS-2b · the claims guard (ops2. + wh. scope, receipts and quality)', () => {
+  it('each guard is proven on its own canon phrase; each affirmative guard lets its negated form through', () => {
+    for (const [name, hit, canon, negated] of GUARDS_2B) {
+      expect([name, hit(canon)]).toEqual([name, true]);
+      if (negated) expect([name, 'negated', hit(negated)]).toEqual([name, 'negated', false]);
+    }
+    for (const [re, phrase] of BRAND_2B) expect([String(re), re.test(phrase)]).toEqual([String(re), true]);
+  });
+  it.each(Object.entries(CATS))('%s: no ops2. / wh. value (or 2b nav label) trips a 2b guard or brand regex', (_lang, cat) => {
+    expect(scoped2b(cat).length).toBe(283);
+    for (const [k, v] of scoped2b(cat)) {
+      for (const [name, hit] of GUARDS_2B) expect([k, name, hit(v)]).toEqual([k, name, false]);
+      for (const [re] of BRAND_2B) expect([k, String(re), re.test(v)]).toEqual([k, String(re), false]);
+    }
+  });
+  it('the founder\'s words are PINNED: Q13-A on every assay surface, Q3-A\'s "recorded, not confirmed", and W375\'s statement of fact', () => {
+    expect(en['ops2.assay.label']).toBe('Each assay here is the warehouse\'s own entry — not a lab certificate, and it sets no price.');
+    expect(en['ops2.assay.label']).toContain('the warehouse\'s own entry — not a lab certificate, and it sets no price');
+    expect(en['ops2.enwr.recordedNotConfirmed']).toBe('recorded, not confirmed');
+    expect(en['ops2.enwrIssue.statement']).toBe('This platform does not issue an eNWR. No receipt is recorded here in a depositor\'s name.');
+    expect(en['wh.noIssue']).toBe(en['ops2.enwrIssue.statement']);
+    // "not a lab certificate" and "sets no price" said in every language
+    expect([/लैब का प्रमाणपत्र नहीं/.test(hi['ops2.assay.label']) && /कीमत तय नहीं/.test(hi['ops2.assay.label']),
+      /લેબનું પ્રમાણપત્ર નહીં/.test(gu['ops2.assay.label']) && /કિંમત નક્કી થતી નથી/.test(gu['ops2.assay.label'])]).toEqual([true, true]);
+    expect([/जारी नहीं करता/.test(hi['ops2.enwrIssue.statement']), /જારી કરતું નથી/.test(gu['ops2.enwrIssue.statement'])]).toEqual([true, true]);
+  });
+  it('W373 is titled "Assay record" — never "certificate" — in EVERY language', () => {
+    expect(en['ops2.assayRecord.title']).toBe('Assay record');
+    expect([/certificat/i.test(en['ops2.assayRecord.title']), /प्रमाणपत्र|सर्टिफ़िकेट|सर्टिफिकेट/.test(hi['ops2.assayRecord.title']), /પ્રમાણપત્ર|સર્ટિફિકેટ/.test(gu['ops2.assayRecord.title'])]).toEqual([false, false, false]);
+    for (const cat of [en, hi, gu]) for (const k of ['ops2.assay.title', 'nav.whAssay']) expect([k, /certificat|प्रमाणपत्र|પ્રમાણપત્ર/i.test(cat[k])]).toEqual([k, false]);
+  });
+  it('brand guard over every new or changed 2b source (pages, actions, views, helpers)', () => {
+    for (const rel of SOURCES_2B) {
+      const src = fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
+      for (const [re] of BRAND_2B) expect([rel, String(re), re.test(src)]).toEqual([rel, String(re), false]);
     }
   });
 });

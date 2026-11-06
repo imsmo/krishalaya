@@ -1,7 +1,7 @@
 // modules/warehousing/__tests__/warehousing.integration.spec.ts
 // REAL end-to-end proof of the warehouse-receipt spine against a live Postgres:
 //   1. an operator lists a warehouse (₹50/qtl/month); a depositor requests to store 100 qtl;
-//   2. the operator confirms → stores → records an assay → issues an eNWR (depositor is the holder);
+//   2. the operator confirms → stores → records an assay; eNWR issue is REFUSED BY NAME (PC-56 OPS-2b, founder Q3-A) — nothing is recorded;
 //   3. the operator's RELEASE is refused by name (PC-56 OPS-1a, founder Q3-A) — the fee would leave the depositor's wallet
 //      without her word; the booking stays stored and no wallet moves;
 //   4. ROW-LEVEL SECURITY: tenant B cannot see tenant A's storage booking.
@@ -70,7 +70,7 @@ run('warehousing receipt spine (integration, real Postgres + RLS + storage-fee s
     const asRepo = new AssayReportRepository(replica as any); const nwrRepo = new NwrReceiptRepository(replica as any);
     warehouses = new WarehouseService(uow, outbox, idem, new AllowAllQuota(), metrics, audit, whRepo);
     bookings = new StorageBookingService(uow, outbox, idem, metrics, audit, wallet, bkRepo, whRepo);
-    assays = new AssayReportService(uow, outbox, metrics, asRepo, bkRepo, whRepo);
+    assays = new AssayReportService(uow, outbox, metrics, audit, asRepo, bkRepo, whRepo);   // PC-56 OPS-2b: the record act is audited (B4)
     nwr = new NwrReceiptService(uow, outbox, idem, metrics, audit, nwrRepo, bkRepo, whRepo);
 
     await fund(depositor, 5_000_000n);
@@ -85,17 +85,24 @@ run('warehousing receipt spine (integration, real Postgres + RLS + storage-fee s
     expect(bookingId).toBeTruthy();
   });
 
-  it('operator confirms → stores → assays → issues an eNWR (depositor holds it)', async () => {
+  // PC-56 OPS-2b · NAMED UPDATE (founder Q3-A, 2026-11-06): this case pinned the operator ISSUING an eNWR in the depositor's name (a typed number
+  // and a typed valuation, no repository, no word from her). Issue is now REFUSED BY NAME before anything is read or written, so the case pins the
+  // refusal against the real database: no receipt exists for the booking afterwards.
+  it('operator confirms → stores → assays; eNWR issue is refused by name (ENWR_ISSUE_NOT_ON_PLATFORM) and nothing is recorded', async () => {
     expect((await bookings.confirm(tenantA, opActor, bookingId)).status).toBe('confirmed');
     expect((await bookings.store(tenantA, opActor, bookingId)).status).toBe('stored');
     const assay = await assays.record(tenantA, opActor, { storageBookingId: bookingId, assayerName: 'AgriAssay Labs', parameters: { moisture: 11.2, fm: 0.8 } } as any);
     expect(assay.assayerName).toBe('AgriAssay Labs');
-    const receipt = await nwr.issue(tenantA, opActor, `idem-${randomUUID()}`, { storageBookingId: bookingId, repository: 'NERL', enwrNo: `EN-${randomUUID().slice(0, 8)}`, valuationMinor: '20000000' } as any, null);
-    expect(receipt.status).toBe('issued'); expect(receipt.holderUserId).toBe(depositor);
+    await expect(nwr.issue(tenantA, opActor, `idem-${randomUUID()}`, { storageBookingId: bookingId, repository: 'NERL', enwrNo: `EN-${randomUUID().slice(0, 8)}`, valuationMinor: '20000000' } as any, null))
+      .rejects.toMatchObject({ code: 'ENWR_ISSUE_NOT_ON_PLATFORM', httpStatus: 409 });
+    expect((await admin.query(`SELECT count(*)::int n FROM nwr_receipts WHERE storage_booking_id = $1`, [bookingId])).rows[0].n).toBe(0);
   });
 
-  it('rejects a second active eNWR for the same booking', async () => {
+  // PC-56 OPS-2b · NAMED UPDATE: "a second active eNWR is rejected" presupposed a first one; no route records one now, so a second attempt is
+  // refused by the same name (and still throws — the original assertion is kept as the first line).
+  it('rejects a second eNWR attempt for the same booking (refused by name again)', async () => {
     await expect(nwr.issue(tenantA, opActor, `idem-${randomUUID()}`, { storageBookingId: bookingId, repository: 'NERL', enwrNo: `EN-${randomUUID().slice(0, 8)}`, valuationMinor: '1' } as any, null)).rejects.toThrow();
+    await expect(nwr.issue(tenantA, opActor, `idem-${randomUUID()}`, { storageBookingId: bookingId, repository: 'NERL', enwrNo: `EN-${randomUUID().slice(0, 8)}`, valuationMinor: '1' } as any, null)).rejects.toMatchObject({ code: 'ENWR_ISSUE_NOT_ON_PLATFORM' });
   });
 
   // PC-56 OPS-1a · NAMED UPDATE (founder Q3-A, 2026-11-05): this case pinned RELEASE collecting the storage fee depositor → operator.

@@ -10,15 +10,18 @@ import { CONTROLS, text, tr, visible } from './ops1a-fixtures';
 import { FALSE_2C } from './ops2c-fixtures';
 
 const T = tr(en);
+// NAMED UPDATE (PC-56 OPS-2b): OPS2_CHAINS now also holds 2b's four chains (ops2b-chains.render pins them); this file pins the THREE 2c chains,
+// unchanged, by filtering on the wave.
+const CHAINS_2C = OPS2_CHAINS.filter((c) => c.wave === '2c');
 describe('PC-56 OPS-2c · the three DECOR chains', () => {
   it('three chains, seven states, seven canon files listed once, each Back to its trigger', () => {
-    expect(OPS2_CHAINS.map((c) => [c.id, c.kind, c.page, c.param, c.states.join('|'), c.files.join('|')])).toEqual([
+    expect(CHAINS_2C.map((c) => [c.id, c.kind, c.page, c.param, c.states.join('|'), c.files.join('|')])).toEqual([
       ['storage_export', 'DECOR', '/warehouse/billing', 'export', 'queued|ready', 'W3350|W3351'],
       ['storage_act', 'DECOR', '/warehouse/billing', 'act', 'confirm|success|failure', 'W3352|W3353|W3354'],
       ['wh_export', 'DECOR', '/warehouse/insights', 'export', 'queued|ready', 'W3360|W3361'],
     ]);
   });
-  it.each(OPS2_CHAINS.flatMap((c) => c.states.map((s) => [c.id, s] as const)))('%s · %s: statement first, its sentence, refusals by name, no control, Back to the page', (id, state) => {
+  it.each(CHAINS_2C.flatMap((c) => c.states.map((s) => [c.id, s] as const)))('%s · %s: statement first, its sentence, refusals by name, no control, Back to the page', (id, state) => {
     const c = OPS2_CHAINS.find((x) => x.id === id)!;
     const html = renderToStaticMarkup(<Ops2Chain t={T} chain={id} state={state} />);
     const vis = visible(html);

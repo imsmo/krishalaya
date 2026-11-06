@@ -1,14 +1,14 @@
 // modules/warehousing/warehousing.module.ts
-// Warehousing & WDRA receipts (PRD M21): farmers/traders deposit produce in accredited warehouses, get a
-// quality assay, and receive an electronic Negotiable Warehouse Receipt (eNWR) they can later use as loan
-// collateral. A STORAGE FEE would be collected at release (quantity in quintals × rate/qtl/month × months)
+// Warehousing & WDRA receipts (PRD M21): farmers/traders deposit produce in warehouses and the warehouse records its own assay entry (not a lab
+// certificate; it sets no price). PC-56 OPS-2b: this platform does NOT issue an eNWR (issue refused by name, founder Q3-A); receipts already
+// recorded stay readable; a receipt is never released on its own (refused by name) and is cancelled only by the warehouse's named operator, keyed,
+// with a reason, audited (Q5-A); no receipt can be named on a loan application (Q7-A, fintech). A STORAGE FEE would be collected at release (quantity in quintals × rate/qtl/month × months)
 // through the wallet boundary (depositor userMain → operator userMain, txnType 'storage_fee', zero-sum +
 // idempotent — Law 2) — but release is REFUSED BY NAME since PC-56 OPS-1a (paused until the depositor confirms
 // it herself; README "The money path"). Gated by the `warehousing` feature flag (default OFF).
 //
 // SCOPE (this build): warehouses (incl. platform-global/independent WDRA, cross-tenant visible) + storage
-// bookings (request → confirm → store → release w/ storage-fee settlement) + accredited assays + eNWR
-// issuance/release.
+// bookings (request → confirm → store; release refused by name) + the warehouse's assay entries + the eNWR records (read; operator cancel).
 // DEFERRED (schema in 0010, not wired): NWR PLEDGE → loan collateral + partial release + default (fintech
 // flow), mark-to-market revaluation job, re-assay-due job, auto-valuation from assay grade × mandi price,
 // multi-unit → quintal conversion (fees assume quintals), repository (NERL/CCRL) API integration.

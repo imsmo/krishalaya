@@ -23,7 +23,7 @@ import { LoanApplicationRepository } from '../repositories/loan-application.repo
 import { LoanRepository } from '../repositories/loan.repository';
 import { LoanProductRepository } from '../repositories/loan-product.repository';
 import { ApplyLoanDto, ApproveLoanDto, RejectLoanDto } from '../dto/create-loan-application.dto';
-import { LoanApplicationNotFoundError, LoanProductNotFoundError, AmountOutOfRangeError, FintechForbiddenError, LoanDecidedByPartnerError, LoanAlreadyQueuedForDisbursalError } from '../domain/fintech.errors';
+import { LoanApplicationNotFoundError, LoanProductNotFoundError, AmountOutOfRangeError, FintechForbiddenError, LoanDecidedByPartnerError, LoanAlreadyQueuedForDisbursalError, LoanEnwrPledgeNotOnPlatformError } from '../domain/fintech.errors';
 import { decisionVerdict } from '../domain/loan-decision.rules';
 
 const QUOTA_METRIC = 'loan_applications';
@@ -53,6 +53,9 @@ export class LoanApplicationService {
 
   async apply(tenantId: string, actor: FintechActor, idemKey: string, dto: ApplyLoanDto) {
     if (!actor.canBorrow) throw new FintechForbiddenError('requires loan.borrow');
+    // PC-56 OPS-2b · OPS2-B8 (founder Q7-A): a warehouse receipt cannot be named — refused BY NAME before the idempotency record, the quota and any
+    // read or write. Without `nwrId` the application is unchanged.
+    if (dto.nwrId !== undefined) throw new LoanEnwrPledgeNotOnPlatformError();
     return this.idem.remember(idemKey, actor.userId, 'fintech.loan.apply', () =>
       timed(this.metrics, 'fintech.loan.apply', { tenant: tenantId }, async () => {
         await this.quota.assertWithinLimit(tenantId, QUOTA_METRIC);

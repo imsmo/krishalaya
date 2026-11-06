@@ -1,5 +1,6 @@
 // modules/warehousing/controllers/v1/storage-bookings.controller.ts · deposit lifecycle + assays. `warehousing` flag.
-// request/cancel = depositor (warehouse.store); confirm/store/release/assay = operator (warehouse.manage).
+// request/cancel = depositor (warehouse.store); confirm/store/release/assay = operator (warehouse.manage). PC-56 OPS-2b: the assay record is the
+// warehouse's NAMED operator's only (403 WAREHOUSE_OPERATOR_ONLY, no admin escape) and audited.
 // release is the money route (Idempotency-Key, Law 3).
 import { Body, Controller, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
@@ -51,8 +52,8 @@ export class StorageBookingsController {
   cancel(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @Body('reason') reason?: string) { return this.svc.cancel(ctx.tenantId, this.actor(ctx), id, reason).then((data) => ({ data })); }
 
   @Post(':id/assays') @RequirePermissions(WarehousingPermissions.Manage)
-  recordAssay(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(RecordAssaySchema) dto: RecordAssayDto) {
-    return this.assays.record(ctx.tenantId, this.actor(ctx), { ...dto, storageBookingId: id }).then((data) => ({ data }));
+  recordAssay(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(RecordAssaySchema) dto: RecordAssayDto) {
+    return this.assays.record(ctx.tenantId, this.actor(ctx), { ...dto, storageBookingId: id }, ipOf(r)).then((data) => ({ data }));
   }
   @Get(':id/assays')
   listAssays(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.assays.listForBooking(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }

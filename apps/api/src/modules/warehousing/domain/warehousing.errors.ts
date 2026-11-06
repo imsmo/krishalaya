@@ -48,4 +48,40 @@ export const WAREHOUSE_OPERATOR_NOT_A_MEMBER_SENTENCE =
 export class WarehouseOperatorNotAMemberError extends DomainError {
   constructor() { super('WAREHOUSE_OPERATOR_NOT_A_MEMBER', WAREHOUSE_OPERATOR_NOT_A_MEMBER_SENTENCE, 422, {}); }
 }
+/**
+ * PC-56 OPS-2b · OPS2-B2 (founder Q3-A, 2026-11-06) — THIS PLATFORM DOES NOT ISSUE AN eNWR. `POST /v1/warehousing/nwr` recorded a receipt in the
+ * depositor's name on the operator's word alone: a number the operator typed, a repository picked from a two-item list, a valuation the operator
+ * typed — no repository was called and the depositor was never asked (survey F-2, C-5). It is now refused BY NAME — after the permission check and
+ * the Idempotency-Key check, BEFORE the idempotency record, the unit of work and any read or write (the OPS-1a ordering): nothing is recorded,
+ * remembered or emitted, and a replay gets the same refusal. Receipts already recorded stay readable (`GET …/nwr`, `GET …/nwr/:id`).
+ */
+export const ENWR_ISSUE_NOT_ON_PLATFORM_SENTENCE =
+  'This platform does not issue an eNWR. No receipt is recorded here in a depositor\'s name. Nothing was recorded.';
+export class EnwrIssueNotOnPlatformError extends DomainError {
+  constructor() { super('ENWR_ISSUE_NOT_ON_PLATFORM', ENWR_ISSUE_NOT_ON_PLATFORM_SENTENCE, 409, {}); }
+}
+/**
+ * PC-56 OPS-2b · OPS2-B1 (founder Q5-A, 2026-11-06) — A RECEIPT IS NEVER RELEASED ON ITS OWN. `POST …/nwr/:id/release` marked a depositor's receipt
+ * surrendered while her goods could still be `stored` — nothing tied it to the goods (survey F-1, C-7) — and the release of stored goods is itself
+ * refused by name since OPS-1a (STORAGE_RELEASE_AWAITS_DEPOSITOR). Refused BY NAME after the permission check, BEFORE any lock or write.
+ */
+export const ENWR_RELEASE_NOT_STANDALONE_SENTENCE =
+  'A receipt is never released on its own. The release of stored goods is paused, so no receipt is released here. Nothing was changed.';
+export class EnwrReleaseNotStandaloneError extends DomainError {
+  constructor() { super('ENWR_RELEASE_NOT_STANDALONE', ENWR_RELEASE_NOT_STANDALONE_SENTENCE, 409, {}); }
+}
+/** PC-56 OPS-2b · OPS2-B1 (founder Q5-A): a receipt is cancelled only with a reason (1–500 characters), refused BY NAME before the idempotency record. */
+export const ENWR_CANCEL_REASON_REQUIRED_SENTENCE = 'A reason is required to cancel a receipt. Nothing was changed.';
+export class EnwrCancelReasonRequiredError extends DomainError {
+  constructor() { super('ENWR_CANCEL_REASON_REQUIRED', ENWR_CANCEL_REASON_REQUIRED_SENTENCE, 400, { maxLength: 500 }); }
+}
+/**
+ * PC-56 OPS-2b (founder Q11-A, applied STRICTLY to the two acts this wave touches — receipt cancel and assay record): only the warehouse's NAMED
+ * operator (`warehouses.operator_user_id = the caller`) acts. No administrator escape on these two acts (the shared `isWarehouseAdmin` /
+ * `booking.manage` escape on the other acts is OPS-2a's first commit).
+ */
+export const WAREHOUSE_OPERATOR_ONLY_SENTENCE = 'Only this warehouse\'s named operator can do this. Nothing was changed.';
+export class WarehouseOperatorOnlyError extends AppError {
+  constructor(act: 'nwr.cancel' | 'assay.record') { super('WAREHOUSE_OPERATOR_ONLY', WAREHOUSE_OPERATOR_ONLY_SENTENCE, 403, { act }); }
+}
 export class WarehousingForbiddenError extends AppError { constructor(message = 'Not allowed on this warehousing resource') { super('WAREHOUSING_FORBIDDEN', message, 403); } }

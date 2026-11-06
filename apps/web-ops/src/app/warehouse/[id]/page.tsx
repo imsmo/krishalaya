@@ -1,7 +1,9 @@
 // apps/web-ops/src/app/warehouse/[id]/page.tsx · one deposit's lifecycle (PC-32 OW-2): facts → ONLY the legal
 // actions (confirm arrival / mark stored after weighment / cancel pre-storage — release PAUSED by PC-56 OPS-1a, Q3-A,
-// pure gates mirroring the state machine) → assay reports (plain-text name=value entry, honest typed coercion)
-// → eNWR issue (stored goods only; NERL/CCRL; float-free valuation; idempotent). notFound = IDOR guard.
+// pure gates mirroring the state machine) → a link to the booking's assays (W372). notFound = IDOR guard.
+// PC-56 OPS-2b (founder Q3-A, Q13-A): the "Issue eNWR receipt" form is REMOVED — this platform does not issue an eNWR (the API refuses it by
+// name, ENWR_ISSUE_NOT_ON_PLATFORM); the assay table and record form MOVED to `/warehouse/assay?booking=<id>` (labelled per Q13-A; the form only
+// for the named operator on a stored booking — F-16: it was offered on `confirmed`, where the API answers 409). The rest is OPS-2a's.
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -9,9 +11,10 @@ import { requireSession } from '../../../lib/session';
 import { opsClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
 import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
-import { canConfirm, canStore, canRelease, canCancel, canIssueNwr, NWR_REPOSITORIES } from '../../../features/warehouse/manage';
-import { bookingLifecycleAction, recordAssayAction, issueNwrAction } from '../actions';
-import type { StorageBooking, AssayReport } from '@krishalaya/sdk-js';
+import { canConfirm, canStore, canRelease, canCancel } from '../../../features/warehouse/manage';
+import { assayHref } from '../../../features/ops2/receipts';
+import { bookingLifecycleAction } from '../actions';
+import type { StorageBooking } from '@krishalaya/sdk-js';
 import { ReleasePaused } from '../../../components/ops1/WithdrawalView';
 
 export const dynamic = 'force-dynamic';
@@ -20,8 +23,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('wh.detailTitle'), robots: { index: false, follow: false } };
 }
 
-const OK = new Set(['confirm', 'store', 'cancel', 'assay', 'nwr']);
-const ERR = new Set(['action', 'illegal', 'assay', 'as_assayer', 'as_params', 'as_validuntil', 'nwr', 'nwr_dup', 'nwr_booking', 'nwr_repo', 'nwr_enwrno', 'nwr_valuation', 'nwr_expires']);
+const OK = new Set(['confirm', 'store', 'cancel']);
+const ERR = new Set(['action', 'illegal']);
 
 export default async function BookingDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
   await requireSession(`/warehouse/${params.id}`);
@@ -31,9 +34,6 @@ export default async function BookingDetailPage({ params, searchParams }: { para
   let b: StorageBooking;
   try { b = await opsClient().warehousing.booking(params.id); }
   catch { notFound(); }
-
-  let assays: AssayReport[] = [];
-  try { assays = await opsClient().warehousing.assays(params.id); } catch { assays = []; }
 
   const okKey = searchParams.ok && OK.has(searchParams.ok) ? searchParams.ok : null;
   const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
@@ -84,59 +84,11 @@ export default async function BookingDetailPage({ params, searchParams }: { para
         </form>
       )}
 
+      {/* PC-56 OPS-2b (founder Q13-A): the booking's assays are read — and recorded, by the named operator on a stored booking — on W372. */}
       <h2>{t.t('wh.assays')}</h2>
-      {assays.length === 0 ? <p className="kv-muted">{t.t('wh.assaysEmpty')}</p> : (
-        <table className="kv-table">
-          <thead><tr><th>{t.t('wh.colAssayer')}</th><th>{t.t('wh.colParams')}</th><th>{t.t('wh.colValid')}</th></tr></thead>
-          <tbody>
-            {assays.map((a) => (
-              <tr key={a.id}>
-                <td>{a.assayerName}</td>
-                <td className="kv-mono">{Object.entries(a.parameters).map(([k, v]) => `${k}=${String(v)}`).join(' · ')}</td>
-                <td>{a.validUntil ? formatDate(a.validUntil, lang) : t.t('common.dash')}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-
-      {(s === 'confirmed' || s === 'stored') && (
-        <details className="kv-card">
-          <summary className="kv-card__title">{t.t('wh.addAssay')}</summary>
-          <form action={recordAssayAction} className="kv-form">
-            <input type="hidden" name="id" value={b.id} />
-            <label htmlFor="as-name" className="kv-field__label">{t.t('wh.colAssayer')}</label>
-            <input id="as-name" name="assayerName" className="kv-input" required maxLength={200} />
-            <label htmlFor="as-params" className="kv-field__label">{t.t('wh.colParams')}</label>
-            <textarea id="as-params" name="paramsText" className="kv-textarea" rows={4} required placeholder={'moisture = 11.5\norganic = true\ngrade = FAQ'} />
-            <p className="kv-field__hint">{t.t('wh.paramsHint')}</p>
-            <label htmlFor="as-valid" className="kv-field__label">{t.t('wh.colValid')}</label>
-            <input id="as-valid" name="validUntil" type="date" className="kv-input" />
-            <button type="submit" className="kv-btn">{t.t('wh.addAssayBtn')}</button>
-          </form>
-        </details>
-      )}
-
-      {canIssueNwr(s) && (
-        <details className="kv-card">
-          <summary className="kv-card__title">{t.t('wh.issueNwr')}</summary>
-          <p className="kv-field__hint">{t.t('wh.nwrHint')}</p>
-          <form action={issueNwrAction} className="kv-form">
-            <input type="hidden" name="id" value={b.id} />
-            <label htmlFor="nw-repo" className="kv-field__label">{t.t('wh.colRepo')}</label>
-            <select id="nw-repo" name="repository" className="kv-input" defaultValue="NERL">
-              {NWR_REPOSITORIES.map((r) => <option key={r} value={r}>{r}</option>)}
-            </select>
-            <label htmlFor="nw-no" className="kv-field__label">{t.t('wh.colEnwr')}</label>
-            <input id="nw-no" name="enwrNo" className="kv-input" required minLength={3} maxLength={60} />
-            <label htmlFor="nw-val" className="kv-field__label">{t.t('wh.valuation')}</label>
-            <input id="nw-val" name="valuationMajor" className="kv-input" required inputMode="decimal" pattern="\d{1,12}(\.\d{1,2})?" />
-            <label htmlFor="nw-exp" className="kv-field__label">{t.t('wh.colExpires')}</label>
-            <input id="nw-exp" name="expiresAt" type="date" className="kv-input" />
-            <button type="submit" className="kv-btn">{t.t('wh.issueNwrBtn')}</button>
-          </form>
-        </details>
-      )}
+      <p><Link href={assayHref(b.id)} className="kv-btn" data-kv-real="assays">{t.t('wh.assaysLink')}</Link></p>
+      {/* PC-56 OPS-2b (founder Q3-A): no eNWR issue form — this platform does not issue an eNWR. */}
+      <p className="kv-muted" data-kv-fact="no-issue">{t.t('wh.noIssue')}</p>
     </section>
   );
 }
