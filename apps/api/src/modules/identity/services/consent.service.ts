@@ -6,6 +6,7 @@ import { uuidv7 } from '../../../core/database/uuid.util';
 import { Consent } from '../domain/consent.entity';
 import { ConsentRepository } from '../repositories/consent.repository';
 import { GrantConsentDto } from '../dto/grant-consent.dto';
+import { ConsentHelperNotRecordedError, namesHelperOnBehalf } from '../domain/identity.errors';
 
 @Injectable()
 export class ConsentService {
@@ -15,6 +16,8 @@ export class ConsentService {
     private readonly repo: ConsentRepository,
   ) {}
   async grant(tenantId: string, userId: string, dto: GrantConsentDto) {
+    // PC-56 OPS-1c · Q8-A: an on-behalf purpose with a helper named is refused by name, before anything is read or written.
+    if (namesHelperOnBehalf(dto)) throw new ConsentHelperNotRecordedError(dto.purposeCode);
     let version = 'v1';
     await this.uow.run(tenantId, async (tx) => {
       // ADMIN-5b: resolved INSIDE the transaction, on the primary. The previous code read it from the replica BEFORE

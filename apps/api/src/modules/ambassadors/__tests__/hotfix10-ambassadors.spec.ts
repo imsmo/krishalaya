@@ -15,8 +15,12 @@ import { AssistedConsentNotGrantableError, AssistedOnboardingExistingUserError }
 import { UserPhoneAlreadyRegisteredError } from '../../identity/domain/identity.errors';
 
 const flagsOf = (cls: object): string[] => ([] as string[]).concat(Reflect.getMetadata(FEATURE_FLAG_KEY, cls) ?? []);
+// NAMED UPDATE (PC-56 OPS-1c · OPS1-B7): assisted onboarding now refuses an ambassador whose training is not recorded (403
+// AMBASSADOR_TRAINING_INCOMPLETE), so this fixture — kiosk mode ON already — records training complete. Without it the H10-3 "onboarded as before"
+// case would be refused by B7 instead of proving H10-3; the refusal cases are unchanged (they fire before the profile is read). B7 itself is
+// pinned in ops1c-kiosk-gate.spec.ts.
 const profile = (over: Partial<{ aepsEnabled: boolean; isActive: boolean }> = {}) => AmbassadorProfile.rehydrate({ id: 'amb1', userId: 'ambUser', tenantId: 't', clusterRegionIds: [], tierId: null,
-  mentorAmbassadorId: null, trainingCompletedAt: null, kioskEnabled: true, aepsEnabled: over.aepsEnabled ?? true, monthlyStipendMinor: 0n, lastActivityAt: null, isActive: over.isActive ?? true });
+  mentorAmbassadorId: null, trainingCompletedAt: new Date('2026-10-01T00:00:00Z'), kioskEnabled: true, aepsEnabled: over.aepsEnabled ?? true, monthlyStipendMinor: 0n, lastActivityAt: null, isActive: over.isActive ?? true });
 
 describe('HOTFIX-10 · H10-2 · the AePS log is behind the ambassadors kill-switch', () => {
   it('AepsController names `ambassadors` exactly as its sibling FieldOpsController does, and runs FeatureFlagGuard', () => {

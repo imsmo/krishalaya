@@ -75,3 +75,17 @@ export function refuseAepsQ7aFields(body: unknown): void {
   if (Object.prototype.hasOwnProperty.call(body, 'aadhaarLast4')) throw new AepsAadhaarNotRecordedError();
   if (Object.prototype.hasOwnProperty.call(body, 'customerUserId')) throw new AepsCustomerLinkNotRecordedError();
 }
+
+/** PC-56 OPS-1c · OPS1-B7 (survey OPS-1 F-9). An assisted act — assisted onboarding, or either on-behalf listing path — is made only by an
+ *  ambassador whose profile has kiosk mode switched ON and whose training is RECORDED as complete (`ambassador_profiles.kiosk_enabled`,
+ *  `training_completed_at`, 0013:21-22). Both columns were written at enrolment and read by no gate, so a trainee could onboard. Refused BY
+ *  NAME, 403, after the `is_active` check and before anything is written. Kiosk first when both are missing (the switch is the manager's act). */
+export const AMBASSADOR_KIOSK_NOT_ENABLED_SENTENCE = 'Kiosk mode is not switched on for your ambassador profile. An ambassador manager of your organisation switches it on. Nothing was written.';
+export const AMBASSADOR_TRAINING_INCOMPLETE_SENTENCE = 'Your ambassador training is not recorded as complete. An ambassador manager of your organisation records it. Nothing was written.';
+export class AmbassadorKioskNotEnabledError extends DomainError { constructor() { super('AMBASSADOR_KIOSK_NOT_ENABLED', AMBASSADOR_KIOSK_NOT_ENABLED_SENTENCE, 403, {}); } }
+export class AmbassadorTrainingIncompleteError extends DomainError { constructor() { super('AMBASSADOR_TRAINING_INCOMPLETE', AMBASSADOR_TRAINING_INCOMPLETE_SENTENCE, 403, {}); } }
+/** PURE: the B7 gate over an ACTIVE profile's two facts. Throws by name; returns nothing when both are set. */
+export function assertKioskGate(p: { kioskEnabled: boolean; trainingCompletedAt: Date | string | null }): void {
+  if (p.kioskEnabled !== true) throw new AmbassadorKioskNotEnabledError();
+  if (p.trainingCompletedAt === null || p.trainingCompletedAt === undefined) throw new AmbassadorTrainingIncompleteError();
+}

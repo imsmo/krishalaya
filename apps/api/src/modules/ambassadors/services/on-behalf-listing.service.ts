@@ -13,7 +13,7 @@ import { ConsentService } from '../../identity/services/consent.service';
 import { AmbassadorProfileRepository } from '../repositories/ambassador-profile.repository';
 import { DOC_EXTRACTION, DocExtractionProvider, SuggestedListingDraft } from '../gateway/doc-extraction.port';
 import { AmbassadorActor } from './ambassador-profile.service';
-import { NotAnAmbassadorError, OnBehalfConsentRequiredError } from '../domain/ambassadors.errors';
+import { NotAnAmbassadorError, OnBehalfConsentRequiredError, assertKioskGate } from '../domain/ambassadors.errors';
 import { OnBehalfListingDto } from '../dto/on-behalf-listing.dto';
 import { SuggestFromDocsDto } from '../dto/suggest-from-docs.dto';
 
@@ -38,6 +38,7 @@ export class OnBehalfListingService {
   async suggestFromDocs(tenantId: string, actor: AmbassadorActor, dto: SuggestFromDocsDto): Promise<SuggestedListingDraft> {
     const me = await this.profiles.findByUser(tenantId, actor.userId);
     if (!me || !me.toProps().isActive) throw new NotAnAmbassadorError();
+    assertKioskGate(me.toProps());   // PC-56 OPS-1c · OPS1-B7: kiosk mode ON + training recorded, or refused by name (403)
     const ok = await this.consents.isGranted(tenantId, dto.farmerUserId, ON_BEHALF_LISTING_PURPOSE, actor.userId);
     if (!ok) throw new OnBehalfConsentRequiredError();
     return this.docExtraction.suggest({ tenantId, docText: dto.docText, locale: dto.locale, docType: 'listing', mediaIds: dto.mediaIds ?? [] });
@@ -48,6 +49,9 @@ export class OnBehalfListingService {
     // 1) the actor must be an ACTIVE ambassador (resolved from the token, not the client).
     const me = await this.profiles.findByUser(tenantId, actor.userId);
     if (!me || !me.toProps().isActive) throw new NotAnAmbassadorError();
+    // 1b) PC-56 OPS-1c · OPS1-B7 (survey F-9): kiosk mode ON and training RECORDED, or refused by name (403) — before any read of her consent
+    //     and before anything is written.
+    assertKioskGate(me.toProps());
     // 2) the farmer must have granted on-behalf-listing consent TO THIS ambassador (DPDP authority; anti-IDOR).
     const ok = await this.consents.isGranted(tenantId, dto.farmerUserId, ON_BEHALF_LISTING_PURPOSE, actor.userId);
     if (!ok) throw new OnBehalfConsentRequiredError();

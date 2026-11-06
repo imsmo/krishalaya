@@ -83,7 +83,11 @@ run('PC-56 HOTFIX-10 · the desk learns nothing it should not (integration, real
     await role(ambUser, A, 'ambassador');
     // the aeps_enabled profile is fixture SQL on purpose: enrolment (`POST /v1/ambassadors`) is behind `ambassadors` — with the flag
     // OFF no route can create it, which is exactly the state (2) starts in (a tenant that had the module ON and turned it OFF).
-    ambassadorId = (await admin.query(`INSERT INTO ambassador_profiles (user_id, tenant_id, kiosk_enabled, aeps_enabled, is_active) VALUES ($1, $2, true, true, true) RETURNING id`, [ambUser, A])).rows[0].id;
+    // NAMED UPDATE (PC-56 OPS-1c · OPS1-B7): assisted onboarding and on-behalf listing now refuse an ambassador whose training is not recorded
+    // (403 AMBASSADOR_TRAINING_INCOMPLETE). (3) proves H10-3 with a FULLY ENABLED ambassador — kiosk mode was already ON here, so the fixture now
+    // records training too; without it (3)'s onboarding would be answered by B7 instead of by the consent rule it pins. B7 itself is pinned live
+    // in ops1c-kiosk (2). The AePS record (2)/(4) is not gated by B7 and is unchanged.
+    ambassadorId = (await admin.query(`INSERT INTO ambassador_profiles (user_id, tenant_id, kiosk_enabled, aeps_enabled, is_active, training_completed_at) VALUES ($1, $2, true, true, true, now() - interval '30 days') RETURNING id`, [ambUser, A])).rows[0].id;
     flagBackup = (await admin.query(`SELECT key, is_enabled, rollout_pct, rules FROM feature_flags WHERE key = 'ambassadors'`)).rows[0];
     expect({ present: !!flagBackup, seededOff: flagBackup?.is_enabled === false }).toEqual({ present: true, seededOff: true });
     app = await bootstrapE2EApp(); http = app.getHttpServer(); cache = app.get<CacheService>(CACHE_SERVICE);

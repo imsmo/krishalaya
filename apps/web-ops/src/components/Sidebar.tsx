@@ -5,7 +5,9 @@ import { LocaleSwitcher } from './LocaleSwitcher';
 
 const NAV: ReadonlyArray<{ href: string; labelKey: string; sub?: boolean }> = [
   { href: '/dashboard', labelKey: 'nav.dashboard' },
-  { href: '/kiosk', labelKey: 'nav.kiosk' }, // OW-1
+  { href: '/kiosk/home', labelKey: 'nav.kiosk' }, // OW-1 → PC-56 OPS-1c · W380 (`/kiosk` answers a 307 here)
+  { href: '/kiosk/session-start', labelKey: 'nav.kioskStart', sub: true }, // PC-56 OPS-1c · W381 (the one form: an account for a new number)
+  { href: '/kiosk/ambassador', labelKey: 'nav.kioskEarnings', sub: true }, // PC-56 OPS-1c · W389 (her own earnings)
   { href: '/warehouse', labelKey: 'nav.warehouse' }, // OW-2
   { href: '/warehouse/withdrawal', labelKey: 'nav.withdrawal', sub: true }, // PC-56 OPS-1a · W377 (the warehouse section)
   { href: '/equipment', labelKey: 'nav.equipment' }, // OW-3

@@ -16,8 +16,10 @@ export function generateMetadata(): Metadata {
 // OW-1..7 — every ops wave is built: PC-55 B3 closed OW-5 (AePS), B4 closed OW-7 (sensors + alerting). No 'coming'
 // list remains, so the table below has a single section: an empty "coming soon" shell would be noise, not honesty.
 // [PC-56 correction (survey OPS-1 C-5): "every ops wave is built" is stale — the PC-56 tracker covers the ops canon wave by wave. OPS-1b
-// corrected its own row: the AePS area is a LOG (`/aeps/home`), never "receipts, withdrawals"; and Attendance (no face check-in) is added.]
-const BUILT: ReadonlyArray<{ key: string; href: string }> = [{ key: 'kiosk', href: '/kiosk' }, { key: 'warehouse', href: '/warehouse' }, { key: 'chc', href: '/equipment' }, { key: 'dairypos', href: '/dairy' }, { key: 'aeps', href: '/aeps/home' }, { key: 'attendance', href: '/attendance/face-enroll' }, { key: 'insights', href: '/insights' }, { key: 'devices', href: '/devices' }];
+// corrected its own row: the AePS area is a LOG (`/aeps/home`), never "receipts, withdrawals"; and Attendance (no face check-in) is added.
+// OPS-1c corrected the kiosk row: it creates an account for a new number (`/kiosk/home`) — never "KYC, profile, first listing", which she does
+// herself in her own sign-in.]
+const BUILT: ReadonlyArray<{ key: string; href: string }> = [{ key: 'kiosk', href: '/kiosk/home' }, { key: 'warehouse', href: '/warehouse' }, { key: 'chc', href: '/equipment' }, { key: 'dairypos', href: '/dairy' }, { key: 'aeps', href: '/aeps/home' }, { key: 'attendance', href: '/attendance/face-enroll' }, { key: 'insights', href: '/insights' }, { key: 'devices', href: '/devices' }];
 
 export default async function DashboardPage() {
   await requireSession('/dashboard');

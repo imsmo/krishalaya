@@ -2,7 +2,11 @@
 // Phone E.164-ish (mirrors users.create); name optional ≤120; language limited to the platform set. The ops
 // staff CREATES the account; everything personal after that (OTP login, KYC, first listing) happens in the
 // FARMER'S OWN session — assisted, never impersonated (no silent on-behalf writes; consent law).
-export const KIOSK_LANGS = ['hi', 'gu', 'en'] as const;
+// PC-56 OPS-1c · F-19 (Rule Zero, Law 6): the language list is the platform REGISTRY's live set (`@krishalaya/i18n` LANGUAGES — the mirror of
+// the DB `languages` table's active rows, 0001_languages seed), never a literal list here; a code outside it is refused ('lang').
+import { LANGUAGES, type LanguageDef } from '@krishalaya/i18n';
+export const KIOSK_LANGUAGES: readonly LanguageDef[] = LANGUAGES;
+export const KIOSK_LANGS: readonly string[] = Object.freeze(LANGUAGES.map((l) => l.code));
 
 export type FarmerResult =
   | { ok: true; value: { phone: string; fullName?: string; languageCode?: string } }
@@ -14,7 +18,7 @@ export function buildFarmer(raw: { phone: string; fullName: string; languageCode
   const fullName = raw.fullName.trim();
   if (fullName.length > 120) return { ok: false, error: 'name' };
   const languageCode = raw.languageCode.trim();
-  if (languageCode && !(KIOSK_LANGS as readonly string[]).includes(languageCode)) return { ok: false, error: 'lang' };
+  if (languageCode && !KIOSK_LANGS.includes(languageCode)) return { ok: false, error: 'lang' };
   const value: { phone: string; fullName?: string; languageCode?: string } = { phone };
   if (fullName) value.fullName = fullName;
   if (languageCode) value.languageCode = languageCode;

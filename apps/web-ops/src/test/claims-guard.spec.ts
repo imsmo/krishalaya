@@ -10,7 +10,9 @@ import { hi } from '../i18n/hi';
 import { gu } from '../i18n/gu';
 
 const CATS = { en, hi, gu } as const;
-const NAV_1 = ['nav.payout', 'nav.withdrawal', 'nav.aeps', 'nav.aepsRecord', 'nav.aepsExceptions', 'nav.attendance', 'nav.biometric', 'dash.wave.aeps', 'dash.wave.attendance'];
+// NAMED UPDATE (PC-56 OPS-1c): the kiosk's nav labels and its dashboard row join the scope (a widening — every guard now also covers them).
+const NAV_1 = ['nav.payout', 'nav.withdrawal', 'nav.aeps', 'nav.aepsRecord', 'nav.aepsExceptions', 'nav.attendance', 'nav.biometric', 'dash.wave.aeps', 'dash.wave.attendance',
+  'nav.kiosk', 'nav.kioskStart', 'nav.kioskEarnings', 'dash.wave.kiosk'];
 const scoped = (cat: Record<string, string>) => Object.entries(cat).filter(([k]) => k.startsWith('ops1.') || NAV_1.includes(k));
 
 /** [regex, the canon phrase it is proven on] */
@@ -76,6 +78,81 @@ const BRAND_1B: ReadonlyArray<[RegExp, string]> = [
 ];
 const SOURCES_1B = ['components/ops1/AepsViews.tsx', 'components/ops1/FaceViews.tsx', 'app/aeps/home/page.tsx', 'app/aeps/withdrawal/page.tsx', 'app/aeps/withdrawal/actions.ts',
   'app/aeps/exceptions/page.tsx', 'app/aeps/receipt/page.tsx', 'app/attendance/face-enroll/page.tsx', 'app/attendance/face-attendance/page.tsx', 'app/canon/biometric/page.tsx', 'features/ops1/aeps.ts'];
+
+// ── PC-56 OPS-1c (brief §E6): the kiosk guards. Q10-A: no "session" claim in any `ops1.` value (route names such as /kiosk/session-start are
+// canon addresses, never printed as words). Each is proven on its own canon phrase; the affirmative ones also let their negated form through.
+const GUARDS_1C: ReadonlyArray<[name: string, hit: (v: string) => boolean, canon: string, negated?: string]> = [
+  ['per-session', plain(/per-session/i), 'Assisted access is consent, per-session, and it expires the moment this session ends.'],
+  ['session opens/ends/expires', plain(/session (opens|ends|expires|closed|closes)/i), 'The session opens only once the farmer confirms it.'],
+  ['session (any, Q10-A)', plain(/\bsessions?\b/i), 'Assisted session — ambassador Kiran Ben V. (senior tier)'],
+  ['access ended', plain(/access ended/i), "Kiran Ben's access ended when this session closed."],
+  ['her own OTP (affirmative)', affirmative(/\bher own OTP\b/i), 'If it matches a member, she confirms with her own OTP before anything opens.', 'Nothing here asks for her own OTP.'],
+  ['OTP (any, on a desk page)', plain(/\bOTP\b/), 'an OTP to her phone is how she grants it'],
+  ['voice-note consent', plain(/voice[- ]note consent/i), "a family member's phone plus a recorded voice-note consent stands in for the OTP"],
+  ['penny-drop', plain(/penny[- ]drop/i), 'Penny-drop · ₹1 sent with a narration code'],
+  ['₹1 stays', plain(/₹\s?1 stays/i), 'The ₹1 stays yours.'],
+  ['reversible right now', plain(/reversible right now/i), 'Anything from today is reversible right now'],
+  ['pass-rate', plain(/pass[- ]rate/i), 'Verification pass-rate 97.6%'],
+  ['Fri', plain(/\bFri\b/), 'weekly payout batch runs Fri (wage-lane)'],
+  ['wage-lane', plain(/wage[- ]lane/i), 'weekly payout batch runs Fri (wage-lane)'],
+  ['out-of-cluster', plain(/out-of-cluster/i), 'tagged out-of-cluster; no commission accrues'],
+  ['battery', plain(/battery/i), 'Device battery — Below 20%'],
+  ['synced', plain(/\bsynced\b/i), '✓ all sessions synced'],
+  ['on this device', plain(/on (this|THIS) device/i), 'Anything already captured stays saved on this device'],
+  ['1800-', plain(/1800-/), 'Change anything anytime: app, *123#, or 1800-419-0123.'],
+  ['*123#', plain(/\*123#/), 'Change anything anytime: app, *123#, or 1800-419-0123.'],
+  ['%', plain(/%/), 'Verification pass-rate 97.6%'],
+  ['plan settings', plain(/plan settings/i), 'Nothing is broken — it is not enabled. See plan settings.'],
+  ['₹60', plain(/₹\s?60\b/), 'Your onboarding pays Kiran Ben ₹60 from the FPO — you pay nothing.'],
+  ['member created (affirmative)', affirmative(/\bmember(ship)? (is |was )?created\b/i), 'What we did today: Member created ✓', 'No membership is created here.'],
+  ['flips', plain(/\bflips\b/i), 'kiosk_enabled flips true only after training_completed_at is recorded'],
+  ['canon event codes', plain(/onboarding\.verified|scheme\.application\.submitted|first\.listing\.published/), 'onboarding.verified 42 × ₹60 = ₹2,520'],
+];
+const BRAND_1C: ReadonlyArray<[RegExp, string]> = [
+  [/Kiran Ben/i, 'Kiran Ben V.'], [/Jashoda/i, 'Jashoda Ben R.'], [/Vanthali/i, 'Today: Vanthali'], [/Anand FPO/i, 'Anand FPO · Kisan Mitra Kiosk'], [/Kisan Mitra/i, 'Kisan Mitra Kiosk'],
+  [/Krishalaya Kiosk/i, 'Krishalaya Kiosk'], [/GMISS/i, 'GMISS-2026 v2 rules'], [/GM26-/, 'GM26-1088••'], [/SR-JND/, 'SR-JND-88••4'], [/95•••|96•••/, '+91 95••• ••217'],
+  [/XXXXXX/, 'XXXXXX••27'], [/GG-20/, 'GG-20 groundnut'],
+];
+const SOURCES_1C = ['components/ops1/KioskViews.tsx', 'features/ops1/kiosk.ts', 'features/kiosk/form.ts', 'app/kiosk/home/page.tsx', 'app/kiosk/session-start/page.tsx',
+  'app/kiosk/session-start/actions.ts', 'app/kiosk/profile/page.tsx', 'app/kiosk/land-crops/page.tsx', 'app/kiosk/kyc/page.tsx', 'app/kiosk/bank/page.tsx',
+  'app/kiosk/first-listing/page.tsx', 'app/kiosk/schemes/page.tsx', 'app/kiosk/summary/page.tsx', 'app/kiosk/ambassador/page.tsx'];
+
+describe('PC-56 OPS-1c · the claims guard (ops1. scope, the kiosk)', () => {
+  it('each guard is proven on its own canon phrase; each affirmative guard lets its negated form through', () => {
+    for (const [name, hit, canon, negated] of GUARDS_1C) {
+      expect([name, hit(canon)]).toEqual([name, true]);
+      if (negated) expect([name, 'negated', hit(negated)]).toEqual([name, 'negated', false]);
+    }
+    for (const [re, phrase] of BRAND_1C) expect([String(re), re.test(phrase)]).toEqual([String(re), true]);
+  });
+  it.each(Object.entries(CATS))('%s: no ops1. value (or kiosk nav label) trips a 1c guard or brand regex', (_lang, cat) => {
+    for (const [k, v] of scoped(cat)) {
+      for (const [name, hit] of GUARDS_1C) expect([k, name, hit(v)]).toEqual([k, name, false]);
+      for (const [re] of BRAND_1C) expect([k, String(re), re.test(v)]).toEqual([k, String(re), false]);
+    }
+  });
+  it('the founder\'s kiosk sentences are PINNED verbatim (Q4-A′, Q9-A, Q11-A, the chain\'s three states)', () => {
+    expect(en['ops1.kiosk.summary.pay']).toBe('Creating your account at this desk pays the helper nothing, and you pay nothing.');
+    expect(en['ops1.kiosk.reason.exists']).toBe('This number already has an account. She signs in herself, on her own phone.');
+    expect(en['ops1.kiosk.summary.helpline']).toBe('Your organisation\'s helpline is not published yet.');
+    expect(en['ops1.kiosk.summary.undo']).toBe('Nothing done here can be undone from this desk. She manages her own account and data in her own sign-in.');
+    expect(en['ops1.kiosk.summary.did']).toMatch(/^What this desk did: an account was created for this number/);
+    expect(en['ops1.chain.kioskAct.confirm.title']).toBe('Create an account for this number');
+    expect(en['ops1.chain.kioskAct.success.title']).toBe('An account exists for this number; she signs in on her own phone');
+    expect(en['ops1.chain.kioskAct.failure.title']).toBe('Nothing was created');
+    // Q4-A′: no amount anywhere in the summary, in any language (no digit at all), and "nothing" said for both people
+    for (const cat of [en, hi, gu]) for (const k of ['ops1.kiosk.summary.pay', 'ops1.kiosk.summary.did', 'ops1.kiosk.summary.helpline', 'ops1.kiosk.summary.undo']) expect([k, /\d|₹/.test(cat[k])]).toEqual([k, false]);
+    expect([/कुछ नहीं/.test(hi['ops1.kiosk.summary.pay']), /કંઈ/.test(gu['ops1.kiosk.summary.pay'])]).toEqual([true, true]);
+    // Q10-A: the link text says what happens
+    expect(en['ops1.kiosk.step.start']).toBe('Create an account for a new number');
+  });
+  it('brand guard over every new ops1c source (pages, actions, views, helpers)', () => {
+    for (const rel of SOURCES_1C) {
+      const src = fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
+      for (const [re] of [...BRAND_1A.filter(([r]) => !String(r).includes('₹')), ...BRAND_1B, ...BRAND_1C]) expect([rel, String(re), re.test(src)]).toEqual([rel, String(re), false]);
+    }
+  });
+});
 
 describe('PC-56 OPS-1b · the claims guard (ops1. scope, AePS and biometrics)', () => {
   it('each guard is proven on its own canon phrase; each affirmative guard lets its negated form through', () => {

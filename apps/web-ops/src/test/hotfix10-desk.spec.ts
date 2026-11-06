@@ -28,22 +28,30 @@ describe('HOTFIX-10 · H10-1 · the kiosk outcome', () => {
     expect(kioskCreateOutcome({ ok: false })).toBe('create');
   });
 
-  it('the server action routes every answer through kioskCreateOutcome and prints "created" only after the call resolved', () => {
-    const src = code(read('app/kiosk/actions.ts'));
-    expect(src).toMatch(/kioskCreateOutcome\(\{ ok: true \}\)/);
-    expect(src).toMatch(/kioskCreateOutcome\(e instanceof SdkError \? \{ ok: false, status: e\.status, code: e\.code \}/);
+  // NAMED UPDATE (PC-56 OPS-1c): the create act MOVED from app/kiosk/actions.ts (deleted; `/kiosk` now answers a 307 to /kiosk/home) to the W381
+  // page's own action, app/kiosk/session-start/actions.ts, and its outcome is the kiosk chain (`?act=success` / `?act=failure&reason=…`). The
+  // same pins, on the new home — unweakened: "exists" only through kioskCreateOutcome's 409 USER_PHONE_ALREADY_REGISTERED rule (now via
+  // kioskFailureReason, which delegates to it), and success only after the call resolved.
+  it('the server action routes every failure through kioskFailureReason (→ kioskCreateOutcome) and reports success only after the call resolved', () => {
+    const src = code(read('app/kiosk/session-start/actions.ts'));
+    expect(src).toMatch(/failure\(e instanceof SdkError \? kioskFailureReason\(e\.status, e\.code\) : 'create'\)/);
+    expect(code(read('features/ops1/kiosk.ts'))).toMatch(/kioskCreateOutcome\(\{ ok: false, status, code: code \?\? undefined \}\) === 'exists'\) return 'exists'/);
     expect(src).not.toMatch(/status === 409 \? 'exists'/);                                               // the old any-409 mapping is gone
-    expect(src.indexOf("if (outcome !== 'created') redirect")).toBeLessThan(src.indexOf("redirect('/kiosk?ok=created')"));
+    expect(src.indexOf('await opsClient().users.create(')).toBeLessThan(src.indexOf('?act=success'));
+    expect(src).not.toMatch(/kiosk\?ok=created/);
   });
 
+  // NAMED UPDATE (PC-56 OPS-1c): the sentence moved from `kiosk.error.exists` (deleted with the OW-1 keys) to `ops1.kiosk.reason.exists`,
+  // printed on the W3331 failure state. Same words, same pins.
   it('the 409 sentence ×3 says only that the number has an account and that she signs in herself — no "step", no person', () => {
-    expect(en['kiosk.error.exists']).toBe('This number already has an account. She signs in herself, on her own phone.');
+    expect(en['ops1.kiosk.reason.exists']).toBe('This number already has an account. She signs in herself, on her own phone.');
     for (const cat of [en, hi, gu]) {
-      expect(cat['kiosk.error.exists']).toBeTruthy();
-      expect(cat['kiosk.error.exists']).not.toMatch(/\{|\d/);                                             // no placeholder, no digit
+      expect(cat['ops1.kiosk.reason.exists']).toBeTruthy();
+      expect(cat['ops1.kiosk.reason.exists']).not.toMatch(/\{|\d/);                                             // no placeholder, no digit
     }
-    expect(hi['kiosk.error.exists']).not.toBe(en['kiosk.error.exists']);
-    expect(gu['kiosk.error.exists']).not.toBe(en['kiosk.error.exists']);
+    expect(hi['ops1.kiosk.reason.exists']).not.toBe(en['ops1.kiosk.reason.exists']);
+    expect(gu['ops1.kiosk.reason.exists']).not.toBe(en['ops1.kiosk.reason.exists']);
+    expect(en['kiosk.error.exists']).toBeUndefined();
   });
 });
 

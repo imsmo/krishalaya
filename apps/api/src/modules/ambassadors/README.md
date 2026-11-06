@@ -59,6 +59,16 @@ disbursement; tier auto-promotion; `sale_trail` loyalty tier after N sales (only
 > Since OPS-1b (founder Q7-A) a record carries **no Aadhaar digit and no customer account link**: a body naming either field is refused
 > by name (400 `AEPS_AADHAAR_NOT_RECORDED` / `AEPS_CUSTOMER_LINK_NOT_RECORDED`), and the reads return neither. What stays deferred is a
 > real AePS service (a bank or BC provider, a device, NPCI). This platform moves no AePS money.
+>
+> **Correction (PC-56 OPS-1c, survey OPS-1 F-9 / OPS1-B7).** "kiosk operations" above is stale in part, and the profile's two kiosk facts
+> were read by no gate. Since OPS-1c, **assisted onboarding** (`POST /v1/ambassadors/assisted-onboarding`) and **both on-behalf listing paths**
+> (`POST /v1/ambassadors/on-behalf/listings`, `…/suggest`) are made only by an active ambassador whose profile has `kiosk_enabled = true` AND a
+> recorded `training_completed_at`. Otherwise 403 `AMBASSADOR_KIOSK_NOT_ENABLED` / `AMBASSADOR_TRAINING_INCOMPLETE`, by name, after the
+> `is_active` check and before anything is written (`domain/ambassadors.errors.ts` `assertKioskGate`). No column and no migration. The two
+> facts stay independent: nothing switches kiosk mode on when training is recorded. Also since OPS-1c (founder Q8-A), no route records an
+> `on_behalf_*` consent with a helper named on it (identity `ConsentHelperNotRecordedError`, 422 `CONSENT_HELPER_NOT_RECORDED`), so the
+> on-behalf listing gate cannot be satisfied until a farmer-confirmed consent (OPS1-B3) exists. What stays deferred: an assisted session
+> (OPS1-B4), assisted eKYC (OPS1-B5), the 60-day inactivity job and tier criteria (OPS1-B19).
 
 ## Tests
 

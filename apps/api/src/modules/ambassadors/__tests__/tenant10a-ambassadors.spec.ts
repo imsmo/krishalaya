@@ -170,7 +170,9 @@ describe('F-4 · assisted onboarding refuses an existing phone BEFORE any consen
     const users = { adminCreate: jest.fn(async () => ({ id: 'farmer-new' })) };
     const consents = { grant: jest.fn() };
     const referrals = { findByReferee: jest.fn(async () => null), insert: jest.fn() };
-    const me = AmbassadorProfile.rehydrate({ id: 'amb1', userId: 'ambUser', tenantId: 't', clusterRegionIds: [], tierId: null, mentorAmbassadorId: null, trainingCompletedAt: null, kioskEnabled: true, aepsEnabled: false, monthlyStipendMinor: 0n, lastActivityAt: null, isActive: true });
+    // NAMED UPDATE (PC-56 OPS-1c · OPS1-B7): training recorded complete (kiosk mode already ON) — B7 now refuses an untrained ambassador by name
+    // before the phone check, which would otherwise answer these F-4 cases instead. B7 is pinned in ops1c-kiosk-gate.spec.ts.
+    const me = AmbassadorProfile.rehydrate({ id: 'amb1', userId: 'ambUser', tenantId: 't', clusterRegionIds: [], tierId: null, mentorAmbassadorId: null, trainingCompletedAt: new Date('2026-10-01T00:00:00Z'), kioskEnabled: true, aepsEnabled: false, monthlyStipendMinor: 0n, lastActivityAt: null, isActive: true });
     const profiles = { findByUser: jest.fn(async () => me), touchActivity: jest.fn(async () => 1) };
     const svc = new AssistedOnboardingService(uow as never, { write: jest.fn() } as never, { remember: jest.fn(async (_k: string, _u: string, _e: string, fn: any) => fn()) } as never,
       { inc: jest.fn(), observe: jest.fn() } as never, users as never, consents as never, referrals as never, profiles as never);

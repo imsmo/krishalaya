@@ -148,3 +148,18 @@ export class KycDeskRefusedError extends DomainError {
 export class KycDeskRestrictedError extends DomainError {
   constructor() { super('KYC_DESK_RESTRICTED', 'the KYC desk needs kyc.review or kyc.manage', 403); }
 }
+
+/** PC-56 OPS-1c · founder Q8-A (2026-11-05) — the consent route's half of HOTFIX-10's H10-3. A consent that lets a HELPER act for a person
+ *  (`on_behalf_listing`, or any `on_behalf_*` purpose) recorded WITH a helper named on it (`assistedBy`) is exactly the grant the ambassador
+ *  on-behalf listing gate accepts (`isGranted(..., assistedBy = this ambassador)`). A desk-recorded consent counts only after her own OTP, and
+ *  no OTP-bound consent exists yet — so this pairing is refused BY NAME, 422, before anything is written, on every route that records a
+ *  consent (`POST /v1/consents` and assisted onboarding both reach `ConsentService.grant`). The same purpose WITHOUT a helper named stays hers
+ *  to give in her own sign-in (the tenant staff listing desk's gate, W125, reads it without `assistedBy`). */
+export const CONSENT_HELPER_NOT_RECORDED_SENTENCE = 'A consent that lets a helper act for her is not recorded with a helper named on it. She gives it herself, in her own sign-in, without naming a helper. Nothing was recorded.';
+export class ConsentHelperNotRecordedError extends DomainError {
+  constructor(purposeCode: string) { super('CONSENT_HELPER_NOT_RECORDED', CONSENT_HELPER_NOT_RECORDED_SENTENCE, 422, { purposeCode }); }
+}
+/** PURE: is this consent an on-behalf purpose with a helper named? (case- and space-insensitive purpose; any non-empty `assistedBy`). */
+export function namesHelperOnBehalf(dto: { purposeCode: string; assistedBy?: string | null }): boolean {
+  return dto.purposeCode.trim().toLowerCase().startsWith('on_behalf') && typeof dto.assistedBy === 'string' && dto.assistedBy.length > 0;
+}

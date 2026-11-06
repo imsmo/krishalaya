@@ -49,6 +49,9 @@ const nextConfig = {
     return [
       { source: '/money', destination: '/aeps/withdrawal', permanent: false },
       { source: '/money/oversight', destination: '/aeps/exceptions?view=all', permanent: false },
+      // PC-56 OPS-1c (survey E2): the OW-1 kiosk address → the canon's `kiosk/home` (W380). Mirrors OPS1C_REDIRECTS in src/features/ops1/kiosk.ts
+      // (pinned equal by src/test/ops1c-pages.spec.ts).
+      { source: '/kiosk', destination: '/kiosk/home', permanent: false },
     ];
   },
   async headers() {

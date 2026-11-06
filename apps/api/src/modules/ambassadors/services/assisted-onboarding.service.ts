@@ -28,7 +28,7 @@ import { DomainEvent } from '../domain/ambassadors.events';
 import { ReferralRepository } from '../repositories/referral.repository';
 import { AmbassadorProfileRepository } from '../repositories/ambassador-profile.repository';
 import { AmbassadorActor } from './ambassador-profile.service';
-import { NotAnAmbassadorError, ConsentRequiredError, AssistedOnboardingExistingUserError, AssistedConsentNotGrantableError } from '../domain/ambassadors.errors';
+import { NotAnAmbassadorError, ConsentRequiredError, AssistedOnboardingExistingUserError, AssistedConsentNotGrantableError, assertKioskGate } from '../domain/ambassadors.errors';
 import { UserPhoneAlreadyRegisteredError } from '../../identity/domain/identity.errors';
 import { normalizePhoneE164 } from '../../../shared/utils/phone';
 import { AssistedOnboardingDto } from '../dto/assisted-onboarding.dto';
@@ -64,6 +64,8 @@ export class AssistedOnboardingService {
     if (!dto.consents.some((c) => c.granted)) throw new ConsentRequiredError();   // DPDP: no consent → no account
     const me = await this.profiles.findByUser(tenantId, actor.userId);
     if (!me || !me.toProps().isActive) throw new NotAnAmbassadorError();
+    // PC-56 OPS-1c · OPS1-B7 (survey F-9): kiosk mode ON and training RECORDED, or refused by name (403) — after the active check, before any write.
+    assertKioskGate(me.toProps());
     const ambassadorUserId = me.toProps().userId;
 
     return this.idem.remember(idemKey, actor.userId, 'ambassadors.assisted_onboard', () =>
