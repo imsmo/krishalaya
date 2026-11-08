@@ -180,8 +180,9 @@ export default async function DairyPosPage({ searchParams }: { searchParams: { o
           rows={rates}
           empty={t.t('dairy.ratesEmpty')}
           columns={[
-            { header: t.t('dairy.rateCard'), cell: (r) => (r as { defaultName?: string; id: string }).defaultName ?? r.id.slice(0, 8) },
-            { header: t.t('dairy.animal'), cell: (r) => (r as { animalType?: string }).animalType ?? t.t('common.dash') },
+            // PC-56 OPS-3c · OPS3-B17 (E13): the SDK `DairyRateCard` carries every `toJSON` field, so the casts are gone. The full read is `/rates`.
+            { header: t.t('dairy.rateCard'), cell: (r) => r.defaultName },
+            { header: t.t('dairy.animal'), cell: (r) => r.animalType },
           ]}
         />
       )}

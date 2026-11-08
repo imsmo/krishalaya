@@ -160,16 +160,20 @@ INSERT INTO notification_events (code, default_name, priority, default_channels,
  ('dairy.bill_dispute_resolved', 'Milk bill query answered', 'important', '["sms","push","inapp"]', false, false)
 ON CONFLICT (code) DO NOTHING;
 
+-- [PC-56 OPS-3c · founder Q8-A, 2026-11-08 — "per kg of milk, on every console"; lead decision 2026-11-09: member notices too] The bill's
+-- quantity is the SUM OF WEIGHED KILOGRAMS (`milk-bill.entity.ts`: total_litres = Σ weight_kg), so these nine say "kg" / "કિગ્રા", never
+-- "L" / "લિટર". COPY ONLY: the variable keeps its name `{{litres}}` (it carries kilograms), no amount or rule changed. ON CONFLICT DO NOTHING
+-- below means a database that already holds these rows keeps the old words — see the OPS-3c report (§8) for what a deployed one needs.
 INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
- ('dairy.bill_previewed','sms','gu',NULL,NULL,'{{period}} નું તમારું દૂધ બિલ: {{litres}} લિટર, કપાત {{deductions}} પછી ચોખ્ખા {{net}}. {{window_ends}} પહેલાં તપાસી લો — કંઈ ખોટું લાગે તો તમારા કેન્દ્રને જણાવો. Krishalaya','DLT_DAIRY_BILL_PREVIEW_GU',true),
- ('dairy.bill_previewed','sms','hi',NULL,NULL,'{{period}} ka aapka doodh bill: {{litres}} L, {{deductions}} katauti ke baad net {{net}}. {{window_ends}} se pehle jaanch lein — kuch galat lage to apne kendra ko batayein. Krishalaya','DLT_DAIRY_BILL_PREVIEW_HI',true),
- ('dairy.bill_previewed','sms','en',NULL,NULL,'Your milk bill for {{period}}: {{litres}} L, net {{net}} after {{deductions}} of deductions. Check it before {{window_ends}} — tell your centre if anything is wrong. Krishalaya','DLT_DAIRY_BILL_PREVIEW_EN',true),
- ('dairy.bill_previewed','push','en',NULL,'Milk bill ready to check','{{period}}: {{litres}} L, net {{net}}. You have until {{window_ends}} to raise anything.',NULL,true),
- ('dairy.bill_previewed','push','hi',NULL,'Doodh bill jaanch lein','{{period}}: {{litres}} L, net {{net}}. {{window_ends}} tak kuch bhi bata sakte hain.',NULL,true),
- ('dairy.bill_previewed','push','gu',NULL,'દૂધ બિલ તપાસી લો','{{period}}: {{litres}} લિટર, ચોખ્ખા {{net}}. {{window_ends}} સુધી કંઈ પણ જણાવી શકો છો.',NULL,true),
- ('dairy.bill_previewed','inapp','en',NULL,'Milk bill ready to check','Your bill for {{period}} is {{litres}} L, net {{net}} after {{deductions}} of deductions. Every pour and every deduction is itemised. If something looks wrong, raise it before {{window_ends}} — the payment waits for your window to close.',NULL,true),
- ('dairy.bill_previewed','inapp','hi',NULL,'Doodh bill jaanch lein','{{period}} ka bill: {{litres}} L, {{deductions}} katauti ke baad net {{net}}. Har pour aur har katauti alag-alag dikhayi gayi hai. Kuch galat lage to {{window_ends}} se pehle batayein — bhugtan aapki window band hone tak rukta hai.',NULL,true),
- ('dairy.bill_previewed','inapp','gu',NULL,'દૂધ બિલ તપાસી લો','{{period}} નું બિલ: {{litres}} લિટર, {{deductions}} કપાત પછી ચોખ્ખા {{net}}. દરેક પોર અને દરેક કપાત અલગ દર્શાવી છે. કંઈ ખોટું લાગે તો {{window_ends}} પહેલાં જણાવો — તમારી વિન્ડો બંધ થાય ત્યાં સુધી પેમેન્ટ રોકાય છે.',NULL,true),
+ ('dairy.bill_previewed','sms','gu',NULL,NULL,'{{period}} નું તમારું દૂધ બિલ: {{litres}} કિગ્રા, કપાત {{deductions}} પછી ચોખ્ખા {{net}}. {{window_ends}} પહેલાં તપાસી લો — કંઈ ખોટું લાગે તો તમારા કેન્દ્રને જણાવો. Krishalaya','DLT_DAIRY_BILL_PREVIEW_GU',true),
+ ('dairy.bill_previewed','sms','hi',NULL,NULL,'{{period}} ka aapka doodh bill: {{litres}} kg, {{deductions}} katauti ke baad net {{net}}. {{window_ends}} se pehle jaanch lein — kuch galat lage to apne kendra ko batayein. Krishalaya','DLT_DAIRY_BILL_PREVIEW_HI',true),
+ ('dairy.bill_previewed','sms','en',NULL,NULL,'Your milk bill for {{period}}: {{litres}} kg, net {{net}} after {{deductions}} of deductions. Check it before {{window_ends}} — tell your centre if anything is wrong. Krishalaya','DLT_DAIRY_BILL_PREVIEW_EN',true),
+ ('dairy.bill_previewed','push','en',NULL,'Milk bill ready to check','{{period}}: {{litres}} kg, net {{net}}. You have until {{window_ends}} to raise anything.',NULL,true),
+ ('dairy.bill_previewed','push','hi',NULL,'Doodh bill jaanch lein','{{period}}: {{litres}} kg, net {{net}}. {{window_ends}} tak kuch bhi bata sakte hain.',NULL,true),
+ ('dairy.bill_previewed','push','gu',NULL,'દૂધ બિલ તપાસી લો','{{period}}: {{litres}} કિગ્રા, ચોખ્ખા {{net}}. {{window_ends}} સુધી કંઈ પણ જણાવી શકો છો.',NULL,true),
+ ('dairy.bill_previewed','inapp','en',NULL,'Milk bill ready to check','Your bill for {{period}} is {{litres}} kg, net {{net}} after {{deductions}} of deductions. Every pour and every deduction is itemised. If something looks wrong, raise it before {{window_ends}} — the payment waits for your window to close.',NULL,true),
+ ('dairy.bill_previewed','inapp','hi',NULL,'Doodh bill jaanch lein','{{period}} ka bill: {{litres}} kg, {{deductions}} katauti ke baad net {{net}}. Har pour aur har katauti alag-alag dikhayi gayi hai. Kuch galat lage to {{window_ends}} se pehle batayein — bhugtan aapki window band hone tak rukta hai.',NULL,true),
+ ('dairy.bill_previewed','inapp','gu',NULL,'દૂધ બિલ તપાસી લો','{{period}} નું બિલ: {{litres}} કિગ્રા, {{deductions}} કપાત પછી ચોખ્ખા {{net}}. દરેક પોર અને દરેક કપાત અલગ દર્શાવી છે. કંઈ ખોટું લાગે તો {{window_ends}} પહેલાં જણાવો — તમારી વિન્ડો બંધ થાય ત્યાં સુધી પેમેન્ટ રોકાય છે.',NULL,true),
  ('dairy.bill_dispute_resolved','sms','gu',NULL,NULL,'{{period}} ના બિલ વિશે તમારી ફરિયાદ પૂરી થઈ: {{outcome}}. {{note}} પ્રશ્ન હોય તો તમારા MCC સેક્રેટરીને મળો. Krishalaya','DLT_DAIRY_BILL_DISPUTE_GU',true),
  ('dairy.bill_dispute_resolved','sms','hi',NULL,NULL,'{{period}} ke bill par aapki shikayat poori hui: {{outcome}}. {{note}} Sawaal ho to apne MCC secretary se milein. Krishalaya','DLT_DAIRY_BILL_DISPUTE_HI',true),
  ('dairy.bill_dispute_resolved','sms','en',NULL,NULL,'Your query on the {{period}} bill is closed: {{outcome}}. {{note}} Speak to your MCC secretary if you have questions. Krishalaya','DLT_DAIRY_BILL_DISPUTE_EN',true),
@@ -187,6 +191,7 @@ INSERT INTO notification_templates (event_code, channel, language_code, tenant_i
 -- what stays idempotent against BOTH indexes.
 ON CONFLICT DO NOTHING;
 
+-- [PC-56 OPS-3c · Q8-A] `litres` below CARRIES KILOGRAMS (milk_bills.total_litres = Σ weighed kg); the name is kept, the templates say kg.
 INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
  ('dairy.bill_previewed',        'period',      'milk_bills.period_start..period_end', '01-15 Jul',  true),
  ('dairy.bill_previewed',        'litres',      'milk_bills.total_litres',             '204.526',    true),

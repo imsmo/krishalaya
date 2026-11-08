@@ -1883,10 +1883,19 @@ export interface DairyMembership {
 /** A milk rate card. Rates are bigint minor-unit strings (Law 2). */
 export interface DairyRateCard {
   id: string; defaultName: string; animalType: DairyAnimalType; pricingModel: DairyPricingModel;
-  ratePerKgFatMinor: string | null; ratePerKgSnfMinor: string | null; baseRatePerLitreMinor: string | null;
+  ratePerKgFatMinor: string | null; ratePerKgSnfMinor: string | null;
+  /**
+   * [PC-56 OPS-3c · founder Q8-A, 2026-11-08] NAMED per litre, APPLIED PER KILOGRAM OF MILK: the engine multiplies it by the weighed
+   * kilograms (`milk-rate-card.entity.ts` priceMinor, weightMilliKg / 1000). The field name is the API's and is not changed; every label
+   * calls it "per kg of milk". Whether a cooperative means kg or litre, and any density factor, is the money wave's (Q8-A).
+   */
+  baseRatePerLitreMinor: string | null;
   effectiveFrom: string; effectiveTo: string | null; isActive: boolean;
-  /** [PC-56 HOTFIX-12] The premium slabs the card promises (paid only behind `dairy_bonus_slabs`). */
-  bonusSlabs?: DairyBonusSlab[];
+  /**
+   * [PC-56 HOTFIX-12] The premium slabs the card promises (paid only behind `dairy_bonus_slabs`).
+   * [PC-56 OPS-3c · OPS3-B17 / E13] REQUIRED: `toJSON` always sends the array (empty when the card promises none).
+   */
+  bonusSlabs: DairyBonusSlab[];
   /**
    * [PC-56 HOTFIX-12 · founder Q1-A] Only an approved card prices a pour. `approved_before_rule` = the card existed when the
    * second-person rule shipped and keeps pricing (Q1-sub). `approvedAt` is null while awaiting a second person.
@@ -2089,8 +2098,10 @@ export interface DairyQualityDesk {
  *  (6.5% → 650) and `bonusMinorPerLitre` is minor units per litre (₹0.50 → 50), because a decimal here would put a
  *  float on the pricing path. `milk_rate_cards.bonus_rules` held tenant data from 0007 and was read by NOTHING until
  *  PC-56 TENANT-6b-1, so the premium band W168 advertises to 184 of 312 pourers had never been paid. */
+/*  [PC-56 OPS-3c · founder Q8-A] `bonusMinorPerLitre` is NAMED per litre and APPLIED PER KILOGRAM OF MILK (`bonusMinor` multiplies by
+ *  weightMilliKg / 1000); the name is the API's and is kept, every label says "per kg of milk". */
 export interface DairyBonusSlab { metric: 'fat' | 'snf'; minCentiPct: number; bonusMinorPerLitre: number }
-/** A per-cycle milk settlement bill. All money bigint minor strings; totalLitres is a 3-dp string. */
+/** A per-cycle milk settlement bill. All money bigint minor strings; totalLitres is a 3-dp string — [PC-56 OPS-3c · Q8-A] the SUM OF WEIGHED KILOGRAMS (`milk-bill.entity.ts`), named litres by the API; labelled kg on every console. */
 export interface MilkBill {
   id: string; membershipId: string; periodStart: string; periodEnd: string; totalLitres: string;
   grossMinor: string;

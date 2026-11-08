@@ -50,7 +50,7 @@ export default function Centre() {
             <Text style={styles.value}>{mcc.code}</Text>
             <StatusPill label={mcc.isActive ? t('mcc.centre.open') : t('mcc.centre.closed')} tone={mcc.isActive ? 'success' : 'danger'} />
           </View>
-          {fact(t('mcc.centre.capacity'), mcc.capacityLitresShift ? `${mcc.capacityLitresShift} ${t('dairyapp.bills.litres')}` : null)}
+          {fact(t('mcc.centre.capacity'), mcc.capacityLitresShift ? `${mcc.capacityLitresShift} ${t('mcc.centre.capacityLitres')}` : null)}
         </Card>
         <Text style={styles.section}>{t('mcc.day.title', { date })}</Text>
         {sheet.length === 0 ? <Text style={styles.muted}>{t('mcc.day.empty')}</Text> : sheet.map((row) => (

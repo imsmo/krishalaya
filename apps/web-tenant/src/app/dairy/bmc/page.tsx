@@ -141,7 +141,7 @@ export default async function DairyBmcPage({ searchParams }: {
                   {t.t('dairy.bmc.tile.band')} {u.band.minC}–{u.band.maxC}°C ({t.t('dairy.bmc.tile.target')} {u.band.targetC})
                 </span>
                 <span className="kv-field__hint">
-                  {u.capacityLitres} {t.t('dairy.litres')} {t.t('dairy.bmc.tile.capacity')}
+                  {u.capacityLitres} {t.t('dairy.unit.litres')} {t.t('dairy.bmc.tile.capacity')}
                   {fillText(u) ? <> · {formatNumber(fillText(u)!.pct, lang)}% {t.t('dairy.bmc.tile.full')}</> : <> · {t.t('dairy.bmc.tile.levelUnknown')}</>}
                 </span>
                 <span className={TONE[compressorTone(u)]}>{t.t(compressorKey(u))}</span>

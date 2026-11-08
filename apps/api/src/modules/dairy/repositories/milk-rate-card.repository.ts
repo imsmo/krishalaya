@@ -66,7 +66,8 @@ export class MilkRateCardRepository {
     const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
     if (q.animalType) where += ` AND animal_type=${p(q.animalType)}`;
     // [PC-56 HOTFIX-12] "active" means PRICING: an unapproved card is not active (members read this list on the mobile
-    // rates page). The console asks with activeOnly=false and sees every card with its approval state.
+    // rates page). [PC-56 OPS-3c] activeOnly=false — every card with its approval state — reaches here ONLY for a `dairy.manage`
+    // holder (MilkRateCardService.list); until OPS-3c the query read "false" as true, so the console never actually got it.
     if (q.activeOnly) where += ` AND is_active=true AND approved_at IS NOT NULL`;
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM milk_rate_cards WHERE ${where} ORDER BY effective_from DESC, id DESC LIMIT 200`, params);
     return r.rows.map(toDomain);

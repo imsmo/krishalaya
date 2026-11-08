@@ -146,7 +146,7 @@ export default async function DairyCentresPage({ searchParams }: {
 
                 <span className="kv-field__hint">
                   {c.capacityLitresShift
-                    ? <>{c.capacityLitresShift} {t.t('dairy.litres')} {t.t('dairy.centres.row.perShift')}</>
+                    ? <>{c.capacityLitresShift} {t.t('dairy.unit.litres')} {t.t('dairy.centres.row.perShift')}</>
                     : t.t('dairy.centres.row.capacityUnknown')}
                 </span>
 

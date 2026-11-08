@@ -38,7 +38,8 @@ describe('PC-56 OPS-2a · E2 · the 307, the old page, the sidebar', () => {
     const wh = hrefs.filter((h) => h.startsWith('/warehouse'));
     expect(wh).toEqual(['/warehouse/dashboard', '/warehouse/weighbridge', '/warehouse/assay', '/warehouse/stacking', '/warehouse/enwr/issue', '/warehouse/enwr/registry',
       '/warehouse/withdrawal', '/warehouse/billing', '/warehouse/insights']);
-    expect(Array.from(nav.matchAll(/group: '([^']+)'/g)).map((m) => m[1])).toEqual(['nav.whGroupIntake', 'nav.whGroupReceipts', 'nav.whGroupMoney']);
+    // NAMED UPDATE (PC-56 OPS-3c): the Dairy group joins AFTER the three warehouse groups (/dairy · /payout · /rates); the warehouse order is unchanged.
+    expect(Array.from(nav.matchAll(/group: '([^']+)'/g)).map((m) => m[1])).toEqual(['nav.whGroupIntake', 'nav.whGroupReceipts', 'nav.whGroupMoney', 'nav.dairyGroup']);
     expect(/https?:\/\//.test(code(nav))).toBe(false);   // no cross-app link
   });
 });

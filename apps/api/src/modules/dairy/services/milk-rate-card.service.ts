@@ -163,5 +163,15 @@ export class MilkRateCardService {
   }
 
   async getById(tenantId: string, id: string, viewerId?: string) { const c = await this.repo.getById(tenantId, id); if (!c) throw new RateCardNotFoundError(id); return this.view(c, viewerId); }
-  async list(tenantId: string, q: { animalType?: string; activeOnly: boolean }, viewerId?: string) { return (await this.repo.listFor(tenantId, q)).map((c) => this.view(c, viewerId)); }
+  /**
+   * [PC-56 OPS-3c · lead decision 2026-11-09] THE CONSERVATIVE TRUST RULE. This read is open to every member of the organisation (the
+   * mobile rates page), so a caller WITHOUT `dairy.manage` always gets the approved-and-active cards only, WHATEVER `activeOnly` says — a
+   * card awaiting a second person is never shown to an ordinary member. Only a `dairy.manage` holder asking `activeOnly=false` gets every
+   * card with its approval state (the organisation's console, where the second person approves). Refusing direction: a missing or false
+   * `canManage` narrows, never widens.
+   */
+  async list(tenantId: string, q: { animalType?: string; activeOnly: boolean }, viewerId?: string, canManage = false) {
+    const activeOnly = q.activeOnly || canManage !== true;
+    return (await this.repo.listFor(tenantId, { animalType: q.animalType, activeOnly })).map((c) => this.view(c, viewerId));
+  }
 }

@@ -20,6 +20,10 @@ division. No IEEE float ever touches a money value. Models: `two_axis` (fat + sn
 `snf_pooled`, plus an optional flat `base_rate_per_litre` and the `bonus_rules` premium slabs (read since TENANT-6b-1,
 paid only behind `dairy_bonus_slabs`). **Per kg, though named per litre:** the base rate and the premium are multiplied
 by the weighed kilograms, not a measured litre (survey OPS-3 C-10; the unit is founder Q8). No pricing changed in HOTFIX-12.
+**Labelled per kg (PC-56 OPS-3c, founder Q8-A, 2026-11-08):** every console (web-ops, web-tenant, mobile) now says "per kg of milk" /
+"kg" for these. The API names are KEPT — `base_rate_per_litre(_minor)`, `bonusMinorPerLitre`, `milk_bills.total_litres` (a sum of
+weighed kilograms), the read models' `litres` fields (kilograms) — and each is applied or summed PER KILOGRAM. No pricing, field or
+stored value changed; whether a cooperative means kg or litre, and any density factor, is the money wave's.
 
 ## Rate cards — a second person and a record (PC-56 HOTFIX-12, founder Q1-A + Q1-sub, migration 0234)
 There is **no version column** (0009 said "versioned"; it never was). A card is **created** by one `dairy.manage`

@@ -20,8 +20,10 @@ const NAV: ReadonlyArray<{ href: string; labelKey: string; sub?: boolean; group?
   { href: '/warehouse/billing', labelKey: 'nav.whBilling', sub: true, group: 'nav.whGroupMoney' }, // PC-56 OPS-2c · W378 (the rate on file; nothing is billed)
   { href: '/warehouse/insights', labelKey: 'nav.whInsights', sub: true }, // PC-56 OPS-2c · W379 (honest; reads nothing)
   { href: '/equipment', labelKey: 'nav.equipment' }, // OW-3
-  { href: '/dairy', labelKey: 'nav.dairy' }, // OW-4
+  // PC-56 OPS-3c (survey E2): a Dairy group of BUILT routes only — the counter (`/pos/*`) and the cooler (`/bmc`) are not built and not linked.
+  { href: '/dairy', labelKey: 'nav.dairy', group: 'nav.dairyGroup' }, // OW-4
   { href: '/payout', labelKey: 'nav.payout', sub: true }, // PC-56 OPS-1a · W367 (the dairy section)
+  { href: '/rates', labelKey: 'nav.rates', sub: true }, // PC-56 OPS-3c · W368 (the approved milk rate cards; read only)
   { href: '/aeps/home', labelKey: 'nav.aeps' }, // PC-56 OPS-1b · W390 (OW-5's `/money` answers a 307 to /aeps/withdrawal)
   { href: '/aeps/withdrawal', labelKey: 'nav.aepsRecord', sub: true }, // PC-56 OPS-1b · W391
   { href: '/aeps/exceptions', labelKey: 'nav.aepsExceptions', sub: true }, // PC-56 OPS-1b · W392

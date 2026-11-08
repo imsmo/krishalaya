@@ -39,7 +39,8 @@ export class RateCardsController {
   }
   @Get()
   list(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryRateCardsSchema) q: QueryRateCardsDto) {
-    return this.cards.list(ctx.tenantId, { animalType: q.animalType, activeOnly: q.activeOnly }, ctx.userId).then((data) => ({ data }));
+    // [PC-56 OPS-3c] whether the caller holds `dairy.manage` decides whether `activeOnly=false` widens the list (MilkRateCardService.list).
+    return this.cards.list(ctx.tenantId, { animalType: q.animalType, activeOnly: q.activeOnly }, ctx.userId, canManageDairy(ctx)).then((data) => ({ data }));
   }
   @Get(':id')
   get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.cards.getById(ctx.tenantId, id, ctx.userId).then((data) => ({ data })); }

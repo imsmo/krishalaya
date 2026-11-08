@@ -286,7 +286,7 @@ export default async function DairyQualityPage({ searchParams }: { searchParams:
                   <p className="kv-field__hint">
                     {c.slabs.length === 0
                       ? t.t('dairy.quality.card.noSlabs')
-                      : <>{t.t('dairy.rate.bonusSlab')} {c.slabs.map((s) => `${slabText(s)} → ${money(String(s.bonusMinorPerLitre))}/L`).join(' · ')}</>}
+                      : <>{t.t('dairy.rate.bonusSlab')} {c.slabs.map((s) => `${slabText(s)} → ${money(String(s.bonusMinorPerLitre))} ${t.t('dairy.rate.perKgMilk')}`).join(' · ')}</>}
                   </p>
                   <p className="kv-field__hint">
                     {t.t('dairy.rate.from')} {formatDate(c.effectiveFrom, lang)}

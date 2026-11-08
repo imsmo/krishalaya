@@ -428,3 +428,75 @@ describe('PC-56 OPS-1a · the claims guard (ops1. scope)', () => {
     }
   });
 });
+
+// ── PC-56 OPS-3c (brief §E6): THE PRICE guards over the `ops3.` scope and the two new nav labels. Each is proven on its own canon phrase (persons,
+// places, card numbers and figures anonymised) and NARROWED TO THE AFFIRMATIVE — a sentence that carries a negation passes, the canon's claim is
+// caught — and each affirmative guard is also proven to let its negated form through. The negation is read in all three languages here (an
+// `ops3.` refusal in Hindi or Gujarati says "SMS … नहीं" / "SMS … નથી"). The plain guards (zero-sum, on-call, ×, =, litre) never pass. The
+// change sentence is PINNED in every language, and a brand guard runs over the 3c sources.
+const NEG3 = /\b(not|no|never|nothing|none|cannot|nobody)\b|n't\b|नहीं|मत\b|કોઈ નહીં|નહીં|નથી/i;
+const affirmative3 = (re: RegExp) => (v: string) => sentences(v).some((x) => re.test(x) && !NEG3.test(x));
+const NAV_3C = ['nav.dairyGroup', 'nav.rates'];
+const scoped3 = (cat: Record<string, string>) => Object.entries(cat).filter(([k]) => k.startsWith('ops3.') || NAV_3C.includes(k));
+const GUARDS_3C: ReadonlyArray<[name: string, hit: (v: string) => boolean, canon: string, negated?: string]> = [
+  ['versioned (affirmative)', affirmative3(/versioned/i), 'v3 effective 01 Jul (versioned — every pour stores its rate_card_id, so old slips recompute forever)', 'Cards are not versioned.'],
+  // PLAIN: the canon's own version line carries "never", so the affirmative narrowing would let it through; no `ops3.` value names a version.
+  ['v<n> (plain)', plain(/\bv\d\b/i), 'v3 effective 01 Jul (versioned — every pour stores its rate_card_id)'],
+  ['never change quietly (plain)', plain(/never change quietly/i), 'Version history — rates never change quietly'],
+  ['announced … ahead (affirmative)', affirmative3(/announced .* ahead/i), 'Every change announced 7 days ahead on the counter poster, the app and SMS', 'No change is announced days ahead.'],
+  ['board minute (affirmative)', affirmative3(/board minute/i), 'Changing needs the tenant dairy desk + board minute reference — recorded.', 'No board minute is recorded with a card.'],
+  ['poster / A2, offered (affirmative)', affirmative3(/\bposter\b|\bA2\b/i), 'Print counter poster (A2, [lang])', 'Print counter poster: not available'],
+  ['ready-reckoner (affirmative)', affirmative3(/ready[- ]reckoner/i), 'Ready-reckoner — ₹ per kg of milk · fat% \\ SNF%', 'No ready-reckoner is shown.'],
+  ['recompute (affirmative)', affirmative3(/recompute/i), 'every pour stores its rate_card_id, so old slips recompute forever', 'Nothing is recomputed.'],
+  ['cached card (affirmative)', affirmative3(/cached card/i), 'POS keeps pricing from its cached card (the version is printed on every slip)', 'There is no cached card.'],
+  ['SMS (affirmative)', affirmative3(/\bSMS\b/), 'Every change announced 7 days ahead on the counter poster, the app and SMS', 'No SMS is sent about a rate card.'],
+  ['audit trail (affirmative)', affirmative3(/audit[- ]trail/i), 'The change is applied and the audit trail has the entry (actor · time · reason · before/after).', 'No audit trail is shown on this console.'],
+  ['zero-sum (plain)', plain(/zero-sum/i), 'Money-adjacent actions reconcile zero-sum before this page ever shows.'],
+  ['reconcil (plain)', plain(/reconcil/i), 'Money-adjacent actions reconcile zero-sum before this page ever shows.'],
+  ['on-call (plain)', plain(/on-call/i), 'repeated failures page the on-call.'],
+  ['per litre / L applied to milk (plain)', plain(/litre|liter|\/L\b|per L\b|₹\/L/i), 'Bonus slab: fat ≥ 6.5 → +₹0.50/L'],
+  ['× or = (plain)', plain(/[×=]/), '₹/kg = fat% × 6.80 + SNF% × 2.30'],
+  ['a rupee figure (plain)', plain(/₹\s?\d/), 'fat ₹680/kg-fat + SNF ₹230/kg-SNF'],
+  ['plan settings (plain)', plain(/plan settings/i), 'Nothing is broken — it is not enabled. See plan settings.'],
+  ['supervisor / witness / PIN (affirmative, Q14-A)', affirmative3(/supervisor|witness|\bPIN\b/i), 'Changing needs a supervisor PIN and a member-witness', 'No witness or PIN is asked for.'],
+];
+const BRAND_3C: ReadonlyArray<[RegExp, string]> = [
+  [/Vanthali/i, 'Vanthali MCC'], [/Anand/i, 'Anand FPO · dairy ops'], [/Jayaben/i, 'Operator: Jayaben S.'], [/Meera/i, 'exactly Meera Ben\'s slip'],
+  [/RC-20\d\d/, 'Rate card RC-2026-07'], [/VS-0713/, 'VS-0713-M-0188'], [/\b214\b/, '214 member pourers'], [/67\.17|60\.35|70\.12/, '= ₹67.17'],
+];
+const SOURCES_3C = ['components/ops3/RatesView.tsx', 'components/ops3/Ops3Chain.tsx', 'app/rates/page.tsx', 'features/ops3/rates.ts', 'features/ops3/refusals.ts', 'components/Sidebar.tsx'];
+
+describe('PC-56 OPS-3c · the claims guard (ops3. scope, the price)', () => {
+  it('each guard is proven on its own canon phrase; each affirmative guard lets its negated form through', () => {
+    for (const [name, hit, canon, negated] of GUARDS_3C) {
+      expect([name, hit(canon)]).toEqual([name, true]);
+      if (negated) expect([name, 'negated', hit(negated)]).toEqual([name, 'negated', false]);
+    }
+    for (const [re, phrase] of BRAND_3C) expect([String(re), re.test(phrase)]).toEqual([String(re), true]);
+    // the trilingual negation is itself proven: a Hindi / Gujarati refusal that names SMS passes, the bare claim does not
+    expect([affirmative3(/\bSMS\b/)('कोई SMS नहीं भेजा जाता।'), affirmative3(/\bSMS\b/)('કોઈ SMS મોકલાતો નથી.'), affirmative3(/\bSMS\b/)('SMS भेजा जाता है।')]).toEqual([false, false, true]);
+  });
+  it.each(Object.entries(CATS))('%s: no ops3. value (or 3c nav label) trips a 3c guard or brand regex', (_lang, cat) => {
+    expect(scoped3(cat).length).toBe(94);
+    for (const [k, v] of scoped3(cat)) {
+      for (const [name, hit] of GUARDS_3C) expect([k, name, hit(v)]).toEqual([k, name, false]);
+      for (const [re] of BRAND_3C) expect([k, String(re), re.test(v)]).toEqual([k, String(re), false]);
+    }
+  });
+  it('the change sentence is PINNED (only the clauses the code proves at merge), in every language', () => {
+    expect(en['ops3.rates.notHere']).toBe('Rates are changed on your organisation\'s dairy console, not here.');
+    expect([/यहाँ नहीं/.test(hi['ops3.rates.notHere']), /અહીં નહીં/.test(gu['ops3.rates.notHere'])]).toEqual([true, true]);
+    expect([/दूसरा व्यक्ति/.test(hi['ops3.rates.secondPerson']), /બીજી વ્યક્તિ/.test(gu['ops3.rates.secondPerson'])]).toEqual([true, true]);
+    expect([/कल/.test(hi['ops3.rates.tomorrow']), /આવતીકાલ/.test(gu['ops3.rates.tomorrow'])]).toEqual([true, true]);
+    expect([/अपनी भाषा/.test(hi['ops3.rates.told']), /પોતાની ભાષા/.test(gu['ops3.rates.told'])]).toEqual([true, true]);
+    // what is NOT built is never said: no notice period, no SMS, no version, no "quietly", no board
+    for (const cat of [en, hi, gu]) for (const k of ['ops3.rates.notHere', 'ops3.rates.secondPerson', 'ops3.rates.tomorrow', 'ops3.rates.recorded', 'ops3.rates.oneInForce', 'ops3.rates.told'])
+      expect([k, /SMS|quietly|version|board|7 days|\d/i.test(cat[k])]).toEqual([k, false]);
+  });
+  it('brand guard over every new or changed 3c source', () => {
+    for (const rel of SOURCES_3C) {
+      const src = fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
+      for (const [re] of BRAND_3C) expect([rel, String(re), re.test(src)]).toEqual([rel, String(re), false]);
+    }
+  });
+});
