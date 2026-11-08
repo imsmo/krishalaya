@@ -6,22 +6,27 @@
 import { HttpClient } from '../http';
 import { Page } from '../types';
 
-// PC-56 OPS-2c (survey F-9 / C-16, a minimal deviation recorded in the wave report): W378 reads the operator's OWN warehouses and their rate on
-// file, so `warehouses()` gains `box` and the type gains the fields the API's `toJSON` returns that W378 prints. The rest of the type drift and
-// the bookings / receipts `box` are OPS-2a's (OPS2-B7, E13).
+// PC-56 OPS-2a · OPS2-B7 / E13 (survey C-16, F-15): the types are ALIGNED WITH THE API's `toJSON` (`warehouse.entity.ts`, `storage-booking.entity.ts`).
+// `Warehouse` loses `regionId` / `capacity` / `capacityUnit` (never returned) and carries what is; `StorageBooking` loses `feeMinor`, `productName`,
+// `warehouseName` and `expectedArrival` (never returned — the old `/warehouse` page printed ids and "computed at release" forever). The API body also
+// carries a booking's `depositorUserId`; it is deliberately NOT in this type (founder Q9-A: no depositor id on any page), as `holderUserId` is not in
+// `NwrReceipt` (OPS-2b).
 export interface Warehouse {
-  id: string; defaultName: string; regionId?: string | null; capacity?: string | null; capacityUnit?: string | null; isActive?: boolean; createdAt?: string;
-  operatorUserId?: string | null; wdraRegNo?: string | null; capacityMt?: string | null;
+  id: string; tenantId?: string | null; defaultName: string; operatorUserId?: string | null; wdraRegNo?: string | null; capacityMt?: string | null;
+  storageKinds?: string[]; commoditiesAccepted?: string[]; isActive?: boolean; createdAt?: string;
   /** The storage rate on file NOW, per quintal per month, a bigint minor-unit STRING (null: none set). Never computed on a client. */
   ratePerQtlMonthMinor?: string | null;
 }
-/** `mine` = warehouses the caller operates (tenant-scoped); `browse` (the API default) = the tenant's + platform-global; `all` = needs booking.manage. */
+/** `mine` = warehouses the caller OPERATES in this organisation (`operator_user_id = caller`); `browse` (the API default) = the tenant's +
+ *  platform-global; `all` = the organisation's warehouses (warehouse.manage — PC-56 OPS-2a; it required the labour permission before). */
 export type WarehouseBox = 'mine' | 'browse' | 'all';
 export interface StorageBooking {
   id: string; warehouseId: string; productId: string; quantity: string; unitCode: string; status: string;
-  expectedArrival?: string | null; storedAt?: string | null; releasedAt?: string | null; feeMinor?: string | null; createdAt?: string;
-  productName?: string | null; warehouseName?: string | null;
+  storedAt?: string | null; releasedAt?: string | null; createdAt?: string;
 }
+/** `depositor` (the API default) = bookings the CALLER deposited; `warehouse` = one warehouse's bookings (`warehouseId`; warehouse.manage);
+ *  `all` = the organisation's (warehouse.manage). An operator's desk must send `warehouse` — the default lists his own deposits (survey F-9). */
+export type BookingBox = 'depositor' | 'warehouse' | 'all';
 export interface AssayReport { id: string; storageBookingId: string; assayerName: string; parameters: Record<string, string | number | boolean>; gradeOptionId?: string | null; reportMediaId?: string | null; assayedAt?: string | null; validUntil?: string | null; createdAt?: string; }
 /**
  * PC-56 OPS-2b (founder Q3-A, Q4-A, Q9-A): a RECORD of a receipt number — this platform issues none. The API body also carries `holderUserId` and
@@ -48,18 +53,18 @@ export class WarehousingResource {
   async requestBooking(input: { warehouseId: string; productId: string; quantity: string; unitCode: string; expectedArrival?: string }): Promise<StorageBooking> {
     return (await this.http.request<StorageBooking>('POST', 'warehousing/storage-bookings', { body: input })).data;
   }
-  async bookings(params: { status?: string; warehouseId?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<StorageBooking>> {
-    const r = await this.http.request<StorageBooking[]>('GET', 'warehousing/storage-bookings', { query: { status: params.status, warehouseId: params.warehouseId, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+  async bookings(params: { box?: BookingBox; warehouseId?: string; status?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<StorageBooking>> {
+    const r = await this.http.request<StorageBooking[]>('GET', 'warehousing/storage-bookings', { query: { box: params.box, warehouseId: params.warehouseId, status: params.status, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
   async booking(id: string, signal?: AbortSignal): Promise<StorageBooking> {
     return (await this.http.request<StorageBooking>('GET', `warehousing/storage-bookings/${encodeURIComponent(id)}`, { signal })).data;
   }
-  /** Ops: confirm arrival (requested → confirmed). */
+  /** Ops: confirm arrival (requested → confirmed) — the warehouse's named operator only; audited (PC-56 OPS-2a). */
   async confirmBooking(id: string): Promise<StorageBooking> {
     return (await this.http.request<StorageBooking>('POST', `warehousing/storage-bookings/${encodeURIComponent(id)}/confirm`, {})).data;
   }
-  /** Ops: mark stored after weighment (confirmed → stored). */
+  /** Ops: mark stored (confirmed → stored) — records no weight; the named operator only; audited (PC-56 OPS-2a). */
   async storeBooking(id: string): Promise<StorageBooking> {
     return (await this.http.request<StorageBooking>('POST', `warehousing/storage-bookings/${encodeURIComponent(id)}/store`, {})).data;
   }
@@ -67,6 +72,8 @@ export class WarehousingResource {
   async releaseBooking(id: string, idempotencyKey: string): Promise<StorageBooking> {
     return (await this.http.request<StorageBooking>('POST', `warehousing/storage-bookings/${encodeURIComponent(id)}/release`, { idempotencyKey, body: {} })).data;
   }
+  /** Cancel before storage — the depositor herself (reason optional) or the warehouse's named operator (a reason of 1–500 characters is
+   *  required: 400 BOOKING_CANCEL_REASON_REQUIRED). Audited (PC-56 OPS-2a, founder D3). The reason is carried in the body. */
   async cancelBooking(id: string, reason?: string): Promise<StorageBooking> {
     return (await this.http.request<StorageBooking>('POST', `warehousing/storage-bookings/${encodeURIComponent(id)}/cancel`, { body: { reason } })).data;
   }

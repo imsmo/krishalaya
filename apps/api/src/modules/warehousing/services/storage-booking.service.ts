@@ -4,6 +4,11 @@
 // the wallet boundary (txnType 'storage_fee', zero-sum + idempotent — Law 2). Every write: one ACID tx
 // (UoW), state via the machine (Law 5), outbox in-tx (Law 4), idempotent money mutations (Law 3), authz
 // THROWS (Law 6). No version column → bookings lock FOR UPDATE.
+// PC-56 OPS-2a (founder Q11-A, D3, 2026-11-06/08): confirm and store are the warehouse's NAMED operator's only (403 WAREHOUSE_OPERATOR_ONLY, no
+// administrator escape) and each writes ONE audit row in the same transaction (B4). Cancel is the depositor's own or the named operator's (403
+// BOOKING_CANCEL_NOT_PERMITTED otherwise); the operator's cancel needs a reason (400 BOOKING_CANCEL_REASON_REQUIRED, decided BEFORE the unit of
+// work and any lock); every cancel writes ONE audit row. Cancel takes no Idempotency-Key (none was decided): a replay finds the booking already
+// cancelled and is refused by the state machine (409 STORAGE_BOOKING_ILLEGAL_TRANSITION), writing nothing.
 import { Inject, Injectable } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
@@ -18,7 +23,8 @@ import { DomainEvent } from '../domain/warehousing.events';
 import { StorageBookingRepository } from '../repositories/storage-booking.repository';
 import { WarehouseRepository } from '../repositories/warehouse.repository';
 import { RequestBookingDto } from '../dto/create-storage-booking.dto';
-import { BookingNotFoundError, WarehouseNotFoundError, NoWarehouseOperatorError, WarehousingForbiddenError, StorageReleaseAwaitsDepositorError, StorageUnitNotQuintalError } from '../domain/warehousing.errors';
+import { BookingNotFoundError, WarehouseNotFoundError, NoWarehouseOperatorError, WarehousingForbiddenError, StorageReleaseAwaitsDepositorError, StorageUnitNotQuintalError,
+  WarehouseOperatorOnlyError, BookingCancelReasonRequiredError, BookingCancelNotPermittedError } from '../domain/warehousing.errors';
 import { STORAGE_FEE_UNIT } from '../domain/quantity';
 import { WhActor } from './warehouse.service';
 
@@ -55,8 +61,8 @@ export class StorageBookingService {
         }, { userId: actor.userId })));
   }
 
-  async confirm(tenantId: string, actor: WhActor, id: string) { return this.operatorMutate(tenantId, actor, id, (b) => b.confirm()); }
-  async store(tenantId: string, actor: WhActor, id: string) { return this.operatorMutate(tenantId, actor, id, (b) => b.store(new Date())); }
+  async confirm(tenantId: string, actor: WhActor, id: string, ip: string | null = null) { return this.operatorMutate(tenantId, actor, id, 'confirm', (b) => b.confirm(), ip); }
+  async store(tenantId: string, actor: WhActor, id: string, ip: string | null = null) { return this.operatorMutate(tenantId, actor, id, 'store', (b) => b.store(new Date()), ip); }
 
   /** Operator releases the goods + collects the storage fee (depositor → operator, zero-sum, idempotent). */
   async release(tenantId: string, actor: WhActor, id: string, idemKey: string, ip: string | null) {
@@ -72,7 +78,7 @@ export class StorageBookingService {
           if (!booking) throw new BookingNotFoundError(id);
           const warehouse = await this.warehouses.getBookable(tenantId, booking.warehouseId, tx);
           if (!warehouse) throw new WarehouseNotFoundError(booking.warehouseId);
-          if (warehouse.operatorUserId !== actor.userId && !actor.isAdmin) throw new WarehousingForbiddenError('only the warehouse operator may release');
+          if (warehouse.operatorUserId !== actor.userId) throw new WarehousingForbiddenError('only the warehouse operator may release');   // OPS-2a: no admin term (unreachable)
           const now = new Date();
           const fee = booking.storageFeeMinor(warehouse.ratePerQtlMonthMinor ?? 0n, booking.monthsStored(now));
           if (fee > 0n) {
@@ -88,13 +94,40 @@ export class StorageBookingService {
         }, { userId: actor.userId })));
   }
 
-  async cancel(tenantId: string, actor: WhActor, id: string, reason?: string) {
+  /**
+   * PC-56 OPS-2a · D3 (founder 2026-11-08). Who: the depositor herself, or the warehouse's NAMED operator — nobody else (403 by name). A person who
+   * is both (her own booking at the warehouse she operates) cancels as the depositor. The operator's cancel needs a reason of 1–500 characters;
+   * hers keeps it optional (≤ 500). Order: the parties are read WITHOUT a lock (`getById`, `getBookable`), and the party and reason refusals are
+   * thrown BEFORE the unit of work, the `FOR UPDATE` and any write; inside the unit of work the locked row is checked again (the operator could
+   * have been reassigned in between) and ONE audit row (`warehousing.booking.cancelled`: status before → after, who cancelled — 'operator' or
+   * 'depositor' — and the reason) is written in the same transaction as the state change.
+   */
+  async cancel(tenantId: string, actor: WhActor, id: string, reason?: string | null, ip: string | null = null) {
+    if (!actor.canManage && !actor.canStore) throw new WarehousingForbiddenError('requires warehouse.store or warehouse.manage');
+    const why = typeof reason === 'string' ? reason.trim() : '';
+    if (why.length > 500) throw new BookingCancelReasonRequiredError();
+    const role = async (b: StorageBooking, tx?: TxContext): Promise<'depositor' | 'operator' | null> => {
+      if (b.depositorUserId === actor.userId) return 'depositor';
+      if (!actor.canManage) return null;
+      const w = await this.warehouses.getBookable(tenantId, b.warehouseId, tx);
+      return w && w.operatorUserId === actor.userId ? 'operator' : null;
+    };
+    const seen = await this.repo.getById(tenantId, id);
+    if (!seen) throw new BookingNotFoundError(id);
+    const pre = await role(seen);
+    if (!pre) throw new BookingCancelNotPermittedError();
+    if (pre === 'operator' && why.length < 1) throw new BookingCancelReasonRequiredError();   // D3: before the unit of work and any lock
     return this.uow.run(tenantId, async (tx) => {
       const booking = await this.repo.getForUpdate(tx, tenantId, id);
       if (!booking) throw new BookingNotFoundError(id);
-      if (booking.depositorUserId !== actor.userId && !actor.canManage && !actor.isAdmin) throw new WarehousingForbiddenError('not a party to this booking');
-      booking.cancel(reason);
+      const by = await role(booking, tx);
+      if (!by) throw new BookingCancelNotPermittedError();
+      if (by === 'operator' && why.length < 1) throw new BookingCancelReasonRequiredError();
+      const from = booking.status;
+      booking.cancel(why || undefined);
       await this.repo.update(tx, booking);
+      await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'warehousing.booking.cancelled', entityType: 'storage_booking', entityId: booking.id,
+        oldValue: { status: from }, newValue: { status: booking.status, cancelledBy: by }, reason: why || null, ip });
       await this.flush(tx, tenantId, booking.id, booking.pullEvents());
       return booking.toJSON();
     }, { userId: actor.userId });
@@ -103,11 +136,11 @@ export class StorageBookingService {
   async getById(tenantId: string, actor: WhActor, id: string) {
     const b = await this.repo.getById(tenantId, id);
     if (!b) throw new BookingNotFoundError(id);
-    if (b.depositorUserId !== actor.userId && !actor.canManage && !actor.isAdmin) throw new BookingNotFoundError(id); // 404, no IDOR
+    if (b.depositorUserId !== actor.userId && !actor.canManage) throw new BookingNotFoundError(id); // 404, no IDOR (OPS-2a: the admin term is gone)
     return b.toJSON();
   }
   async list(tenantId: string, actor: WhActor, q: { box: 'depositor' | 'warehouse' | 'all'; warehouseId?: string; status?: string; cursor?: { c: string; id: string }; limit: number }) {
-    if ((q.box === 'warehouse' || q.box === 'all') && !actor.canManage && !actor.isAdmin) throw new WarehousingForbiddenError('requires warehouse.manage');
+    if ((q.box === 'warehouse' || q.box === 'all') && !actor.canManage) throw new WarehousingForbiddenError('requires warehouse.manage');
     const rows = await this.repo.listFor(tenantId, { depositorUserId: q.box === 'depositor' ? actor.userId : undefined, warehouseId: q.box === 'warehouse' ? q.warehouseId : undefined, status: q.status, cursor: q.cursor, limit: q.limit });
     const items = rows.map((b) => b.toJSON());
     const last = items[items.length - 1];
@@ -115,16 +148,20 @@ export class StorageBookingService {
     return { items, nextCursor };
   }
 
-  private async operatorMutate(tenantId: string, actor: WhActor, id: string, fn: (b: StorageBooking) => void) {
+  /** PC-56 OPS-2a (Q11-A, B4): the named operator only — no administrator escape — and ONE audit row per act, in the same transaction. */
+  private async operatorMutate(tenantId: string, actor: WhActor, id: string, act: 'confirm' | 'store', fn: (b: StorageBooking) => void, ip: string | null) {
     if (!actor.canManage) throw new WarehousingForbiddenError('requires warehouse.manage');
     return this.uow.run(tenantId, async (tx) => {
       const booking = await this.repo.getForUpdate(tx, tenantId, id);
       if (!booking) throw new BookingNotFoundError(id);
       const warehouse = await this.warehouses.getBookable(tenantId, booking.warehouseId, tx);
       if (!warehouse) throw new WarehouseNotFoundError(booking.warehouseId);
-      if (warehouse.operatorUserId !== actor.userId && !actor.isAdmin) throw new WarehousingForbiddenError('only the warehouse operator may act here');
+      if (warehouse.operatorUserId !== actor.userId) throw new WarehouseOperatorOnlyError(act === 'confirm' ? 'booking.confirm' : 'booking.store');
+      const from = booking.status;
       fn(booking);
       await this.repo.update(tx, booking);
+      await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: act === 'confirm' ? 'warehousing.booking.confirmed' : 'warehousing.booking.stored',
+        entityType: 'storage_booking', entityId: booking.id, oldValue: { status: from }, newValue: { status: booking.status }, ip });
       await this.flush(tx, tenantId, booking.id, booking.pullEvents());
       return booking.toJSON();
     }, { userId: actor.userId });

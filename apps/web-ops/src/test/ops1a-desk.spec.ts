@@ -47,9 +47,11 @@ describe('PC-56 OPS-1a · the ops console approves, pays and releases nothing', 
       for (const k of ['dairy.act.approve', 'dairy.act.pay', 'dairy.ok.approve', 'dairy.ok.pay', 'wh.actRelease', 'wh.releaseHint', 'wh.ok.release']) expect([lang, k, cat.includes(`'${k}':`)]).toEqual([lang, k, false]);
     }
   });
+  // PC-56 OPS-2a · NAMED UPDATE (survey E2): the warehouse section's head is now `/warehouse/dashboard` (W370) — `/warehouse` answers a 307 there and
+  // is no page, so no sidebar entry may link it. The rule is unchanged: the withdrawal page sits under the warehouse section, the payout under Dairy.
   it('the sidebar links /payout under Dairy and /warehouse/withdrawal under Warehouse', () => {
     const nav = fs.readFileSync(path.join(SRC, 'components', 'Sidebar.tsx'), 'utf8');
-    const order = ['/warehouse\'', '/warehouse/withdrawal', '/dairy\'', '/payout'].map((h) => nav.indexOf(`href: '${h.replace(/'$/, '')}'`));
+    const order = ['/warehouse/dashboard\'', '/warehouse/withdrawal', '/dairy\'', '/payout'].map((h) => nav.indexOf(`href: '${h.replace(/'$/, '')}'`));
     expect(order.every((i) => i > -1)).toBe(true);
     expect(order[1]).toBe(nav.indexOf("href: '/warehouse/withdrawal'")); expect(order[0] < order[1] && order[2] < order[3]).toBe(true);
   });

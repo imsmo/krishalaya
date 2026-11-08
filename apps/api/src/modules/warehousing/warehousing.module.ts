@@ -9,6 +9,8 @@
 //
 // SCOPE (this build): warehouses (incl. platform-global/independent WDRA, cross-tenant visible) + storage
 // bookings (request → confirm → store; release refused by name) + the warehouse's assay entries + the eNWR records (read; operator cancel).
+// PC-56 OPS-2a (founder Q11-A, D1–D3): every operator act is the warehouse's NAMED operator's only — no administrator escape anywhere in this
+// module; confirm, store and cancel are audited; any warehouse.manage holder may reassign the operator, and only that. `store` records no weight.
 // DEFERRED (schema in 0010, not wired): NWR PLEDGE → loan collateral + partial release + default (fintech
 // flow), mark-to-market revaluation job, re-assay-due job, auto-valuation from assay grade × mandi price,
 // multi-unit → quintal conversion (fees assume quintals), repository (NERL/CCRL) API integration.

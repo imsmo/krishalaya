@@ -39,7 +39,7 @@ export class AssayReportService {
         if (!booking) throw new BookingNotFoundError(dto.storageBookingId);
         if (booking.status !== 'stored') throw new BookingNotStoredError(booking.status);
         const warehouse = await this.warehouses.getBookable(tenantId, booking.warehouseId, tx);
-        // PC-56 OPS-2b (founder Q11-A, strict on this act): the named operator only — the `!actor.isAdmin` escape is gone here.
+        // PC-56 OPS-2b (founder Q11-A, strict on this act): the named operator only — the administrator escape is gone here (and from the actor, OPS-2a).
         if (!warehouse || warehouse.operatorUserId !== actor.userId) throw new WarehouseOperatorOnlyError('assay.record');
         const assay = AssayReport.record({ id: uuidv7(), tenantId, storageBookingId: dto.storageBookingId, assayerName: dto.assayerName, parameters: dto.parameters,
           gradeOptionId: dto.gradeOptionId ?? null, reportMediaId: dto.reportMediaId ?? null, assayedAt: new Date(), validUntil: dto.validUntil ?? null });
@@ -54,7 +54,7 @@ export class AssayReportService {
   async listForBooking(tenantId: string, actor: WhActor, storageBookingId: string) {
     const booking = await this.bookings.getById(tenantId, storageBookingId);
     if (!booking) throw new BookingNotFoundError(storageBookingId);
-    if (booking.depositorUserId !== actor.userId && !actor.canManage && !actor.isAdmin) throw new BookingNotFoundError(storageBookingId); // 404, no IDOR
+    if (booking.depositorUserId !== actor.userId && !actor.canManage) throw new BookingNotFoundError(storageBookingId); // 404, no IDOR
     return (await this.repo.listForBooking(tenantId, storageBookingId)).map((a) => a.toJSON());
   }
   private async flush(tx: TxContext, tenantId: string, id: string, events: DomainEvent[]) {

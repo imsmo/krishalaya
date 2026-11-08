@@ -52,6 +52,9 @@ const nextConfig = {
       // PC-56 OPS-1c (survey E2): the OW-1 kiosk address → the canon's `kiosk/home` (W380). Mirrors OPS1C_REDIRECTS in src/features/ops1/kiosk.ts
       // (pinned equal by src/test/ops1c-pages.spec.ts).
       { source: '/kiosk', destination: '/kiosk/home', permanent: false },
+      // PC-56 OPS-2a (survey E2): the OW-2 warehouse address → the canon's `warehouse/dashboard` (W370). Mirrors OPS2A_REDIRECTS in
+      // src/features/ops2/intake.ts (pinned equal by src/test/ops2a-pages.spec.ts). `/warehouse/[id]` and the other `/warehouse/*` pages are untouched.
+      { source: '/warehouse', destination: '/warehouse/dashboard', permanent: false },
     ];
   },
   async headers() {

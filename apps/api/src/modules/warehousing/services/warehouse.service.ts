@@ -13,10 +13,11 @@ import { DomainEvent } from '../domain/warehousing.events';
 import { WarehouseRepository } from '../repositories/warehouse.repository';
 import { CreateWarehouseDto } from '../dto/create-warehouse.dto';
 import { UpdateWarehouseDto } from '../dto/update-warehouse.dto';
-import { WarehouseNotFoundError, WarehousingForbiddenError, WarehouseOperatorNotAMemberError } from '../domain/warehousing.errors';
+import { WarehouseNotFoundError, WarehousingForbiddenError, WarehouseOperatorNotAMemberError, WarehouseReassignOnlyError } from '../domain/warehousing.errors';
 
 const QUOTA_METRIC = 'warehouses';
-export interface WhActor { userId: string; canManage: boolean; canStore: boolean; isAdmin: boolean; }
+// PC-56 OPS-2a (founder Q11-A): the administrator flag (the labour-permission escape) is DELETED from the actor — no warehousing check can read it.
+export interface WhActor { userId: string; canManage: boolean; canStore: boolean; }
 const big = (s?: string) => (s == null ? null : BigInt(s));
 
 @Injectable()
@@ -58,14 +59,21 @@ export class WarehouseService {
    *   • a named operator who is not an active member of this organisation is refused BY NAME, before any write (B6);
    *   • every update writes EXACTLY ONE audit row (`warehousing.warehouse.updated`) in the same transaction, carrying the before/after of
    *     `ratePerQtlMonthMinor` and `operatorUserId` — only the ones that changed — and the names of the fields the request set (B4).
-   * The operator-only check (and its `booking.manage` escape, survey F-5) is NOT changed here: that is OPS-2a's first commit (founder Q11-A).
+   * PC-56 OPS-2a · D1 / D2 (founder 2026-11-08): a request from the warehouse's NAMED operator may set any field (D1 — only he may change the
+   * rate); a request from any other `warehouse.manage` holder may set ONLY `operatorUserId` (D2 — reassignment, whether or not the current
+   * operator agrees), and any other field in it is refused BY NAME (403 WAREHOUSE_REASSIGN_ONLY) before any write. There is no administrator
+   * escape. The B6 member check and the B4 audit row are exactly as OPS-2c left them. A platform-global (NULL-tenant) warehouse is never found
+   * here (`getForUpdate` is strictly tenant-owned → 404), so it cannot be edited or reassigned from any tenant.
    */
   async update(tenantId: string, actor: WhActor, id: string, dto: UpdateWarehouseDto, ip: string | null = null) {
     if (!actor.canManage) throw new WarehousingForbiddenError('requires warehouse.manage');
     return this.uow.run(tenantId, async (tx) => {
       const w = await this.repo.getForUpdate(tx, tenantId, id);
       if (!w) throw new WarehouseNotFoundError(id);
-      if (w.operatorUserId !== actor.userId && !actor.isAdmin) throw new WarehousingForbiddenError('only the operator may edit this warehouse');
+      if (w.operatorUserId !== actor.userId) {
+        const refused = Object.keys(dto).filter((k) => k !== 'operatorUserId').sort();
+        if (refused.length > 0) throw new WarehouseReassignOnlyError(refused);   // D1: not the operator → only the reassignment (D2)
+      }
       if (dto.operatorUserId !== undefined && !(await this.repo.isActiveTenantMember(tx, tenantId, dto.operatorUserId))) throw new WarehouseOperatorNotAMemberError();
       const before = { ratePerQtlMonthMinor: w.ratePerQtlMonthMinor?.toString() ?? null, operatorUserId: w.operatorUserId };
       w.update({ ...dto, ratePerQtlMonthMinor: dto.ratePerQtlMonthMinor !== undefined ? BigInt(dto.ratePerQtlMonthMinor) : undefined });
@@ -80,7 +88,8 @@ export class WarehouseService {
   }
   async getById(tenantId: string, id: string) { const w = await this.repo.getBookable(tenantId, id); if (!w) throw new WarehouseNotFoundError(id); return w.toJSON(); }
   async list(tenantId: string, actor: WhActor, q: { box: 'mine' | 'browse' | 'all'; activeOnly: boolean; cursor?: { c: string; id: string }; limit: number }) {
-    if (q.box === 'all' && !actor.isAdmin) throw new WarehousingForbiddenError('requires booking.manage');
+    // PC-56 OPS-2a: `box=all` (the organisation's warehouses) required the labour-permission escape; it now requires warehouse.manage.
+    if (q.box === 'all' && !actor.canManage) throw new WarehousingForbiddenError('requires warehouse.manage');
     const rows = await this.repo.listFor(tenantId, { box: q.box, ownerUserId: actor.userId, activeOnly: q.activeOnly, cursor: q.cursor, limit: q.limit });
     const items = rows.map((w) => w.toJSON());
     const last = items[items.length - 1];

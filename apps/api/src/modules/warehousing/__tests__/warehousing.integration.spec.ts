@@ -8,7 +8,7 @@
 // Schema/seeds come from the REAL db/migrations + db/seeds (test/integration-global-setup.js).
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
-import { makeTenant, makeUser, makeProduct, makeCategory, ensureUnitCurrency } from '../../../../test/helpers/fixtures';
+import { makeTenant, makeUser, ensureUnitCurrency } from '../../../../test/helpers/fixtures';
 
 import { AppConfig } from '../../../core/config/app-config';
 import { PgPoolProvider } from '../../../core/database/pg-pool.provider';
@@ -45,8 +45,9 @@ run('warehousing receipt spine (integration, real Postgres + RLS + storage-fee s
   const tenantA = randomUUID(); const tenantB = randomUUID();
   const operator = randomUUID(); const depositor = randomUUID();
   let warehouseId = ''; let productId = ''; let bookingId = '';
-  const opActor = { userId: operator, canManage: true, canStore: false, isAdmin: false };
-  const depActor = { userId: depositor, canManage: false, canStore: true, isAdmin: false };
+  // PC-56 OPS-2a · NAMED UPDATE (founder Q11-A): the actor has no administrator flag any more — the field is dropped (it was `false` for both).
+  const opActor = { userId: operator, canManage: true, canStore: false };
+  const depActor = { userId: depositor, canManage: false, canStore: true };
 
   const bal = async (u: string) => BigInt((await admin.query(`SELECT COALESCE(cached_balance_minor,0) b FROM wallet_accounts WHERE owner_kind='user' AND account_code='main' AND owner_user_id=$1`, [u])).rows[0]?.b ?? '0');
   const fund = (u: string, amount: bigint) => uow.run(tenantA, (tx) => wallet.post(tx, { tenantId: tenantA, txnType: 'order_payment', idempotencyKey: `fund:${randomUUID()}`, initiatedBy: 'system', legs: [{ account: userMain(u), amountMinor: amount }, { account: platform(PlatformAccount.Gateway), amountMinor: -amount }] }), { userId: 'system' });
@@ -56,8 +57,15 @@ run('warehousing receipt spine (integration, real Postgres + RLS + storage-fee s
     await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B');
     await makeUser(admin, operator); await makeUser(admin, depositor);
     await ensureUnitCurrency(admin, 'quintal');
-    const categoryId = await makeCategory(admin);
-    productId = await makeProduct(admin, { categoryId, tenantId: tenantA, unit: 'quintal' });
+    // PC-56 OPS-2a · NAMED UPDATE (fixture repair, engineering — survey §7): `makeCategory` binds ONE parameter as both `varchar` (code) and `ltree`
+    // (path) — "inconsistent types deduced for parameter $2" — so this whole suite died in its own beforeAll and none of its cases ran (red at HEAD
+    // since R1a). The category and the product are inserted here with one parameter per type (the ops1a / ops2b / ops2c fixture shape); the
+    // shared helper is left untouched for its other callers. No case below is changed by this repair.
+    const categoryId = randomUUID(); const code = `wh_${tenantA.replace(/-/g, '').slice(0, 10)}`;
+    await admin.query(`INSERT INTO categories (id, code, default_name, path, depth, is_active) VALUES ($1, $2, 'Test Category', $3::ltree, 1, true)`, [categoryId, code, code]);
+    productId = randomUUID();
+    await admin.query(`INSERT INTO products (id, category_id, default_name, default_unit, tenant_id, is_active, search_tsv)
+      VALUES ($1, $2, 'Test Product', 'quintal', $3, true, to_tsvector('simple', 'Test Product'))`, [productId, categoryId, tenantA]);
 
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
     pools = new PgPoolProvider(config);

@@ -50,7 +50,7 @@ export class NwrReceiptService {
           if (!booking) throw new BookingNotFoundError(dto.storageBookingId);
           if (booking.status !== 'stored') throw new BookingNotStoredError(booking.status);
           const warehouse = await this.warehouses.getBookable(tenantId, booking.warehouseId, tx);
-          if (!warehouse || (warehouse.operatorUserId !== actor.userId && !actor.isAdmin)) throw new WarehousingForbiddenError('only the warehouse operator may issue an eNWR');
+          if (!warehouse || warehouse.operatorUserId !== actor.userId) throw new WarehousingForbiddenError('only the warehouse operator may issue an eNWR');   // OPS-2a: no admin term (unreachable)
           if (await this.repo.findActiveForBooking(tx, tenantId, dto.storageBookingId)) throw new NwrAlreadyIssuedError();
           const nwr = NwrReceipt.issue({ id: uuidv7(), tenantId, storageBookingId: dto.storageBookingId, repository: dto.repository as NwrRepository, enwrNo: dto.enwrNo,
             holderUserId: booking.depositorUserId, quantityMilli: booking.quantityMilli, valuationMinor: BigInt(dto.valuationMinor), issuedAt: new Date(), expiresAt: dto.expiresAt ?? null });
@@ -99,11 +99,11 @@ export class NwrReceiptService {
   async getById(tenantId: string, actor: WhActor, id: string) {
     const n = await this.repo.getById(tenantId, id);
     if (!n) throw new NwrNotFoundError(id);
-    if (n.holderUserId !== actor.userId && !actor.canManage && !actor.isAdmin) throw new NwrNotFoundError(id); // 404, no IDOR
+    if (n.holderUserId !== actor.userId && !actor.canManage) throw new NwrNotFoundError(id); // 404, no IDOR
     return n.toJSON();
   }
   async list(tenantId: string, actor: WhActor, q: { box: 'mine' | 'all'; status?: string; cursor?: { c: string; id: string }; limit: number }) {
-    if (q.box === 'all' && !actor.canManage && !actor.isAdmin) throw new WarehousingForbiddenError('requires warehouse.manage');
+    if (q.box === 'all' && !actor.canManage) throw new WarehousingForbiddenError('requires warehouse.manage');
     const rows = await this.repo.listFor(tenantId, { holderUserId: q.box === 'mine' ? actor.userId : undefined, status: q.status, cursor: q.cursor, limit: q.limit });
     const items = rows.map((n) => n.toJSON());
     const last = items[items.length - 1];

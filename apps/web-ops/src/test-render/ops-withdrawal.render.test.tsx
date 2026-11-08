@@ -42,7 +42,9 @@ describe('PC-56 OPS-1a · /warehouse/withdrawal is honest and reads nothing', ()
   it('the booking page prints the paused-release sentence where its release button was — no button — and links here', () => {
     const p = renderToStaticMarkup(<ReleasePaused t={T} />);
     expect(text(p)).toContain(en['ops1.withdrawal.paused']); expect(p).toContain('href="/warehouse/withdrawal"'); expect(CONTROLS.test(p)).toBe(false);
-    const src = fs.readFileSync(path.join(__dirname, '..', 'app/warehouse/[id]/page.tsx'), 'utf8');
+    // PC-56 OPS-2a · NAMED UPDATE: the drill-in's markup moved into `BookingDetailView` (components/ops2/IntakeViews.tsx); the page and the view are
+    // read together — the same two assertions (no release act; the paused sentence printed).
+    const src = ['app/warehouse/[id]/page.tsx', 'components/ops2/IntakeViews.tsx'].map((rel) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8')).join('\n');
     expect(/kind: 'release'|wh\.actRelease/.test(src)).toBe(false);
     expect(src).toContain('<ReleasePaused t={t} />');
   });

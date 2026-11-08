@@ -49,9 +49,11 @@ describe('release — PAUSED: refused by name before any lock, fee or write (OPS
     await expect(h.svc.release('t1', op, 'b1', 'idem-r2', null)).rejects.toBeInstanceOf(StorageReleaseAwaitsDepositorError);
     nothingTouched(h);
   });
-  it('a warehouse with no operator, by an admin: the same refusal (no payee lookup happens at all)', async () => {
+  // PC-56 OPS-2a · NAMED UPDATE (founder Q11-A): "by an admin" was the `isAdmin` escape, which is DELETED from the actor type. The case now runs as a
+  // `warehouse.manage` holder who is NOT the operator (the same person the escape used to admit) — the refusal and "nothing touched" are unchanged.
+  it('a warehouse with no operator, by a non-operator manager: the same refusal (no payee lookup happens at all)', async () => {
     const h = harness(warehouse({ operatorUserId: null }));
-    await expect(h.svc.release('t1', { ...op, isAdmin: true }, 'b1', 'idem-r3', null)).rejects.toBeInstanceOf(StorageReleaseAwaitsDepositorError);
+    await expect(h.svc.release('t1', { ...op, userId: 'admin2' }, 'b1', 'idem-r3', null)).rejects.toBeInstanceOf(StorageReleaseAwaitsDepositorError);
     nothingTouched(h);
   });
   it('the permission check still comes first: no warehouse.manage → 403 WAREHOUSING_FORBIDDEN, not the refusal', async () => {

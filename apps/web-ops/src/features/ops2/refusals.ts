@@ -26,6 +26,15 @@
 //   • `enwr_registry` (W376, `/warehouse/enwr/registry`) — a READ of the organisation's receipt records (`box=all`, keyset, a GET page-size select),
 //     each "recorded, not confirmed"; no holder, no value; `enwr_export` (W3313–W3314) DECOR, Back → W376 (the trigger).
 //   • `enwr_receipt` (`/warehouse/enwr/[id]`) — the drill-in, a READ of one record; zero inputs; no release or cancel button.
+//
+// OPS-2a · INTAKE (founder Q6-A, Q9-A, Q10-A, Q11-A, Q12-A, Q14-A 2026-11-06; D1–D3 2026-11-08) builds — the last of the three, so OPS-2 is 45/45:
+//   • `wh_dashboard` (W370, `/warehouse/dashboard`; `/warehouse` answers a 307 here) — a READ of the bookings at the warehouses the signed-in person
+//     operates (`warehouses({ box: 'mine' })`, then each one's `bookings({ box: 'warehouse', warehouseId })`), keyset, a GET status select (the only
+//     input); reference, status, commodity (the product's own name), quantity with its unit, dates — no depositor; "New booking" refused with the
+//     founder's Q12-A words; no figure without a server source; a row → `/warehouse/[id]`. `wh_form` (W3362–W3365) DECOR; `wh_act` (W3366–W3368)
+//     PARITY-DECOR: its "Retry" re-reads the dashboard, Back → W370.
+//   • `weighbridge` (W371, `/warehouse/weighbridge`) and `stacking` (W374, `/warehouse/stacking`) — HONEST, read nothing, zero inputs; their chains
+//     (W3355–W3359, W3343–W3349) DECOR.
 export interface Tr { t(key: string, vars?: Record<string, string | number>): string }
 
 export type Ops2Surface =
@@ -35,6 +44,13 @@ export type Ops2Surface =
   | 'wh_form' | 'wh_act' | 'wh_export' | 'weighbridge_act' | 'weighbridge_export' | 'assay_act' | 'assay_export' | 'stacking_form' | 'stacking_act'
   | 'enwr_act' | 'enwr_export' | 'storage_act' | 'storage_export';
 export interface Ops2Refusal { id: string; canon: string; surfaces: readonly Ops2Surface[]; key: string; why: string }
+
+/** The surfaces OPS-2a builds. */
+export const SURFACES_2A: readonly Ops2Surface[] = ['wh_dashboard', 'wh_form', 'wh_act', 'weighbridge', 'weighbridge_export', 'weighbridge_act', 'stacking', 'stacking_form', 'stacking_act'];
+/** The pages OPS-2a builds that READ NOTHING (E7, E11). */
+export const HONEST_2A: readonly Ops2Surface[] = ['weighbridge', 'stacking'];
+const INTAKE_CHAINS: readonly Ops2Surface[] = ['wh_form', 'wh_act', 'weighbridge_act', 'stacking_form', 'stacking_act'];
+const INTAKE_PAGES: readonly Ops2Surface[] = ['wh_dashboard', 'weighbridge', 'stacking'];
 
 /** The surfaces OPS-2b builds. */
 export const SURFACES_2B: readonly Ops2Surface[] = ['assay_lab', 'assay_record', 'assay_act', 'assay_export', 'enwr_issue', 'enwr_registry', 'enwr_receipt', 'enwr_act', 'enwr_export'];
@@ -49,7 +65,7 @@ export const HONEST_2C: readonly Ops2Surface[] = ['wh_insights'];
 const BILLING_ALL: readonly Ops2Surface[] = ['billing', 'storage_export', 'storage_act'];
 const STORAGE_CHAINS: readonly Ops2Surface[] = ['storage_export', 'storage_act'];
 const EXPORTS_2C: readonly Ops2Surface[] = ['storage_export', 'wh_export'];
-const EXPORTS_ALL: readonly Ops2Surface[] = ['storage_export', 'wh_export', 'assay_export', 'enwr_export'];   // NAMED WIDENING (OPS-2b): the two 2b export chains
+const EXPORTS_ALL: readonly Ops2Surface[] = ['storage_export', 'wh_export', 'assay_export', 'enwr_export', 'weighbridge_export'];   // NAMED WIDENING (OPS-2b): the two 2b export chains; (OPS-2a): the weighbridge's
 
 export const OPS2_REFUSALS: readonly Ops2Refusal[] = Object.freeze([
   // ══ W378 · Storage billing (founder Q1-A, Q2-A, Q9-A, Q10-A) ══
@@ -75,9 +91,11 @@ export const OPS2_REFUSALS: readonly Ops2Refusal[] = Object.freeze([
     key: 'ops2.refusal.disputedLine', why: 'GAP-BE: no bill line, no dispute and no finance-desk role exist (0004 roles)' },
   { id: 'billing_run', canon: 'W378 state "Billing compute failed … nothing is charged twice and nothing is silently skipped" + "Retry run" (FM:91 → W3352–W3354)', surfaces: BILLING_ALL,
     key: 'ops2.refusal.billingRun', why: 'GAP-BE: no billing run exists; "nothing is charged twice" is true only of the paused release\'s `storagefee:<booking>` key, and moot' },
-  { id: 'search_invoices', canon: 'W378 "Search invoices… ⌘K" · W379 "Search metrics… ⌘K"', surfaces: ['billing', 'wh_insights'],
+  // NAMED WIDENING (OPS-2a): W370 "Search bookings… ⌘K" and W371 "Search weighbridge slips…" are the same refusal (no warehouse search route).
+  { id: 'search_invoices', canon: 'W378 "Search invoices… ⌘K" · W379 "Search metrics… ⌘K" · W370 "Search bookings… ⌘K" · W371 "Search weighbridge slips…"', surfaces: ['billing', 'wh_insights', 'wh_dashboard', 'weighbridge'],
     key: 'ops2.refusal.search', why: 'DECOR: no warehouse search route; no input is built (E7)' },
-  { id: 'wh_plan_settings', canon: 'W378 / W379 flagged-off state "… Nothing is broken — it is not enabled. See plan settings."', surfaces: ['billing', 'wh_insights'],
+  // NAMED WIDENING (OPS-2a): the same flagged-off state on W370, W371 and W374.
+  { id: 'wh_plan_settings', canon: 'W378 / W379 / W370 / W371 / W374 flagged-off state "… Nothing is broken — it is not enabled. See plan settings."', surfaces: ['billing', 'wh_insights', ...INTAKE_PAGES],
     key: 'ops2.refusal.planSettings', why: 'the S1…S6 precedent: no settings page is pointed to; a switched-off module says it is switched off' },
   // ══ W379 · Warehouse insights — HONEST, reads nothing ══
   { id: 'occupancy', canon: 'W379 "Occupancy 3,812 MT of 5,000 MT — 76.2% occupied."', surfaces: ['wh_insights'],
@@ -105,9 +123,9 @@ export const OPS2_REFUSALS: readonly Ops2Refusal[] = Object.freeze([
     key: 'ops2.refusal.storageOnCall', why: 'no paging exists for these pages' },
   { id: 'storage_audit_trail', canon: 'W3352 "confirming writes an audit-trail entry with actor, time and reason" · W3353 "View audit trail"', surfaces: ['storage_act'],
     key: 'ops2.refusal.storageAuditTrail', why: 'no act is taken, so nothing is recorded; no ops audit surface exists' },
-  { id: 'export_receipt', canon: 'W3350 / W3360 "audit-stamped, checksummed, delivered by signed URL" · W3351 / W3361 "Audit-stamped receipt: file name, row count, sha256 … 15-min signed URL, every fetch logged"', surfaces: EXPORTS_ALL,
+  { id: 'export_receipt', canon: 'W3350 / W3360 / W3355 "audit-stamped, checksummed, delivered by signed URL" · W3351 / W3361 / W3356 "Audit-stamped receipt: file name, row count, sha256 … 15-min signed URL, every fetch logged"', surfaces: EXPORTS_ALL,
     key: 'ops2.refusal.exportReceipt', why: 'TRUE of CORE\'s export plane in mechanism, but no warehousing dataset is registered (OPS2-B20) — refused on these pages' },
-  { id: 'export_queue', canon: 'W3350 / W3360 / W3295 / W3313 "this job is queued with a position and ETA"', surfaces: EXPORTS_ALL,
+  { id: 'export_queue', canon: 'W3350 / W3360 / W3295 / W3313 / W3355 "this job is queued with a position and ETA"', surfaces: EXPORTS_ALL,
     key: 'ops2.refusal.exportQueue', why: 'no job is created' },
 
   // ══ OPS-2b · W372 Assay lab (founder Q13-A, Q11-A) ══
@@ -198,6 +216,72 @@ export const OPS2_REFUSALS: readonly Ops2Refusal[] = Object.freeze([
     key: 'ops2.refusal.enwrOnCall', why: 'no paging exists for these pages' },
   { id: 'enwr_audit_trail', canon: 'W3315 "confirming writes an audit-trail entry with actor, time and reason" · W3316 "View audit trail"', surfaces: ['enwr_act'],
     key: 'ops2.refusal.enwrAuditTrail', why: 'no act is taken, so nothing is recorded; no ops audit surface exists' },
+  // ══ OPS-2a · W370 Warehouse dashboard (founder Q9-A, Q11-A, Q12-A, Q14-A) ══
+  { id: 'new_booking', canon: 'W370 "New booking" (FM:57, `chain-form:wh` → W3362–W3365)', surfaces: ['wh_dashboard', 'wh_form'],
+    key: 'ops2.refusal.newBooking', why: 'founder Q12-A: a booking is the depositor\'s own request (`warehouse.store`, depositor = the caller, storage-booking.service.ts request); no desk books in her name, and no app lets her book (survey F-10)' },
+  { id: 'farmer_column', canon: 'W370 table "Farmer" — "[name] · [FPO] #[member]" · KPI "… [name], [commodity]"', surfaces: ['wh_dashboard'],
+    key: 'ops2.refusal.farmerColumn', why: 'WALL (founder Q9-A): the API body carries `depositorUserId`; the SDK type omits it and no page prints it or any name' },
+  { id: 'booking_today', canon: 'W370 KPI "Booking today [ref] stored [time] today"', surfaces: ['wh_dashboard'],
+    key: 'ops2.refusal.bookingToday', why: 'GAP-BE: no "today" filter exists (query-storage-booking.dto.ts: status / warehouse / cursor only); the rows are the newest first' },
+  { id: 'net_received', canon: 'W370 KPI "Net received today [n] qtl · weighbridge slip [ref] · [n] kg net"', surfaces: ['wh_dashboard'],
+    key: 'ops2.refusal.netReceived', why: 'GAP-BE / FALSE: no weighment and no slip (F-4); a sum over rows is client arithmetic (E3)' },
+  { id: 'enwr_pending', canon: 'W370 KPI "e-NWR pending issue [n] · assay complete, grade A — ready to prepare for NERL"', surfaces: ['wh_dashboard'],
+    key: 'ops2.refusal.enwrPending', why: 'FALSE: no count route; issue is refused by name (OPS-2b, Q3-A); an assay sets nothing; no repository' },
+  { id: 'weighed_stacked', canon: 'W370 lead "a warehouse is a promise with a roof: what is booked, weighed, assayed and stacked, as of now."', surfaces: ['wh_dashboard'],
+    key: 'ops2.refusal.weighedStacked', why: 'FALSE: nothing is weighed or stacked on this platform (no object, F-4, §1E); the page names what it shows' },
+  { id: 'weighed_in', canon: 'W370 state "No intake today — … Bookings appear the moment a farmer\'s lot is weighed in"', surfaces: ['wh_dashboard'],
+    key: 'ops2.refusal.weighedIn', why: '"weighed in" FALSE (no weighment); the empty state says only that there are no bookings' },
+  { id: 'as_of_summary', canon: 'W370 state "Dashboard figures as of [time] — This summary lags … (as-of law)" + "Retry" (FM:59)', surfaces: ['wh_dashboard', 'wh_act'],
+    key: 'ops2.refusal.asOfSummary', why: 'FALSE: no summary or read-model — the page reads live rows; "Retry" is a plain re-read (PARITY-DECOR W3366–W3368)' },
+  { id: 'gate_manager', canon: 'W370 states "Gate staff vs manager — … releasing stock, revising the rate card and viewing storage revenue are the centre manager\'s ([name]), recorded." · "Releasing stock is manager-restricted"', surfaces: ['wh_dashboard'],
+    key: 'ops2.refusal.gateManager', why: 'FALSE: no gate or manager role (0004); release is paused for everyone (OPS-1a); the rate is the named operator\'s alone (D1)' },
+  { id: 'page_total', canon: 'W370 "Showing 1 of 1 booking today · Page 1 of 1" (FM:60)', surfaces: ['wh_dashboard'],
+    key: 'ops2.refusal.pageTotal', why: 'E3: no total exists in the API answer; keyset paging (a next link) is REAL' },
+  // ══ W3362–W3368 (the wh form and act chains) ══
+  { id: 'maker_checker', canon: 'W3363 / W3344 "Maker-checker friendly review step … diff against current values"', surfaces: ['wh_form', 'stacking_form'],
+    key: 'ops2.refusal.makerChecker', why: 'FALSE: no maker-checker exists on any warehouse act' },
+  { id: 'intake_zero_sum', canon: 'W3364 / W3367 / W3358 / W3345 / W3348 "Money-adjacent actions reconcile zero-sum before this page ever shows."', surfaces: INTAKE_CHAINS,
+    key: 'ops2.refusal.intakeZeroSum', why: 'FALSE on these chains — on the weighbridge\'s, the weight that would set a fee — nothing ran and no money moved: refused BY NAME' },
+  { id: 'intake_on_call', canon: 'W3365 / W3368 / W3359 / W3346 / W3349 "repeated failures page the on-call"', surfaces: INTAKE_CHAINS,
+    key: 'ops2.refusal.intakeOnCall', why: 'no paging exists for these pages' },
+  { id: 'intake_audit_trail', canon: 'W3366 / W3357 / W3347 "confirming writes an audit-trail entry with actor, time and reason" · "View audit trail"', surfaces: INTAKE_CHAINS,
+    key: 'ops2.refusal.intakeAuditTrail', why: 'no act is taken on these chains, so nothing is recorded; no ops audit surface exists (confirm / store / cancel ARE audited on the booking page, B4)' },
+  // ══ W371 Weighbridge — HONEST (founder Q6-A) ══
+  { id: 'weighbridge_slip', canon: 'W371 heading "Weighbridge — [vehicle]"; "Slip [ref] · booking [ref] · [name] …"', surfaces: ['weighbridge'],
+    key: 'ops2.refusal.weighbridgeSlip', why: 'FALSE: no vehicle, no slip, no weighbridge object (0151; 0196 "Weighbridge slips: not recorded on this platform")' },
+  { id: 'print_slip', canon: 'W371 "Print slip" (FM:63, `chain-export` → W3355–W3356)', surfaces: ['weighbridge', 'weighbridge_export'],
+    key: 'ops2.refusal.printSlip', why: 'GAP-BE + Q10-A: no slip and no export producer' },
+  { id: 'gross_tare_net', canon: 'W371 "Gross − tare = net: [n] kg gross · [time] − [n] kg tare · [time] = [n] kg"', surfaces: ['weighbridge'],
+    key: 'ops2.refusal.grossTareNet', why: 'GAP-BE (MONEY, founder Q6-A — the money wave): no reading is recorded; a subtraction on the page is refused regardless (E3)' },
+  { id: 'net_carries', canon: 'W371 "Net = [n] qtl — the quantity that carries forward to assay, stacking and the e-NWR, unchanged."', surfaces: ['weighbridge'],
+    key: 'ops2.refusal.netCarries', why: 'FALSE as stated: what carries forward unchanged is the REQUESTED quantity (nwr-receipt.service.ts, storage-booking.entity.ts) — the page says so' },
+  { id: 'calibration', canon: 'W371 "Calibration — Stamping cert ref [ref], valid to [date]. Legal Metrology framing: calibration is the law\'s, the record is ours."', surfaces: ['weighbridge'],
+    key: 'ops2.refusal.calibration', why: 'FALSE, LEGAL: no calibration record; Legal Metrology is for a lawyer to read (Q6)' },
+  { id: 'dual_confirm', canon: 'W371 state "Bridge offline — … enter both readings with a second staff member\'s dual-confirm" + "Enter manual reading" (FM:61)', surfaces: ['weighbridge'],
+    key: 'ops2.refusal.dualConfirm', why: 'FALSE: no reading and no second-person rule exist; FM calls a `data-decor` button `nav-detail` (DELTA)' },
+  { id: 'vehicle_mismatch', canon: 'W371 state "Vehicle mismatch — blocked …"', surfaces: ['weighbridge'],
+    key: 'ops2.refusal.vehicleMismatch', why: 'FALSE: no vehicle is recorded' },
+  { id: 'supervisor_reprint', canon: 'W371 state "Reprint needs supervisor — … only the centre manager ([name]) … every reprint is logged" · "Reprint is supervisor-restricted"', surfaces: ['weighbridge'],
+    key: 'ops2.refusal.supervisorReprint', why: 'FALSE: no slip, no reprint, no supervisor role' },
+  { id: 'indicator_retry', canon: 'W371 state "Couldn\'t reach the digital indicator … Retry" (FM:64 → W3357–W3359)', surfaces: ['weighbridge', 'weighbridge_act'],
+    key: 'ops2.refusal.indicatorRetry', why: 'FALSE: no device integration; the page reads nothing, so it cannot fail' },
+  // ══ W374 Stacking — HONEST ══
+  { id: 'bay_stack', canon: 'W374 heading "Stacking — bay [ref], stack [n]"; "location is part of the receipt" · "Location Bay [ref] · stack [n]"', surfaces: ['stacking'],
+    key: 'ops2.refusal.bayStack', why: 'FALSE: no location column on any table; a receipt has none (0010:174-187)' },
+  { id: 'bag_arithmetic', canon: 'W374 "[n] bags × [n] kg = [n] kg + 1 bag × [n] kg = [n] kg total — … the sum matches the weighbridge net exactly."', surfaces: ['stacking'],
+    key: 'ops2.refusal.bagArithmetic', why: 'FALSE; page arithmetic refused (E3); no weighbridge (1B)' },
+  { id: 'pest_log', canon: 'W374 "Log pest-control check" ×2 (FM:71-72 → W3343–W3346) · "Pest control View bay log" (#pest-log) · state "No pest-control checks logged yet"', surfaces: ['stacking', 'stacking_form'],
+    key: 'ops2.refusal.pestLog', why: 'GAP-BE (OPS2-B18): no pest-control object; FM duplicates the row (the button is drawn twice)' },
+  { id: 'ambient', canon: 'W374 "Ambient moisture-safe last check [time]"', surfaces: ['stacking'],
+    key: 'ops2.refusal.ambient', why: 'FALSE: no ambient reading is recorded' },
+  { id: 'quarantine', canon: 'W374 state "Pest alert — bay quarantined"', surfaces: ['stacking'],
+    key: 'ops2.refusal.quarantine', why: 'FALSE: no quarantine state exists' },
+  { id: 'bay_suggestion', canon: 'W374 state "Bay full — alternative suggested … The system suggests bay [ref]"', surfaces: ['stacking'],
+    key: 'ops2.refusal.baySuggestion', why: 'FALSE: no bay and no suggestion engine' },
+  { id: 'audit_hold', canon: 'W374 states "Audit count variance … Movement out is held until a supervisor reconciles" · "Movement release is supervisor-restricted"', surfaces: ['stacking'],
+    key: 'ops2.refusal.auditHold', why: 'FALSE: no count, no hold, no supervisor role; release is paused for everyone (OPS-1a)' },
+  { id: 'bay_retry', canon: 'W374 state "Couldn\'t confirm the bay assignment … Retry" (FM:74 → W3347–W3349)', surfaces: ['stacking', 'stacking_act'],
+    key: 'ops2.refusal.bayRetry', why: 'FALSE: no bay assignment exists; the page reads nothing, so it cannot fail' },
 ]);
 export function ops2RefusalKeys(surface: Ops2Surface): string[] { return OPS2_REFUSALS.filter((r) => r.surfaces.includes(surface)).map((r) => r.key); }
 
@@ -226,13 +310,26 @@ export const OPS2_DELTAS: readonly { id: string; canon: string; built: string }[
   { id: 'receipt_quantity_unit', canon: 'brief §E "quantity (quintals)"; survey F-11 (the receipt has no unit column)', built: 'PREMISE NOT PROVEN for every record: a receipt copies the booking\'s number with no unit, and bookings in other units were accepted before OPS-2c B5 — the register prints the quantity as recorded, labelled "the receipt stores no unit"; the drill-in prints its booking\'s unit from the booking\'s own read' },
   { id: 'issue_form_removed', canon: 'the built `/warehouse/[id]` "Issue eNWR receipt" form + assay form (PC-32 OW-2)', built: 'the issue form is removed (founder Q3-A); the assay table and form moved to W372 (a link from the booking); `/warehouse` prints no valuation column (founder Q4-A, "anywhere")' },
   { id: 'fm_filter_cells_2b', canon: 'FM :79-82 four receipt numbers as `filter`', built: 'table cells — each row\'s number links the receipt\'s own read (the drill-in)' },
+  // ── OPS-2a ──
+  { id: 'route_dashboard', canon: 'W370 canon route `warehouse/dashboard`; the built `/warehouse` (PC-32 OW-2)', built: '`/warehouse/dashboard` at the canon address; `/warehouse` answers a REAL 307 there (next.config.js, OPS2A_REDIRECTS); `/warehouse/[id]` stays the drill-in' },
+  { id: 'route_weighbridge_stacking', canon: 'W371 `warehouse/weighbridge`, W374 `warehouse/stacking` (W374 an orphan: inbound only from its own chains)', built: 'the canon addresses, HONEST; the dashboard links both — the inbound edges the canon never drew (E2); Stacking joins the sidebar under Intake' },
+  { id: 'c3_box_warehouse', canon: 'survey C-3 / F-9: the old `/warehouse` sent no `box`, so the API answered `depositor` — the operator\'s OWN deposits — and its hint said "across your warehouses"',
+    built: 'the SDK `bookings()` gains `box` and `warehouseId` (OPS2-B7); W370 reads `warehouses({ box: \'mine\' })` then `bookings({ box: \'warehouse\', warehouseId })` per warehouse (wh-dashboard.render pins it: a fixture where a dropped `box` shows the operator\'s own deposit)' },
+  { id: 'commodity_name', canon: 'W370 "Commodity" ([commodity name])', built: 'the product\'s own `defaultName` from the existing `GET /v1/products/:id` (the SDK gains `catalogue.product(id)`); a product that cannot be read prints "not available" — never its id' },
+  { id: 'dashboard_per_warehouse', canon: 'W370 one table for "the warehouse" (the canon draws one)', built: 'one section per warehouse the person operates (up to 100), each keyset-paged on its own (`?warehouse=<id>&cursor=`); the status filter applies to all' },
+  { id: 'wh_act_reread', canon: 'W3366–W3368 confirm / success / failure (FM:59 "Retry")', built: 'PARITY-DECOR: the dashboard\'s error state offers "Retry", whose confirm state links a plain re-read of `/warehouse/dashboard`; Back → W370' },
+  { id: 'wh_form_back', canon: 'W3365 "Retry — back to confirm" → W370 (survey §1J defect)', built: 'no retry is offered (nothing was attempted); Back → W370' },
+  { id: 'fm_chain_ids_2a', canon: 'FM :57-74 name W1793–W1831-range chain targets (survey C-15)', built: 'those files do not exist; the real chains are W3362–W3368 (wh), W3355–W3359 (weighbridge), W3343–W3349 (stacking)' },
+  { id: 'fm_filter_spans_2a', canon: 'FM :58, :62, :73 "PV" as `filter`; FM:61 "Enter manual reading" as `nav-detail` (a `data-decor` button)', built: 'not built (DECOR, DELTA)' },
+  { id: 'drill_in_operator', canon: 'survey §1A: the drill-in\'s confirm / store / cancel', built: 'offered only when the booking\'s warehouse is one the signed-in person operates (`warehouses({ box: \'mine\' })`, the 2b approach); the operator\'s cancel has a REQUIRED reason; the bare "←" is removed (E9)' },
 ]);
 
 /** The verdict values. `pending_2b` / `pending_2a` are deleted from the type by the wave that decides the last of their files. */
 // NAMED UPDATE (PC-56 OPS-2b): `pending_2b` is deleted from the type — 2b decides the last of its files (the 4c-7 rule).
-export type Ops2Verdict = 'BUILT (read)' | 'BUILT (honest)' | 'REAL' | 'DECOR' | 'PARITY-DECOR' | 'pending_2a';
+// NAMED UPDATE (PC-56 OPS-2a): `pending_2a` is deleted too — 2a decides the last 22; OPS-2 is 45 decided / 0 pending.
+export type Ops2Verdict = 'BUILT (read)' | 'BUILT (honest)' | 'REAL' | 'DECOR' | 'PARITY-DECOR';
 export type Ops2Wave = '2a' | '2b' | '2c';
-/** Every canon file of OPS-2 (45), each with ONE verdict: 2c decides its 9; 2b's 14 and 2a's 22 are pending until their waves. */
+/** Every canon file of OPS-2 (45), each with ONE verdict: 2c decides its 9, 2b its 14, 2a its 22. */
 export const OPS2_CANON_FILES: readonly { file: string; wave: Ops2Wave; module: string; verdict: Ops2Verdict; note: string }[] = Object.freeze([
   // ── 2c · THE MONEY OF STORAGE (9) — decided (founder Q1-A, Q2-A, Q8-A, Q9-A, Q10-A, Q14-A) ──
   { file: 'W378-ops-storage-billing.html', wave: '2c', module: 'warehouse', verdict: 'BUILT (read)', note: '/warehouse/billing — a READ of the warehouses the signed-in person operates (GET /v1/warehousing/warehouses?box=mine) and each one\'s rate on file (a server minor string, formatMoneyMinor), labelled "on file now; the rate at release is used, not the rate when the goods arrived"; the warehouse\'s own name; a WDRA number "as entered, not checked with WDRA"; Q1-A: "Today, if release were switched on, the fee would be paid from the depositor\'s wallet into the warehouse operator\'s own wallet. …"; the Q2-A rule in words; no arithmetic, no depositor, no input' },
@@ -259,14 +356,29 @@ export const OPS2_CANON_FILES: readonly { file: string; wave: Ops2Wave; module: 
   { file: 'W3315-ops-enwr-mutate-confirm.html', wave: '2b', module: 'warehouse', verdict: 'DECOR', note: '/warehouse/enwr/issue?act=confirm — "Send OTP to farmer" and "Retry connection" refused: nothing to confirm' },
   { file: 'W3316-ops-enwr-mutate-success.html', wave: '2b', module: 'warehouse', verdict: 'DECOR', note: '?act=success — nothing was sent or recorded; the zero-sum sentence refused BY NAME (`enwr_zero_sum`)' },
   { file: 'W3317-ops-enwr-mutate-failure.html', wave: '2b', module: 'warehouse', verdict: 'DECOR', note: '?act=failure — nothing was attempted; nobody is paged; Back → /warehouse/enwr/issue' },
-  // ── 2a · INTAKE (22) — pending ──
-  ...['W370-ops-wh-dashboard.html', 'W3362-ops-wh-form-form-error.html', 'W3363-ops-wh-form-review.html', 'W3364-ops-wh-form-success.html',
-    'W3365-ops-wh-form-failure.html', 'W3366-ops-wh-mutate-confirm.html', 'W3367-ops-wh-mutate-success.html', 'W3368-ops-wh-mutate-failure.html',
-    'W371-ops-weighbridge.html', 'W3355-ops-weighbridge-export-queued.html', 'W3356-ops-weighbridge-export-ready.html', 'W3357-ops-weighbridge-mutate-confirm.html',
-    'W3358-ops-weighbridge-mutate-success.html', 'W3359-ops-weighbridge-mutate-failure.html', 'W374-ops-stacking.html', 'W3343-ops-stacking-form-form-error.html',
-    'W3344-ops-stacking-form-review.html', 'W3345-ops-stacking-form-success.html', 'W3346-ops-stacking-form-failure.html', 'W3347-ops-stacking-mutate-confirm.html',
-    'W3348-ops-stacking-mutate-success.html', 'W3349-ops-stacking-mutate-failure.html']
-    .map((file) => ({ file, wave: '2a' as const, module: 'warehouse', verdict: 'pending_2a' as const, note: 'OPS-2a · INTAKE (founder Q6-A, Q11-A, Q12-A, Q14-A) — not yet built' })),
+  // ── 2a · INTAKE (22) — decided (founder Q6-A, Q9-A, Q10-A, Q11-A, Q12-A, Q14-A; D1–D3) ──
+  { file: 'W370-ops-wh-dashboard.html', wave: '2a', module: 'warehouse', verdict: 'BUILT (read)', note: '/warehouse/dashboard (`/warehouse` answers a 307 here) — a READ of the bookings at the warehouses the signed-in person operates (GET …/warehouses?box=mine, then GET …/storage-bookings?box=warehouse&warehouseId= for each), keyset, a GET status select the only input: reference, status (translated), commodity (the product\'s own name), quantity with its unit, dates — no depositor name or id; Q12-A "A booking is the depositor\'s own request. She cannot yet make one on this platform."; "Release is paused for everyone."; net received, slip, eNWR pending, "of N" and "Page 1 of 1" refused; links to the weighbridge and stacking pages; a row → /warehouse/[id]' },
+  { file: 'W3362-ops-wh-form-form-error.html', wave: '2a', module: 'warehouse', verdict: 'DECOR', note: '/warehouse/dashboard?form=error — "New booking" refused (Q12-A): there is no form, so nothing to correct' },
+  { file: 'W3363-ops-wh-form-review.html', wave: '2a', module: 'warehouse', verdict: 'DECOR', note: '?form=review — nothing to review; "maker-checker" refused' },
+  { file: 'W3364-ops-wh-form-success.html', wave: '2a', module: 'warehouse', verdict: 'DECOR', note: '?form=success — no booking was made; the zero-sum sentence refused BY NAME (`intake_zero_sum`)' },
+  { file: 'W3365-ops-wh-form-failure.html', wave: '2a', module: 'warehouse', verdict: 'DECOR', note: '?form=failure — nothing was attempted; nobody is paged; Back → W370 (the canon\'s "Retry — back to confirm" is a defect)' },
+  { file: 'W3366-ops-wh-mutate-confirm.html', wave: '2a', module: 'warehouse', verdict: 'PARITY-DECOR', note: '/warehouse/dashboard?act=confirm — "Retry": reading the dashboard again changes nothing; the link IS a re-read of /warehouse/dashboard' },
+  { file: 'W3367-ops-wh-mutate-success.html', wave: '2a', module: 'warehouse', verdict: 'PARITY-DECOR', note: '?act=success — the dashboard is read afresh each time it opens; nothing was changed; the zero-sum sentence refused BY NAME' },
+  { file: 'W3368-ops-wh-mutate-failure.html', wave: '2a', module: 'warehouse', verdict: 'PARITY-DECOR', note: '?act=failure — nothing was changed; Back → W370 reads it again; nobody is paged' },
+  { file: 'W371-ops-weighbridge.html', wave: '2a', module: 'warehouse', verdict: 'BUILT (honest)', note: '/warehouse/weighbridge — HONEST, reads nothing, zero inputs: "This platform records no weighment." "Marking goods stored records no weight." "The quantity on a booking and on its receipt is the quantity the depositor asked to store."; slip, print, gross/tare/net, calibration, Legal Metrology, dual-confirm, manual reading, vehicle and supervisor reprint refused by name' },
+  { file: 'W3355-ops-weighbridge-export-queued.html', wave: '2a', module: 'warehouse', verdict: 'DECOR', note: '/warehouse/weighbridge?export=queued — "Print slip" refused (no slip, Q10-A): nothing queued' },
+  { file: 'W3356-ops-weighbridge-export-ready.html', wave: '2a', module: 'warehouse', verdict: 'DECOR', note: '?export=ready — no file was made; the export receipt refused' },
+  { file: 'W3357-ops-weighbridge-mutate-confirm.html', wave: '2a', module: 'warehouse', verdict: 'DECOR', note: '/warehouse/weighbridge?act=confirm — "Retry" (the indicator) refused: no device, nothing to confirm' },
+  { file: 'W3358-ops-weighbridge-mutate-success.html', wave: '2a', module: 'warehouse', verdict: 'DECOR', note: '?act=success — nothing was weighed or recorded; the zero-sum sentence refused BY NAME (on a weighbridge, the weight that would set a fee)' },
+  { file: 'W3359-ops-weighbridge-mutate-failure.html', wave: '2a', module: 'warehouse', verdict: 'DECOR', note: '?act=failure — nothing was attempted; nobody is paged; Back → /warehouse/weighbridge' },
+  { file: 'W374-ops-stacking.html', wave: '2a', module: 'warehouse', verdict: 'BUILT (honest)', note: '/warehouse/stacking — HONEST, reads nothing, zero inputs: "Where goods sit in the warehouse is not recorded on this platform, and neither is pest control." "No receipt on this platform carries a location."; bay, stack, bag arithmetic, pest-control log, quarantine, the bay suggestion and the audit-count hold refused by name; linked from the dashboard' },
+  { file: 'W3343-ops-stacking-form-form-error.html', wave: '2a', module: 'warehouse', verdict: 'DECOR', note: '/warehouse/stacking?form=error — "Log pest-control check" refused: there is no form' },
+  { file: 'W3344-ops-stacking-form-review.html', wave: '2a', module: 'warehouse', verdict: 'DECOR', note: '?form=review — nothing to review; "maker-checker" refused' },
+  { file: 'W3345-ops-stacking-form-success.html', wave: '2a', module: 'warehouse', verdict: 'DECOR', note: '?form=success — nothing was logged; the zero-sum sentence refused BY NAME' },
+  { file: 'W3346-ops-stacking-form-failure.html', wave: '2a', module: 'warehouse', verdict: 'DECOR', note: '?form=failure — nothing was attempted; nobody is paged; Back → W374' },
+  { file: 'W3347-ops-stacking-mutate-confirm.html', wave: '2a', module: 'warehouse', verdict: 'DECOR', note: '/warehouse/stacking?act=confirm — "Retry" (the bay assignment) refused: no bay exists' },
+  { file: 'W3348-ops-stacking-mutate-success.html', wave: '2a', module: 'warehouse', verdict: 'DECOR', note: '?act=success — nothing was assigned; the zero-sum sentence refused BY NAME' },
+  { file: 'W3349-ops-stacking-mutate-failure.html', wave: '2a', module: 'warehouse', verdict: 'DECOR', note: '?act=failure — nothing was attempted; Back → /warehouse/stacking' },
 ]);
 
 /** The six canon chain groups (survey §1J–§1O, 36 files, each exactly once) and the wave that owns each. */
@@ -281,10 +393,12 @@ export const OPS2_CHAIN_GROUPS: readonly { id: string; donor: string; wave: Ops2
 ]);
 
 // ── THE BUILT CHAINS: each is a query state of its parent page (the OPS-1 `Ops1Chain` shape). All three of 2c's are DECOR; of 2b's four, the assay
-// act chain is REAL (the record act's own states) and the other three DECOR. ──
-export type Chain2Id = 'storage_export' | 'storage_act' | 'wh_export' | 'assay_act' | 'assay_export' | 'enwr_export' | 'enwr_act';
+// act chain is REAL (the record act's own states) and the other three DECOR; of 2a's six, the wh act chain is PARITY-DECOR (its "Retry" is a plain
+// re-read of the dashboard) and the other five DECOR. NAMED WIDENING (OPS-2a): `kind` gains 'PARITY-DECOR' and `param` gains 'form'. ──
+export type Chain2Id = 'storage_export' | 'storage_act' | 'wh_export' | 'assay_act' | 'assay_export' | 'enwr_export' | 'enwr_act'
+  | 'wh_form' | 'wh_act' | 'weighbridge_export' | 'weighbridge_act' | 'stacking_form' | 'stacking_act';
 export interface Chain2Def {
-  id: Chain2Id; wave: Ops2Wave; kind: 'DECOR' | 'REAL'; param: 'act' | 'export'; page: string; surface: Ops2Surface; states: readonly string[];
+  id: Chain2Id; wave: Ops2Wave; kind: 'DECOR' | 'REAL' | 'PARITY-DECOR'; param: 'act' | 'export' | 'form'; page: string; surface: Ops2Surface; states: readonly string[];
   key: (state: string) => string; files: readonly string[]; statement: string;
 }
 export const OPS2_CHAINS: readonly Chain2Def[] = Object.freeze([
@@ -302,6 +416,19 @@ export const OPS2_CHAINS: readonly Chain2Def[] = Object.freeze([
     key: (s: string) => `ops2.chain.enwrExport.${s}`, files: ['W3313', 'W3314'], statement: 'ops2.enwrIssue.statement' },
   { id: 'enwr_act', wave: '2b', kind: 'DECOR', param: 'act', page: '/warehouse/enwr/issue', surface: 'enwr_act', states: ['confirm', 'success', 'failure'],
     key: (s: string) => `ops2.chain.enwrAct.${s}`, files: ['W3315', 'W3316', 'W3317'], statement: 'ops2.enwrIssue.statement' },
+  // ── OPS-2a ──
+  { id: 'wh_form', wave: '2a', kind: 'DECOR', param: 'form', page: '/warehouse/dashboard', surface: 'wh_form', states: ['error', 'review', 'success', 'failure'],
+    key: (s: string) => `ops2.chain.whForm.${s}`, files: ['W3362', 'W3363', 'W3364', 'W3365'], statement: 'ops2.whDash.newBooking' },
+  { id: 'wh_act', wave: '2a', kind: 'PARITY-DECOR', param: 'act', page: '/warehouse/dashboard', surface: 'wh_act', states: ['confirm', 'success', 'failure'],
+    key: (s: string) => `ops2.chain.whAct.${s}`, files: ['W3366', 'W3367', 'W3368'], statement: 'ops2.whDash.lead' },
+  { id: 'weighbridge_export', wave: '2a', kind: 'DECOR', param: 'export', page: '/warehouse/weighbridge', surface: 'weighbridge_export', states: ['queued', 'ready'],
+    key: (s: string) => `ops2.chain.weighbridgeExport.${s}`, files: ['W3355', 'W3356'], statement: 'ops2.weighbridge.statement' },
+  { id: 'weighbridge_act', wave: '2a', kind: 'DECOR', param: 'act', page: '/warehouse/weighbridge', surface: 'weighbridge_act', states: ['confirm', 'success', 'failure'],
+    key: (s: string) => `ops2.chain.weighbridgeAct.${s}`, files: ['W3357', 'W3358', 'W3359'], statement: 'ops2.weighbridge.statement' },
+  { id: 'stacking_form', wave: '2a', kind: 'DECOR', param: 'form', page: '/warehouse/stacking', surface: 'stacking_form', states: ['error', 'review', 'success', 'failure'],
+    key: (s: string) => `ops2.chain.stackingForm.${s}`, files: ['W3343', 'W3344', 'W3345', 'W3346'], statement: 'ops2.stacking.statement' },
+  { id: 'stacking_act', wave: '2a', kind: 'DECOR', param: 'act', page: '/warehouse/stacking', surface: 'stacking_act', states: ['confirm', 'success', 'failure'],
+    key: (s: string) => `ops2.chain.stackingAct.${s}`, files: ['W3347', 'W3348', 'W3349'], statement: 'ops2.stacking.statement' },
 ]);
 export function chain2ById(id: Chain2Id): Chain2Def { return OPS2_CHAINS.find((c) => c.id === id) as Chain2Def; }
 /** The chain state a page was opened in (`?act=confirm`, `?export=queued` …), or null for the page itself / an unknown state. */

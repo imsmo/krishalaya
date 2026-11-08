@@ -76,12 +76,42 @@ export class EnwrCancelReasonRequiredError extends DomainError {
   constructor() { super('ENWR_CANCEL_REASON_REQUIRED', ENWR_CANCEL_REASON_REQUIRED_SENTENCE, 400, { maxLength: 500 }); }
 }
 /**
- * PC-56 OPS-2b (founder Q11-A, applied STRICTLY to the two acts this wave touches — receipt cancel and assay record): only the warehouse's NAMED
- * operator (`warehouses.operator_user_id = the caller`) acts. No administrator escape on these two acts (the shared `isWarehouseAdmin` /
- * `booking.manage` escape on the other acts is OPS-2a's first commit).
+ * PC-56 OPS-2b → OPS-2a (founder Q11-A): only the warehouse's NAMED operator (`warehouses.operator_user_id = the caller`) acts on its bookings,
+ * assays and receipts. OPS-2b applied it to receipt cancel and assay record; OPS-2a deletes the administrator escape everywhere in warehousing and
+ * applies it to booking confirm and store too (one name for all four acts).
  */
 export const WAREHOUSE_OPERATOR_ONLY_SENTENCE = 'Only this warehouse\'s named operator can do this. Nothing was changed.';
 export class WarehouseOperatorOnlyError extends AppError {
-  constructor(act: 'nwr.cancel' | 'assay.record') { super('WAREHOUSE_OPERATOR_ONLY', WAREHOUSE_OPERATOR_ONLY_SENTENCE, 403, { act }); }
+  constructor(act: 'nwr.cancel' | 'assay.record' | 'booking.confirm' | 'booking.store') { super('WAREHOUSE_OPERATOR_ONLY', WAREHOUSE_OPERATOR_ONLY_SENTENCE, 403, { act }); }
 }
 export class WarehousingForbiddenError extends AppError { constructor(message = 'Not allowed on this warehousing resource') { super('WAREHOUSING_FORBIDDEN', message, 403); } }
+/**
+ * PC-56 OPS-2a · D1 / D2 (founder 2026-11-08). Only the warehouse's named operator may change its storage rate or any other field (D1). Any other
+ * `warehouse.manage` holder in the organisation may reassign the operator — `operatorUserId` and nothing else (D2). A request from someone who is
+ * not the operator that carries any other field is refused BY NAME, inside the unit of work before any write (the row is read FOR UPDATE to know
+ * who the operator is): nothing is saved, audited or emitted. A subclass of WarehousingForbiddenError, so a caller that catches the old 403
+ * still does; its own code names the rule.
+ */
+export const WAREHOUSE_REASSIGN_ONLY_SENTENCE =
+  'Only this warehouse\'s named operator can change its storage rate or its details. Another administrator can only reassign the operator. Nothing was saved.';
+export class WarehouseReassignOnlyError extends WarehousingForbiddenError {
+  constructor(fields: string[]) {
+    super(WAREHOUSE_REASSIGN_ONLY_SENTENCE);
+    (this as any).code = 'WAREHOUSE_REASSIGN_ONLY'; (this as any).details = { allowed: ['operatorUserId'], refused: fields };
+  }
+}
+/**
+ * PC-56 OPS-2a · D3 (founder 2026-11-08): a storage booking is cancelled only by the depositor herself or the warehouse's named operator. The
+ * operator's cancel needs a reason of 1–500 characters (refused BY NAME without one, BEFORE the unit of work and any lock); her own cancel keeps
+ * the reason optional (at most 500 characters). Anyone else is refused by name. Every cancel writes ONE audit row.
+ */
+export const BOOKING_CANCEL_REASON_REQUIRED_SENTENCE =
+  'The warehouse operator\'s cancel needs a reason of 1 to 500 characters, and no reason may be longer. Nothing was changed.';
+export class BookingCancelReasonRequiredError extends DomainError {
+  constructor() { super('BOOKING_CANCEL_REASON_REQUIRED', BOOKING_CANCEL_REASON_REQUIRED_SENTENCE, 400, { maxLength: 500 }); }
+}
+export const BOOKING_CANCEL_NOT_PERMITTED_SENTENCE =
+  'Only the depositor herself or this warehouse\'s named operator can cancel this booking. Nothing was changed.';
+export class BookingCancelNotPermittedError extends AppError {
+  constructor() { super('BOOKING_CANCEL_NOT_PERMITTED', BOOKING_CANCEL_NOT_PERMITTED_SENTENCE, 403, {}); }
+}

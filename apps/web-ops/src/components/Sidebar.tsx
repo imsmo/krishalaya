@@ -3,18 +3,22 @@
 import { getTranslator, getLang } from '../lib/i18n';
 import { LocaleSwitcher } from './LocaleSwitcher';
 
-const NAV: ReadonlyArray<{ href: string; labelKey: string; sub?: boolean }> = [
+const NAV: ReadonlyArray<{ href: string; labelKey: string; sub?: boolean; group?: string }> = [
   { href: '/dashboard', labelKey: 'nav.dashboard' },
   { href: '/kiosk/home', labelKey: 'nav.kiosk' }, // OW-1 → PC-56 OPS-1c · W380 (`/kiosk` answers a 307 here)
   { href: '/kiosk/session-start', labelKey: 'nav.kioskStart', sub: true }, // PC-56 OPS-1c · W381 (the one form: an account for a new number)
   { href: '/kiosk/ambassador', labelKey: 'nav.kioskEarnings', sub: true }, // PC-56 OPS-1c · W389 (her own earnings)
-  { href: '/warehouse', labelKey: 'nav.warehouse' }, // OW-2
-  { href: '/warehouse/withdrawal', labelKey: 'nav.withdrawal', sub: true }, // PC-56 OPS-1a · W377 (the warehouse section)
-  { href: '/warehouse/billing', labelKey: 'nav.whBilling', sub: true }, // PC-56 OPS-2c · W378 (the rate on file; nothing is billed)
-  { href: '/warehouse/insights', labelKey: 'nav.whInsights', sub: true }, // PC-56 OPS-2c · W379 (honest; reads nothing)
+  // PC-56 OPS-2a (survey E2): the warehouse section in the canon's three groups — Intake · Receipts · Money & insight — with Stacking added under
+  // Intake (W374 was an orphan) and the assay record (W373) reached from the assay page. `/warehouse` answers a 307 to the dashboard.
+  { href: '/warehouse/dashboard', labelKey: 'nav.warehouse', group: 'nav.whGroupIntake' }, // OW-2 → PC-56 OPS-2a · W370
+  { href: '/warehouse/weighbridge', labelKey: 'nav.whWeighbridge', sub: true }, // PC-56 OPS-2a · W371 (honest; reads nothing)
   { href: '/warehouse/assay', labelKey: 'nav.whAssay', sub: true }, // PC-56 OPS-2b · W372 (one booking's assays; W373 is reached from it)
+  { href: '/warehouse/stacking', labelKey: 'nav.whStacking', sub: true }, // PC-56 OPS-2a · W374 (honest; reads nothing)
+  { href: '/warehouse/enwr/issue', labelKey: 'nav.whEnwrIssue', sub: true, group: 'nav.whGroupReceipts' }, // PC-56 OPS-2b · W375 (honest; this platform issues none)
   { href: '/warehouse/enwr/registry', labelKey: 'nav.whEnwrRegistry', sub: true }, // PC-56 OPS-2b · W376 (the receipt records; read only)
-  { href: '/warehouse/enwr/issue', labelKey: 'nav.whEnwrIssue', sub: true }, // PC-56 OPS-2b · W375 (honest; this platform issues none)
+  { href: '/warehouse/withdrawal', labelKey: 'nav.withdrawal', sub: true }, // PC-56 OPS-1a · W377 (the warehouse section)
+  { href: '/warehouse/billing', labelKey: 'nav.whBilling', sub: true, group: 'nav.whGroupMoney' }, // PC-56 OPS-2c · W378 (the rate on file; nothing is billed)
+  { href: '/warehouse/insights', labelKey: 'nav.whInsights', sub: true }, // PC-56 OPS-2c · W379 (honest; reads nothing)
   { href: '/equipment', labelKey: 'nav.equipment' }, // OW-3
   { href: '/dairy', labelKey: 'nav.dairy' }, // OW-4
   { href: '/payout', labelKey: 'nav.payout', sub: true }, // PC-56 OPS-1a · W367 (the dairy section)
@@ -36,9 +40,11 @@ export function Sidebar() {
     <nav className="kv-sidebar" aria-label={t.t('nav.primary')}>
       <a href="/dashboard" className="kv-brand">{t.t('nav.brand')}</a>
       <ul className="kv-sidebar__nav">
-        {NAV.map((n) => (
-          <li key={n.href}><a href={n.href} className={n.sub ? 'kv-sidebar__link kv-sidebar__link--sub' : 'kv-sidebar__link'}>{t.t(n.labelKey)}</a></li>
-        ))}
+        {NAV.flatMap((n) => [
+          // PC-56 OPS-2a: a group heading (text, not a link) before the first entry of a group.
+          ...(n.group ? [<li key={`g-${n.group}`} className="kv-sidebar__group" data-kv-nav-group={n.group}>{t.t(n.group)}</li>] : []),
+          <li key={n.href}><a href={n.href} className={n.sub ? 'kv-sidebar__link kv-sidebar__link--sub' : 'kv-sidebar__link'}>{t.t(n.labelKey)}</a></li>,
+        ])}
       </ul>
       <div className="kv-sidebar__footer">
         <LocaleSwitcher active={lang} label={t.t('lang.label')} />

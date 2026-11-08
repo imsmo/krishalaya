@@ -14,7 +14,7 @@ import { BadRequestError } from '../../../../shared/errors/app-error';
 import { NwrReceiptService } from '../../services/nwr-receipt.service';
 import { IssueNwrSchema, IssueNwrDto } from '../../dto/create-nwr-receipt.dto';
 import { QueryNwrSchema, QueryNwrDto } from '../../dto/query-nwr-receipt.dto';
-import { WarehousingPermissions, canManageWarehouse, canStore, isWarehouseAdmin } from '../../policies/warehousing.policies';
+import { WarehousingPermissions, canManageWarehouse, canStore } from '../../policies/warehousing.policies';
 
 const ipOf = (r: Request) => r.ip || null;
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
@@ -24,7 +24,7 @@ const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] 
 @FeatureFlag('warehousing')
 export class NwrController {
   constructor(private readonly svc: NwrReceiptService) {}
-  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageWarehouse(ctx), canStore: canStore(ctx), isAdmin: isWarehouseAdmin(ctx) }; }
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageWarehouse(ctx), canStore: canStore(ctx) }; }   // PC-56 OPS-2a: no administrator escape (Q11-A)
 
   @Post() @RequirePermissions(WarehousingPermissions.Manage)
   issue(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string, @ZodBody(IssueNwrSchema) dto: IssueNwrDto) {

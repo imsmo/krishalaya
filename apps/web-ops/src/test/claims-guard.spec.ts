@@ -164,7 +164,8 @@ describe('PC-56 OPS-2c · the claims guard (ops2. scope, the money of storage)',
   });
   it.each(Object.entries(CATS))('%s: no ops2. value (or 2c nav label) trips a 2c guard or brand regex', (_lang, cat) => {
     // NAMED UPDATE (PC-56 OPS-2b): the 2b `ops2.` keys join this scope (a WIDENING — every 2c guard now also covers them): 76 → 243.
-    expect(scoped2(cat).length).toBe(243);
+    // NAMED UPDATE (PC-56 OPS-2a): the 2a `ops2.` keys join it too (a WIDENING again): 243 → 364.
+    expect(scoped2(cat).length).toBe(364);
     for (const [k, v] of scoped2(cat)) {
       for (const [name, hit] of GUARDS_2C) expect([k, name, hit(v)]).toEqual([k, name, false]);
       for (const [re] of BRAND_2C) expect([k, String(re), re.test(v)]).toEqual([k, String(re), false]);
@@ -221,7 +222,8 @@ const BRAND_2B: ReadonlyArray<[RegExp, string]> = [
 ];
 const SOURCES_2B = ['components/ops2/AssayViews.tsx', 'components/ops2/EnwrViews.tsx', 'components/ops2/Ops2Chain.tsx', 'features/ops2/receipts.ts',
   'app/warehouse/assay/page.tsx', 'app/warehouse/assay/actions.ts', 'app/warehouse/assay/certificate/page.tsx', 'app/warehouse/enwr/issue/page.tsx',
-  'app/warehouse/enwr/registry/page.tsx', 'app/warehouse/enwr/[id]/page.tsx', 'app/warehouse/[id]/page.tsx', 'app/warehouse/page.tsx', 'app/warehouse/actions.ts'];
+  // NAMED UPDATE (PC-56 OPS-2a): `app/warehouse/page.tsx` is deleted (`/warehouse` answers a 307); its successor W370 is in SOURCES_2A below.
+  'app/warehouse/enwr/registry/page.tsx', 'app/warehouse/enwr/[id]/page.tsx', 'app/warehouse/[id]/page.tsx', 'app/warehouse/actions.ts'];
 
 describe('PC-56 OPS-2b · the claims guard (ops2. + wh. scope, receipts and quality)', () => {
   it('each guard is proven on its own canon phrase; each affirmative guard lets its negated form through', () => {
@@ -232,7 +234,9 @@ describe('PC-56 OPS-2b · the claims guard (ops2. + wh. scope, receipts and qual
     for (const [re, phrase] of BRAND_2B) expect([String(re), re.test(phrase)]).toEqual([String(re), true]);
   });
   it.each(Object.entries(CATS))('%s: no ops2. / wh. value (or 2b nav label) trips a 2b guard or brand regex', (_lang, cat) => {
-    expect(scoped2b(cat).length).toBe(283);
+    // NAMED UPDATE (PC-56 OPS-2a): + the 121 2a `ops2.` keys and the 2 new `wh.error.*` keys, − the 20 superseded `wh.*` keys of the deleted
+    // `/warehouse` page (E8: deleted when no route uses them) → 386. A widening of the guarded `ops2.` values; the deleted keys exist nowhere.
+    expect(scoped2b(cat).length).toBe(386);
     for (const [k, v] of scoped2b(cat)) {
       for (const [name, hit] of GUARDS_2B) expect([k, name, hit(v)]).toEqual([k, name, false]);
       for (const [re] of BRAND_2B) expect([k, String(re), re.test(v)]).toEqual([k, String(re), false]);
@@ -258,6 +262,75 @@ describe('PC-56 OPS-2b · the claims guard (ops2. + wh. scope, receipts and qual
     for (const rel of SOURCES_2B) {
       const src = fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
       for (const [re] of BRAND_2B) expect([rel, String(re), re.test(src)]).toEqual([rel, String(re), false]);
+    }
+  });
+});
+
+// ── PC-56 OPS-2a (brief §E6): the INTAKE guards over the `ops2.` and `wh.` scope, the warehouse nav labels and the dashboard's warehouse row. Each
+// is proven on its own canon phrase (persons, places and references anonymised) and NARROWED TO THE AFFIRMATIVE — a sentence that carries a
+// negation passes ("No gross, tare or net reading is recorded"), the canon's claim is caught — and each is also proven to let its negated form
+// through. "(weighed)" is PLAIN in all three languages (founder Q6-A: dropped from the label in every language). The founder's words are PINNED.
+const NAV_2A = ['nav.warehouse', 'nav.whWeighbridge', 'nav.whStacking', 'nav.whGroupIntake', 'nav.whGroupReceipts', 'nav.whGroupMoney', 'dash.wave.warehouse'];
+const scoped2a = (cat: Record<string, string>) => Object.entries(cat).filter(([k]) => k.startsWith('ops2.') || k.startsWith('wh.') || NAV_2A.includes(k));
+const GUARDS_2A: ReadonlyArray<[name: string, hit: (v: string) => boolean, canon: string, negated?: string]> = [
+  ['(weighed) in any language (plain)', plain(/\((weighed|तौला|તોલાયું)\)/i), 'Mark stored (weighed)'],
+  ['weighbridge slip (affirmative)', affirmative(/weighbridge slip/i), 'Net received today [n] qtl · weighbridge slip [ref] · [n] kg net', 'No weighbridge slip exists here.'],
+  ['gross (affirmative)', affirmative(/\bgross\b/i), 'Gross − tare = net: [n] kg gross', 'No gross reading is recorded.'],
+  ['tare (affirmative)', affirmative(/\btare\b/i), '[n] kg tare · [time]', 'No tare is recorded.'],
+  ['calibrat (affirmative)', affirmative(/calibrat/i), 'Calibration — Stamping cert ref [ref], valid to [date].', 'No calibration record is kept.'],
+  ['Legal Metrology (affirmative)', affirmative(/legal metrology/i), 'Legal Metrology framing: calibration is the law\'s, the record is ours.', 'No Legal Metrology record is kept.'],
+  ['bay (affirmative)', affirmative(/\bbays?\b/i), 'Stacking — bay [ref], stack 3', 'No bay is recorded.'],
+  ['stack N (affirmative)', affirmative(/\bstack \d/i), 'Location Bay [ref] · stack 3', 'No stack 3 exists here.'],
+  ['pest (affirmative)', affirmative(/\bpest/i), 'Log pest-control check', 'No pest-control check is logged.'],
+  ['quarantin (affirmative)', affirmative(/quarantin/i), 'Pest alert — bay quarantined', 'Nothing is quarantined.'],
+  ['centre manager (affirmative)', affirmative(/centre manager/i), 'releasing stock, revising the rate card and viewing storage revenue are the centre manager\'s', 'No centre manager role exists.'],
+  ['gate staff (affirmative)', affirmative(/gate staff/i), 'Gate staff see today\'s bookings and the weighbridge queue', 'No gate staff role exists.'],
+  ['as of N (affirmative)', affirmative(/\bas of \d/i), 'Dashboard figures as of 09:00', 'No figure is shown as of 9 or any time.'],
+  ['of N (affirmative)', affirmative(/\bof \d/i), 'Showing 1 of 1 booking today · Page 1 of 1', 'No count of 1 or more is shown.'],
+  ['New booking, offered (affirmative)', affirmative(/\bnew booking\b/i), 'New booking', 'New booking: not available'],
+  ['weighed in (affirmative)', affirmative(/\bweighed in\b/i), 'Bookings appear the moment a farmer\'s lot is weighed in', 'No lot is weighed in here.'],
+];
+const BRAND_2A: ReadonlyArray<[RegExp, string]> = [
+  [/Gondal/i, 'Gondal Agri Warehouse'], [/Anand FPO/i, 'Anand FPO · warehouse ops'], [/Ramesh Patel/i, 'Ramesh Patel, GG-20 groundnut'], [/Paresh V\./, 'the centre manager\'s (Paresh V.)'],
+  [/SB-2026-|WB-0713|GJ-1•|W&M ••318|B-14|B-09|GG-20/, 'Slip WB-0713-041 · booking SB-2026-0871'], [/62\.60|6,260|12,480|6,220/, 'Net = 62.60 qtl'],
+];
+const SOURCES_2A = ['features/ops2/intake.ts', 'components/ops2/IntakeViews.tsx', 'app/warehouse/dashboard/page.tsx', 'app/warehouse/weighbridge/page.tsx',
+  'app/warehouse/stacking/page.tsx', 'app/warehouse/[id]/page.tsx', 'app/warehouse/actions.ts', 'components/Sidebar.tsx'];
+
+describe('PC-56 OPS-2a · the claims guard (ops2. + wh. scope, intake)', () => {
+  it('each guard is proven on its own canon phrase; each affirmative guard lets its negated form through', () => {
+    for (const [name, hit, canon, negated] of GUARDS_2A) {
+      expect([name, hit(canon)]).toEqual([name, true]);
+      if (negated) expect([name, 'negated', hit(negated)]).toEqual([name, 'negated', false]);
+    }
+    for (const [re, phrase] of BRAND_2A) expect([String(re), re.test(phrase)]).toEqual([String(re), true]);
+  });
+  it.each(Object.entries(CATS))('%s: no ops2. / wh. value (or warehouse nav label) trips a 2a guard or brand regex', (_lang, cat) => {
+    expect(scoped2a(cat).length).toBe(390);
+    for (const [k, v] of scoped2a(cat)) {
+      for (const [name, hit] of GUARDS_2A) expect([k, name, hit(v)]).toEqual([k, name, false]);
+      for (const [re] of BRAND_2A) expect([k, String(re), re.test(v)]).toEqual([k, String(re), false]);
+    }
+  });
+  it('founder Q6-A: the store label is exactly "Mark stored" in English and carries no "(weighed)" in any language', () => {
+    expect(en['wh.actStore']).toBe('Mark stored');
+    for (const cat of [en, hi, gu]) expect([cat['wh.actStore'], /\(/.test(cat['wh.actStore'])]).toEqual([cat['wh.actStore'], false]);
+  });
+  it('the founder\'s words and the code-proved facts are PINNED: Q12-A, release paused, the weighbridge three, the stacking two', () => {
+    expect(en['ops2.whDash.newBooking']).toBe('A booking is the depositor\'s own request. She cannot yet make one on this platform.');
+    expect(en['ops2.whDash.releasePaused']).toBe('Release is paused for everyone.');
+    expect(en['ops2.weighbridge.statement']).toBe('This platform records no weighment.');
+    expect(en['ops2.weighbridge.store']).toBe('Marking goods stored records no weight.');
+    expect(en['ops2.weighbridge.quantity']).toBe('The quantity on a booking and on its receipt is the quantity the depositor asked to store.');
+    expect(en['ops2.weighbridge.fee']).toBe('If release were switched on, the storage fee would be computed from that same quantity.');
+    expect(en['ops2.stacking.statement']).toBe('Where goods sit in the warehouse is not recorded on this platform, and neither is pest control.');
+    expect(en['ops2.stacking.receipt']).toBe('No receipt on this platform carries a location.');
+    expect([/स्वयं|अपना अनुरोध/.test(hi['ops2.whDash.newBooking']), /પોતાની વિનંતી/.test(gu['ops2.whDash.newBooking'])]).toEqual([true, true]);
+  });
+  it('brand guard over every new or changed 2a source', () => {
+    for (const rel of SOURCES_2A) {
+      const src = fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
+      for (const [re] of BRAND_2A) expect([rel, String(re), re.test(src)]).toEqual([rel, String(re), false]);
     }
   });
 });

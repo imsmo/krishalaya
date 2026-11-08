@@ -49,29 +49,39 @@ before release returns.
 - **eNWR record**: `issued → released | cancelled` in the machine; through the API only `issued → cancelled` is reachable (release refused by
   name, OPS-2b). `pledged`, `partially_released` and `defaulted` have no transition.
 - No version columns → mutations lock the row **FOR UPDATE**.
+- **No weight is recorded** (survey C-4/F-4, founder Q6-A): `POST …/:id/store` takes no body and records no weight; a booking's quantity —
+  and any receipt's — is the quantity the depositor asked to store. There is no weighbridge, location, stack or pest-control object.
 
 ## Endpoints
 - `POST /v1/warehousing/warehouses` (idempotent, `warehouse.manage`) · `GET` (?box=mine|browse|all) · `GET /:id` · `PATCH /:id`.
 - `POST /v1/warehousing/storage-bookings` (request, idempotent, `warehouse.store`) · `GET` (?box) · `GET /:id`
-  · `POST /:id/{confirm,store}` (operator) · `POST /:id/release` (operator, idempotent, money) · `POST /:id/cancel`
+  · `POST /:id/{confirm,store}` (the named operator, audited) · `POST /:id/release` (operator, idempotent, money) · `POST /:id/cancel`
   · `POST /:id/assays` (operator) · `GET /:id/assays`.
 - `POST /v1/warehousing/nwr` (issue — **refused by name**, OPS-2b) · `GET` (?box=mine|all) · `GET /:id` · `POST /:id/release` (**refused by
   name**) · `POST /:id/cancel` (the named operator, keyed, reason, audited).
 
 ## Threats considered
 - **No cross-party IDOR**: a depositor reads only their own bookings/assays; an NWR is visible to its holder
-  or staff (404 otherwise); operator actions verify `warehouse.operator_user_id == caller` — strictly (no admin) on assay record and receipt
-  cancel since OPS-2b; "or admin" (the `booking.manage` escape) on the others until OPS-2a.
+  or staff (404 otherwise); operator actions verify `warehouse.operator_user_id == caller` — strictly, with no administrator escape, on every
+  act (assay record and receipt cancel since OPS-2b; confirm, store, booking cancel and warehouse edits since OPS-2a, founder Q11-A). The
+  labour permission is read nowhere in this module.
 - **Platform-global warehouses** (NULL `tenant_id`, independent WDRA) are cross-tenant *visible* (browse +
   bookable) per the 0014 RLS policy, but **never editable** cross-tenant (`getForUpdate` is strictly tenant-owned).
 - **Anti-mass-assignment**: zod `.strict()` DTOs; storage fee server-derived; no receipt can be created through the API (OPS-2b).
 - **Money safety**: release is refused by name (paused); `storage_fee` would be zero-sum + idempotent; a free warehouse moves no money;
   fail-closed when no payee. Audit rows on warehouse-list, **warehouse-update (rate and operator before/after — OPS-2c B4)**, **assay record
-  and receipt cancel (OPS-2b)**, booking-release and eNWR-issue (both unreachable — refused by name). Confirm, store and booking cancel write
-  none yet (survey C-8 — OPS-2a).
+  and receipt cancel (OPS-2b)**, **booking confirm, store and cancel (OPS-2a B4: `warehousing.booking.confirmed` / `.stored` / `.cancelled`,
+  status before → after; the cancel row carries who cancelled — operator or depositor — and the reason)**, booking-release and eNWR-issue
+  (both unreachable — refused by name).
 - **The operator is a member** (OPS-2c B6): a named operator who is not an active member of the tenant is refused by name
-  (`WAREHOUSE_OPERATOR_NOT_A_MEMBER`) on listing and update. Note (survey C-6/F-5): apart from assay record and receipt cancel (strict since
-  OPS-2b), "operator-only" checks still admit a `booking.manage` holder (every tenant_admin) — OPS-2a's first commit (founder Q11-A).
+  (`WAREHOUSE_OPERATOR_NOT_A_MEMBER`) on listing and update.
+- **Who edits a warehouse** (PC-56 OPS-2a, founder D1/D2 2026-11-08): only its named operator may change its rate or any other field; any
+  other `warehouse.manage` holder may reassign the operator (`operatorUserId` only — 403 `WAREHOUSE_REASSIGN_ONLY` on any other field),
+  recorded before/after. A platform-global (NULL-tenant) warehouse is never editable or reassignable from a tenant (404).
+- **Who cancels a booking** (D3): the depositor herself (reason optional) or the named operator (reason of 1–500 characters required, 400
+  `BOOKING_CANCEL_REASON_REQUIRED`, refused before the unit of work and any lock); anyone else 403 `BOOKING_CANCEL_NOT_PERMITTED`. The route
+  admits either permission (`RequireAnyPermission(warehouse.store, warehouse.manage)`). No Idempotency-Key: a replay is refused by the state
+  machine (409 `STORAGE_BOOKING_ILLEGAL_TRANSITION`) and writes nothing.
 - **AuthZ throws**: `warehouse.manage` (operator), `warehouse.store` (depositor). Tenant_id + RLS everywhere
   (integration proves cross-tenant denial). Keyset pagination with max `LIMIT`.
 

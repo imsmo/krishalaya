@@ -170,13 +170,13 @@ export type { OrgWalletOverview, OrgAccountRow, OrgBalanceVerdict, OrgMovementRo
 export * from './resources/fintech';
 export * from './resources/partner-api';
 export * from './resources/partner';   // PC-56 PARTNER-0 · the partner console realm
-export type { ProductBatch, CreateBatchInput } from './resources/catalogue'; // PC-50 W10-4
+export type { ProductBatch, CreateBatchInput, CatalogueProduct } from './resources/catalogue'; // PC-50 W10-4; PC-56 OPS-2a: CatalogueProduct
 export type { EquipmentAsset, EquipmentRate, EquipmentRental } from './resources/equipment'; // PC-50 W10-6
 export type { RiderPayoutStatement } from './resources/logistics'; // PC-55 A7
 // Types defined in their resource modules but previously never re-exported from this barrel — the six web
 // consoles import them via `from '@krishalaya/sdk-js'`, which failed to typecheck until now (surfaced by the
 // first full `pnpm build` of web-ops/web-gov). Grouped by module, same style as the lines above.
-export type { StorageBooking, AssayReport, NwrReceipt, NwrBox, Warehouse, WarehouseBox } from './resources/warehousing';   // PC-56 OPS-2c: Warehouse + WarehouseBox (W378); OPS-2b: NwrBox
+export type { StorageBooking, AssayReport, NwrReceipt, NwrBox, Warehouse, WarehouseBox, BookingBox } from './resources/warehousing';   // PC-56 OPS-2c: Warehouse + WarehouseBox (W378); OPS-2b: NwrBox; OPS-2a: BookingBox
 export type { Coupon, CouponRedemption, Promotion, PromotionStatus, PromotionRules, CreatePromotionInput, PromotionReviewInput, PromotionReview, CouponReviewInput, CouponReview,
   OffersSummary, CouponStatus, CouponListRow, CouponOutcome, CouponRedemptionRow, CouponNotice } from './resources/promotions';
 export type { EduChannel } from './resources/education';

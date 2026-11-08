@@ -18,8 +18,9 @@ export function generateMetadata(): Metadata {
 // [PC-56 correction (survey OPS-1 C-5): "every ops wave is built" is stale — the PC-56 tracker covers the ops canon wave by wave. OPS-1b
 // corrected its own row: the AePS area is a LOG (`/aeps/home`), never "receipts, withdrawals"; and Attendance (no face check-in) is added.
 // OPS-1c corrected the kiosk row: it creates an account for a new number (`/kiosk/home`) — never "KYC, profile, first listing", which she does
-// herself in her own sign-in.]
-const BUILT: ReadonlyArray<{ key: string; href: string }> = [{ key: 'kiosk', href: '/kiosk/home' }, { key: 'warehouse', href: '/warehouse' }, { key: 'chc', href: '/equipment' }, { key: 'dairypos', href: '/dairy' }, { key: 'aeps', href: '/aeps/home' }, { key: 'attendance', href: '/attendance/face-enroll' }, { key: 'insights', href: '/insights' }, { key: 'devices', href: '/devices' }];
+// herself in her own sign-in. OPS-2a corrected the warehouse row (survey C-12): no weighbridge, stacking or billing exists to show, and the row
+// links the warehouse dashboard (`/warehouse/dashboard`; `/warehouse` answers a 307 there).]
+const BUILT: ReadonlyArray<{ key: string; href: string }> = [{ key: 'kiosk', href: '/kiosk/home' }, { key: 'warehouse', href: '/warehouse/dashboard' }, { key: 'chc', href: '/equipment' }, { key: 'dairypos', href: '/dairy' }, { key: 'aeps', href: '/aeps/home' }, { key: 'attendance', href: '/attendance/face-enroll' }, { key: 'insights', href: '/insights' }, { key: 'devices', href: '/devices' }];
 
 export default async function DashboardPage() {
   await requireSession('/dashboard');

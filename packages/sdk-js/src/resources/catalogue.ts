@@ -13,11 +13,19 @@ export interface CreateBatchInput {
 import { HttpClient } from '../http';
 import { ProductCard, Page } from '../types';
 
+/** What `GET /v1/products/:id` answers (`product.entity.ts` props) — the fields a reader needs. */
+export interface CatalogueProduct { id: string; defaultName: string; categoryId?: string; defaultUnit?: string; tenantId?: string | null; isActive?: boolean; }
+
 export class CatalogueResource {
   constructor(private readonly http: HttpClient) {}
   async browseProducts(query: { q?: string; categoryId?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<ProductCard>> {
     const r = await this.http.request<ProductCard[]>('GET', 'products', { signal, query });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
+  }
+  /** PC-56 OPS-2a: one product's own record (`GET /v1/products/:id` — the existing public read; the platform master or this organisation's own).
+   *  The warehouse dashboard prints its `defaultName` as a booking's commodity — never its id. */
+  async product(id: string, signal?: AbortSignal): Promise<CatalogueProduct> {
+    return (await this.http.request<CatalogueProduct>('GET', `products/${encodeURIComponent(id)}`, { signal })).data;
   }
 
   // --- product batches (PC-50 W10-4; MRP is a bigint minor STRING — Law 2) ---

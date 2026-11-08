@@ -55,7 +55,10 @@ describe('PC-56 OPS-2b · the reads, exactly', () => {
 describe('PC-56 OPS-2b · Q4-A / Q9-A / Q3-A / Q5-A', () => {
   it('no receipts or assay source names a valuation or a holder', () => {
     for (const rel of ALL_2B) expect([rel, /valuationMinor|holderUserId|valuation\b|depositorUserId/i.test(code(read(rel)))]).toEqual([rel, false]);
-    for (const rel of ['app/warehouse/page.tsx', 'app/warehouse/[id]/page.tsx']) expect([rel, /valuationMinor|holderUserId/.test(code(read(rel)))]).toEqual([rel, false]);
+    // PC-56 OPS-2a · NAMED UPDATE: `app/warehouse/page.tsx` is gone (`/warehouse` answers a 307 to W370); its successor W370 and the drill-in's new
+    // view are checked instead — the same rule over more files.
+    for (const rel of ['app/warehouse/dashboard/page.tsx', 'app/warehouse/[id]/page.tsx', 'components/ops2/IntakeViews.tsx', 'features/ops2/intake.ts'])
+      expect([rel, /valuationMinor|holderUserId/.test(code(read(rel)))]).toEqual([rel, false]);
   });
   it('the SDK type of a receipt carries neither a value nor a holder', () => {
     const sdk = fs.readFileSync(path.join(SRC, '..', '..', '..', 'packages', 'sdk-js', 'src', 'resources', 'warehousing.ts'), 'utf8');
@@ -89,8 +92,10 @@ describe('PC-56 OPS-2b · E7 inputs, E3, sidebar', () => {
     expect(hrefs).not.toContain('/warehouse/assay/certificate');
     for (const h of hrefs) expect([h, fs.existsSync(path.join(SRC, 'app', h, 'page.tsx'))]).toEqual([h, true]);
   });
+  // PC-56 OPS-2a · NAMED UPDATE: the drill-in's markup moved into `BookingDetailView` (components/ops2/IntakeViews.tsx); the page and the view are
+  // checked together — the same three absences and the same assay link.
   it('the booking page no longer offers the issue form, the assay form or a release button', () => {
-    const b = code(read('app/warehouse/[id]/page.tsx'));
+    const b = code(read('app/warehouse/[id]/page.tsx')) + code(read('components/ops2/IntakeViews.tsx'));
     expect(/issueNwrAction|recordAssayAction|name="enwrNo"|name="valuationMajor"|name="assayerName"/.test(b)).toBe(false);
     expect(b).toMatch(/assayHref\(b\.id\)/);
     expect(/export async function (issueNwrAction|recordAssayAction)/.test(read('app/warehouse/actions.ts'))).toBe(false);
