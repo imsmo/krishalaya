@@ -35,6 +35,7 @@ import { BmcUnitRepository } from '../repositories/bmc-unit.repository';
 import { BmcReadingRefusedError, BmcUnitNotFoundError, DairyForbiddenError } from '../domain/dairy.errors';
 import { bandOf, deciOfC, isBreach, readingVerdict } from '../domain/bmc';
 import { DairyActor } from './mcc-centre.service';
+import { actorMayCollect } from '../policies/dairy.policies';
 
 export interface BmcReadingInput {
   /** Either the sensor's own reference (how a device identifies itself) or the unit id (how an operator does). */
@@ -58,12 +59,13 @@ export class BmcReadingService {
   /**
    * Record one reading against the tank's own band.
    *
-   * `dairy.manage` — the cooperative's desk, or a device acting with its credentials. The reading is written through
+   * `dairy.collect` or `dairy.manage` (PC-56 OPS-3p, founder Q6-A: the counter records a manual reading; the cooler's band,
+   * level, compressor and retirement stay `dairy.manage`) — the cooperative's desk, or a device acting with its credentials. The reading is written through
    * logistics' public service so `is_breach` is computed by the one implementation that owns it, and the verdict comes
    * back so the caller (a counter tablet, a gateway) can show the operator what the platform just decided.
    */
   async record(tenantId: string, actor: DairyActor, input: BmcReadingInput) {
-    if (!actor.canManage) throw new DairyForbiddenError('requires dairy.manage');
+    if (!actorMayCollect(actor)) throw new DairyForbiddenError('requires dairy.collect or dairy.manage');
     return timed(this.metrics, 'dairy.bmc_reading', { tenant: tenantId }, async () => {
       const unit = await this.resolve(tenantId, input);
       const p = unit.toProps();

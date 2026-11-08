@@ -17,7 +17,7 @@ import { RecordDeductionConsentSchema, RecordDeductionConsentDto } from '../../d
 import { RaiseDisputeSchema, RaiseDisputeDto, VoidBillSchema, VoidBillDto } from '../../dto/milk-bill-dispute.dto';
 import { GenerateBillSchema, GenerateBillDto } from '../../dto/create-milk-bill.dto';
 import { QueryBillsSchema, QueryBillsDto } from '../../dto/query-milk-bill.dto';
-import { DairyPermissions, canManageDairy, canCloseSettlement } from '../../policies/dairy.policies';
+import { DairyPermissions, canManageDairy, canCloseSettlement, canCollectDairy, canReadDairy } from '../../policies/dairy.policies';
 
 const ipOf = (r: Request) => r.ip || null;
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
@@ -28,7 +28,7 @@ const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] 
 export class MilkBillsController {
   constructor(private readonly bills: MilkBillService, private readonly disputes: MilkBillDisputeService,
               private readonly consents: MilkBillDeductionConsentService) {}
-  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx) }; }
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx), canCollect: canCollectDairy(ctx), canRead: canReadDairy(ctx) }; }
 
   @Post('generate') @RequirePermissions(DairyPermissions.Manage)
   generate(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @ZodBody(GenerateBillSchema) dto: GenerateBillDto) {

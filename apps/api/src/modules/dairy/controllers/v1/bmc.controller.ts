@@ -17,7 +17,7 @@
 import { Controller, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
-import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
+import { PermissionsGuard, RequireAnyPermission, RequirePermissions } from '../../../../core/auth/permissions.guard';
 import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
@@ -26,7 +26,7 @@ import { BadRequestError } from '../../../../shared/errors/app-error';
 import { BmcUnitService } from '../../services/bmc-unit.service';
 import { BmcReadingService } from '../../services/bmc-reading.service';
 import { DairyBmcReadModel, BMC_MONITOR_FLAG } from '../../read-models/dairy-bmc.read-model';
-import { DairyPermissions, canManageDairy, canCloseSettlement } from '../../policies/dairy.policies';
+import { DAIRY_COLLECT_ANY, DAIRY_READ_ANY, DairyPermissions, canManageDairy, canCloseSettlement, canCollectDairy, canReadDairy } from '../../policies/dairy.policies';
 import {
   QueryBmcMonitorSchema, QueryBmcMonitorDto, QueryBmcUnitsSchema, QueryBmcUnitsDto,
   RegisterBmcSchema, RegisterBmcDto, ReportBmcLevelSchema, ReportBmcLevelDto,
@@ -65,10 +65,10 @@ export class BmcController {
    * TENANT-6c-3's rule is that **every** dairy controller resolves the whole actor rather than the subset it happens to
    * read today. A controller that omits a key is one route away from gating on a decorator that the service never sees.
    */
-  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx) }; }
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx), canCollect: canCollectDairy(ctx), canRead: canReadDairy(ctx) }; }
 
-  /** W170 itself. DECLARED FIRST — see the header. */
-  @Get('monitor') @RequirePermissions(DairyPermissions.Manage)
+  /** W170 itself. DECLARED FIRST — see the header. A BOARD (PC-56 OPS-3p, founder Q6-A): dairy.read, dairy.collect or dairy.manage. */
+  @Get('monitor') @RequireAnyPermission(...DAIRY_READ_ANY)
   view(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryBmcMonitorSchema) q: QueryBmcMonitorDto) {
     return this.monitor.view(ctx.tenantId, this.actor(ctx), { unitId: q.unitId, hours: q.hours }).then((data) => ({ data }));
   }
@@ -167,8 +167,11 @@ export class BmcController {
    * not a retry — `cold_chain_logs` has no natural key to collapse them onto, and inventing one (device + minute) would
    * silently drop a genuine second reading during exactly the minute a tank is warming fastest. The band is read from
    * the tank, so a caller cannot declare its own definition of a breach.
+   *
+   * [PC-56 OPS-3p · founder Q6-A] THE COUNTER'S SECOND ACT: dairy.collect or dairy.manage. Every cooler SETTING above (band, level,
+   * compressor, retire, register, call) stays dairy.manage.
    */
-  @Post('readings') @RequirePermissions(DairyPermissions.Manage)
+  @Post('readings') @RequireAnyPermission(...DAIRY_COLLECT_ANY)
   record(@CurrentContext() ctx: RequestContext, @ZodBody(RecordBmcReadingSchema) dto: RecordBmcReadingDto) {
     return this.readings.record(ctx.tenantId, this.actor(ctx), dto).then((data) => ({ data }));
   }

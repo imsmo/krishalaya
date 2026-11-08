@@ -27,6 +27,13 @@ export interface DairyActor {
    * cannot approve a cycle. Fail-closed is the only safe default for a key that guards 312 families' milk money.
    */
   canCloseSettlement?: boolean;
+  /**
+   * [PC-56 OPS-3p · founder Q6-A] Holds `dairy.collect` or `dairy.manage` (`canCollectDairy`, DAIRY_COLLECT_ANY): may record a pour or
+   * a manual cooler reading. Optional and fail-closed, like `canCloseSettlement`; read through `actorMayCollect`.
+   */
+  canCollect?: boolean;
+  /** [PC-56 OPS-3p] Holds `dairy.read`, `dairy.collect` or `dairy.manage` (`canReadDairy`): may read a board. Read through `actorMayRead`. */
+  canRead?: boolean;
 }
 
 @Injectable()

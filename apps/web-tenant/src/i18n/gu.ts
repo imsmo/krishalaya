@@ -3782,7 +3782,7 @@ export const gu: Messages = {
   'dairy.quality.buffersAtMcc': 'એનાલાઇઝર રીડિંગ MCC પર બફર થાય છે — આ બંધ હોય ત્યારે પણ કંઈ ગુમ થતું નથી.',
   'dairy.quality.state.ok': 'ગુણવત્તા ડેસ્ક',
   'dairy.quality.state.flaggedOff': 'આ ટેનન્ટ માટે દૂધ ગુણવત્તા ડેસ્ક બંધ છે. કંઈ બગડ્યું નથી — તે ચાલુ નથી.',
-  'dairy.quality.state.restricted': 'આ ડેસ્ક માટે જરૂરી ડેરી સ્કોપ તમારી પાસે નથી. નોંધ: આ પ્લેટફોર્મ પર ફક્ત એક ડેરી પરવાનગી છે, તેથી ફક્ત-વાંચન ડેરી સ્કોપ આપવાનો વિકલ્પ નથી.',
+  'dairy.quality.state.restricted': 'તમારી પાસે આ ડેસ્ક વાંચી શકાય એવી ડેરી પરવાનગી નથી. તેને dairy.read, dairy.collect અથવા dairy.manage થી વાંચી શકાય છે.',
   'dairy.quality.state.error': 'ગુણવત્તા ડેટા લોડ થઈ શક્યો નથી.',
   'dairy.quality.action.rateCards': 'રેટ કાર્ડ',
   'dairy.quality.action.reviewFlags': 'ફ્લેગ જુઓ',

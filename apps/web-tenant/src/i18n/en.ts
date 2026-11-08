@@ -3786,7 +3786,7 @@ export const en: Messages = {
   'dairy.quality.buffersAtMcc': 'Analyzer readings buffer at the MCC — nothing is lost while this is down.',
   'dairy.quality.state.ok': 'Quality desk',
   'dairy.quality.state.flaggedOff': 'The milk quality desk is switched off for this tenant. Nothing is broken — it is not enabled.',
-  'dairy.quality.state.restricted': 'You do not have the dairy scope this desk needs. Note: this platform defines only one dairy permission, so there is no read-only dairy scope to give you.',
+  'dairy.quality.state.restricted': 'You do not have a dairy permission that reads this desk. It can be read with dairy.read, dairy.collect or dairy.manage.',
   'dairy.quality.state.error': 'Could not load quality data.',
   'dairy.quality.action.rateCards': 'Rate cards',
   'dairy.quality.action.reviewFlags': 'Review flags',

@@ -28,7 +28,7 @@ import {
   QueryRouteTrailSchema, QueryRouteTrailDto,
 } from '../../dto/membership-move.dto';
 import { MilkShift } from '../../domain/mcc-console';
-import { DairyPermissions, canManageDairy, canCloseSettlement } from '../../policies/dairy.policies';
+import { DairyPermissions, canManageDairy, canCloseSettlement, canCollectDairy, canReadDairy } from '../../policies/dairy.policies';
 import { PreviewMccDto, PreviewMccSchema } from '../../dto/dairy-form-preview.dto';
 
 const ipOf = (r: Request) => r.ip || null;
@@ -44,7 +44,7 @@ export class MccController {
     private readonly centres: DairyCentresReadModel,
     private readonly moves: DairyMembershipMoveService,
   ) {}
-  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx) }; }
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx), canCollect: canCollectDairy(ctx), canRead: canReadDairy(ctx) }; }
 
   @Post() @RequirePermissions(DairyPermissions.Manage)
   create(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string, @ZodBody(CreateMccSchema) dto: CreateMccDto) {

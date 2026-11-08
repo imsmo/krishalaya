@@ -25,14 +25,14 @@ import { DairyBillCycleService } from '../../services/dairy-bill-cycle.service';
 import { DairyCycleConsoleReadModel } from '../../read-models/dairy-cycle-console.read-model';
 import { CycleConsoleSchema, CycleConsoleDto, decodeGrossCursor } from '../../dto/query-cycle-console.dto';
 import { ZodQuery } from '../../../../core/http/zod.pipe';
-import { DairyPermissions, canManageDairy, canCloseSettlement } from '../../policies/dairy.policies';
+import { DairyPermissions, canManageDairy, canCloseSettlement, canCollectDairy, canReadDairy } from '../../policies/dairy.policies';
 
 @Controller({ path: 'dairy/bill-cycles', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
 @FeatureFlag('dairy')
 export class BillCyclesController {
   constructor(private readonly cycles: DairyBillCycleService, private readonly console_: DairyCycleConsoleReadModel) {}
-  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx) }; }
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx), canCollect: canCollectDairy(ctx), canRead: canReadDairy(ctx) }; }
 
   /**
    * W169 ITSELF: one cycle's register, its four tiles, and every act's refusal resolved server-side.

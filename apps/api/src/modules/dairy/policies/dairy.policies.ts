@@ -1,6 +1,11 @@
-// modules/dairy/policies/dairy.policies.ts · permission keys (DB-backed RBAC, Law 6; seeded in 0004).
-//   dairy.manage — the cooperative/MCC operator: create MCCs + rate cards, enrol members, record
-//                  collections, generate/approve/PAY milk bills. Members READ their own data (no perm).
+// modules/dairy/policies/dairy.policies.ts · permission keys (DB-backed RBAC, Law 6; seeded in 0004, granted in 0235).
+//   dairy.manage  — the cooperative's dairy administrator: centres, rate cards, enrolment, bills, every quality decision and
+//                   every cooler setting — every money or settings act. Also records and reads (administrators keep it).
+//   dairy.collect — [PC-56 OPS-3p · founder Q6-A, 2026-11-08] the COUNTER: records a pour and a manual cooler reading, and
+//                   reads the boards. Never a rate, a bill, a member or a decision. "The person weighing her milk should not
+//                   be the person who can change what it is worth."
+//   dairy.read    — [PC-56 OPS-3p] reads the boards (counter board, quality desk, BMC monitor, day sheet, centre roll). No act.
+//   Members READ their own data (no perm).
 import { RequestContext } from '../../../core/tenancy-context/request-context';
 import { IdentityPermissions } from '../../identity/policies/identity.policies';
 
@@ -26,7 +31,22 @@ export const DairyPermissions = {
    * the roles seed that every sibling vertical has two verbs while dairy had only `manage` — this is the other one.
    */
   Override: 'dairy.override',
+  /** [PC-56 OPS-3p · founder Q6-A] the counter's verb: a pour and a manual cooler reading (0235). */
+  Collect: 'dairy.collect',
+  /** [PC-56 OPS-3p · founder Q6-A] the boards' read-only verb (0235). */
+  Read: 'dairy.read',
 } as const;
+
+/**
+ * [PC-56 OPS-3p] THE TWO ANY-OF SETS — the ONE source for both layers. A route's `@RequireAnyPermission(...)` and the
+ * service's own check (via `canCollectDairy` / `canReadDairy` on the actor) read the SAME array, so the two layers cannot
+ * drift apart: widening one widens both, and a test sees it.
+ *   COLLECT — record a pour / a manual cooler reading: the counter, or an administrator (who keeps every act it had).
+ *   READ    — look at a board: the reader, the counter, or an administrator.
+ * Neither ever contains a code that prices, bills, enrols or decides.
+ */
+export const DAIRY_COLLECT_ANY: readonly string[] = Object.freeze([DairyPermissions.Collect, DairyPermissions.Manage]);
+export const DAIRY_READ_ANY: readonly string[] = Object.freeze([DairyPermissions.Read, DairyPermissions.Collect, DairyPermissions.Manage]);
 
 /**
  * `dairy.manage` is the cooperative/MCC OPERATOR's verb. Until TENANT-6c-3 the roles seed also granted it to
@@ -35,6 +55,19 @@ export const DairyPermissions = {
  * member-facing dairy route authorises by OWNERSHIP and carries no permission at all.
  */
 export const canManageDairy = (ctx: RequestContext) => ctx.permissions.has('dairy.manage') || ctx.permissions.has('*');
+/** [PC-56 OPS-3p] may record a pour / a manual cooler reading (DAIRY_COLLECT_ANY). */
+export const canCollectDairy = (ctx: RequestContext) => DAIRY_COLLECT_ANY.some((p) => ctx.permissions.has(p)) || ctx.permissions.has('*');
+/** [PC-56 OPS-3p] may read a dairy board (DAIRY_READ_ANY). */
+export const canReadDairy = (ctx: RequestContext) => DAIRY_READ_ANY.some((p) => ctx.permissions.has(p)) || ctx.permissions.has('*');
+/**
+ * [PC-56 OPS-3p] The SERVICE side of the same two rules, on the resolved actor. `canCollect` / `canRead` are optional on the
+ * actor and absent means FALSE (fail-closed, the TENANT-6c-3 rule); an actor built with `canManage: true` (every internal
+ * caller and fixture before this wave) keeps what it had, because DAIRY_COLLECT_ANY and DAIRY_READ_ANY both contain
+ * `dairy.manage`.
+ */
+export const actorMayCollect = (a: { canManage: boolean; canCollect?: boolean }) => a.canManage === true || a.canCollect === true;
+export const actorMayRead = (a: { canManage: boolean; canCollect?: boolean; canRead?: boolean }) =>
+  a.canManage === true || a.canCollect === true || a.canRead === true;
 export const canCloseSettlement = (ctx: RequestContext) => ctx.permissions.has('settlement.close') || ctx.permissions.has('*');
 /** The checker's verb for a playbook override (0166). `*` still passes, as it does for every permission on this
  *  platform — a god-mode caller is a different conversation (Law 11) and not a second rule here. */

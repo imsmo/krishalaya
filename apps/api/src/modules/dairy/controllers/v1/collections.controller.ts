@@ -1,8 +1,9 @@
 // modules/dairy/controllers/v1/collections.controller.ts · counter milk-collection entry + member reads.
-// record needs dairy.manage (the MCC operator); list is the member's own or staff. `dairy` flag.
+// record needs dairy.collect OR dairy.manage (PC-56 OPS-3p, founder Q6-A, 2026-11-08: the counter records her pour; the
+// administrator keeps it; `dairy.read` never records); list is the member's own or a dairy.manage holder's. `dairy` flag.
 import { Controller, Get, Headers, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
-import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
+import { PermissionsGuard, RequireAnyPermission } from '../../../../core/auth/permissions.guard';
 import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
 import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
@@ -11,7 +12,7 @@ import { BadRequestError } from '../../../../shared/errors/app-error';
 import { MilkCollectionService } from '../../services/milk-collection.service';
 import { RecordCollectionSchema, RecordCollectionDto } from '../../dto/create-milk-collection.dto';
 import { QueryCollectionsSchema, QueryCollectionsDto } from '../../dto/query-milk-collection.dto';
-import { DairyPermissions, canManageDairy, canCloseSettlement } from '../../policies/dairy.policies';
+import { DAIRY_COLLECT_ANY, canManageDairy, canCloseSettlement, canCollectDairy, canReadDairy } from '../../policies/dairy.policies';
 import { ApiScopes } from '../../../../core/auth/api-key.port';
 
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
@@ -21,9 +22,9 @@ const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] 
 @FeatureFlag('dairy')
 export class CollectionsController {
   constructor(private readonly collections: MilkCollectionService) {}
-  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx) }; }
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx), canCollect: canCollectDairy(ctx), canRead: canReadDairy(ctx) }; }
 
-  @Post() @RequirePermissions(DairyPermissions.Manage)
+  @Post() @RequireAnyPermission(...DAIRY_COLLECT_ANY)
   record(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @ZodBody(RecordCollectionSchema) dto: RecordCollectionDto) {
     if (!key) throw new BadRequestError('Idempotency-Key header required');
     return this.collections.record(ctx.tenantId, this.actor(ctx), key, dto).then((data) => ({ data }));

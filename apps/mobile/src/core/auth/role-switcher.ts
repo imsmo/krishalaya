@@ -44,7 +44,7 @@ export function defaultActiveRole(serverRoles: string[]): AppRole {
 // 'vyapari', 'owner' is 'tenant_admin'. This is the ONE place that mapping lives, so onboarding.selectRole()
 // always submits a code the API actually recognises.
 const BACKEND_ROLE_CODE: Record<AppRole, string> = {
-  farmer: 'farmer', buyer: 'customer', worker: 'worker', trader: 'vyapari', owner: 'tenant_admin', ambassador: 'ambassador', pashupalak: 'pashupalak', dairy: 'dairy_farmer', vet: 'vet', store: 'pharma_store', delivery: 'delivery_partner', equipment: 'equipment_owner', mcc: 'dairy_farmer', // mcc: the seeded role is 'Dairy Farmer / MCC Operator' (dairy.manage)
+  farmer: 'farmer', buyer: 'customer', worker: 'worker', trader: 'vyapari', owner: 'tenant_admin', ambassador: 'ambassador', pashupalak: 'pashupalak', dairy: 'dairy_farmer', vet: 'vet', store: 'pharma_store', delivery: 'delivery_partner', equipment: 'equipment_owner', mcc: 'dairy_farmer', // mcc: the seeded role is named 'Dairy Farmer / MCC Operator' but holds NO dairy operator verb (dairy.manage removed in 0159; dairy.collect never granted to it — PC-56 OPS-3p, 0235). Recording a pour needs dairy.collect or dairy.manage, granted by the organisation (tenant_admin, a desk or an override).
 };
 export function backendRoleCode(role: AppRole): string { return BACKEND_ROLE_CODE[role]; }
 

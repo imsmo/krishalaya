@@ -20,6 +20,7 @@ import { DairyMembershipRouteRepository } from '../repositories/dairy-membership
 import { DairyDiversionRepository } from '../repositories/dairy-diversion.repository';
 import { pourPlace } from '../domain/dairy-diversion';
 import { DairyActor } from './mcc-centre.service';
+import { actorMayCollect } from '../policies/dairy.policies';
 import { MilkQualityReview } from '../domain/milk-quality-review.entity';
 import { MilkQualityReviewRepository } from '../repositories/milk-quality-review.repository';
 import { FlagsService } from '../../../core/feature-flags/flags.service';
@@ -52,7 +53,8 @@ export class MilkCollectionService {
   ) {}
 
   async record(tenantId: string, actor: DairyActor, idemKey: string, dto: RecordCollectionDto) {
-    if (!actor.canManage) throw new DairyForbiddenError('requires dairy.manage');
+    // [PC-56 OPS-3p · founder Q6-A] the COUNTER's act: dairy.collect, or dairy.manage (administrators keep it). Never dairy.read.
+    if (!actorMayCollect(actor)) throw new DairyForbiddenError('requires dairy.collect or dairy.manage');
     return this.idem.remember(idemKey, actor.userId, 'dairy.collection.record', () =>
       timed(this.metrics, 'dairy.collection.record', { tenant: tenantId }, () =>
         this.uow.run(tenantId, async (tx) => {

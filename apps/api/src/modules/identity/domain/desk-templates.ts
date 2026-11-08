@@ -12,7 +12,12 @@
 //     route checks it"; the canon's content desk edits template OVERRIDES (W180), which is notification.templates.manage.
 //   • report.review → `content.moderate`: the member report queue (ai-governance moderation: "a member REPORTS; a moderator HANDLES")
 //     is a real route under content.moderate.
-//   • bmc.monitor → `dairy.manage`: GET /v1/dairy/bmc/monitor is a real route, gated by dairy.manage.
+//   • [PC-56 OPS-3p · founder Q6-A, 2026-11-08] THE DAIRY DESK NO LONGER CARRIES `dairy.manage` (it priced milk, enrolled members
+//     and generated bills — survey_ops3 C-7 / F-3): dairy.collections → `dairy.collect` (POST /v1/dairy/collections), bmc.monitor →
+//     `dairy.collect` (GET /v1/dairy/bmc/monitor admits it, and the manual reading POST /v1/dairy/bmc/readings needs it),
+//     dairy.quality → `dairy.read` (GET /v1/dairy/quality; every quality DECISION stays dairy.manage). The desk holds exactly
+//     {dairy.collect, dairy.read}. One code per label (the CanonVerdict shape): bmc.monitor's read rides dairy.collect, and the
+//     desk's dairy.read comes from dairy.quality. Migration 0235 remaps desks the template install already made.
 //   • order.read → REFUSED: the order console's read rides `dispute.resolve` (canModerateOrder) — a refund-resolving verb, not a read.
 //   • statement.read → REFUSED: settlement statements ride `settlement.close`, a money act.
 //   • listing.reject → REFUSED as its own code: rejection rides `listing.approve` (already on the moderation desk).
@@ -60,13 +65,14 @@ export const DESK_TEMPLATES: readonly DeskTemplate[] = Object.freeze([
       { key: 'no_self_review', built: true, evidence: 'QC_OWN_LISTING / QC_OWN_DRAFT in the listing domain, 0138 CHECK as backstop' },
     ] },
   { code: 'dairy', labels: [
-      { label: 'dairy.collections', verdict: mapped('dairy.manage') },
-      { label: 'dairy.quality', verdict: mapped('dairy.manage') },
-      { label: 'bmc.monitor', verdict: mapped('dairy.manage') },
+      { label: 'dairy.collections', verdict: mapped('dairy.collect') },
+      { label: 'dairy.quality', verdict: mapped('dairy.read') },
+      { label: 'bmc.monitor', verdict: mapped('dairy.collect') },
     ], guarantees: [
-      // canon: "Rate cards stay owner + checker" — NOT TRUE TODAY: POST /v1/dairy/rate-cards is gated by dairy.manage alone
-      // (rate-cards.controller.ts) with no checker, so a dairy desk member could publish a rate card. Refused by name on the card.
-      { key: 'rate_cards_checker', built: false, evidence: 'POST /v1/dairy/rate-cards needs dairy.manage only, no checker (rate-cards.controller.ts)' },
+      // canon: "Rate cards stay owner + checker". TRUE since OPS-3p for this desk, on two facts: the desk carries no dairy.manage, so
+      // no desk member can create or approve a rate card (POST /v1/dairy/rate-cards and :id/approve need dairy.manage); and HOTFIX-12
+      // (0234) refuses an approver who is the card's creator (ck_rate_card_approver_ne_creator + milk_rate_cards_hf12_guard).
+      { key: 'rate_cards_checker', built: true, evidence: 'the dairy desk carries dairy.collect + dairy.read, never dairy.manage (rate-cards.controller.ts); 0234 approver ≠ creator' },
     ] },
   { code: 'finance', labels: [
       { label: 'payout.prepare', verdict: mapped('payout.prepare') },

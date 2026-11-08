@@ -17,7 +17,7 @@ import { CurrentContext } from '../../../../core/tenancy-context/current-context
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
 import { BadRequestError } from '../../../../shared/errors/app-error';
 import { DairyDiversionService } from '../../services/dairy-diversion.service';
-import { DairyPermissions, canCloseSettlement, canManageDairy, canOverrideDairy } from '../../policies/dairy.policies';
+import { DairyPermissions, canCloseSettlement, canManageDairy, canOverrideDairy, canCollectDairy, canReadDairy } from '../../policies/dairy.policies';
 import { DIVERSION_FLAG } from '../../domain/dairy-diversion.flags';
 import {
   CancelDiversionDto, CancelDiversionSchema, PreviewDiversionDto, PreviewDiversionSchema,
@@ -44,6 +44,9 @@ export class DiversionsController {
       // Dairy's second verb (0166). Resolved here for every act even though only `approve` reads it, because a
       // controller that resolves the subset it happens to need today is the shape of the next authorisation bug.
       canOverride: canOverrideDairy(ctx),
+      // [PC-56 OPS-3p] the counter's and the reader's verbs, resolved like every other key (no diversion act reads them).
+      canCollect: canCollectDairy(ctx),
+      canRead: canReadDairy(ctx),
     };
   }
 

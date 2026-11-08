@@ -18,7 +18,7 @@ import { BadRequestError } from '../../../../shared/errors/app-error';
 import { DairyMemberCreditService } from '../../services/dairy-member-credit.service';
 import { DairyDeductionTypeRepository } from '../../repositories/dairy-deduction-type.repository';
 import { IssueMemberCreditSchema, IssueMemberCreditDto } from '../../dto/member-credit.dto';
-import { DairyPermissions, canManageDairy, canCloseSettlement } from '../../policies/dairy.policies';
+import { DairyPermissions, canManageDairy, canCloseSettlement, canCollectDairy, canReadDairy } from '../../policies/dairy.policies';
 
 const ipOf = (r: Request) => r.ip || null;
 
@@ -30,7 +30,7 @@ export class MemberCreditsController {
     private readonly credits: DairyMemberCreditService,
     private readonly types: DairyDeductionTypeRepository,
   ) {}
-  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx) }; }
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx), canCollect: canCollectDairy(ctx), canRead: canReadDairy(ctx) }; }
 
   /**
    * Record feed / mineral mix / medicine sold on credit.

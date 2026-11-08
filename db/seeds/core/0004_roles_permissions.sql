@@ -66,6 +66,12 @@ INSERT INTO permissions (code,default_name,module_code) VALUES
  -- farmers had once been given it. This is the checker's verb, and it is deliberately NOT `settlement.close`: that is
  -- a money permission a cooperative may have given to a treasurer who has no business moving a village's milk.
  ('dairy.override','Approve dairy playbook overrides (divert a shift)','M16'),
+ -- [PC-56 OPS-3p · founder Q6-A, 2026-11-08] THE COUNTER IS NOT THE PRICE. `dairy.manage` recorded her milk AND set her rate,
+ -- enrolled members and generated bills; the TENANT-13b dairy desk handed it to counter staff (survey_ops3 C-7 / F-3). Two verbs
+ -- now: the counter's (a pour, a manual cooler reading) and the boards' read. `dairy.manage` keeps every money and settings act.
+ -- Migration 0235 inserts the same two rows and the tenant_admin grant for an existing database (this list is ON CONFLICT DO NOTHING).
+ ('dairy.collect','Record milk pours and cooler readings','M16'),
+ ('dairy.read','Read dairy boards','M16'),
  ('equipment.manage','Manage equipment assets + rates + rental fulfilment','M20'),('equipment.rent','Rent equipment (request/confirm bookings)','M20'),
  ('warehouse.manage','Manage warehouses + storage + assays + eNWR','M21'),('warehouse.store','Deposit produce in a warehouse','M21'),
  ('contract.manage','Manage farming contracts + advances + settlement','M22'),('contract.grow','Participate as a contract grower','M22'),
@@ -226,6 +232,9 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    -- given it. Nothing a member does needs it: every member-facing dairy route authorises by OWNERSHIP and carries no
    -- permission at all. Migration 0159 removes it from installs that already ran this seed.
    OR (r.code IN ('tenant_admin') AND p.code IN ('dairy.manage','dairy.override'))
+   -- [PC-56 OPS-3p · founder Q6-A] the counter's and the boards' verbs: tenant_admin ONLY (nobody who can act today loses anything).
+   -- NEVER `dairy_farmer`: that role is every dairy farmer, and a farmer must not record pours (0235 asserts it). Also in 0235.
+   OR (r.code IN ('tenant_admin') AND p.code IN ('dairy.collect','dairy.read'))
    OR (r.code='equipment_owner' AND p.code IN ('equipment.manage','equipment.rent'))
    OR (r.code IN ('farmer','pashupalak','vyapari','customer') AND p.code IN ('equipment.rent'))
    OR (r.code='tenant_admin' AND p.code IN ('warehouse.manage'))

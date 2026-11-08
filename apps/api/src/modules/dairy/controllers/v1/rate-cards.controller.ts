@@ -11,7 +11,7 @@ import { BadRequestError } from '../../../../shared/errors/app-error';
 import { MilkRateCardService } from '../../services/milk-rate-card.service';
 import { CreateRateCardSchema, CreateRateCardDto } from '../../dto/create-milk-rate-card.dto';
 import { QueryRateCardsSchema, QueryRateCardsDto } from '../../dto/query-milk-rate-card.dto';
-import { DairyPermissions, canManageDairy, canCloseSettlement } from '../../policies/dairy.policies';
+import { DairyPermissions, canManageDairy, canCloseSettlement, canCollectDairy, canReadDairy } from '../../policies/dairy.policies';
 
 const ipOf = (r: Request) => r.ip || null;
 
@@ -20,7 +20,7 @@ const ipOf = (r: Request) => r.ip || null;
 @FeatureFlag('dairy')
 export class RateCardsController {
   constructor(private readonly cards: MilkRateCardService) {}
-  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx) }; }
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx), canCollect: canCollectDairy(ctx), canRead: canReadDairy(ctx) }; }
 
   @Post() @RequirePermissions(DairyPermissions.Manage)
   create(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string, @ZodBody(CreateRateCardSchema) dto: CreateRateCardDto) {

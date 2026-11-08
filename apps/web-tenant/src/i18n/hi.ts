@@ -3782,7 +3782,7 @@ export const hi: Messages = {
   'dairy.quality.buffersAtMcc': 'एनालाइज़र रीडिंग MCC पर बफ़र होती हैं — यह बंद रहने पर भी कुछ नहीं खोता.',
   'dairy.quality.state.ok': 'गुणवत्ता डेस्क',
   'dairy.quality.state.flaggedOff': 'इस टेनेंट के लिए दूध गुणवत्ता डेस्क बंद है. कुछ ख़राब नहीं है — यह चालू नहीं है.',
-  'dairy.quality.state.restricted': 'इस डेस्क के लिए आवश्यक डेयरी स्कोप आपके पास नहीं है. ध्यान दें: इस प्लेटफ़ॉर्म पर केवल एक डेयरी अनुमति है, इसलिए केवल-पढ़ने वाला डेयरी स्कोप देने का विकल्प नहीं है.',
+  'dairy.quality.state.restricted': 'आपके पास ऐसी डेयरी अनुमति नहीं है जिससे यह डेस्क पढ़ा जा सके. इसे dairy.read, dairy.collect या dairy.manage से पढ़ा जा सकता है.',
   'dairy.quality.state.error': 'गुणवत्ता डेटा लोड नहीं हो सका.',
   'dairy.quality.action.rateCards': 'रेट कार्ड',
   'dairy.quality.action.reviewFlags': 'फ़्लैग देखें',

@@ -1,13 +1,13 @@
 // modules/dairy/controllers/v1/d2c.controller.ts · PC-54 W54-5. D2C plans/subscriptions + the MCC day sheet.
 import { Controller, Get, Headers, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
-import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
+import { PermissionsGuard, RequireAnyPermission, RequirePermissions } from '../../../../core/auth/permissions.guard';
 import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
 import { ZodBody } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
 import { BadRequestError } from '../../../../shared/errors/app-error';
-import { DairyPermissions, canManageDairy, canCloseSettlement } from '../../policies/dairy.policies';
+import { DAIRY_READ_ANY, DairyPermissions, canManageDairy, canCloseSettlement, canCollectDairy, canReadDairy } from '../../policies/dairy.policies';
 import { D2cService } from '../../services/d2c.service';
 import { z } from 'zod';
 
@@ -32,7 +32,7 @@ const PauseSchema = z.object({ pausedUntil: dateStr }).strict();
 @FeatureFlag('dairy')
 export class D2cController {
   constructor(private readonly svc: D2cService) {}
-  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx) }; }
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx), canCollect: canCollectDairy(ctx), canRead: canReadDairy(ctx) }; }
 
   @Post('plans') @RequirePermissions(DairyPermissions.Manage)
   createPlan(@CurrentContext() ctx: RequestContext, @Headers('idempotency-key') key: string, @ZodBody(CreatePlanSchema) dto: z.infer<typeof CreatePlanSchema>) {
@@ -85,8 +85,9 @@ export class D2cController {
     return this.svc.statement(ctx.tenantId, this.actor(ctx), { box: (box === 'seller' ? 'seller' : 'customer'), from: from ?? firstOfMonth, to: to ?? now.toISOString().slice(0, 10) }).then((data) => ({ data }));
   }
 
-  /** PC-54 W54-5 `mcc-shift-summary` (canon 238): GET dairy/d2c/../day sheet lives on the MCC path below. */
-  @Get('mccs/:mccId/day-summary') @RequirePermissions(DairyPermissions.Manage)
+  /** PC-54 W54-5 `mcc-shift-summary` (canon 238): GET dairy/d2c/../day sheet lives on the MCC path below. THE DAY SHEET is a board
+   *  (PC-56 OPS-3p, founder Q6-A): dairy.read, dairy.collect or dairy.manage. */
+  @Get('mccs/:mccId/day-summary') @RequireAnyPermission(...DAIRY_READ_ANY)
   daySummary(@CurrentContext() ctx: RequestContext, @Param('mccId') mccId: string, @Query('date') date?: string) {
     return this.svc.shiftSummary(ctx.tenantId, this.actor(ctx), mccId, date ?? new Date().toISOString().slice(0, 10)).then((data) => ({ data }));
   }

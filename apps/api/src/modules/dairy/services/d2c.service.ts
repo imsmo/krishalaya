@@ -9,9 +9,11 @@ import { BadRequestError, ConflictError, NotFoundError } from '../../../shared/e
 import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../core/idempotency/idempotency.service';
 import { D2cRepository } from '../repositories/d2c.repository';
 import { DairyForbiddenError } from '../domain/dairy.errors';
+import { actorMayRead } from '../policies/dairy.policies';
 import { canSettleDelivery, isBillable, statementTotalMinor, type DeliveryStatus } from '../domain/d2c-schedule.rules';
 
-export interface DairyActor { userId: string; canManage: boolean }
+// [PC-56 OPS-3p] `canCollect` / `canRead` — the day sheet is a board (DAIRY_READ_ANY); absent means false (fail-closed).
+export interface DairyActor { userId: string; canManage: boolean; canCollect?: boolean; canRead?: boolean }
 
 @Injectable()
 export class D2cService {
@@ -47,7 +49,8 @@ export class D2cService {
 
   /** PC-54 W54-5 `mcc-shift-summary` (canon 238): the honest day sheet — aggregated from ledgered slips. */
   shiftSummary(tenantId: string, actor: DairyActor, mccId: string, date: string) {
-    if (!actor.canManage) throw new DairyForbiddenError('requires dairy.manage');
+    // [PC-56 OPS-3p · founder Q6-A] the day sheet is a READ: dairy.read, dairy.collect or dairy.manage.
+    if (!actorMayRead(actor)) throw new DairyForbiddenError('requires dairy.read, dairy.collect or dairy.manage');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new BadRequestError('date must be YYYY-MM-DD');
     return this.repo.shiftSummary(tenantId, mccId, date);
   }

@@ -24,6 +24,7 @@ import {
 } from '../domain/bmc';
 import { CompressorState } from '../domain/bmc-unit.entity';
 import { DairyActor } from '../services/mcc-centre.service';
+import { actorMayRead } from '../policies/dairy.policies';
 import { ALERT_EVALUATION_MINUTES, silentMinutesOf } from '../../logistics/domain/ops-alert.rules';
 import { BMC_CALL_FLAG } from '../domain/bmc-call.flags';
 import { DIVERSION_FLAG } from '../domain/dairy-diversion.flags';
@@ -147,7 +148,8 @@ export class DairyBmcReadModel {
   ) {}
 
   async view(tenantId: string, actor: DairyActor, q: { unitId?: string; hours?: number } = {}): Promise<BmcMonitorView> {
-    if (!actor.canManage) throw new DairyForbiddenError('requires dairy.manage');
+    // [PC-56 OPS-3p · founder Q6-A] the monitor is a board: dairy.read, dairy.collect or dairy.manage.
+    if (!actorMayRead(actor)) throw new DairyForbiddenError('requires dairy.read, dairy.collect or dairy.manage');
     return timed(this.metrics, 'dairy.bmc_monitor', { tenant: tenantId }, async () => {
       const x = this.replica.forTenant(tenantId);
       const hours = Math.min(Math.max(q.hours ?? 6, 1), 168);

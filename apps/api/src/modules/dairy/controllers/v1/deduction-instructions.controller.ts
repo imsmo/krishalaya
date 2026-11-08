@@ -22,7 +22,7 @@ import { RequestContext } from '../../../../core/tenancy-context/request-context
 import { BadRequestError } from '../../../../shared/errors/app-error';
 import { DairyDeductionInstructionService } from '../../services/dairy-deduction-instruction.service';
 import { AuthoriseDeductionInstructionSchema, AuthoriseDeductionInstructionDto } from '../../dto/deduction-instruction.dto';
-import { canCloseSettlement, canManageDairy } from '../../policies/dairy.policies';
+import { canCloseSettlement, canManageDairy, canCollectDairy, canReadDairy } from '../../policies/dairy.policies';
 
 const ipOf = (r: Request) => r.ip || null;
 
@@ -31,7 +31,7 @@ const ipOf = (r: Request) => r.ip || null;
 @FeatureFlag('dairy')
 export class DeductionInstructionsController {
   constructor(private readonly instructions: DairyDeductionInstructionService) {}
-  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx) }; }
+  private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx), canCollect: canCollectDairy(ctx), canRead: canReadDairy(ctx) }; }
 
   /** The MEMBER arranges routine recovery from their own milk bill. Ownership-checked, 404 not 403. */
   @Post()

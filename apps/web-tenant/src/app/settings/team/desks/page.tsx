@@ -3,7 +3,7 @@
 // The canon's screen, printed as built (founder decision: tenant desk bundles, no new global roles, no separate owner role):
 //   • desk cards — name, status, members (add directly; remove with a reason — audited), the permission codes, and the template's honest
 //     sentence: each canon label as the real code it rides, or refused by name ("no route carries this yet" / "rides <verb>"), and each
-//     guarantee the canon makes (built, or not — e.g. KYC recusal is not built; rate cards are NOT behind a checker today);
+//     guarantee the canon makes (built, or not — e.g. KYC recusal is not built; rate cards: built since OPS-3p — the dairy desk carries no dairy.manage, and 0234 refuses approver = creator);
 //   • "New desk (checker)" → the form chain (W2574–W2577); edit permissions / disable / enable → proposals a second administrator
 //     confirms (W2578–W2580); "Install templates" when none are installed — ONE proposal;
 //   • the suggestion row is a REAL count: labour bookings this season created by tenant_admin holders, printed only when > 0 and no

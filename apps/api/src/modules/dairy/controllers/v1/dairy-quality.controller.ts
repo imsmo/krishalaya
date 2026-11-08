@@ -4,19 +4,18 @@
 // are deliberately NOT behind this screen's flag: a farmer's withheld pour must not stay withheld because nobody
 // switched a screen on. So `dairy_quality_desk` gates the view and nothing else.
 //
-// The scope compromise, third time this programme has recorded it, and W168 makes it sharpest: the canon's restricted
-// state names THREE authorities — *"Flag decisions need dairy-desk scope + committee membership for repeat cases; rate
-// cards are owner + checker"* — and `db/seeds/core/0004_roles_permissions.sql` defines exactly ONE dairy permission,
-// `dairy.manage`. So a dairy secretary who should only LOOK at the quality of this cycle's milk needs the scope that can
-// also price it, and the view says so rather than pretending the other two exist.
+// [PC-56 OPS-3p · founder Q6-A, 2026-11-08] The scope compromise TENANT-6b-2 recorded here (a secretary who should only
+// LOOK at quality needed the scope that can also price milk, because 0004 defined one dairy permission) is RETIRED: this
+// read admits dairy.read, dairy.collect or dairy.manage (DAIRY_READ_ANY, migration 0235). Every quality DECISION — retest
+// and decide, including rejecting a flagged pour, which withholds her pay — stays dairy.manage (quality-reviews.controller).
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
-import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
+import { PermissionsGuard, RequireAnyPermission } from '../../../../core/auth/permissions.guard';
 import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
 import { ZodQuery } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
-import { DairyPermissions } from '../../policies/dairy.policies';
+import { DAIRY_READ_ANY } from '../../policies/dairy.policies';
 import { DairyQualityReadModel } from '../../read-models/dairy-quality.read-model';
 import { QueryQualityDeskSchema, QueryQualityDeskDto } from '../../dto/query-quality-desk.dto';
 import { PaymentCycle } from '../../domain/dairy.events';
@@ -30,7 +29,7 @@ export class DairyQualityController {
 
   /** W168: the cycle's quality and its stability, the flags and what is held, the premium band and whether it is
    *  actually being paid, every rate card in force, and the arithmetic a farmer is promised. */
-  @Get() @RequirePermissions(DairyPermissions.Manage)
+  @Get() @RequireAnyPermission(...DAIRY_READ_ANY)
   get(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryQualityDeskSchema) q: QueryQualityDeskDto) {
     return this.desk.view(ctx.tenantId, { day: q.day ?? null, cycle: (q.cycle as PaymentCycle | undefined) ?? null })
       .then((data) => ({ data }));
