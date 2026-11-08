@@ -218,3 +218,22 @@ export function diversionNoticeVars(i: {
 }): { from: string; to: string; day: string; shift: LangMap } {
   return { from: i.fromName, to: i.toName, day: dayText(i.day), shift: i.labels.shift[i.shift] };
 }
+
+/**
+ * [PC-56 HOTFIX-12] A WHOLE DAY WITH ITS YEAR, IN DIGITS: `01/12/2026`. A rate card may be approved weeks before it
+ * starts, so the year is part of the fact; digits for the same reason as `dayText`. String-sliced, never a `Date`.
+ */
+export function dayWithYearText(day: string): string {
+  const [y, m, d] = day.split('-');
+  if (!y || !m || !d || !/^\d{4}$/.test(y)) throw new Error(`dairy notice: not a whole day: ${day}`);
+  return `${d}/${m}/${y}`;
+}
+
+/**
+ * [PC-56 HOTFIX-12 · founder Q1-A] The rate-card approval notice: the card's own name and the day it starts — and NO
+ * AMOUNT. A notice template has no money formatter, and a rate printed outside `formatMoneyMinor` in her locale is the
+ * figure she could not check; she reads the card's rates in her app.
+ */
+export function rateCardApprovedVars(i: { cardName: string; effectiveFrom: string }): { cardName: string; effectiveFrom: string } {
+  return { cardName: i.cardName, effectiveFrom: dayWithYearText(i.effectiveFrom) };
+}

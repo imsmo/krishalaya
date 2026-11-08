@@ -111,9 +111,27 @@ export function nextBillActions(status: string): Array<'preview' | 'approve' | '
 export const DAIRY_REFUSAL_CODES = [
   'DAIRY_BILL_APPROVER_IS_PREVIEWER', 'DAIRY_BILL_PAYER_IS_APPROVER', 'DAIRY_BILL_PREVIEWER_UNKNOWN', 'DAIRY_BILL_APPROVER_UNKNOWN',
   'DAIRY_BILL_SIGNER_UNKNOWN', 'DAIRY_BILL_DISPUTE_UNANSWERED', 'DAIRY_CYCLE_CHECKER_IS_PREVIEWER', 'DAIRY_CYCLE_NOT_PREVIEWED',
+  // [PC-56 HOTFIX-12] the rate card's own refusals (founder Q1-A): a second person, never backdated, one card in force per milk type.
+  'RATE_CARD_BACKDATED', 'RATE_CARD_SECOND_PERSON_REQUIRED', 'RATE_CARD_ALREADY_APPROVED', 'RATE_CARD_OVERLAP',
 ] as const;
 export type DairyRefusalCode = (typeof DAIRY_REFUSAL_CODES)[number];
 /** The i18n key for a refusal code the console can explain, or null (the caller prints the raw code as before). */
 export function dairyRefusalKey(code: string | null | undefined): string | null {
   return code && (DAIRY_REFUSAL_CODES as readonly string[]).includes(code) ? `dairy.error.${code}` : null;
+}
+
+/**
+ * [PC-56 HOTFIX-12 · founder Q1-A] A rate card's approval state, as the console prints it. The API never sends a person's id on
+ * this read — only whether the SIGNED-IN viewer created or approved the card — so the console says "you" or "a second person",
+ * never a name (it shows no staff names anywhere).
+ */
+export interface RateCardApprovalLike { approvalState: 'awaiting_second_person' | 'approved' | 'approved_before_rule'; createdByYou: boolean; approvedByYou: boolean }
+export function rateCardStateKey(c: RateCardApprovalLike): string {
+  if (c.approvalState === 'approved_before_rule') return 'dairy.rate.state.beforeRule';
+  if (c.approvalState === 'approved') return c.approvedByYou ? 'dairy.rate.state.approvedByYou' : 'dairy.rate.state.approvedBySecond';
+  return c.createdByYou ? 'dairy.rate.state.awaitingYours' : 'dairy.rate.state.awaiting';
+}
+/** Approve is offered only on a card awaiting a second person, and never to the person who created it (the API refuses them too). */
+export function canApproveRateCard(c: RateCardApprovalLike): boolean {
+  return c.approvalState === 'awaiting_second_person' && !c.createdByYou;
 }

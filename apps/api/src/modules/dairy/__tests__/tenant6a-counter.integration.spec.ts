@@ -37,6 +37,9 @@ import { InMemoryCacheService } from '../../../core/cache/cache.service.in-memor
 import { MccCentreService } from '../services/mcc-centre.service';
 import { DairyMembershipService } from '../services/dairy-membership.service';
 import { MilkRateCardService } from '../services/milk-rate-card.service';
+// [PC-56 HOTFIX-12 · named update] founder Q1-A: a card prices nothing until a SECOND person approves it and cannot start before
+// today, so every card this spec prices with is created AND approved through the real service (helpers/hotfix12-approved-card.ts).
+import { approvedCardForTest } from './helpers/hotfix12-approved-card';
 import { MilkCollectionService } from '../services/milk-collection.service';
 import { DairyBillCycleRepository } from '../repositories/dairy-bill-cycle.repository';
 import { DairyCounterRepository } from '../repositories/dairy-counter.repository';
@@ -87,7 +90,7 @@ run('PC-56 TENANT-6a · W167 counter board (integration, real Postgres)', () => 
     const collRepo = new MilkCollectionRepository(replica as any);
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, new MccOperatorAssignmentRepository(replica as never));
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo, new DairyMembershipRouteRepository(replica as never));
-    cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
+    cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo, audit)   // [PC-56 HOTFIX-12 · named update] + the create/approve audit rows;
     // PC-56 TENANT-6b-1: the record path now opens a quality review for a flagged pour and asks the flag service
     // whether the rate card's premium slabs apply — both real here, against the real database.
     const reviewRepo = new MilkQualityReviewRepository(replica as any);
@@ -107,7 +110,7 @@ run('PC-56 TENANT-6a · W167 counter board (integration, real Postgres)', () => 
     busyMcc = (await mccs.create(tenantA, actor, `idem-${randomUUID()}`, { code: 'MCC-VNT', defaultName: 'Vanthali' } as any, null)).id;
     quietMcc = (await mccs.create(tenantA, actor, `idem-${randomUUID()}`, { code: 'MCC-KSD', defaultName: 'Keshod' } as any, null)).id;
 
-    await cards.create(tenantA, actor, `idem-${randomUUID()}`, { defaultName: 'Cow two-axis', animalType: 'cow', pricingModel: 'two_axis', ratePerKgFatMinor: '50000', ratePerKgSnfMinor: '30000', effectiveFrom: '2026-01-01' } as any);
+    await approvedCardForTest(cards, admin, tenantA, actor, { defaultName: 'Cow two-axis', animalType: 'cow', pricingModel: 'two_axis', ratePerKgFatMinor: '50000', ratePerKgSnfMinor: '30000', effectiveFrom: '2026-01-01' } as any);
 
     // Three on the busy centre's roll (two will pour → coverage 2/3), one on the quiet centre's.
     for (let i = 0; i < 3; i++) {

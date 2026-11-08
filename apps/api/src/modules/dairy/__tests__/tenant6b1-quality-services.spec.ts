@@ -259,8 +259,12 @@ describe('PC-56 TENANT-6b-1 · deciding a review moves the pour\'s money', () =>
 describe('PC-56 TENANT-6b-1 · the rate card keeps the slabs it was given', () => {
   function cardHarness() {
     const inserted: Array<Record<string, unknown>> = [];
-    const repo = { insert: jest.fn(async (_tx: unknown, c: { toProps(): Record<string, unknown> }) => { inserted.push(c.toProps()); }) };
-    const svc = new MilkRateCardService(uow as never, { write: jest.fn() } as never, idem as never, metrics as never, repo as never);
+    // [PC-56 HOTFIX-12 · named update] create now reads the tenant's today (the backdate refusal: tomorrow at the earliest) and
+    // writes an audit row; the fake today is '2026-06-30' so these cards (effectiveFrom 2026-07-01) start tomorrow and pass. The
+    // assertions are unchanged.
+    const repo = { insert: jest.fn(async (_tx: unknown, c: { toProps(): Record<string, unknown> }) => { inserted.push(c.toProps()); }),
+      tenantToday: jest.fn(async () => '2026-06-30') };
+    const svc = new MilkRateCardService(uow as never, { write: jest.fn() } as never, idem as never, metrics as never, repo as never, { write: jest.fn() } as never);
     return { svc, inserted };
   }
 

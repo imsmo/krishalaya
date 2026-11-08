@@ -37,6 +37,9 @@ import { DairyQualityRepository } from '../repositories/dairy-quality.repository
 import { MccCentreService } from '../services/mcc-centre.service';
 import { DairyMembershipService } from '../services/dairy-membership.service';
 import { MilkRateCardService } from '../services/milk-rate-card.service';
+// [PC-56 HOTFIX-12 · named update] founder Q1-A: a card prices nothing until a SECOND person approves it and cannot start before
+// today, so every card this spec prices with is created AND approved through the real service (helpers/hotfix12-approved-card.ts).
+import { approvedCardForTest, tenantTodayForTest } from './helpers/hotfix12-approved-card';
 import { MilkCollectionService } from '../services/milk-collection.service';
 import { DairyQualityReadModel } from '../read-models/dairy-quality.read-model';
 import { DairyDiversionRepository } from '../repositories/dairy-diversion.repository';
@@ -93,7 +96,7 @@ run('PC-56 TENANT-6b-2 · W168 quality desk (integration, real Postgres)', () =>
     qrepo = new DairyQualityRepository(replica as any);
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, new MccOperatorAssignmentRepository(replica as never));
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo, new DairyMembershipRouteRepository(replica as never));
-    cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
+    cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo, audit)   // [PC-56 HOTFIX-12 · named update] + the create/approve audit rows;
     collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo,
       new FlagsService(pools, new InMemoryCacheService()), new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never), realNoticeVars(replica as never));
     freshCollections = () => new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo,
@@ -107,7 +110,7 @@ run('PC-56 TENANT-6b-2 · W168 quality desk (integration, real Postgres)', () =>
 
     mccId = (await mccs.create(tenantA, actor, `idem-${randomUUID()}`, { code: 'MCC-AND-02', defaultName: 'Anand 02' } as any, null)).id;
     // W168's own card, with its own slab.
-    cardV4 = (await cards.create(tenantA, actor, `idem-${randomUUID()}`, {
+    cardV4 = (await approvedCardForTest(cards, admin, tenantA, actor, {
       defaultName: 'Buffalo two_axis v4', animalType: 'buffalo', pricingModel: 'two_axis',
       ratePerKgFatMinor: '72000', ratePerKgSnfMinor: '34000', effectiveFrom: addDays(day, -40),
       bonusSlabs: [{ metric: 'fat', minCentiPct: 650, bonusMinorPerLitre: 50 }],
@@ -219,52 +222,77 @@ run('PC-56 TENANT-6b-2 · W168 quality desk (integration, real Postgres)', () =>
   /* ----------------------------------------------------------------------------------------------------- */
 
   /**
-   * `MilkRateCardService` is CREATE-ONLY — no deactivate, no supersede — and nothing closes the previous card's
-   * `effective_to`. So a cooperative that adds "v5" has TWO cards satisfying `resolveActive`'s predicate, and the
-   * `ORDER BY effective_from DESC LIMIT 1` picks one silently. This test creates that state through the real service, so
-   * it is a statement about the product rather than about a fixture.
+   * [PC-56 HOTFIX-12 · NAMED UPDATE — inverted, not relaxed] These two tests pinned the DEFECT: a "v5" created by one person
+   * through the real service put TWO cards in force with no approval anywhere. Founder Q1-A (2026-11-08) closed it, so they now
+   * pin the rule through the same real service: a past start is refused; a new card prices nothing until a second person
+   * approves it; that approval closes v4 the day before v5 starts; exactly ONE card is in force; the desk and the pricing path
+   * agree on it; and the approval is recorded. Every assertion is at least as strong as the one it replaces.
    */
-  it('finds TWO cards in force for one animal type, and names which one is pricing', async () => {
+  it('finds ONE card in force on every day after a second person approves v5 (tomorrow) — v4 is closed on today, no day split', async () => {
+    // The tenant's own today (IST), not the database session's `current_date`: the rule is the tenant's calendar.
+    const today = await tenantTodayForTest(admin, tenantA);
+    // A start in the past — and, since the founder's follow-up (2026-11-08), TODAY — is refused by name, and writes nothing.
+    for (const from of [addDays(today, -1), today]) {
+      await expect(cards.create(tenantA, actor, `idem-${randomUUID()}`, {
+        defaultName: 'Buffalo two_axis v5', animalType: 'buffalo', pricingModel: 'two_axis',
+        ratePerKgFatMinor: '75000', ratePerKgSnfMinor: '35000', effectiveFrom: from,
+      } as any)).rejects.toMatchObject({ code: 'RATE_CARD_BACKDATED' });
+    }
+    const tomorrow = addDays(today, 1);
     const v5 = (await cards.create(tenantA, actor, `idem-${randomUUID()}`, {
       defaultName: 'Buffalo two_axis v5', animalType: 'buffalo', pricingModel: 'two_axis',
-      ratePerKgFatMinor: '75000', ratePerKgSnfMinor: '35000', effectiveFrom: addDays(day, -1),
+      ratePerKgFatMinor: '75000', ratePerKgSnfMinor: '35000', effectiveFrom: tomorrow,
     } as any)).id;
 
-    const inForce = await qrepo.cardsInForce(tenantA, day);
-    expect(inForce.length).toBeGreaterThanOrEqual(2);          // the old card was never closed
+    // Awaiting a second person: v4 is the only card in force today AND tomorrow, and it prices.
+    expect((await qrepo.cardsInForce(tenantA, today)).map((c) => c.id)).toEqual([cardV4]);
+    expect((await qrepo.cardsInForce(tenantA, tomorrow)).map((c) => c.id)).toEqual([cardV4]);
+    const before = await collections.record(tenantA, actor, `idem-${randomUUID()}`, { membershipId: members[0], shift: 'evening', collectedOn: today, weightKg: '4.000', fatPct: '6.00', snfPct: '8.50', waterFlag: false, adulterationFlags: [] } as any);
+    expect(before.rateCardId).toBe(cardV4);
 
-    const v = await makeDesk(false).view(tenantA, { day, cycle: 'monthly' });
-    const buffalo = v.rateCards.byAnimal.find((g) => g.animalType === 'buffalo')!;
-    expect(buffalo.ambiguous).toBe(true);
-    expect(v.rateCards.ambiguousAnimalTypes).toContain('buffalo');
-    expect(buffalo.effectiveId).toBe(v5);                      // the later start wins, silently, in the pricing path
-    expect(buffalo.cards.map((c) => c.id)).toEqual([v5, cardV4]);
+    // The creator cannot approve; a second person can.
+    await expect(cards.approve(tenantA, actor, `idem-${randomUUID()}`, v5)).rejects.toMatchObject({ code: 'RATE_CARD_SECOND_PERSON_REQUIRED' });
+    const checker = randomUUID(); await makeUser(admin, checker);
+    await cards.approve(tenantA, { userId: checker, canManage: true }, `idem-${randomUUID()}`, v5);
 
-    // …and the desk agrees with the PRICING path about which card that is.
-    const priced = await collections.record(tenantA, actor, `idem-${randomUUID()}`, { membershipId: members[1], shift: 'evening', collectedOn: day, weightKg: '4.000', fatPct: '6.00', snfPct: '8.50', waterFlag: false, adulterationFlags: [] } as any);
-    expect(priced.rateCardId).toBe(v5);
+    // v4 is closed ON TODAY (the day before v5 starts): today is v4's alone, tomorrow is v5's alone — no day split.
+    const v4row = (await admin.query(`SELECT effective_to::text AS t FROM milk_rate_cards WHERE id=$1`, [cardV4])).rows[0];
+    expect(v4row.t).toBe(today);
+    expect((await qrepo.cardsInForce(tenantA, today)).map((c) => c.id)).toEqual([cardV4]);
+    expect((await qrepo.cardsInForce(tenantA, tomorrow)).map((c) => c.id)).toEqual([v5]);
 
-    expect(v.rateCards.supersedeRecorded).toBe(false);
-    expect(v.rateCards.checkerRequired).toBe(false);
+    const vToday = await makeDesk(false).view(tenantA, { day: today, cycle: 'monthly' });
+    const vTomorrow = await makeDesk(false).view(tenantA, { day: tomorrow, cycle: 'monthly' });
+    for (const [vv, id] of [[vToday, cardV4], [vTomorrow, v5]] as const) {
+      const g = vv.rateCards.byAnimal.find((x) => x.animalType === 'buffalo')!;
+      expect([g.ambiguous, g.effectiveId, g.cards.map((c) => c.id)]).toEqual([false, id, [id]]);
+      expect(vv.rateCards.ambiguousAnimalTypes).toEqual([]);
+    }
+
+    // …and the PRICING path agrees: a pour recorded today, AFTER the approval, is still priced by v4.
+    const priced = await collections.record(tenantA, actor, `idem-${randomUUID()}`, { membershipId: members[1], shift: 'evening', collectedOn: today, weightKg: '4.000', fatPct: '6.00', snfPct: '8.50', waterFlag: false, adulterationFlags: [] } as any);
+    expect(priced.rateCardId).toBe(cardV4);
+
+    const v = vToday;
+    expect(v.rateCards.supersedeRecorded).toBe(true);
+    expect(v.rateCards.checkerRequired).toBe(true);
   });
 
-  it('has no maker-checker gate on the rate card at all — one scope holder changed the rate above, alone', async () => {
-    // The card created in the previous test needed exactly one actor with `dairy.manage` and no approval row anywhere.
+  it('has a maker-checker gate on the rate card — the approval above is recorded, by a person other than the creator', async () => {
     const approvals = await admin.query(
-      `SELECT count(*)::int n FROM audit_log WHERE tenant_id=$1 AND action LIKE '%rate_card%' AND action LIKE '%approv%'`, [tenantA]);
-    expect(approvals.rows[0].n).toBe(0);
-    // …and the platform DOES have the pattern elsewhere, which is why this is a gap rather than a limitation: TENANT-4b's
-    // migration 0143 put a maker-checker gate on payout batches ("MONEY NEVER MOVES WITHOUT TWO HUMANS", W146). The
-    // dairy rate card — which decides what every member is paid — has no equivalent column anywhere.
+      `SELECT actor_user_id FROM audit_log WHERE tenant_id=$1 AND action = 'dairy.rate_card.approved' AND new_value->>'animalType' = $2`, [tenantA, 'buffalo']);
+    expect(approvals.rows.length).toBe(2);                     // v4 (the fixture's second person) and v5 (the test's)
+    for (const r of approvals.rows) expect(r.actor_user_id).not.toBe(operator);   // never the creator
+    // The pattern TENANT-4b's 0143 put on payout batches now exists on the card, as columns the database checks.
     const gate = await admin.query(
       `SELECT count(*)::int n FROM pg_attribute
         WHERE attrelid='payout_batches'::regclass AND attname IN ('checker_threshold_minor','approved_by_admin_id')`);
     expect(gate.rows[0].n).toBe(2);
     const cardGate = await admin.query(
-      `SELECT count(*)::int n FROM pg_attribute
+      `SELECT attname FROM pg_attribute
         WHERE attrelid='milk_rate_cards'::regclass AND attnum > 0 AND NOT attisdropped
-          AND (attname LIKE '%approv%' OR attname LIKE '%check%')`);
-    expect(cardGate.rows[0].n).toBe(0);   // no approver, no checker, nothing
+          AND (attname LIKE '%approv%' OR attname LIKE '%check%') ORDER BY attname`);
+    expect(cardGate.rows.map((r: { attname: string }) => r.attname)).toEqual(['approved_at', 'approved_before_rule', 'approved_by']);
   });
 
   /* ----------------------------------------------------------------------------------------------------- */

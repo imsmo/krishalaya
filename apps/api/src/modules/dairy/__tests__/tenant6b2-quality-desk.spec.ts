@@ -153,12 +153,13 @@ describe('PC-56 TENANT-6b-2 · the premium band, and what "earns" means', () => 
 
 /* --------------------------------------------------------------------------------------------------------- */
 describe('PC-56 TENANT-6b-2 · the rate cards, and the two claims the software does not support', () => {
-  it('never reports a checker or an archive, because neither exists on this platform', () => {
+  // [PC-56 HOTFIX-12 · NAMED UPDATE — inverted, not relaxed] This pinned the defect ("neither exists"). Founder Q1-A (2026-11-08)
+  // built both: a new card prices nothing until a SECOND person approves it, and that approval closes the card it replaces —
+  // so the desk now reports both as true, and the same two fields are still asserted exactly.
+  it('reports a checker and a recorded supersede, because HOTFIX-12 built both', () => {
     const r = rateCardsInForce([card()]);
-    // W168's restricted state: "rate cards are owner + checker". One dairy.manage holder changes what every member is
-    // paid, alone, in one call. And nothing supersedes or deactivates a card.
-    expect(r.checkerRequired).toBe(false);
-    expect(r.supersedeRecorded).toBe(false);
+    expect(r.checkerRequired).toBe(true);
+    expect(r.supersedeRecorded).toBe(true);
   });
 
   it('names the card the pricing path would actually use — the LATEST effective_from', () => {
@@ -530,7 +531,8 @@ describe('PC-56 TENANT-6b-2 · the read model composes W168', () => {
     const v = await harness().rm.view('t1', {});
     expect(v.quarantineScope).toBe('pour');
     expect(v.protocol).toMatchObject({ retest: 'recorded', decision: 'recorded', committee: 'not_modelled' });
-    expect(v.rateCards.checkerRequired).toBe(false);
-    expect(v.rateCards.supersedeRecorded).toBe(false);
+    // [PC-56 HOTFIX-12 · named update] both now true (founder Q1-A): a second person on every new card; the approval supersedes.
+    expect(v.rateCards.checkerRequired).toBe(true);
+    expect(v.rateCards.supersedeRecorded).toBe(true);
   });
 });

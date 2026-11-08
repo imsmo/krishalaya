@@ -162,13 +162,15 @@ run('PC-56 TENANT-6e-1 · the insights (integration, real Postgres)', () => {
 
     // Two rate cards, one per tenant. The fat slab is 6.20 and NOT 6.50, deliberately: the canon's own screen says
     // 6.5, and a spec that used the canon's number could not tell a card read from a literal.
+    // [PC-56 HOTFIX-12 · named update] 0234 prices only APPROVED cards. This hand-inserted (admin-realm) fixture card stands for a
+    // card that existed before the second-person rule (founder Q1-sub: those keep pricing), so it carries 0234's pre-rule stamp.
     const card = async (tenantId: string, name: string) => (await admin.query(
       `INSERT INTO milk_rate_cards
          (tenant_id, default_name, animal_type, pricing_model, rate_per_kg_fat_minor, rate_per_kg_snf_minor,
-          bonus_rules, effective_from, is_active, created_by)
+          bonus_rules, effective_from, is_active, created_by, approved_before_rule, approved_at)
        VALUES ($1,$2,'buffalo','two_axis',70000,30000,
                '[{"metric":"fat","minCentiPct":620,"bonusMinorPerLitre":50}]'::jsonb,
-               CURRENT_DATE - 500, true, $3) RETURNING id`, [tenantId, name, desk])).rows[0].id as string;
+               CURRENT_DATE - 500, true, $3, true, now()) RETURNING id`, [tenantId, name, desk])).rows[0].id as string;
     rateCardId = await card(tenantA, 'E1 card');
     rateCardB = await card(tenantB, 'E1 neighbour card');
   }, 240000);
@@ -449,8 +451,8 @@ run('PC-56 TENANT-6e-1 · the insights (integration, real Postgres)', () => {
       } as never) as never as { id: string }).id;
       const cardX = (await admin.query(
         `INSERT INTO milk_rate_cards (tenant_id, default_name, animal_type, pricing_model, rate_per_kg_fat_minor,
-                                      rate_per_kg_snf_minor, effective_from, is_active, created_by)
-         VALUES ($1,'X card','cow','two_axis',70000,30000, CURRENT_DATE - 30, true, $2) RETURNING id`, [odd, desk])).rows[0].id;
+                                      rate_per_kg_snf_minor, effective_from, is_active, created_by, approved_before_rule, approved_at)   -- [HOTFIX-12 · named update] pre-rule stamp (0234)
+         VALUES ($1,'X card','cow','two_axis',70000,30000, CURRENT_DATE - 30, true, $2, true, now()) RETURNING id`, [odd, desk])).rows[0].id;
       // A DAILY cycle needs two days of history, so this tenant clears the gate and reaches the money question.
       await pour({ tenantId: odd, mccId: mcc, membershipId: m, on: await day(-5), kg: '2.000', minor: 10_000, cardId: cardX });
       await pour({ tenantId: odd, mccId: mcc, membershipId: m, on: await day(-1), kg: '2.500', minor: 12_500, cardId: cardX });
@@ -534,8 +536,9 @@ run('PC-56 TENANT-6e-1 · the insights (integration, real Postgres)', () => {
       expect(cards[0].effectiveFrom).toBe(await day(-500));
       // `milk_rate_cards` has no version column, so nothing on the wire can carry one.
       expect(JSON.stringify(v.rateCards)).not.toMatch(/"version"/);
-      expect(v.rateCards.supersedeRecorded).toBe(false);
-      expect(v.rateCards.checkerRequired).toBe(false);
+      // [PC-56 HOTFIX-12 · named update] both now true (founder Q1-A): a second person on every new card; the approval supersedes.
+      expect(v.rateCards.supersedeRecorded).toBe(true);
+      expect(v.rateCards.checkerRequired).toBe(true);
     });
 
     it('holds the page for a cooperative with only a few days of history', async () => {
@@ -563,8 +566,8 @@ run('PC-56 TENANT-6e-1 · the insights (integration, real Postgres)', () => {
       } as never) as never as { id: string }).id;
       const cardY = (await admin.query(
         `INSERT INTO milk_rate_cards (tenant_id, default_name, animal_type, pricing_model, rate_per_kg_fat_minor,
-                                      rate_per_kg_snf_minor, effective_from, is_active, created_by)
-         VALUES ($1,'Y card','cow','two_axis',70000,30000, CURRENT_DATE - 10, true, $2) RETURNING id`, [young, desk])).rows[0].id;
+                                      rate_per_kg_snf_minor, effective_from, is_active, created_by, approved_before_rule, approved_at)   -- [HOTFIX-12 · named update] pre-rule stamp (0234)
+         VALUES ($1,'Y card','cow','two_axis',70000,30000, CURRENT_DATE - 10, true, $2, true, now()) RETURNING id`, [young, desk])).rows[0].id;
 
       // Ten days of history on a MONTHLY cycle: one third of one cycle, where two are needed.
       await pour({ tenantId: young, mccId: mcc, membershipId: m, on: await day(-9), kg: '8.000', minor: 40_000, cardId: cardY });

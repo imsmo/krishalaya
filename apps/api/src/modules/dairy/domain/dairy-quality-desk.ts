@@ -168,6 +168,9 @@ export interface RateCardSummary {
  * `MilkRateCardRepository.resolveActive` quietly prices every pour with whichever has the later `effective_from`.
  * Nothing warns anybody. The desk shows every in-force card and names which one is winning, because the alternative is
  * a screen that says "Active rate card" in the singular over a database that disagrees.
+ * [PC-56 HOTFIX-12] No longer create-only: a second person's APPROVAL closes the predecessor's `effective_to` the day
+ * before its successor starts, only approved cards are "in force", and 0234's exclusion `ex_rate_card_one_in_force`
+ * refuses two approved cards for one milk type on a common day. `ambiguous` stays as the check that would say so.
  *
  * `supersedeRecorded: false` — history IS kept (the old row persists and every pour records the `rate_card_id` that
  * priced it), so the canon is right about the important half. What does not exist is an ARCHIVE: no act, no column,
@@ -177,6 +180,10 @@ export interface RateCardSummary {
  * one call, with no second approver, while W168's restricted state promises "owner + checker". This platform HAS the
  * pattern (TENANT-4b's payout approval gate, 0143). Naming it, not faking it: a screen that displayed a checker who
  * does not exist would be worse than one that says the gate is missing.
+ *
+ * [PC-56 HOTFIX-12 · founder Q1-A, 2026-11-08] BOTH ARE NOW TRUE, so both flip to `true`: a new card prices nothing until
+ * a SECOND person approves it (the creator cannot — service, 0234's CHECK and guard), and that approval CLOSES the card it
+ * replaces the day before the new one starts, recorded (an audit row naming both). The panel's sentences follow the flags.
  */
 export interface RateCardsInForce {
   byAnimal: Array<{
@@ -187,8 +194,8 @@ export interface RateCardsInForce {
     ambiguous: boolean;
   }>;
   ambiguousAnimalTypes: AnimalType[];
-  supersedeRecorded: false;
-  checkerRequired: false;
+  supersedeRecorded: true;
+  checkerRequired: true;
 }
 
 export function rateCardsInForce(cards: readonly RateCardSummary[]): RateCardsInForce {
@@ -207,8 +214,8 @@ export function rateCardsInForce(cards: readonly RateCardSummary[]): RateCardsIn
   return {
     byAnimal,
     ambiguousAnimalTypes: byAnimal.filter((g) => g.ambiguous).map((g) => g.animalType),
-    supersedeRecorded: false,
-    checkerRequired: false,
+    supersedeRecorded: true,
+    checkerRequired: true,
   };
 }
 

@@ -142,13 +142,16 @@ export function slabsNotAppliedKey(slabsApplied: boolean, b: DairyPremiumBand): 
 export function cardAmbiguityKey(r: DairyRateCardsInForce): string | null {
   return r.ambiguousAnimalTypes.length > 0 ? 'dairy.quality.card.ambiguous' : null;
 }
+// [PC-56 HOTFIX-12] The two sentences follow the server's flags: since 0234 a second person's approval closes the replaced card
+// (supersedeRecorded) and a new card prices nothing until a second person approves it (checkerRequired). The old sentences stay for
+// a server that answers false.
 export function cardSupersedeKey(r: DairyRateCardsInForce): string {
-  void r; return 'dairy.quality.card.noArchive';
+  return r.supersedeRecorded ? 'dairy.quality.card.supersede' : 'dairy.quality.card.noArchive';
 }
 /** W168's restricted state promises "rate cards are owner + checker". There is no second approver anywhere on this
  *  path — one `dairy.manage` holder changes what every member is paid, alone. Stated on the panel that shows the card. */
 export function cardCheckerKey(r: DairyRateCardsInForce): string {
-  void r; return 'dairy.quality.card.noChecker';
+  return r.checkerRequired ? 'dairy.quality.card.checker' : 'dairy.quality.card.noChecker';
 }
 export function cardEffectiveKey(cardId: string, effectiveId: string | null): string | null {
   if (effectiveId === null) return null;

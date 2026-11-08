@@ -6,6 +6,9 @@
 //   fat_pooled: fatKg×rateFat
 //   snf_pooled: snfKg×rateSnf
 //   (+ base_rate_per_litre × weight, if a base rate is set — a flat floor on top of quality premiums)
+//   [PC-56 HOTFIX-12 · comment only, survey C-10] the "per litre" base rate and premium are APPLIED PER KILOGRAM of
+//   milk: `weight` here is the weighed kilograms (weightMilliKg / 1000). The column names say litre; the arithmetic is
+//   per kg. Nothing in this file's pricing changed — which unit a cooperative means is founder Q8.
 //   (+ BONUS SLABS, PC-56 TENANT-6b-1 — see below)
 import { PricingModel, AnimalType } from './dairy.events';
 import { InvalidRateCardError } from './dairy.errors';
@@ -30,8 +33,9 @@ function roundDiv(num: bigint, den: bigint): bigint { return (num + den / 2n) / 
  *                            claim about a measurement this platform does not take.
  *   • `minCentiPct`        — the threshold in CENTI-PERCENT (6.5% → 650), because that is how the reading is stored
  *                            and compared. A decimal threshold would reintroduce float into a money path.
- *   • `bonusMinorPerLitre` — the premium in MINOR UNITS PER LITRE (₹0.50 → 50). Per litre, not per kg of fat: that is
- *                            what the canon says and what a member is told at the counter.
+ *   • `bonusMinorPerLitre` — the premium in MINOR UNITS "PER LITRE" (₹0.50 → 50), as the canon names it. [PC-56 HOTFIX-12 ·
+ *                            comment only, survey C-10] It is APPLIED PER KILOGRAM of milk weighed (`bonusMinor` multiplies
+ *                            by weightMilliKg / 1000), not per kg of fat and not per measured litre.
  *
  * Slabs are additive and INDEPENDENT: a pour clearing a fat slab and an SNF slab earns both, because they are two
  * separate promises the card made. Multiple slabs on the SAME metric all apply if all are cleared — a card with
@@ -75,7 +79,19 @@ export interface MilkRateCardProps {
   effectiveTo: string | null;
   isActive: boolean;
   createdAt?: Date;
+  /**
+   * [PC-56 HOTFIX-12] WHO CREATED IT, WHO APPROVED IT, AND WHEN (founder Q1-A, 2026-11-08; migration 0234). A card prices
+   * pours only once approved — by a second person (`approvedBy` ≠ `createdBy`), or because it existed before the rule
+   * shipped (`approvedBeforeRule`, founder Q1-sub: those keep pricing). `createdBy` is NULL only on pre-rule cards.
+   */
+  createdBy?: string | null;
+  approvedBy?: string | null;
+  approvedAt?: Date | null;
+  approvedBeforeRule?: boolean;
 }
+
+/** [PC-56 HOTFIX-12] The three states a card can be in, from 0234's `ck_rate_card_approval_stamp`. */
+export type RateCardApprovalState = 'awaiting_second_person' | 'approved' | 'approved_before_rule';
 
 export class MilkRateCard {
   private constructor(private readonly props: MilkRateCardProps) {}
@@ -87,6 +103,9 @@ export class MilkRateCard {
     if ((pricingModel === 'two_axis' || pricingModel === 'snf_pooled') && (ratePerKgSnfMinor == null || ratePerKgSnfMinor <= 0n))
       throw new InvalidRateCardError('snf rate required (and positive) for this pricing model');
     if (baseRatePerLitreMinor != null && baseRatePerLitreMinor < 0n) throw new InvalidRateCardError('base rate cannot be negative');
+    // [PC-56 HOTFIX-12] A card that ends before it starts covers no day; 0234's exclusion builds a daterange from the two
+    // dates, which Postgres refuses with a raw error when the end precedes the start. Refused here by name instead.
+    if (input.effectiveTo != null && input.effectiveTo < input.effectiveFrom) throw new InvalidRateCardError('effectiveTo cannot be before effectiveFrom');
     const bonusSlabs = input.bonusSlabs ?? [];
     // A slab on an axis the card does not price is a promise the engine cannot keep: an `snf` slab on a `fat_pooled`
     // card would pay a premium for a measurement the card ignores. Refused at creation rather than ignored at pricing.
@@ -102,13 +121,25 @@ export class MilkRateCard {
       if (seen.has(k)) throw new InvalidRateCardError(`duplicate bonus slab at ${s.metric} ≥ ${s.minCentiPct / 100}`);
       seen.add(k);
     }
-    return new MilkRateCard({ ...input, bonusSlabs, isActive: input.isActive ?? true });
+    // [PC-56 HOTFIX-12] Born AWAITING A SECOND PERSON: no approval stamp, never pre-rule (0234's guard refuses either).
+    return new MilkRateCard({ ...input, bonusSlabs, isActive: input.isActive ?? true, approvedBy: null, approvedAt: null, approvedBeforeRule: false });
   }
   static rehydrate(props: MilkRateCardProps): MilkRateCard { return new MilkRateCard(props); }
 
   get id() { return this.props.id; }
   get tenantId() { return this.props.tenantId; }
   get animalType() { return this.props.animalType; }
+  get effectiveFrom() { return this.props.effectiveFrom; }
+  get effectiveTo() { return this.props.effectiveTo; }
+  get defaultName() { return this.props.defaultName; }
+  get createdBy(): string | null { return this.props.createdBy ?? null; }
+  get approvedBy(): string | null { return this.props.approvedBy ?? null; }
+  /** [PC-56 HOTFIX-12] Only an APPROVED card prices a pour (resolveActive's predicate is the same fact in SQL). */
+  get isApproved(): boolean { return this.props.approvedAt != null; }
+  get approvalState(): RateCardApprovalState {
+    if (this.props.approvedAt == null) return 'awaiting_second_person';
+    return this.props.approvedBeforeRule ? 'approved_before_rule' : 'approved';
+  }
   get bonusSlabs(): readonly BonusSlab[] { return this.props.bonusSlabs; }
   /** Whether this card PROMISES a premium — asked by the desk so it can say "configured but not applied" honestly. */
   get hasBonusSlabs(): boolean { return this.props.bonusSlabs.length > 0; }
@@ -116,7 +147,11 @@ export class MilkRateCard {
   toJSON() { const v = this.props; return { id: v.id, defaultName: v.defaultName, animalType: v.animalType, pricingModel: v.pricingModel,
     ratePerKgFatMinor: v.ratePerKgFatMinor?.toString() ?? null, ratePerKgSnfMinor: v.ratePerKgSnfMinor?.toString() ?? null,
     baseRatePerLitreMinor: v.baseRatePerLitreMinor?.toString() ?? null, bonusSlabs: v.bonusSlabs,
-    effectiveFrom: v.effectiveFrom, effectiveTo: v.effectiveTo, isActive: v.isActive }; }
+    effectiveFrom: v.effectiveFrom, effectiveTo: v.effectiveTo, isActive: v.isActive,
+    // [PC-56 HOTFIX-12] The approval STATE and instant — never a person's id: this read is open to every member of the
+    // tenant (the mobile rates page), so who created or approved a card travels only as "you" / "not you", per viewer
+    // (MilkRateCardService.view).
+    approvalState: this.approvalState, approvedAt: v.approvedAt ? v.approvedAt.toISOString() : null }; }
 
   /**
    * EXACT price in minor units for one collection. Inputs are scaled integers:

@@ -49,6 +49,9 @@ import { DairyBillCycleRepository } from '../repositories/dairy-bill-cycle.repos
 import { MccCentreService } from '../services/mcc-centre.service';
 import { DairyMembershipService } from '../services/dairy-membership.service';
 import { MilkRateCardService } from '../services/milk-rate-card.service';
+// [PC-56 HOTFIX-12 · named update] founder Q1-A: a card prices nothing until a SECOND person approves it and cannot start before
+// today, so every card this spec prices with is created AND approved through the real service (helpers/hotfix12-approved-card.ts).
+import { approvedCardForTest } from './helpers/hotfix12-approved-card';
 import { MilkCollectionService } from '../services/milk-collection.service';
 import { MilkBillService } from '../services/milk-bill.service';
 import { MilkBillDeductionRepository } from '../repositories/milk-bill-deduction.repository';
@@ -127,7 +130,7 @@ run('PC-56 TENANT-6c-2 · the preview, the window and the dispute (integration, 
 
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, new MccOperatorAssignmentRepository(replica as never));
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo, new DairyMembershipRouteRepository(replica as never));
-    cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
+    cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo, audit)   // [PC-56 HOTFIX-12 · named update] + the create/approve audit rows;
     collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags, new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never), realNoticeVars(replica as never));
     const lineRepo = new MilkBillDeductionRepository(replica as never);
     const typeRepo = new DairyDeductionTypeRepository(replica as never);
@@ -156,7 +159,7 @@ run('PC-56 TENANT-6c-2 · the preview, the window and the dispute (integration, 
     win = { ...win, from: prev.from, to: prev.to };
 
     mccId = (await mccs.create(tenantA, actor, `idem-${randomUUID()}`, { code: 'MCC-AND-02', defaultName: 'Anand 02' } as never, null)).id;
-    await cards.create(tenantA, actor, `idem-${randomUUID()}`, { defaultName: 'Buffalo two_axis v4', animalType: 'buffalo', pricingModel: 'two_axis', ratePerKgFatMinor: '72000', ratePerKgSnfMinor: '34000', effectiveFrom: '2026-01-01' } as never);
+    await approvedCardForTest(cards, admin, tenantA, actor, { defaultName: 'Buffalo two_axis v4', animalType: 'buffalo', pricingModel: 'two_axis', ratePerKgFatMinor: '72000', ratePerKgSnfMinor: '34000', effectiveFrom: '2026-01-01' } as never);
     memA = (await memberships.create(tenantA, actor, `idem-${randomUUID()}`, { farmerUserId: farmerA, mccId, memberCode: 'AND2-0087', paymentCycle: 'fortnightly', defaultAnimalType: 'buffalo' } as never)).id;
 
     await collections.record(tenantA, actor, `idem-${randomUUID()}`, {

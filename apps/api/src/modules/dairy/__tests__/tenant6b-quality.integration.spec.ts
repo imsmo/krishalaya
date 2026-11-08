@@ -44,6 +44,9 @@ import { DairyBillCycleRepository } from '../repositories/dairy-bill-cycle.repos
 import { MccCentreService } from '../services/mcc-centre.service';
 import { DairyMembershipService } from '../services/dairy-membership.service';
 import { MilkRateCardService } from '../services/milk-rate-card.service';
+// [PC-56 HOTFIX-12 · named update] founder Q1-A: a card prices nothing until a SECOND person approves it and cannot start before
+// today, so every card this spec prices with is created AND approved through the real service (helpers/hotfix12-approved-card.ts).
+import { approvedCardForTest } from './helpers/hotfix12-approved-card';
 import { MilkCollectionService } from '../services/milk-collection.service';
 import { MilkBillService } from '../services/milk-bill.service';
 import { MilkBillDeductionRepository } from '../repositories/milk-bill-deduction.repository';
@@ -128,7 +131,7 @@ run('PC-56 TENANT-6b · the quality desk\'s money path (integration, real Postgr
     const billRepo = new MilkBillRepository(replica as any);
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, new MccOperatorAssignmentRepository(replica as never));
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo, new DairyMembershipRouteRepository(replica as never));
-    cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
+    cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo, audit)   // [PC-56 HOTFIX-12 · named update] + the create/approve audit rows;
     // PC-56 TENANT-6b-1: the record path now opens a quality review for a flagged pour and asks the flag service
     // whether the rate card's premium slabs apply — both real here, against the real database.
     const reviewRepo = new MilkQualityReviewRepository(replica as any);
@@ -166,12 +169,12 @@ run('PC-56 TENANT-6b · the quality desk\'s money path (integration, real Postgr
 
     mccId = (await mccs.create(tenantA, actor, `idem-${randomUUID()}`, { code: 'MCC-AND-02', defaultName: 'Anand 02' } as any, null)).id;
     // W168's own card: "Buffalo two_axis v4 · ₹720 per kg fat · ₹340 per kg SNF · bonus fat ≥ 6.5 → +₹0.50/L".
-    await cards.create(tenantA, actor, `idem-${randomUUID()}`, { defaultName: 'Buffalo two_axis v4', animalType: 'buffalo', pricingModel: 'two_axis', ratePerKgFatMinor: '72000', ratePerKgSnfMinor: '34000', effectiveFrom: '2026-01-01' } as any);
+    await approvedCardForTest(cards, admin, tenantA, actor, { defaultName: 'Buffalo two_axis v4', animalType: 'buffalo', pricingModel: 'two_axis', ratePerKgFatMinor: '72000', ratePerKgSnfMinor: '34000', effectiveFrom: '2026-01-01' } as any);
     membershipId = (await memberships.create(tenantA, actor, `idem-${randomUUID()}`, { farmerUserId: farmer, mccId, memberCode: 'AND2-0087', paymentCycle: 'fortnightly', defaultAnimalType: 'buffalo' } as any)).id;
 
     // A COW card carrying W168's slab, and a member on it — so the premium band is exercised on its own animal type
     // without changing what the buffalo member above is paid.
-    await cards.create(tenantA, actor, `idem-${randomUUID()}`, {
+    await approvedCardForTest(cards, admin, tenantA, actor, {
       defaultName: 'Cow two_axis + premium', animalType: 'cow', pricingModel: 'two_axis',
       ratePerKgFatMinor: '72000', ratePerKgSnfMinor: '34000', effectiveFrom: '2026-01-01',
       bonusSlabs: [{ metric: 'fat', minCentiPct: 650, bonusMinorPerLitre: 50 }],

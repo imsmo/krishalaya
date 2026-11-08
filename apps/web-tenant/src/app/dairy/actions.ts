@@ -77,6 +77,16 @@ export async function createRateCardAction(formData: FormData): Promise<void> {
   redirect(`${PATH}?ok=ratecard`);
 }
 
+/** [PC-56 HOTFIX-12 · founder Q1-A] A SECOND person approves a rate card; the API refuses the creator by name (shown as a sentence). */
+export async function approveRateCardAction(formData: FormData): Promise<void> {
+  await requireSession(PATH);
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id) redirect(`${PATH}?error=save`);
+  try { await tenantClient().dairy.approveRateCard(id, randomUUID()); } catch (e) { fail(e); }
+  revalidatePath(PATH);
+  redirect(`${PATH}?ok=ratecard.approved`);
+}
+
 export async function recordCollectionAction(formData: FormData): Promise<void> {
   await requireSession(PATH);
   const membershipId = String(formData.get('membershipId') ?? '').trim();

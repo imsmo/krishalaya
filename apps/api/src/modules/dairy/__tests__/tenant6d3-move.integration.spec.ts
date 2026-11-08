@@ -121,8 +121,9 @@ run('PC-56 TENANT-6d-3 · W171 the move (integration, real Postgres)', () => {
 
     // A rate card, because `milk_collections.rate_card_id` is NOT NULL.
     const rc = await admin.query(
-      `INSERT INTO milk_rate_cards (tenant_id, default_name, animal_type, pricing_model, rate_per_kg_fat_minor, rate_per_kg_snf_minor, effective_from, is_active, created_by)
-       VALUES ($1,'D3 card','buffalo','two_axis',70000,30000, CURRENT_DATE - 400, true, $2) RETURNING id`, [tenantA, desk]);
+      // [PC-56 HOTFIX-12 · named update] 0234 prices only APPROVED cards; this admin-realm fixture card carries the pre-rule stamp (Q1-sub).
+      `INSERT INTO milk_rate_cards (tenant_id, default_name, animal_type, pricing_model, rate_per_kg_fat_minor, rate_per_kg_snf_minor, effective_from, is_active, created_by, approved_before_rule, approved_at)
+       VALUES ($1,'D3 card','buffalo','two_axis',70000,30000, CURRENT_DATE - 400, true, $2, true, now()) RETURNING id`, [tenantA, desk]);
     rateCardId = rc.rows[0].id;
 
     // The membership was enrolled TODAY (the backfill/enrolment route opens at `created_at::date`), so every date in

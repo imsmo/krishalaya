@@ -137,6 +137,14 @@ export class DairyResource {
   async createRateCard(input: CreateRateCardInput, idempotencyKey: string): Promise<DairyRateCard> {
     return (await this.http.request<DairyRateCard>('POST', 'dairy/rate-cards', { idempotencyKey, body: input })).data;
   }
+  /**
+   * [PC-56 HOTFIX-12 · founder Q1-A] A SECOND person approves a rate card; until then it prices nothing. The creator is refused
+   * (403 RATE_CARD_SECOND_PERSON_REQUIRED); also RATE_CARD_ALREADY_APPROVED (409), RATE_CARD_BACKDATED (422), RATE_CARD_OVERLAP (409).
+   * Idempotency-Key required: the approval closes the card it replaces and tells the members.
+   */
+  async approveRateCard(id: string, idempotencyKey: string): Promise<DairyRateCard> {
+    return (await this.http.request<DairyRateCard>('POST', `dairy/rate-cards/${encodeURIComponent(id)}/approve`, { idempotencyKey })).data;
+  }
 
   // ---- collections (counter entry) ----
   async listCollections(params: { membershipId: string; from: string; to: string; cursor?: string; limit?: number }, signal?: AbortSignal): Promise<Page<DairyCollection>> {

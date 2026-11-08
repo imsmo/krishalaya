@@ -18,9 +18,9 @@ import { DataTable } from '../../../components/DataTable';
 import { getTranslator, getLang } from '../../../lib/i18n';
 import { env } from '../../../lib/env';
 import { formatMoneyMinor } from '@krishalaya/i18n';
-import { ANIMAL_TYPES, PRICING_MODELS, PAYMENT_CYCLES, MILK_SHIFTS, nextBillActions, dairyRefusalKey } from '../../../features/dairy/calc';
+import { ANIMAL_TYPES, PRICING_MODELS, PAYMENT_CYCLES, MILK_SHIFTS, nextBillActions, dairyRefusalKey, rateCardStateKey, canApproveRateCard } from '../../../features/dairy/calc';
 import {
-  createMccAction, setMccActiveAction, enrolMemberAction, createRateCardAction,
+  createMccAction, setMccActiveAction, enrolMemberAction, createRateCardAction, approveRateCardAction,
   recordCollectionAction, generateBillAction, previewBillAction, approveBillAction, payBillAction,
 } from '../actions';
 import type { DairyMcc, DairyMembership, DairyRateCard, MilkBill } from '@krishalaya/sdk-js';
@@ -30,7 +30,7 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('dairy.title'), robots: { index: false, follow: false } };
 }
 
-const OK = new Set(['mcc', 'mcc.on', 'mcc.off', 'member', 'ratecard', 'collection', 'bill', 'bill.previewed', 'bill.approved', 'bill.paid']);
+const OK = new Set(['mcc', 'mcc.on', 'mcc.off', 'member', 'ratecard', 'ratecard.approved', 'collection', 'bill', 'bill.previewed', 'bill.approved', 'bill.paid']);
 
 export default async function DairyOperatorConsolePage({ searchParams }: { searchParams: { ok?: string; error?: string } }) {
   if (!env.featureDairy) notFound();
@@ -98,6 +98,8 @@ export default async function DairyOperatorConsolePage({ searchParams }: { searc
       {/* ---- rate cards ---- */}
       <h2 className="kv-section-title">{t.t('dairy.rate.title')}</h2>
       <p className="kv-muted kv-fine">{t.t('dairy.rate.help')}</p>
+      {/* [PC-56 HOTFIX-12] the rule in the founder's words (Q1-A), and each card's state; Approve only for a second person. */}
+      <p className="kv-muted kv-fine">{t.t('dairy.rate.ruleHelp')}</p>
       {cardsFailed ? <p className="kv-error" role="alert">{t.t('dairy.loadError')}</p> : (
         <DataTable
           rows={cards}
@@ -109,7 +111,15 @@ export default async function DairyOperatorConsolePage({ searchParams }: { searc
             { header: t.t('dairy.rate.fat'), cell: (c) => c.ratePerKgFatMinor ? money(c.ratePerKgFatMinor) : t.t('common.dash') },
             { header: t.t('dairy.rate.snf'), cell: (c) => c.ratePerKgSnfMinor ? money(c.ratePerKgSnfMinor) : t.t('common.dash') },
             { header: t.t('dairy.rate.from'), cell: (c) => c.effectiveFrom },
+            { header: t.t('dairy.rate.to'), cell: (c) => c.effectiveTo ?? t.t('dairy.quality.card.openEnded') },
             { header: t.t('dairy.status'), cell: (c) => c.isActive ? t.t('dairy.active') : t.t('dairy.inactive') },
+            { header: t.t('dairy.rate.state'), cell: (c) => t.t(rateCardStateKey(c)) },
+            { header: '', cell: (c) => canApproveRateCard(c) ? (
+              <form action={approveRateCardAction}>
+                <input type="hidden" name="id" value={c.id} />
+                <button type="submit" className="kv-btn kv-btn--sm">{t.t('dairy.rate.approve')}</button>
+              </form>
+            ) : null },
           ]}
         />
       )}

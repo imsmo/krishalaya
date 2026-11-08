@@ -70,13 +70,16 @@ export class DairyQualityRepository {
    * cards satisfying that predicate and never know which one is pricing their milk. This read returns them ALL so the
    * desk can say so. Same predicate as `resolveActive` otherwise, so what the desk shows and what the counter prices
    * with cannot diverge.
+   *
+   * [PC-56 HOTFIX-12] …including `approved_at IS NOT NULL`: an unapproved card prices nothing, so it is not "in force".
+   * 0234's exclusion now keeps one approved card per milk type on any day; `ambiguous` stays as the check that says so.
    */
   async cardsInForce(tenantId: string, onDate: string): Promise<RateCardSummary[]> {
     const r = await this.replica.forTenant(tenantId).query(
       `SELECT id, default_name, animal_type, pricing_model, rate_per_kg_fat_minor, rate_per_kg_snf_minor,
               base_rate_per_litre_minor, bonus_rules, effective_from, effective_to
          FROM milk_rate_cards
-        WHERE tenant_id=$1 AND is_active = true AND deleted_at IS NULL
+        WHERE tenant_id=$1 AND is_active = true AND deleted_at IS NULL AND approved_at IS NOT NULL
           AND effective_from <= $2::date AND (effective_to IS NULL OR effective_to >= $2::date)
         ORDER BY animal_type, effective_from DESC, id DESC`, [tenantId, onDate]);
     return (r.rows as any[]).map((x) => ({

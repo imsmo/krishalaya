@@ -41,6 +41,9 @@ import { DairyBillCycleRepository } from '../repositories/dairy-bill-cycle.repos
 import { MccCentreService } from '../services/mcc-centre.service';
 import { DairyMembershipService } from '../services/dairy-membership.service';
 import { MilkRateCardService } from '../services/milk-rate-card.service';
+// [PC-56 HOTFIX-12 · named update] founder Q1-A: a card prices nothing until a SECOND person approves it and cannot start before
+// today, so every card this spec prices with is created AND approved through the real service (helpers/hotfix12-approved-card.ts).
+import { approvedCardForTest } from './helpers/hotfix12-approved-card';
 import { MilkCollectionService } from '../services/milk-collection.service';
 import { MilkBillService } from '../services/milk-bill.service';
 import { MilkBillDeductionRepository } from '../repositories/milk-bill-deduction.repository';
@@ -107,7 +110,7 @@ run('dairy milk-procurement spine (integration, real Postgres + RLS + wallet pay
     const billRepo = new MilkBillRepository(replica as any);
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, new MccOperatorAssignmentRepository(replica as never));
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo, new DairyMembershipRouteRepository(replica as never));
-    cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
+    cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo, audit)   // [PC-56 HOTFIX-12 · named update] + the create/approve audit rows;
     // PC-56 TENANT-6b-1: the record path now opens a quality review for a flagged pour and asks the flag service
     // whether the rate card's premium slabs apply — both real here, against the real database.
     const reviewRepo = new MilkQualityReviewRepository(replica as any);
@@ -139,7 +142,7 @@ run('dairy milk-procurement spine (integration, real Postgres + RLS + wallet pay
 
   it('cooperative sets up MCC + rate card + member', async () => {
     mccId = (await mccs.create(tenantA, actor, `idem-${randomUUID()}`, { code: 'MCC-1', defaultName: 'Anand MCC' } as any, null)).id;
-    await cards.create(tenantA, actor, `idem-${randomUUID()}`, { defaultName: 'Cow two-axis', animalType: 'cow', pricingModel: 'two_axis', ratePerKgFatMinor: '50000', ratePerKgSnfMinor: '30000', effectiveFrom: '2026-01-01' } as any);
+    await approvedCardForTest(cards, admin, tenantA, actor, { defaultName: 'Cow two-axis', animalType: 'cow', pricingModel: 'two_axis', ratePerKgFatMinor: '50000', ratePerKgSnfMinor: '30000', effectiveFrom: '2026-01-01' } as any);
     membershipId = (await memberships.create(tenantA, actor, `idem-${randomUUID()}`, { farmerUserId: farmer, mccId, memberCode: 'C-001', paymentCycle: 'weekly', defaultAnimalType: 'cow' } as any)).id;
     expect(membershipId).toBeTruthy();
   });

@@ -220,6 +220,10 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   // every one of these notices would have gone out in English while the canon says *"Gujarati voice"*.
   { outboxType: 'dairy.shift_diverted',           eventCode: 'dairy.shift_diverted',           recipientKeys: ['recipientUserIds'] },
   { outboxType: 'dairy.shift_diversion_cancelled', eventCode: 'dairy.shift_diversion_cancelled', recipientKeys: ['recipientUserIds'] },
+  // PC-56 HOTFIX-12 (founder Q1-A, 2026-11-08) · "members are told in their own language when it is approved (push or in-app,
+  // never SMS)". `MilkRateCardService.approve` emits this in the approval's transaction with `recipientUserIds` = the active members
+  // whose milk the card prices, chunked like 6d-8. Catalogued by 0234 ('important', push + in-app); copy ×3 in seed core/0007.
+  { outboxType: 'dairy.rate_card_approved',       eventCode: 'dairy.rate_card_approved',       recipientKeys: ['recipientUserIds'] },
   // PC-56 TENANT-6e-2 · W2553: *"you will find the file on the ready page"*. The export plane's worker emits this in the
   // same transaction that writes the receipt; `userId` is the REQUESTER and is in the payload (ADMIN-6b's lesson), and
   // `dataset` is a per-language map from seed 0017 so the Gujarati notice does not carry the code `dairy.insights`.

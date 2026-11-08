@@ -1885,7 +1885,19 @@ export interface DairyRateCard {
   id: string; defaultName: string; animalType: DairyAnimalType; pricingModel: DairyPricingModel;
   ratePerKgFatMinor: string | null; ratePerKgSnfMinor: string | null; baseRatePerLitreMinor: string | null;
   effectiveFrom: string; effectiveTo: string | null; isActive: boolean;
+  /** [PC-56 HOTFIX-12] The premium slabs the card promises (paid only behind `dairy_bonus_slabs`). */
+  bonusSlabs?: DairyBonusSlab[];
+  /**
+   * [PC-56 HOTFIX-12 · founder Q1-A] Only an approved card prices a pour. `approved_before_rule` = the card existed when the
+   * second-person rule shipped and keeps pricing (Q1-sub). `approvedAt` is null while awaiting a second person.
+   */
+  approvalState: DairyRateCardApprovalState;
+  approvedAt: string | null;
+  /** Whether the SIGNED-IN viewer created / approved this card. The API never sends a person's id on this public read. */
+  createdByYou: boolean;
+  approvedByYou: boolean;
 }
+export type DairyRateCardApprovalState = 'awaiting_second_person' | 'approved' | 'approved_before_rule';
 /** A counter milk-collection row. amountMinor is server-priced from the rate card (float-free). */
 export interface DairyCollection {
   id: string; membershipId: string; mccId: string; shift: DairyShift; collectedOn: string;
@@ -2001,8 +2013,10 @@ export interface DairyRateCardSummary {
 export interface DairyRateCardsInForce {
   byAnimal: Array<{ animalType: DairyAnimalType; cards: DairyRateCardSummary[]; effectiveId: string | null; ambiguous: boolean }>;
   ambiguousAnimalTypes: DairyAnimalType[];
-  supersedeRecorded: false;
-  checkerRequired: false;
+  /** [PC-56 HOTFIX-12] true since 0234: an approval closes the replaced card the day before its successor starts, recorded. */
+  supersedeRecorded: boolean;
+  /** [PC-56 HOTFIX-12] true since 0234: a new card prices nothing until a second person (never its creator) approves it. */
+  checkerRequired: boolean;
 }
 
 /** The line-by-line arithmetic W168 promises the farmer, computed from the tenant's OWN card and (where one exists) a

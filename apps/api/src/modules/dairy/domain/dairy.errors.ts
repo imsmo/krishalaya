@@ -372,3 +372,36 @@ export class BillDisputeUnansweredError extends DomainError {
       409, { id });
   }
 }
+
+/**
+ * [PC-56 HOTFIX-12] NO RATE CHANGE WITHOUT A SECOND PERSON AND A RECORD (founder Q1-A, 2026-11-08; migration 0234).
+ *
+ * A new rate card is recorded, prices nothing until a SECOND person approves it (the creator cannot), never starts before
+ * the tenant's today in its own zone (tomorrow at the earliest — founder follow-up 2026-11-08), and only one card is in force per milk type. Every refusal writes nothing; the
+ * database (0234's CHECKs, guard trigger and exclusion constraint) makes the same rules true of the row whatever wrote it.
+ * The sentences state only what the code proves.
+ */
+export class RateCardBackdatedError extends DomainError {
+  constructor(effectiveFrom: string, today: string) {
+    super('RATE_CARD_BACKDATED',
+      `A milk rate card can start tomorrow at the earliest. This card starts on ${effectiveFrom}; today is ${today} for your organisation.`,
+      422, { effectiveFrom, today });
+  }
+}
+export class RateCardSecondPersonRequiredError extends DomainError {
+  constructor(id: string) {
+    super('RATE_CARD_SECOND_PERSON_REQUIRED',
+      'The person who created this milk rate card cannot also approve it. A second person on your dairy desk approves it.',
+      403, { id });
+  }
+}
+export class RateCardAlreadyApprovedError extends DomainError {
+  constructor(id: string) { super('RATE_CARD_ALREADY_APPROVED', 'This milk rate card is already approved.', 409, { id }); }
+}
+export class RateCardOverlapError extends DomainError {
+  constructor(id: string, clashWith: string[]) {
+    super('RATE_CARD_OVERLAP',
+      'Another approved milk rate card for this milk type is already in force on a day this card covers. Only one card is in force per milk type.',
+      409, { id, clashWith });
+  }
+}

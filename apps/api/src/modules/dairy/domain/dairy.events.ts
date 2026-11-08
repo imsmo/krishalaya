@@ -3,6 +3,9 @@ export const DairyEventType = {
   MccCreated:        'dairy.mcc_created',
   MembershipCreated: 'dairy.membership_created',
   RateCardCreated:   'dairy.rate_card_created',
+  // PC-56 HOTFIX-12 (founder Q1-A) · a SECOND person approved a card: it now prices, its predecessor is closed the day before
+  // it starts, and the members whose milk it prices are TOLD (`recipientUserIds`, chunked; push + in-app, never SMS).
+  RateCardApproved:  'dairy.rate_card_approved',
   CollectionRecorded:'dairy.collection_recorded',
   BillGenerated:     'dairy.bill_generated',
   BillPreviewed:     'dairy.bill_previewed',

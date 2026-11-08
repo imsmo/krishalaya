@@ -1047,6 +1047,32 @@ INSERT INTO notification_templates (event_code, channel, language_code, tenant_i
  ('review.reminder','inapp','gu',NULL,'તમારા ઓર્ડરની સમીક્ષાનો હજી સમય છે','તમે હજી પણ તમારા તાજેતરના ઓર્ડરની સમીક્ષા કરી શકો છો. ઓર્ડર પૂર્ણ થયા પછી સમીક્ષા થોડા સમય સુધી જ ખુલ્લી રહે છે; આ એકમાત્ર યાદ અપાવતો સંદેશ છે.',NULL,true)
 ON CONFLICT DO NOTHING;
 
+-- PC-56 HOTFIX-12 (founder Q1-A, 2026-11-08) · **A NEW MILK RATE CARD IS APPROVED — AND THE MEMBERS IT PRICES ARE TOLD, IN THEIR LANGUAGE.**
+-- Migration 0234 catalogues `dairy.rate_card_approved` (also inserted here, ON CONFLICT DO NOTHING, so a seed-only database has it);
+-- `MilkRateCardService.approve` emits it in the SAME transaction as the second person's approval, with `recipientUserIds` = the active
+-- dairy members whose milk the card prices (their membership's milk type; none recorded = mixed, the pricing rule). Push + in-app × en/hi/gu.
+-- NO SMS: an SMS template needs a DLT registration this platform has not made. NO AMOUNT: a rate is printed only through the house money
+-- formatter in her locale, and a notice template has none — the member reads the card's rates in her app. Variables: `cardName` (the
+-- card's own name, as the organisation wrote it), `effectiveFrom` (DD/MM/YYYY — digits, readable in every script). Above the version
+-- backfill below (the TENANT-6d-1 NOTE).
+INSERT INTO notification_events (code, default_name, priority, default_channels, user_can_opt_out, batchable) VALUES
+ ('dairy.rate_card_approved', 'A new milk rate card was approved by a second person', 'important', '["push","inapp"]', false, false)
+ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('dairy.rate_card_approved','push','en',NULL,'Milk rate card approved','A second person at your organisation approved the milk rate card "{{cardName}}". It prices your milk collected from {{effectiveFrom}}.',NULL,true),
+ ('dairy.rate_card_approved','push','hi',NULL,'दूध का रेट कार्ड मंज़ूर हुआ','आपकी संस्था में एक दूसरे व्यक्ति ने दूध का रेट कार्ड "{{cardName}}" मंज़ूर किया है। {{effectiveFrom}} से जमा किए गए आपके दूध का दाम इसी से तय होता है।',NULL,true),
+ ('dairy.rate_card_approved','push','gu',NULL,'દૂધનું રેટ કાર્ડ મંજૂર થયું','તમારી સંસ્થામાં બીજી વ્યક્તિએ દૂધનું રેટ કાર્ડ "{{cardName}}" મંજૂર કર્યું છે. {{effectiveFrom}} થી ભરાયેલા તમારા દૂધનો ભાવ આનાથી નક્કી થાય છે.',NULL,true),
+ ('dairy.rate_card_approved','inapp','en',NULL,'Milk rate card approved','A second person at your organisation approved the milk rate card "{{cardName}}". It prices your milk collected from {{effectiveFrom}}.',NULL,true),
+ ('dairy.rate_card_approved','inapp','hi',NULL,'दूध का रेट कार्ड मंज़ूर हुआ','आपकी संस्था में एक दूसरे व्यक्ति ने दूध का रेट कार्ड "{{cardName}}" मंज़ूर किया है। {{effectiveFrom}} से जमा किए गए आपके दूध का दाम इसी से तय होता है।',NULL,true),
+ ('dairy.rate_card_approved','inapp','gu',NULL,'દૂધનું રેટ કાર્ડ મંજૂર થયું','તમારી સંસ્થામાં બીજી વ્યક્તિએ દૂધનું રેટ કાર્ડ "{{cardName}}" મંજૂર કર્યું છે. {{effectiveFrom}} થી ભરાયેલા તમારા દૂધનો ભાવ આનાથી નક્કી થાય છે.',NULL,true)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO notification_event_variables (event_code, name, source_ref, sample_value, is_required) VALUES
+ ('dairy.rate_card_approved','cardName','milk_rate_cards.default_name (plain text, as the organisation wrote it)','Buffalo two-axis Dec',true),
+ ('dairy.rate_card_approved','effectiveFrom','milk_rate_cards.effective_from as DD/MM/YYYY (a whole day, never a timezone shift)','01/12/2026',true)
+ON CONFLICT (event_code, name) DO NOTHING;
+
 -- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END
 -- of the file and the three new SMS rows shipped with `serving_version_id = NULL` - which is EXACTLY the defect
 -- TENANT-6c-2 closed (0122's send-time gate INNER JOINs the serving version, so an unversioned template resolves to

@@ -1081,6 +1081,17 @@ describe('HttpClient via resources', () => {
     expect(col.holdState).toBe('none');
   });
 
+  it('dairy: approveRateCard POSTs …/rate-cards/:id/approve with the Idempotency-Key and no body (PC-56 HOTFIX-12)', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'rc 1', approvalState: 'approved', approvedAt: '2026-11-08T05:00:00.000Z', createdByYou: false, approvedByYou: true } } }));
+    const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
+    const card = await c.dairy.approveRateCard('rc 1', 'idem-ap');
+    expect(calls[0].url).toMatch(/\/v1\/dairy\/rate-cards\/rc%201\/approve$/);
+    expect(calls[0].init.method).toBe('POST');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-ap');
+    expect(card.approvalState).toBe('approved');
+    expect(card.approvedByYou).toBe(true);
+  });
+
   it('labour employer flow: createBooking (idem) → assign → start → complete → pay; bookingAssignments uses box=booking (P1-12)', async () => {
     const { fn, calls } = fakeFetch((_c, n) =>
       n === 1 ? { body: { data: { id: 'b1', bookingNo: 'LB-1', status: 'open' } } }

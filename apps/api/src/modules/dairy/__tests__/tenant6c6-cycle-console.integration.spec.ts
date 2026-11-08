@@ -65,6 +65,9 @@ import { DairyCycleConsoleRepository } from '../repositories/dairy-cycle-console
 import { MccCentreService } from '../services/mcc-centre.service';
 import { DairyMembershipService } from '../services/dairy-membership.service';
 import { MilkRateCardService } from '../services/milk-rate-card.service';
+// [PC-56 HOTFIX-12 · named update] founder Q1-A: a card prices nothing until a SECOND person approves it and cannot start before
+// today, so every card this spec prices with is created AND approved through the real service (helpers/hotfix12-approved-card.ts).
+import { approvedCardForTest } from './helpers/hotfix12-approved-card';
 import { MilkCollectionService } from '../services/milk-collection.service';
 import { MilkBillService } from '../services/milk-bill.service';
 import { MilkBillDeductionService } from '../services/milk-bill-deduction.service';
@@ -167,7 +170,7 @@ run('PC-56 TENANT-6c-6 · W169 the cycle console (integration, real Postgres)', 
 
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, new MccOperatorAssignmentRepository(replica as never));
     memberships = new DairyMembershipService(uow, outbox, idem, metrics, memRepo, mccRepo, new DairyMembershipRouteRepository(replica as never));
-    cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo);
+    cards = new MilkRateCardService(uow, outbox, idem, metrics, cardRepo, audit)   // [PC-56 HOTFIX-12 · named update] + the create/approve audit rows;
     collections = new MilkCollectionService(uow, outbox, idem, metrics, collRepo, cardRepo, memRepo, reviewRepo, flags,
       new DairyMembershipRouteRepository(replica as never), new DairyDiversionRepository(replica as never), realNoticeVars(replica as never));
     bills = new MilkBillService(uow, outbox, idem, metrics, wallet, audit, billRepo, collRepo, memRepo, cycleRepo,
@@ -192,7 +195,7 @@ run('PC-56 TENANT-6c-6 · W169 the cycle console (integration, real Postgres)', 
     await fundTenant(tenantA, 100_000_000n);
 
     mccId = (await mccs.create(tenantA, actor, `idem-${randomUUID()}`, { code: 'MCC-AND-06', defaultName: 'Anand 06' } as never, null)).id;
-    await cards.create(tenantA, actor, `idem-${randomUUID()}`, { defaultName: 'Buffalo two_axis v9', animalType: 'buffalo', pricingModel: 'two_axis', ratePerKgFatMinor: '72000', ratePerKgSnfMinor: '34000', effectiveFrom: '2026-01-01' } as never);
+    await approvedCardForTest(cards, admin, tenantA, actor, { defaultName: 'Buffalo two_axis v9', animalType: 'buffalo', pricingModel: 'two_axis', ratePerKgFatMinor: '72000', ratePerKgSnfMinor: '34000', effectiveFrom: '2026-01-01' } as never);
     for (let i = 0; i < farmers.length; i += 1) {
       mems.push((await memberships.create(tenantA, actor, `idem-${randomUUID()}`, {
         farmerUserId: farmers[i], mccId, memberCode: `AND6-000${i + 1}`, paymentCycle: 'fortnightly', defaultAnimalType: 'buffalo',
@@ -399,7 +402,7 @@ run('PC-56 TENANT-6c-6 · W169 the cycle console (integration, real Postgres)', 
       await makeTenant(admin, other, 'C');
       const u = randomUUID(); await makeUser(admin, u);
       const c2 = await mccs.create(other, { userId: u, canManage: true, canCloseSettlement: true }, `idem-${randomUUID()}`, { code: 'MCC-C-01', defaultName: 'C 01' } as never, null);
-      await cards.create(other, { userId: u, canManage: true, canCloseSettlement: true }, `idem-${randomUUID()}`, { defaultName: 'C card', animalType: 'buffalo', pricingModel: 'two_axis', ratePerKgFatMinor: '72000', ratePerKgSnfMinor: '34000', effectiveFrom: '2026-01-01' } as never);
+      await approvedCardForTest(cards, admin, other, { userId: u, canManage: true, canCloseSettlement: true }, { defaultName: 'C card', animalType: 'buffalo', pricingModel: 'two_axis', ratePerKgFatMinor: '72000', ratePerKgSnfMinor: '34000', effectiveFrom: '2026-01-01' } as never);
       const m = await memberships.create(other, { userId: u, canManage: true, canCloseSettlement: true }, `idem-${randomUUID()}`, { farmerUserId: u, mccId: c2.id, memberCode: 'C-0001', paymentCycle: 'fortnightly', defaultAnimalType: 'buffalo' } as never);
       await collections.record(other, { userId: u, canManage: true, canCloseSettlement: true }, `idem-${randomUUID()}`, {
         membershipId: m.id, mccId: c2.id, shift: 'morning', collectedOn: win.to, weightKg: '30.000', fatPct: '6.50', snfPct: '9.00', waterFlag: false, adulterationFlags: [],
@@ -457,7 +460,7 @@ run('PC-56 TENANT-6c-6 · W169 the cycle console (integration, real Postgres)', 
       const u = randomUUID(); await makeUser(admin, u);
       const me = { userId: u, canManage: true, canCloseSettlement: true };
       const c = await mccs.create(t, me, `idem-${randomUUID()}`, { code: 'MCC-D-01', defaultName: 'D 01' } as never, null);
-      await cards.create(t, me, `idem-${randomUUID()}`, { defaultName: 'D card', animalType: 'buffalo', pricingModel: 'two_axis', ratePerKgFatMinor: '72000', ratePerKgSnfMinor: '34000', effectiveFrom: '2026-01-01' } as never);
+      await approvedCardForTest(cards, admin, t, me, { defaultName: 'D card', animalType: 'buffalo', pricingModel: 'two_axis', ratePerKgFatMinor: '72000', ratePerKgSnfMinor: '34000', effectiveFrom: '2026-01-01' } as never);
       const m = await memberships.create(t, me, `idem-${randomUUID()}`, { farmerUserId: u, mccId: c.id, memberCode: 'D-0001', paymentCycle: 'fortnightly', defaultAnimalType: 'buffalo' } as never);
       await collections.record(t, me, `idem-${randomUUID()}`, {
         membershipId: m.id, mccId: c.id, shift: 'morning', collectedOn: win.to, weightKg: '25.000', fatPct: '6.50', snfPct: '9.00', waterFlag: false, adulterationFlags: [],

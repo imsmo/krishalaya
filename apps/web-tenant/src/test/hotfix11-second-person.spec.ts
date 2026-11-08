@@ -17,6 +17,9 @@ describe('HOTFIX-11 · the refusals, as sentences', () => {
     expect([...DAIRY_REFUSAL_CODES]).toEqual([
       'DAIRY_BILL_APPROVER_IS_PREVIEWER', 'DAIRY_BILL_PAYER_IS_APPROVER', 'DAIRY_BILL_PREVIEWER_UNKNOWN', 'DAIRY_BILL_APPROVER_UNKNOWN',
       'DAIRY_BILL_SIGNER_UNKNOWN', 'DAIRY_BILL_DISPUTE_UNANSWERED', 'DAIRY_CYCLE_CHECKER_IS_PREVIEWER', 'DAIRY_CYCLE_NOT_PREVIEWED',
+      // [PC-56 HOTFIX-12 · named update] the rate card's four refusals join the list (founder Q1-A); the loop below now holds them
+      // to the same bar — a sentence in en, hi and gu, never the raw code. Nothing above is removed or relaxed.
+      'RATE_CARD_BACKDATED', 'RATE_CARD_SECOND_PERSON_REQUIRED', 'RATE_CARD_ALREADY_APPROVED', 'RATE_CARD_OVERLAP',
     ]);
     for (const code of DAIRY_REFUSAL_CODES) for (const l of ['en', 'hi', 'gu']) {
       const v = CATS[l][`dairy.error.${code}`];
