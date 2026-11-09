@@ -20,6 +20,15 @@ export function ownerActionsFor(status: string | undefined | null): OwnerAction[
     default: return []; // settled / cancelled
   }
 }
+/**
+ * PC-56 HOTFIX-13 (founder Q1-A, 2026-11-09): the i18n key for a settle refusal the owner must read BY NAME — the renter has not
+ * confirmed the hours, so nothing beyond the deposit can be taken. Any other failure → null (the screen's generic message). PURE:
+ * reads the SDK error's stable `code` without importing the SDK class.
+ */
+export function settleRefusalKey(e: unknown): string | null {
+  const code = e && typeof e === 'object' && 'code' in e ? (e as { code?: unknown }).code : undefined;
+  return code === 'SETTLE_HOURS_NOT_CONFIRMED' ? 'equip.detail.settleHoursNotConfirmed' : null;
+}
 export function rentalTone(status: string | undefined): 'success' | 'warning' | 'danger' | 'neutral' | 'info' {
   if (status === 'settled') return 'success';
   if (status === 'cancelled') return 'danger';

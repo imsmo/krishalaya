@@ -19,7 +19,7 @@ export function generateMetadata(): Metadata {
 }
 
 const OK = new Set(['quote', 'start', 'complete', 'settle', 'cancel']);
-const ERR = new Set(['action', 'illegal', 'advance', 'otp', 'quantity']);
+const ERR = new Set(['action', 'illegal', 'advance', 'otp', 'quantity', 'hoursNotConfirmed']);   // PC-56 HOTFIX-13: + hoursNotConfirmed
 
 export default async function RentalDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
   await requireSession(`/equipment/${params.id}`);

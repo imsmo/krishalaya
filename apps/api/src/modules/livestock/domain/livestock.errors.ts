@@ -22,3 +22,9 @@ export class LivestockForbiddenError extends AppError { constructor(message = 'N
 export class BookingNotCompletableError extends DomainError { constructor(status: string) { super('BOOKING_NOT_COMPLETABLE', `Vet booking cannot be completed from status '${status}'`, 409, { status }); } }
 /** The service does not belong to the chosen vet (anti-IDOR). */
 export class ServiceVetMismatchError extends DomainError { constructor() { super('SERVICE_VET_MISMATCH', 'The chosen service does not belong to that vet', 422); } }
+
+// [PC-56 HOTFIX-13 · founder Q1-A, 2026-11-09] NOBODY SPENDS HER MONEY OR READS HER ANIMAL'S RECORD BUT HER.
+/** The vet fee moves from the FARMER's wallet — only she completes and pays (the administrator escape is gone). */
+export class VetPayNotFarmerError extends AppError { constructor() { super('VET_PAY_NOT_FARMER', 'Only the farmer who booked this vet can confirm the visit and pay the fee, from her own account.', 403); } }
+/** A health event names a vet booking that is not a booking on THIS animal (or, for a vet, not the vet's own booking). */
+export class HealthBookingNotThisAnimalError extends DomainError { constructor() { super('HEALTH_BOOKING_NOT_THIS_ANIMAL', 'That vet booking is not a booking on this animal.', 422); } }

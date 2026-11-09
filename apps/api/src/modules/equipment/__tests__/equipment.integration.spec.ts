@@ -2,14 +2,15 @@
 // REAL end-to-end proof of the CHC rental spine against a live Postgres:
 //   1. an owner lists an asset + a per-hour rate card; a renter requests a job (rate snapshotted);
 //   2. the owner quotes a ₹800 deposit; the renter CONFIRMS → the advance is ESCROWED (renter → Escrow);
-//   3. the owner starts (OTP-gated), completes with 3.50h actual (total ₹1750), and SETTLES: the escrow
+//   3. the owner starts (OTP-gated), completes with 3.50h actual (total ₹1750), the renter confirms those hours (PC-56
+//      HOTFIX-13 — named update), and the owner SETTLES: the escrow
 //      releases to the owner and the ₹950 shortfall is collected from the renter — owner nets ₹1750, all
 //      zero-sum; the renter's wallet falls by exactly ₹1750;
 //   4. ROW-LEVEL SECURITY: tenant B cannot see tenant A's booking.
 // Schema/seeds come from the REAL db/migrations + db/seeds (test/integration-global-setup.js).
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
-import { makeTenant, makeUser, makeCategory } from '../../../../test/helpers/fixtures';
+import { makeTenant, makeUser } from '../../../../test/helpers/fixtures';
 
 import { AppConfig } from '../../../core/config/app-config';
 import { PgPoolProvider } from '../../../core/database/pg-pool.provider';
@@ -56,7 +57,10 @@ run('equipment CHC rental spine (integration, real Postgres + RLS + escrow settl
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
     await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B');
     await makeUser(admin, owner); await makeUser(admin, renter);
-    categoryId = await makeCategory(admin);
+    // [PC-56 HOTFIX-13 · NAMED UPDATE — found on the way] `makeCategory` (test/helpers/fixtures.ts:58-63) binds $2 as both varchar and
+    // ltree ("inconsistent types deduced for parameter $2"), so this whole spec was RED at d0ec6717 before any assertion ran (the
+    // known fixture trap). It now uses a seeded category, as the newer specs do; no assertion changed for it.
+    categoryId = (await admin.query(`SELECT id FROM categories ORDER BY id LIMIT 1`)).rows[0].id;
 
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
     pools = new PgPoolProvider(config);
@@ -105,6 +109,11 @@ run('equipment CHC rental spine (integration, real Postgres + RLS + escrow settl
 
   it('completes (3.50h) and SETTLES: owner nets ₹1750, renter pays ₹1750, escrow→0 (zero-sum)', async () => {
     await rentals.complete(tenantA, ownerActor, bookingId, { actualQuantity: '3.50' } as any);
+    // [PC-56 HOTFIX-13 · NAMED UPDATE, founder Q1-A 2026-11-09] the bill (₹1750) is above the deposit (₹800), so nothing beyond the
+    // deposit leaves the renter's wallet until SHE confirms the hours: settling first is refused by name, then she confirms in her
+    // own session, then the owner settles. The money assertions below are unchanged.
+    await expect(rentals.settle(tenantA, ownerActor, bookingId, `idem-${randomUUID()}`, null)).rejects.toMatchObject({ code: 'SETTLE_HOURS_NOT_CONFIRMED' });
+    await rentals.confirmUsage(tenantA, renterActor, bookingId, `idem-${randomUUID()}`, null);
     const oBefore = await bal(owner); const rBefore = await bal(renter); const escBefore = await escrowBal();
     const settled = await rentals.settle(tenantA, ownerActor, bookingId, `idem-${randomUUID()}`, null);
     expect(settled.status).toBe('settled'); expect(settled.settledTotalMinor).toBe('175000');

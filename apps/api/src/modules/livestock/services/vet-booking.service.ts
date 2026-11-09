@@ -5,6 +5,12 @@
 // userMain, txnType 'service_fee', a ZERO-SUM, idempotent ledger txn — Law 2). Every write: one ACID tx
 // (UoW), state via the machine (Law 5), outbox in-tx (Law 4), idempotent money mutations (Law 3), authz
 // that THROWS (Law 6). No version column → bookings lock FOR UPDATE.
+//
+// [PC-56 HOTFIX-13] NOBODY SPENDS HER MONEY BUT HER (founder Q1-A, 2026-11-09; survey_ops4 F-2, OPS4-B2). `completeAndPay` moves
+// the FARMER's fee to the vet, so only the farmer who booked pays (`VET_PAY_NOT_FARMER`, 403) — refused after the permission and
+// key checks and BEFORE the idempotency record, the unit of work and any write (a pre-read; the same check on the locked row).
+// The administrator escape (`&& !actor.isAdmin`) is gone, and so is `assertOwningVet`'s: only the vet of record drives a booking.
+// `cancel` keeps its administrator escape (a vet booking holds no money; cancelling moves none) — recorded, not changed here.
 import { Inject, Injectable } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
@@ -22,7 +28,7 @@ import { AnimalRepository } from '../repositories/animal.repository';
 import { BookVetDto, VetProgressDto } from '../dto/create-vet-booking.dto';
 import {
   VetBookingNotFoundError, VetProfileNotFoundError, VetServiceNotFoundError, AnimalNotFoundError,
-  ServiceVetMismatchError, LivestockForbiddenError,
+  ServiceVetMismatchError, LivestockForbiddenError, VetPayNotFarmerError,
 } from '../domain/livestock.errors';
 
 export interface BookingActor { userId: string; canBook: boolean; canManageVet: boolean; isAdmin: boolean; }
@@ -69,6 +75,10 @@ export class VetBookingService {
 
   // ---- vet: drive the service lifecycle (accept / en_route / in_consult / prescribed / no_show) ----
   async progress(tenantId: string, actor: BookingActor, bookingId: string, dto: VetProgressDto) {
+    // [PC-56 HOTFIX-13] the vet of record only — refused before the unit of work (and again on the locked row).
+    const pre = await this.bookings.getById(tenantId, bookingId);
+    if (!pre) throw new VetBookingNotFoundError(bookingId);
+    await this.assertOwningVet(undefined, tenantId, pre, actor);
     return this.uow.run(tenantId, async (tx) => {
       const booking = await this.bookings.getForUpdate(tx, tenantId, bookingId);
       if (!booking) throw new VetBookingNotFoundError(bookingId);
@@ -102,12 +112,16 @@ export class VetBookingService {
   // ---- farmer: confirm completion + SETTLE THE FEE (the money path) ----
   async completeAndPay(tenantId: string, actor: BookingActor, bookingId: string, idemKey: string) {
     if (!actor.canBook) throw new LivestockForbiddenError('requires vet.book');
+    // [PC-56 HOTFIX-13] HER fee — only she pays. Refused before the idempotency record and any write.
+    const pre = await this.bookings.getById(tenantId, bookingId);
+    if (!pre) throw new VetBookingNotFoundError(bookingId);
+    if (pre.farmerUserId !== actor.userId) throw new VetPayNotFarmerError();
     return this.idem.remember(idemKey, actor.userId, 'livestock.vet.pay', () =>
       timed(this.metrics, 'livestock.vet.pay', { tenant: tenantId }, () =>
         this.uow.run(tenantId, async (tx) => {
           const booking = await this.bookings.getForUpdate(tx, tenantId, bookingId);
           if (!booking) throw new VetBookingNotFoundError(bookingId);
-          if (booking.farmerUserId !== actor.userId && !actor.isAdmin) throw new LivestockForbiddenError('only the farmer may complete + pay');
+          if (booking.farmerUserId !== actor.userId) throw new VetPayNotFarmerError();
           const vet = await this.vets.getById(tenantId, booking.vetId, tx);
           if (!vet) throw new VetProfileNotFoundError(booking.vetId);
           booking.complete(new Date());     // throws BookingNotCompletableError if not in a completable state
@@ -143,8 +157,8 @@ export class VetBookingService {
     return { items, nextCursor };
   }
 
-  private async assertOwningVet(tx: TxContext, tenantId: string, booking: VetBooking, actor: BookingActor) {
-    if (actor.isAdmin) return;
+  private async assertOwningVet(tx: TxContext | undefined, tenantId: string, booking: VetBooking, actor: BookingActor) {
+    // [PC-56 HOTFIX-13] the administrator escape (`if (actor.isAdmin) return;`) is gone: only the vet of record drives a booking.
     if (!actor.canManageVet) throw new LivestockForbiddenError('requires vet.manage');
     const vet = await this.vets.findByUser(tenantId, actor.userId, tx);
     if (!vet || vet.id !== booking.vetId) throw new LivestockForbiddenError('only the assigned vet may drive this booking');

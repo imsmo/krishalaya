@@ -10,7 +10,7 @@ import type { EquipmentRental } from '@krishalaya/sdk-js';
 import { Button, Card, EmptyState, Input, MoneyText, ScreenScaffold, SkeletonCard, StatusPill, color, font, space } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { getRental, quoteRental, startRental, completeRental, settleRental, cancelRental } from '../../../features/equipment/equipment.api';
-import { ownerActionsFor, rentalTone } from '../../../features/equipment/equipment';
+import { ownerActionsFor, rentalTone, settleRefusalKey } from '../../../features/equipment/equipment';
 import { rupeesToMinor } from '../../../features/vet/vet';
 
 export default function RentalDetail() {
@@ -26,7 +26,8 @@ export default function RentalDetail() {
 
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true);
-    try { await fn(); load(); } catch { Alert.alert(t('equip.detail.title'), t('equip.detail.actionFailed')); } finally { setBusy(false); }
+    // PC-56 HOTFIX-13: a settle refused because the renter has not confirmed the hours is named, never a generic failure.
+    try { await fn(); load(); } catch (e) { Alert.alert(t('equip.detail.title'), t(settleRefusalKey(e) ?? 'equip.detail.actionFailed')); } finally { setBusy(false); }
   };
   const doQuote = () => {
     const minor = rupeesToMinor(advance);

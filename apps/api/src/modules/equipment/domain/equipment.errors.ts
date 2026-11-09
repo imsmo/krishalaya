@@ -15,3 +15,18 @@ export class BookingStartOtpInvalidError extends AppError { constructor() { supe
 export class BookingStartOtpNotIssuedError extends DomainError { constructor() { super('BOOKING_START_OTP_NOT_ISSUED', 'No start OTP issued for this booking', 409); } }
 export class EquipmentForbiddenError extends AppError { constructor(message = 'Not allowed on this equipment resource') { super('EQUIPMENT_FORBIDDEN', message, 403); } }
 export class RegNoExistsError extends AppError { constructor() { super('REG_NO_EXISTS', 'An asset with this registration number already exists', 409); } }
+
+// [PC-56 HOTFIX-13 · founder Q1-A, 2026-11-09] NOBODY SPENDS HER MONEY BUT HER. Each refusal is by name, before the idempotency
+// record and before any write (the services pre-read the row; the ordering spies pin it).
+/** The hire deposit is escrowed from the RENTER's wallet — only she confirms the hire (the administrator escape is gone). */
+export class EqConfirmNotRenterError extends AppError { constructor() { super('EQ_CONFIRM_NOT_RENTER', 'Only the renter can confirm this hire and pay its deposit, from her own account.', 403); } }
+/** Only the renter confirms the hours the owner recorded — not the owner, not an administrator, not anyone else. */
+export class UsageConfirmNotRenterError extends AppError { constructor() { super('USAGE_CONFIRM_NOT_RENTER', 'Only the renter can confirm the hours of this hire, from her own account.', 403); } }
+/** quote / start / complete / settle are the machine owner's acts only (the administrator escape is gone). */
+export class EqNotMachineOwnerError extends AppError { constructor() { super('EQ_NOT_MACHINE_OWNER', 'Only the owner of this machine can do this.', 403); } }
+/** Settling would take money beyond the deposit from the renter's wallet, and she has not confirmed the hours. */
+export class SettleHoursNotConfirmedError extends DomainError { constructor() { super('SETTLE_HOURS_NOT_CONFIRMED', 'Not settled: the renter has not confirmed these hours in her own app. Nothing beyond the deposit leaves the renter\'s wallet until she confirms those hours in her own app.', 409); } }
+/** Hours are confirmed on a completed hire only. */
+export class UsageNotConfirmableError extends DomainError { constructor(status: string) { super('USAGE_NOT_CONFIRMABLE', `The hours can be confirmed only on a completed hire (this hire is ${status}).`, 409, { status }); } }
+/** The renter has already confirmed these hours; a confirmation is final. */
+export class UsageAlreadyConfirmedError extends DomainError { constructor() { super('USAGE_ALREADY_CONFIRMED', 'The renter has already confirmed the hours of this hire.', 409); } }

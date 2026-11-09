@@ -18,7 +18,9 @@ function harness(opts: { booking?: VetBooking } = {}) {
   const idem = { remember: jest.fn(async (_k: string, _u: string, _e: string, fn: any) => fn()) };
   const metrics = { inc: jest.fn(), observe: jest.fn() };
   const wallet = { post: jest.fn(async () => ({ txnId: 'tx1', alreadyApplied: false })), balanceMinor: jest.fn() };
-  const bookings = { insert: jest.fn(), getForUpdate: jest.fn(async () => opts.booking ?? null), update: jest.fn(), getById: jest.fn(), listFor: jest.fn() };
+  // [PC-56 HOTFIX-13 · NAMED UPDATE] completeAndPay now PRE-READS the booking (getById) to refuse anyone but the farmer before the
+  // idempotency record; the fake answers that read with the same booking. Nothing else in this harness changed.
+  const bookings = { insert: jest.fn(), getForUpdate: jest.fn(async () => opts.booking ?? null), update: jest.fn(), getById: jest.fn(async () => opts.booking ?? null), listFor: jest.fn() };
   const vets = { getById: jest.fn(async () => vet), findByUser: jest.fn(async () => vet) };
   const services = { getForBooking: jest.fn(async () => svc) };
   const animals = { getById: jest.fn() };

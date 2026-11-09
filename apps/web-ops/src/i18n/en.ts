@@ -104,6 +104,8 @@ export const en: Record<string, string> = {
   'chc.error.advance': 'Please enter a valid advance (e.g. 250.50, or 0).',
   'chc.error.otp': 'OTP must be 4–12 digits.',
   'chc.error.quantity': 'Usage must be a positive number (up to 3 decimals).',
+  // PC-56 HOTFIX-13 (founder Q1-A): a settle refused because the renter has not confirmed the hours, by name.
+  'chc.error.hoursNotConfirmed': 'Not settled: the renter has not confirmed these hours in her own app. Nothing beyond the deposit leaves the renter\'s wallet until she confirms those hours in her own app.',
   'nav.dairy': 'Dairy POS',
   'dairy.title': 'Dairy collection POS',
   'dairy.hint': 'Look up a member\'s pours, generate and preview milk bills, and see the active rate cards. Pours are recorded at the counter. Bills are not approved or paid from this console.',

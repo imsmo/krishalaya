@@ -37,7 +37,8 @@ export async function rentalActionAction(formData: FormData): Promise<void> {
       await eq.cancelRental(id, String(formData.get('reason') ?? '').trim() || undefined);
     } else back(id, 'error=action');
   } catch (e) {
-    back(id, `error=${e instanceof SdkError && e.status === 409 ? 'illegal' : 'action'}`);
+    // PC-56 HOTFIX-13: the renter has not confirmed the hours → named, never the generic "illegal step".
+    back(id, `error=${e instanceof SdkError && e.code === 'SETTLE_HOURS_NOT_CONFIRMED' ? 'hoursNotConfirmed' : e instanceof SdkError && e.status === 409 ? 'illegal' : 'action'}`);
   }
   revalidatePath(`/equipment/${id}`); revalidatePath('/equipment');
   back(id, `ok=${kind}`);

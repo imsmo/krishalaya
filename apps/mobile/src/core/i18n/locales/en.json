@@ -1451,6 +1451,7 @@
   "equip.detail.qtyInvalid": "Enter the actual usage as a positive number.",
   "equip.detail.scheduled": "Scheduled:",
   "equip.detail.settleConfirm": "Settle this job? The balance moves to your wallet now.",
+  "equip.detail.settleHoursNotConfirmed": "Not settled: the renter has not confirmed these hours in her own app. Nothing beyond the deposit leaves the renter's wallet until she confirms those hours in her own app.",
   "equip.detail.title": "Rental",
   "equip.earn.empty": "No settled jobs yet",
   "equip.earn.emptyHint": "Settled rentals appear here after the money leg completes.",

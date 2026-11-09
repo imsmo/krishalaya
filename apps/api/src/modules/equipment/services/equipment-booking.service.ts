@@ -5,6 +5,25 @@
 // from the renter, refund any unused hold — all zero-sum, idempotent wallet posts (Law 2). Every write:
 // one ACID tx (UoW), state via the machine (Law 5), outbox in-tx (Law 4), idempotent money mutations
 // (Law 3), authz THROWS (Law 6). No version column → bookings lock FOR UPDATE. Start OTP is HMAC-hashed.
+//
+// [PC-56 HOTFIX-13] NOBODY SPENDS HER MONEY BUT HER (founder Q1-A, 2026-11-09; migration 0236; survey_ops4 F-1/F-2, B1/B2/B4).
+//   • CONFIRM escrows the RENTER's deposit, so only the renter confirms (`EQ_CONFIRM_NOT_RENTER`, 403). The administrator escape
+//     (`&& !actor.isAdmin`) is gone.
+//   • QUOTE / START / COMPLETE / SETTLE are the machine owner's acts only (`EQ_NOT_MACHINE_OWNER`, 403). The administrator escape is
+//     gone from all four.
+//   • CONFIRM-USAGE is the renter's own act on a completed hire: she confirms the hours the owner recorded (`usage_confirmed_by/at`,
+//     one audit row with the hours and the bill). Anyone else — the owner, an administrator, a stranger — `USAGE_CONFIRM_NOT_RENTER`.
+//   • SETTLE that would take money BEYOND THE DEPOSIT from her wallet (total > advance: the `order_payment` shortfall leg) is
+//     refused `SETTLE_HOURS_NOT_CONFIRMED` (409) until she has confirmed. A bill within the deposit needs no confirmation: the
+//     deposit alone pays the owner and the rest of it goes back to her.
+//   • A hire whose renter never confirms stays `completed` and unsettled, its deposit held in escrow. Nothing times it out.
+//   • Every refusal above sits after the permission and key checks and BEFORE `idem.remember`, the unit of work and any write
+//     (a pre-read of the row; the same check again on the locked row inside the transaction). Ordering spies pin it.
+//   • THE START CODE (B4/E16) is returned in the renter's own confirm response, and nowhere else: not in a list, a read, an
+//     owner's response, a log or an event payload (`BookingConfirmed` carries the deposit only). It no longer depends on
+//     `config.auth.exposeOtp`, which stays the identity module's test switch.
+//   • CANCEL keeps its administrator escape deliberately: on a confirmed hire it REFUNDS her deposit (escrow → her wallet) and
+//     moves nothing else, so it never spends her money.
 import { Inject, Injectable } from '@nestjs/common';
 import { createHmac, randomInt } from 'node:crypto';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
@@ -22,7 +41,8 @@ import { EquipmentBookingRepository } from '../repositories/equipment-booking.re
 import { EquipmentAssetRepository } from '../repositories/equipment-asset.repository';
 import { EquipmentRateRepository } from '../repositories/equipment-rate.repository';
 import { RequestBookingDto, QuoteBookingDto, StartBookingDto, CompleteBookingDto } from '../dto/create-equipment-booking.dto';
-import { BookingNotFoundError, AssetNotFoundError, AssetNotBookableError, NoActiveRateError, EquipmentForbiddenError, InvalidBookingError } from '../domain/equipment.errors';
+import { BookingNotFoundError, AssetNotFoundError, AssetNotBookableError, NoActiveRateError, EquipmentForbiddenError, InvalidBookingError,
+  EqConfirmNotRenterError, EqNotMachineOwnerError, SettleHoursNotConfirmedError, UsageConfirmNotRenterError, UsageAlreadyConfirmedError } from '../domain/equipment.errors';
 import { EquipmentActor } from './equipment-asset.service';
 
 const bookingNo = (id: string) => `EQ-${Date.now().toString(36).toUpperCase()}-${id.slice(0, 8).toUpperCase()}`;
@@ -76,12 +96,16 @@ export class EquipmentBookingService {
   // ---- renter: confirm → ESCROW the advance ----
   async confirm(tenantId: string, actor: EquipmentActor, id: string, idemKey: string) {
     if (!actor.canRent) throw new EquipmentForbiddenError('requires equipment.rent');
+    // [PC-56 HOTFIX-13] HER deposit — only she confirms. Refused before the idempotency record and any write.
+    const pre = await this.bookings.getById(tenantId, id);
+    if (!pre) throw new BookingNotFoundError(id);
+    if (pre.renterUserId !== actor.userId) throw new EqConfirmNotRenterError();
     return this.idem.remember(idemKey, actor.userId, 'equipment.booking.confirm', () =>
       timed(this.metrics, 'equipment.booking.confirm', { tenant: tenantId }, () =>
         this.uow.run(tenantId, async (tx) => {
           const booking = await this.bookings.getForUpdate(tx, tenantId, id);
           if (!booking) throw new BookingNotFoundError(id);
-          if (booking.renterUserId !== actor.userId && !actor.isAdmin) throw new EquipmentForbiddenError('only the renter may confirm');
+          if (booking.renterUserId !== actor.userId) throw new EqConfirmNotRenterError();
           const code = String(randomInt(100000, 999999));
           booking.confirm(this.hashOtp(code));
           if (booking.advanceMinor > 0n) {
@@ -90,8 +114,9 @@ export class EquipmentBookingService {
           }
           await this.bookings.update(tx, booking);
           await this.flush(tx, tenantId, booking.id, booking.pullEvents());
-          // The OTP is delivered to the renter out-of-band (SMS relay, deferred); never returned in prod.
-          return { ...booking.toJSON(), ...(this.config.auth.exposeOtp ? { startOtp: code } : {}) };
+          // [PC-56 HOTFIX-13 · B4/E16] The start code reaches HER: returned in her own confirm response (only the renter gets here),
+          // never in a list, a read, an owner's response, a log or an event. The row keeps only its HMAC hash.
+          return { ...booking.toJSON(), startOtp: code };
         }, { userId: actor.userId })));
   }
 
@@ -104,6 +129,8 @@ export class EquipmentBookingService {
     return this.ownerMutate(tenantId, actor, id, (b) => b.complete(parseScaled(dto.actualQuantity, 2), new Date()));
   }
   // ---- renter: cancel (requested/quoted/confirmed) — refunds any escrow ----
+  // [PC-56 HOTFIX-13] The administrator escape is KEPT here, deliberately (brief B2): cancel only ever REFUNDS her held deposit
+  // (escrow → her wallet) and moves no other money, so it never spends the payer's money.
   async cancel(tenantId: string, actor: EquipmentActor, id: string, reason?: string) {
     return this.uow.run(tenantId, async (tx) => {
       const booking = await this.bookings.getForUpdate(tx, tenantId, id);
@@ -124,12 +151,20 @@ export class EquipmentBookingService {
   // ---- owner: SETTLE (completed → settled): escrow release + remainder/refund ----
   async settle(tenantId: string, actor: EquipmentActor, id: string, idemKey: string, ip: string | null) {
     if (!actor.canManage) throw new EquipmentForbiddenError('requires equipment.manage');
+    // [PC-56 HOTFIX-13 · founder Q1-A] Refused before the idempotency record and any write: anyone but the machine's owner; and a
+    // settlement that would take money beyond the deposit from her wallet before she has confirmed the hours.
+    const pre = await this.bookings.getById(tenantId, id);
+    if (!pre) throw new BookingNotFoundError(id);
+    if (pre.ownerUserId !== actor.userId) throw new EqNotMachineOwnerError();
+    if (pre.takesBeyondDeposit && !pre.isUsageConfirmed) throw new SettleHoursNotConfirmedError();
     return this.idem.remember(idemKey, actor.userId, 'equipment.booking.settle', () =>
       timed(this.metrics, 'equipment.booking.settle', { tenant: tenantId }, () =>
         this.uow.run(tenantId, async (tx) => {
           const booking = await this.bookings.getForUpdate(tx, tenantId, id);
           if (!booking) throw new BookingNotFoundError(id);
-          if (booking.ownerUserId !== actor.userId && !actor.isAdmin) throw new EquipmentForbiddenError('only the owner may settle');
+          if (booking.ownerUserId !== actor.userId) throw new EqNotMachineOwnerError();
+          // the same rule on the LOCKED row, before any ledger leg (0236's CHECK refuses it in the database too).
+          if (booking.takesBeyondDeposit && !booking.isUsageConfirmed) throw new SettleHoursNotConfirmedError();
           const total = booking.totalMinor;
           if (total == null) throw new InvalidBookingError('booking is not completed');
           const advance = booking.advanceMinor;
@@ -147,9 +182,37 @@ export class EquipmentBookingService {
             legs: [{ account: userMain(booking.renterUserId), amountMinor: -shortfall }, { account: userMain(booking.ownerUserId), amountMinor: shortfall }] });
           booking.markSettled();
           await this.bookings.update(tx, booking);
-          await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'equipment.booking.settled', entityType: 'equipment_booking', entityId: booking.id, newValue: { totalMinor: total.toString(), advanceMinor: advance.toString() }, ip });
+          await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'equipment.booking.settled', entityType: 'equipment_booking', entityId: booking.id, newValue: { totalMinor: total.toString(), advanceMinor: advance.toString(),
+            usageConfirmedBy: booking.usageConfirmedBy, usageConfirmedAt: booking.usageConfirmedAt ? new Date(booking.usageConfirmedAt).toISOString() : null }, ip });
           await this.flush(tx, tenantId, booking.id, booking.pullEvents());
           return { ...booking.toJSON(), settledTotalMinor: total.toString() };
+        }, { userId: actor.userId })));
+  }
+
+  /**
+   * [PC-56 HOTFIX-13 · founder Q1-A] ---- renter: CONFIRM THE HOURS the owner recorded (completed hire), in her own session ----
+   * Refused before the idempotency record and any write: anyone but the renter (`USAGE_CONFIRM_NOT_RENTER`). The state checks
+   * (completed, not yet confirmed) sit INSIDE the idempotency record on purpose, as HOTFIX-12's "already approved": checked before
+   * it, every same-key replay of a successful confirmation would become a 409. One audit row with the hours and the bill.
+   */
+  async confirmUsage(tenantId: string, actor: EquipmentActor, id: string, idemKey: string, ip: string | null) {
+    if (!actor.canRent) throw new EquipmentForbiddenError('requires equipment.rent');
+    const pre = await this.bookings.getById(tenantId, id);
+    if (!pre) throw new BookingNotFoundError(id);
+    if (pre.renterUserId !== actor.userId) throw new UsageConfirmNotRenterError();
+    return this.idem.remember(idemKey, actor.userId, 'equipment.booking.confirm_usage', () =>
+      timed(this.metrics, 'equipment.booking.confirm_usage', { tenant: tenantId }, () =>
+        this.uow.run(tenantId, async (tx) => {
+          const booking = await this.bookings.getForUpdate(tx, tenantId, id);
+          if (!booking) throw new BookingNotFoundError(id);
+          const at = new Date();
+          booking.confirmUsage(actor.userId, at);   // renter, completed, once — or a named refusal
+          if (!(await this.bookings.confirmUsage(tx, tenantId, id, actor.userId, at))) throw new UsageAlreadyConfirmedError();
+          const json = booking.toJSON();
+          await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'equipment.booking.usage_confirmed', entityType: 'equipment_booking', entityId: booking.id,
+            newValue: { actualQuantity: json.actualQuantity, rateBasis: json.rateBasis, rateMinor: json.rateMinor, totalMinor: json.totalMinor, advanceMinor: json.advanceMinor,
+              usageConfirmedAt: at.toISOString() }, ip });
+          return json;
         }, { userId: actor.userId })));
   }
 
@@ -182,10 +245,14 @@ export class EquipmentBookingService {
 
   private async ownerMutate(tenantId: string, actor: EquipmentActor, id: string, fn: (b: EquipmentBooking) => void) {
     if (!actor.canManage) throw new EquipmentForbiddenError('requires equipment.manage');
+    // [PC-56 HOTFIX-13] the machine's owner only — the administrator escape is gone; refused before the unit of work.
+    const pre = await this.bookings.getById(tenantId, id);
+    if (!pre) throw new BookingNotFoundError(id);
+    if (pre.ownerUserId !== actor.userId) throw new EqNotMachineOwnerError();
     return this.uow.run(tenantId, async (tx) => {
       const booking = await this.bookings.getForUpdate(tx, tenantId, id);
       if (!booking) throw new BookingNotFoundError(id);
-      if (booking.ownerUserId !== actor.userId && !actor.isAdmin) throw new EquipmentForbiddenError('only the asset owner may act here');
+      if (booking.ownerUserId !== actor.userId) throw new EqNotMachineOwnerError();
       fn(booking);
       await this.bookings.update(tx, booking);
       await this.flush(tx, tenantId, booking.id, booking.pullEvents());

@@ -11,6 +11,9 @@ export interface EquipmentRental {
   id: string; assetId: string; renterUserId?: string; quantity: string; unitCode: string; status: string;
   advanceMinor?: string | null; totalMinor?: string | null; scheduledAt?: string | null; startedAt?: string | null;
   completedAt?: string | null; createdAt?: string; assetName?: string | null;
+  /** PC-56 HOTFIX-13 (founder Q1-A): when the RENTER confirmed the hours the owner recorded; null until she does. Until then a
+   *  settlement takes nothing beyond the deposit (`SETTLE_HOURS_NOT_CONFIRMED`). */
+  usageConfirmedAt?: string | null;
 }
 
 export class EquipmentResource {
@@ -56,7 +59,15 @@ export class EquipmentResource {
   async completeRental(id: string, actualQuantity: string): Promise<EquipmentRental> {
     return (await this.http.request<EquipmentRental>('POST', `equipment/rentals/${encodeURIComponent(id)}/complete`, { body: { actualQuantity } })).data;
   }
-  /** Ops: settle — money moves server-side; Idempotency-Keyed (completed → settled). */
+  /**
+   * PC-56 HOTFIX-13 · the RENTER confirms the hours the owner recorded on a completed hire, in her own session (Idempotency-Keyed).
+   * Anyone else → 403 `USAGE_CONFIRM_NOT_RENTER`. Until she does, settle takes nothing beyond the deposit from her wallet.
+   */
+  async confirmRentalUsage(id: string, idempotencyKey: string): Promise<EquipmentRental> {
+    return (await this.http.request<EquipmentRental>('POST', `equipment/rentals/${encodeURIComponent(id)}/confirm-usage`, { idempotencyKey, body: {} })).data;
+  }
+  /** Ops: settle — money moves server-side; Idempotency-Keyed (completed → settled). PC-56 HOTFIX-13: a bill above the deposit is
+   *  refused `SETTLE_HOURS_NOT_CONFIRMED` (409) until the renter has confirmed the hours. */
   async settleRental(id: string, idempotencyKey: string): Promise<EquipmentRental> {
     return (await this.http.request<EquipmentRental>('POST', `equipment/rentals/${encodeURIComponent(id)}/settle`, { idempotencyKey, body: {} })).data;
   }

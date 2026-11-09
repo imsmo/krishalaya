@@ -14,7 +14,9 @@ function harness(booking: EquipmentBooking) {
   const metrics = { inc: jest.fn(), observe: jest.fn() };
   const audit = { write: jest.fn() };
   const wallet = { post: jest.fn(async () => ({ txnId: 't', alreadyApplied: false })), balanceMinor: jest.fn() };
-  const bookings = { getForUpdate: jest.fn(async () => booking), update: jest.fn(), getById: jest.fn(), listFor: jest.fn(), insert: jest.fn() };
+  // [PC-56 HOTFIX-13 · NAMED UPDATE] the services now PRE-READ the row (getById) to refuse before the idempotency record; the fake
+  // answers that read with the same booking. Nothing else in this harness changed.
+  const bookings = { getForUpdate: jest.fn(async () => booking), update: jest.fn(), getById: jest.fn(async () => booking), listFor: jest.fn(), insert: jest.fn(), confirmUsage: jest.fn(async () => true) };
   const assets = { getById: jest.fn() }; const rates = { resolveActive: jest.fn() };
   const svc = new EquipmentBookingService(uow as any, outbox as any, idem as any, metrics as any, audit as any, cfg, wallet as any, bookings as any, assets as any, rates as any);
   return { svc, wallet };
@@ -31,7 +33,10 @@ const sumZero = (legs: any[]) => legs.reduce((a, l) => a + l.amountMinor, 0n) ==
 describe('settle — escrow release + shortfall/refund (zero-sum)', () => {
   it('total > advance: release advance to owner + collect shortfall from renter', async () => {
     // advance 80000, actual 3.50h → total 175000 ; shortfall 95000
-    const { svc, wallet } = harness(completed(80000n, 350n));
+    // [PC-56 HOTFIX-13 · NAMED UPDATE, founder Q1-A] the shortfall leg now needs HER confirmation of the hours first; this case
+    // pins the money arithmetic AFTER she has confirmed (the unconfirmed refusal is pinned in hotfix13-her-money.spec.ts).
+    const b = completed(80000n, 350n); b.confirmUsage('renter1', new Date());
+    const { svc, wallet } = harness(b);
     const out = await svc.settle('t1', owner, 'b1', 'idem-s', null);
     expect(out.status).toBe('settled'); expect(out.settledTotalMinor).toBe('175000');
     const calls = (wallet.post.mock.calls as any[]).map((c) => c[1]);

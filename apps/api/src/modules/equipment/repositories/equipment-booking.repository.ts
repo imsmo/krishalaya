@@ -10,7 +10,8 @@ import { RentalStatus } from '../domain/equipment-booking.state';
 
 const SEL = `b.id, b.tenant_id, b.booking_no, b.renter_user_id, b.asset_id, a.owner_user_id, b.operator_user_id,
   b.task_desc, b.rate_basis, b.rate_minor, b.est_quantity, b.actual_quantity, b.scheduled_at, b.status,
-  b.advance_minor, b.total_minor, b.start_otp_hash, b.started_at, b.completed_at, b.created_at
+  b.advance_minor, b.total_minor, b.start_otp_hash, b.started_at, b.completed_at, b.created_at,
+  b.usage_confirmed_by, b.usage_confirmed_at
   FROM equipment_bookings b JOIN equipment_assets a ON a.id = b.asset_id`;
 const toCenti = (v: any): bigint => BigInt(Math.round(Number(v) * 100));
 function toDomain(r: any): EquipmentBooking {
@@ -18,7 +19,8 @@ function toDomain(r: any): EquipmentBooking {
     ownerUserId: r.owner_user_id, operatorUserId: r.operator_user_id, taskDesc: r.task_desc, rateBasis: r.rate_basis as RateBasis, rateMinor: BigInt(r.rate_minor),
     estQuantityCenti: toCenti(r.est_quantity), actualQuantityCenti: r.actual_quantity != null ? toCenti(r.actual_quantity) : null, scheduledAt: r.scheduled_at,
     status: r.status as RentalStatus, advanceMinor: BigInt(r.advance_minor), totalMinor: r.total_minor != null ? BigInt(r.total_minor) : null,
-    startOtpHash: r.start_otp_hash, startedAt: r.started_at, completedAt: r.completed_at, createdAt: r.created_at });
+    startOtpHash: r.start_otp_hash, startedAt: r.started_at, completedAt: r.completed_at, createdAt: r.created_at,
+    usageConfirmedBy: r.usage_confirmed_by ?? null, usageConfirmedAt: r.usage_confirmed_at ?? null });
 }
 const centiToNum = (c: bigint) => (Number(c) / 100).toFixed(2);
 export interface BookingListQuery { renterUserId?: string; ownerUserId?: string; status?: string; cursor?: { c: string; id: string }; limit: number; }
@@ -48,6 +50,18 @@ export class EquipmentBookingRepository {
       `UPDATE equipment_bookings SET status=$3, advance_minor=$4, total_minor=$5, actual_quantity=$6, start_otp_hash=$7, started_at=$8, completed_at=$9, updated_at=now()
        WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
       [p.id, p.tenantId, p.status, p.advanceMinor.toString(), p.totalMinor?.toString() ?? null, p.actualQuantityCenti != null ? centiToNum(p.actualQuantityCenti) : null, p.startOtpHash, p.startedAt, p.completedAt]);
+  }
+  /**
+   * [PC-56 HOTFIX-13 · founder Q1-A] Stamp the renter's confirmation of the hours. Its own statement, writing ONLY the two
+   * columns, so the guard (0236) sees a confirmation that moves nothing else; `usage_confirmed_by IS NULL` makes a racing second
+   * confirmation update no row. Returns whether a row was stamped.
+   */
+  async confirmUsage(tx: TxContext, tenantId: string, id: string, by: string, at: Date): Promise<boolean> {
+    const r = await tx.query(
+      `UPDATE equipment_bookings SET usage_confirmed_by=$3, usage_confirmed_at=$4, updated_at=now()
+        WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL AND usage_confirmed_by IS NULL AND status='completed'`,
+      [id, tenantId, by, at]);
+    return (r.rowCount ?? 0) === 1;
   }
   async listFor(tenantId: string, q: BookingListQuery): Promise<EquipmentBooking[]> {
     const params: unknown[] = [tenantId];

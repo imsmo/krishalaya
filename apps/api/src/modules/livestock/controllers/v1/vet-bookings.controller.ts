@@ -61,7 +61,8 @@ export class VetBookingsController {
   }
   @Get(':id/prescription')
   getPrescription(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
-    return this.health.getPrescription(ctx.tenantId, { userId: ctx.userId, canManage: canManageVet(ctx) }, id).then((data) => ({ data }));
+    // [PC-56 HOTFIX-13] party-only (the booking's farmer or the vet of record); `vet.manage` no longer opens it.
+    return this.health.getPrescription(ctx.tenantId, { userId: ctx.userId }, id).then((data) => ({ data }));
   }
 
   @Post(':id/cancel') @RequirePermissions(LivestockPermissions.VetBook)

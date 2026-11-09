@@ -104,6 +104,8 @@ export const hi: Record<string, string> = {
   'chc.error.advance': 'कृपया मान्य अग्रिम लिखें (जैसे 250.50, या 0)।',
   'chc.error.otp': 'OTP 4–12 अंक हो।',
   'chc.error.quantity': 'उपयोग धनात्मक संख्या हो (3 दशमलव तक)।',
+  // PC-56 HOTFIX-13 (founder Q1-A): a settle refused because the renter has not confirmed the hours, by name.
+  'chc.error.hoursNotConfirmed': 'निपटान नहीं हुआ: किराएदार ने अपने ऐप में ये घंटे अभी पुष्टि नहीं किए हैं। जब तक वह अपने ऐप में इन घंटों की पुष्टि नहीं करती, किराएदार के वॉलेट से जमा राशि से अधिक कुछ नहीं जाता।',
   'nav.dairy': 'डेयरी POS',
   'dairy.title': 'दूध संग्रह POS',
   'dairy.hint': 'किसी सदस्य के दूध देखें, दूध बिल बनाएँ और दिखाएँ, और चालू रेट कार्ड देखें। दूध काउंटर पर दर्ज होता है। इस कंसोल से बिल स्वीकृत या भुगतान नहीं होते।',

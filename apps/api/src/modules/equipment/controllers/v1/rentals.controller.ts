@@ -1,6 +1,6 @@
 // modules/equipment/controllers/v1/rentals.controller.ts · the rental booking lifecycle + escrow settlement.
-// request/confirm/cancel are the renter (equipment.rent); quote/start/complete/settle are the owner
-// (equipment.manage). Money routes (confirm, settle) require an Idempotency-Key (Law 3). `equipment` flag.
+// request/confirm/confirm-usage/cancel are the renter (equipment.rent); quote/start/complete/settle are the owner
+// (equipment.manage) — [PC-56 HOTFIX-13] the machine's owner ONLY, no administrator escape; confirm and confirm-usage the renter ONLY. Money routes (confirm, settle) require an Idempotency-Key (Law 3). `equipment` flag.
 import { Body, Controller, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
@@ -53,6 +53,15 @@ export class RentalsController {
   settle(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @Headers('idempotency-key') key: string) {
     if (!key) throw new BadRequestError('Idempotency-Key header required');
     return this.svc.settle(ctx.tenantId, this.actor(ctx), id, key, ipOf(r)).then((data) => ({ data }));
+  }
+  /**
+   * [PC-56 HOTFIX-13 · founder Q1-A] The RENTER confirms the hours the owner recorded, in her own session. Until she does, settle
+   * takes nothing beyond the deposit. Idempotency-Keyed (Law 3); anyone but the renter → 403 USAGE_CONFIRM_NOT_RENTER.
+   */
+  @Post(':id/confirm-usage') @RequirePermissions(EquipmentPermissions.Rent)
+  confirmUsage(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @Headers('idempotency-key') key: string) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return this.svc.confirmUsage(ctx.tenantId, this.actor(ctx), id, key, ipOf(r)).then((data) => ({ data }));
   }
   @Post(':id/cancel')
   cancel(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @Body('reason') reason?: string) { return this.svc.cancel(ctx.tenantId, this.actor(ctx), id, reason).then((data) => ({ data })); }

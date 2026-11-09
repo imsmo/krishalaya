@@ -1634,6 +1634,16 @@ describe('equipment owner-side', () => {
     await c.equipment.quoteRental('r1', '250000');
     expect(JSON.parse(String(calls[2].init.body))).toEqual({ advanceMinor: '250000' });
   });
+  // PC-56 HOTFIX-13 · the renter's confirmation of the hours: its own route, Idempotency-Keyed.
+  it('confirmRentalUsage posts to /confirm-usage with the Idempotency-Key', async () => {
+    const { fn, calls } = fakeFetch(() => ({ body: { data: { id: 'r1', status: 'completed', usageConfirmedAt: '2026-11-09T05:00:00.000Z' } } }));
+    const c = createClient({ ...base, fetchImpl: fn });
+    const out = await c.equipment.confirmRentalUsage('r1', 'idem-cu-1');
+    expect(calls[0].url).toBe('https://api.test/v1/equipment/rentals/r1/confirm-usage');
+    expect(calls[0].init.method).toBe('POST');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-cu-1');
+    expect(out.usageConfirmedAt).toBe('2026-11-09T05:00:00.000Z');
+  });
 });
 
 // --- kyc reviewer read-models (PC-54 W54-1) ---

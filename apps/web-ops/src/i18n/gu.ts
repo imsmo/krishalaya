@@ -104,6 +104,8 @@ export const gu: Record<string, string> = {
   'chc.error.advance': 'કૃપા કરીને માન્ય અગ્રિમ લખો (જેમ કે 250.50, અથવા 0).',
   'chc.error.otp': 'OTP 4–12 અંક હોવો જોઈએ.',
   'chc.error.quantity': 'વપરાશ ધન સંખ્યા હોવો જોઈએ (3 દશાંશ સુધી).',
+  // PC-56 HOTFIX-13 (founder Q1-A): a settle refused because the renter has not confirmed the hours, by name.
+  'chc.error.hoursNotConfirmed': 'પતાવટ થઈ નથી: ભાડૂતે પોતાની ઍપમાં આ કલાકોની હજી પુષ્ટિ કરી નથી. જ્યાં સુધી તે પોતાની ઍપમાં આ કલાકોની પુષ્ટિ ન કરે, ત્યાં સુધી ભાડૂતના વૉલેટમાંથી ડિપોઝિટથી વધુ કંઈ જતું નથી.',
   'nav.dairy': 'ડેરી POS',
   'dairy.title': 'દૂધ સંગ્રહ POS',
   'dairy.hint': 'કોઈ સભ્યનું દૂધ જુઓ, દૂધ બિલ બનાવો અને બતાવો, અને ચાલુ રેટ કાર્ડ જુઓ. દૂધ કાઉન્ટર પર નોંધાય છે. આ કન્સોલમાંથી બિલ મંજૂર કે ચૂકવાતાં નથી.',

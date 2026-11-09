@@ -15,6 +15,8 @@ function toDomain(r: any): VetBooking {
     status: r.status as VetBookingStatus, feeMinor: BigInt(r.fee_minor ?? '0'), completedAt: r.completed_at, createdAt: r.created_at,
   });
 }
+/** [PC-56 HOTFIX-13] the vet-booking states in which the booked vet may read and write that animal's health file. */
+export const VET_FILE_ACCESS_STATUSES = ['accepted', 'en_route', 'in_consult', 'prescribed', 'completed'] as const satisfies readonly VetBookingStatus[];
 export interface VetBookingListQuery { farmerUserId?: string; vetId?: string; status?: string; cursor?: { c: string; id: string }; limit: number; }
 
 @Injectable()
@@ -36,6 +38,17 @@ export class VetBookingRepository {
   async getById(tenantId: string, id: string): Promise<VetBooking | null> {
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM vet_bookings WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`, [id, tenantId]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;
+  }
+  /**
+   * [PC-56 HOTFIX-13 · founder Q1-A] Does this vet hold a booking ON THIS ANIMAL that opens its health file? The states that count
+   * are the ones in which the vet took the job: `accepted`, `en_route`, `in_consult`, `prescribed`, `completed`. A booking the vet
+   * has not accepted (`requested`), or one that ended without a visit (`cancelled`, `no_show`), opens nothing.
+   */
+  async vetHasBookingOnAnimal(tenantId: string, vetId: string, animalId: string): Promise<boolean> {
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT 1 FROM vet_bookings WHERE tenant_id=$1 AND vet_id=$2 AND animal_id=$3 AND deleted_at IS NULL AND status = ANY($4::vet_booking_status[]) LIMIT 1`,
+      [tenantId, vetId, animalId, [...VET_FILE_ACCESS_STATUSES]]);
+    return (r.rowCount ?? r.rows.length) > 0;
   }
   async update(tx: TxContext, b: VetBooking): Promise<void> {
     const p = b.toProps();

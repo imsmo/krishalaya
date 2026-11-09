@@ -20,10 +20,19 @@ are scaled integers (×100) and `total = rate × qtyCenti / 100` with round-half
 
 ## Security — OTP-gated start + anti over-billing
 The meter only starts after the renter hands over a one-time code: `confirm` generates an OTP, stores **only
-its HMAC hash** (server pepper), and `start` compares in **constant time** (`timingSafeEqual`). The plaintext
-OTP is delivered out-of-band (SMS, deferred) and only echoed in the API response when `config.auth.exposeOtp`
-is set (test only — fail-closed). Completion enforces `actual ≤ estimate` (over-runs need a re-quote), so an
-owner cannot inflate the bill beyond what the renter agreed to.
+its HMAC hash** (server pepper), and `start` compares in **constant time** (`timingSafeEqual`).
+[PC-56 HOTFIX-13 — CORRECTED, survey_ops4 C-5/C-6] This used to say the plaintext OTP "is delivered out-of-band
+(SMS, deferred)": nothing delivered it, so in production a confirmed hire could never start. Now the code is
+returned in the RENTER's own confirm response (only the renter can confirm) and nowhere else — not in a list, a
+read, an owner's response, a log or an event. It also said completion's `actual ≤ estimate` meant "an owner
+cannot inflate the bill beyond what the renter agreed to": true only up to the estimate — the owner alone types
+the hours. Now (founder Q1-A, 2026-11-09, migration 0236) **nothing beyond the deposit leaves the renter's
+wallet until she confirms those hours herself** (`POST /:id/confirm-usage`, renter only); `settle` with a bill
+above the deposit and no confirmation is refused `SETTLE_HOURS_NOT_CONFIRMED` (409), and a bill within the
+deposit settles from the deposit alone. A hire she never confirms stays `completed` and unsettled — nothing
+times it out. Only the renter confirms (escrows her deposit) and confirms the hours; only the machine's owner
+quotes, starts, completes and settles — the `booking.manage` administrator escape is gone from all six; cancel
+keeps it (it only refunds her deposit).
 
 ## Lifecycle (Law 5 — `domain/equipment-booking.state.ts`)
 `requested → quoted → confirmed → in_progress → completed → settled` (+ cancel from requested/quoted/confirmed).
@@ -35,7 +44,8 @@ its JOIN to `equipment_assets`, from which the owner is resolved — there is no
   · `PATCH /:id` · `POST /:id/status` · `POST /:id/rates` · `GET /:id/rates`.
 - `POST /v1/equipment/rentals` (request, idempotent, `equipment.rent`) · `GET` (?box=renter|owner|all) · `GET /:id`
   · `POST /:id/quote` (owner) · `POST /:id/confirm` (renter, idempotent, escrow) · `POST /:id/start` (owner, OTP)
-  · `POST /:id/complete` (owner) · `POST /:id/settle` (owner, idempotent, money) · `POST /:id/cancel`.
+  · `POST /:id/complete` (owner) · `POST /:id/confirm-usage` (renter, idempotent — HOTFIX-13)
+  · `POST /:id/settle` (owner, idempotent, money; beyond the deposit only after `confirm-usage`) · `POST /:id/cancel`.
 
 ## Threats considered
 - **No cross-party IDOR**: bookings read 404 unless caller is renter, owner, or admin; assets edited only by
