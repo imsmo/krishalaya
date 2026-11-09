@@ -15,7 +15,7 @@ import { MilkCollectionRepository } from '../repositories/milk-collection.reposi
 import { MilkRateCardRepository } from '../repositories/milk-rate-card.repository';
 import { DairyMembershipRepository } from '../repositories/dairy-membership.repository';
 import { RecordCollectionDto } from '../dto/create-milk-collection.dto';
-import { MembershipNotFoundError, NoActiveRateCardError, DuplicateCollectionError, DairyForbiddenError, PourNotAtThisCentreError, PourDateInFutureError, PourWindowAlreadyBilledError } from '../domain/dairy.errors';
+import { MembershipNotFoundError, NoActiveRateCardError, DuplicateCollectionError, DairyForbiddenError, PourNotAtThisCentreError, PourDateInFutureError, PourWindowAlreadyBilledError, DairyCentreNotInCustodyError } from '../domain/dairy.errors';
 import { numericFromScaled } from '../../../core/database/pg-numeric';
 import { DairyMembershipRouteRepository } from '../repositories/dairy-membership-route.repository';
 import { DairyDiversionRepository } from '../repositories/dairy-diversion.repository';
@@ -56,6 +56,9 @@ export class MilkCollectionService {
   async record(tenantId: string, actor: DairyActor, idemKey: string, dto: RecordCollectionDto) {
     // [PC-56 OPS-3p · founder Q6-A] the COUNTER's act: dairy.collect, or dairy.manage (administrators keep it). Never dairy.read.
     if (!actorMayCollect(actor)) throw new DairyForbiddenError('requires dairy.collect or dairy.manage');
+    // [PC-56 OPS-3b · L1 · lead decision 2026-11-09] CUSTODY, AT THE API — the FIRST check after the permission, before the day checks below
+    // (so a person who does not hold the centre learns nothing about a member's bills), before `idem.remember`, the unit of work and any write.
+    await this.assertPourCustody(tenantId, actor, dto);
     // [PC-56 OPS-3a · OPS3-B2 · founder Q5-A, 2026-11-08] THE POUR'S DAY IS BOUNDED, by name, before anything is written: after the
     // permission check (above) and the controller's key check, and BEFORE `idem.remember`, the unit of work and any write — so a refused
     // pour leaves no collection, review, outbox or idempotency row, and a replay with the same key meets the same refusal (the OPS-1a
@@ -160,6 +163,22 @@ export class MilkCollectionService {
           if (review) await this.flush(tx, tenantId, review.id, review.pullEvents(), 'milk_quality_review');
           return { ...this.serialize(collection), review: review?.toJSON() ?? null };
         }, { userId: actor.userId })));
+  }
+
+  /**
+   * [PC-56 OPS-3b · L1] A counter person (`dairy.collect` without `dairy.manage`) records a pour only for a member of a centre in their OPEN
+   * custody — the membership's own centre (`dairy_memberships.mcc_id`, what the centre's roll lists) — and, when the pour NAMES a centre
+   * (`dto.mccId`), only a centre they hold as well. Otherwise DAIRY_CENTRE_NOT_IN_CUSTODY (403), by name. `dairy.manage` holders skip this
+   * entirely: administrators act across centres, as before. An unknown membership is the same 404 the transaction would raise.
+   */
+  private async assertPourCustody(tenantId: string, actor: DairyActor, dto: RecordCollectionDto): Promise<void> {
+    if (actor.canManage === true) return;
+    const membership = await this.memberships.getById(tenantId, dto.membershipId);
+    if (!membership) throw new MembershipNotFoundError(dto.membershipId);
+    const held = await this.memberships.custodyCentreIds(tenantId, actor.userId);
+    const home = membership.toProps().mccId;
+    if (!held.includes(home)) throw new DairyCentreNotInCustodyError(home);
+    if (dto.mccId && !held.includes(dto.mccId)) throw new DairyCentreNotInCustodyError(dto.mccId);
   }
 
   async list(tenantId: string, actor: DairyActor & { userId: string }, q: { membershipId: string; from: string; to: string; cursor?: { c: string; id: string }; limit: number }) {

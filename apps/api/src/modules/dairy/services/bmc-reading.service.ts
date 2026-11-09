@@ -32,7 +32,7 @@ import { METRICS, Metrics, timed } from '../../../core/observability/metrics';
 import { numericFromScaled } from '../../../core/database/pg-numeric';
 import { ColdChainService } from '../../logistics/services/cold-chain.service';
 import { BmcUnitRepository } from '../repositories/bmc-unit.repository';
-import { BmcReadingRefusedError, BmcUnitNotFoundError, DairyForbiddenError } from '../domain/dairy.errors';
+import { BmcReadingRefusedError, BmcUnitNotFoundError, DairyCentreNotInCustodyError, DairyForbiddenError } from '../domain/dairy.errors';
 import { bandOf, deciOfC, isBreach, readingVerdict } from '../domain/bmc';
 import { DairyActor } from './mcc-centre.service';
 import { actorMayCollect } from '../policies/dairy.policies';
@@ -69,6 +69,15 @@ export class BmcReadingService {
     return timed(this.metrics, 'dairy.bmc_reading', { tenant: tenantId }, async () => {
       const unit = await this.resolve(tenantId, input);
       const p = unit.toProps();
+
+      // [PC-56 OPS-3b · L1 · lead decision 2026-11-09] CUSTODY, AT THE API: a counter person (`dairy.collect` without `dairy.manage`) records a
+      // reading only for a cooler at a centre in their OPEN custody. A cooler's centre is `bmc_units.mcc_id` (NOT NULL since 0009, so every
+      // cooler has one). Checked before the retired check (a stranger learns nothing about the tank) and before the one write below.
+      // `dairy.manage` holders are unchanged.
+      if (actor.canManage !== true) {
+        const held = await this.units.custodyCentreIds(tenantId, actor.userId);
+        if (!held.includes(p.mccId)) throw new DairyCentreNotInCustodyError(p.mccId);
+      }
 
       // A RETIRED cooler is refused, loudly. A sensor still reporting from one is the most likely cause of a chart
       // nobody can explain, and the fix is physical: move the sensor, or register the new tank.

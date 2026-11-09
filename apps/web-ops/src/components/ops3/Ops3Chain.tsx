@@ -3,6 +3,8 @@
 // your organisation's dairy console, not here."), its own sentence (nothing queued, nothing made, nothing changed), its refusals BY NAME — the
 // canon's zero-sum sentence among them, refused with its own words and NEVER printed — and links back to `/rates`. No form, no act, no money.
 // Also the surfaces' refusal list (`Ops3Refusals`), printed BY NAME from features/ops3/refusals.ts.
+// PC-56 OPS-3b: and the cooler's two chains — the REAL manual reading (W3282–W3285) and the mutate chain (W3286–W3288: dispatch refused, Retry a
+// re-read, its link label the chain's own `reread`).
 // PC-56 OPS-3a: the same component prints the REAL pos chain's states (W3335–W3337): `back` is the page that opened it (never W362 by default —
 // survey C-15) and `children` carries the record's own result (the server's named reason on failure; what was recorded on success).
 import Link from 'next/link';
@@ -32,7 +34,7 @@ export function Ops3Chain({ t, chain, state, back, backKey, children }: { t: Tr;
       {children}
       {/* PARITY-DECOR: the confirm state's one link IS the re-read (W3340 "Proceed" is reading the cards again). */}
       {c.kind === 'PARITY-DECOR' && state === 'confirm'
-        ? <p className="kv-pager"><Link className="kv-btn" href={c.page} data-kv-real="reread">{t.t('ops3.chain.reread')}</Link></p> : null}
+        ? <p className="kv-pager"><Link className="kv-btn" href={c.page} data-kv-real="reread">{t.t(c.reread ?? 'ops3.chain.reread')}</Link></p> : null}
       <Ops3Refusals t={t} surface={c.surface} />
       <p className="kv-pager"><Link className="kv-btn kv-btn--muted" href={href} data-kv-back={href}>{t.t(backKey ?? 'ops3.chain.back')}</Link></p>
     </section>

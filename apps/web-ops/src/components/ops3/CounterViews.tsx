@@ -335,7 +335,8 @@ export function PosShiftView({ t, lang, state, centre, centres, today, rows, coo
               : <p className="kv-muted">{t.t(cooler === 'off' ? 'ops3.pos.shiftPage.coolerOff' : cooler === 'error' ? 'ops3.pos.shiftPage.coolerError' : 'ops3.pos.shiftPage.coolerNone')}</p>}
             {cooler === 'error' ? <p className="kv-pager"><Link className="kv-btn kv-btn--muted" href={`${POS.shift}?mcc=${centre.id}`} data-kv-retry="reread">{t.t('ops3.pos.retry')}</Link></p> : null}
             <p className="kv-statement" data-kv-statement="ops3.pos.shiftPage.stated">{t.t('ops3.pos.shiftPage.stated')}</p>
-            <p className="kv-muted" data-kv-statement="ops3.pos.shiftPage.noCoolerPage">{t.t('ops3.pos.shiftPage.noCoolerPage')}</p>
+            {/* NAMED UPDATE (PC-56 OPS-3b): "There is no cooler page on this console." became false at merge — the centre's cooler page is linked. */}
+            <p className="kv-pager"><Link className="kv-btn kv-btn--muted" href={`/bmc?mcc=${centre.id}`} data-kv-link="bmc">{t.t('ops3.pos.shiftPage.coolerPage')}</Link></p>
           </article>
           <p className="kv-statement" data-kv-statement="ops3.pos.shiftPage.noDifference">{t.t('ops3.pos.shiftPage.noDifference')}</p>
           <p className="kv-refusal" data-kv-refused-act="close_shift">{t.t('ops3.pos.shiftPage.closeRefused')}</p>

@@ -1,7 +1,8 @@
 // apps/web-ops/src/app/pos/shift-close/page.tsx · PC-56 OPS-3a · W365 (canon `pos/shift-close`) — THE SHIFT'S TOTALS, a READ (founder Q9-A). The centre in
 // your custody and the organisation's today; the day sheet per shift (server sums, labelled, split by hold state); the cooler's last STATED level
 // and its latest reading with their times (`GET /v1/dairy/bmc/monitor`, filtered to this centre). No variance is worked out; "Close shift" is
-// refused by name (no shift record exists); no cooler page is linked (none is built). Retry (FM:43) re-reads — PARITY-DECOR. No input.
+// refused by name (no shift record exists); the centre's cooler page `/bmc?mcc=` is linked (PC-56 OPS-3b — a NAMED UPDATE of "There is no cooler page on
+// this console."). Retry (FM:43) re-reads — PARITY-DECOR. No input.
 import type { Metadata } from 'next';
 import { SdkError, type DairyBmcTile, type DairyDaySummaryRow } from '@krishalaya/sdk-js';
 import { requireSession } from '../../../lib/session';

@@ -2852,6 +2852,18 @@ export interface DairyBmcUnit {
   createdAt?: string;
 }
 
+/**
+ * [PC-56 OPS-3b · OPS3-B17] What `POST /v1/dairy/bmc/readings` accepts (`RecordBmcReadingSchema`, strict): exactly one of `unitId` / `deviceRef`,
+ * the temperature as a one-decimal string, an optional humidity. No `recordedAt` — the server records the time of a manual reading.
+ */
+export interface DairyBmcReadingInput {
+  deviceRef?: string;
+  unitId?: string;
+  tempC: string;
+  humidityPct?: string;
+}
+
+/** The answer to a reading — `BmcReadingService.record`'s return, field for field. `recordedAt` is the SERVER's time. */
 export interface DairyBmcReading {
   id: string;
   unitId: string;

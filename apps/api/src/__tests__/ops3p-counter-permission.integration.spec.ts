@@ -111,6 +111,14 @@ run('PC-56 OPS-3p · the counter is not the price (integration, real AppModule o
     for (const k of FLAGS) for (const c of [`flag:${k}`, `flagstale:${k}`]) await cache.del(c);
     for (const c of ['flags:all', `flagctx:${T}`]) await cache.del(c);
   }
+  // NAMED UPDATE (PC-56 OPS-3b · L1, lead decision 2026-11-09): a person holding dairy.collect or dairy.read but NOT dairy.manage now acts only for
+  // a centre in their OPEN custody (a pour, a manual reading, the roll — DAIRY_CENTRE_NOT_IN_CUSTODY otherwise; ops3b-tank.integration pins the
+  // refusals). A centre has ONE open holder (0163 `uq_mcc_custody_open`), so each test below hands this centre's custody to the person it is
+  // about, exactly as the organisation's console does (the open row closed by the administrator, a new one opened). Every assertion is kept.
+  const holdCustody = async (u: string) => {
+    await admin.query(`UPDATE mcc_operator_assignments SET ended_at = now(), ended_by = $3 WHERE tenant_id = $1 AND mcc_id = $2 AND ended_at IS NULL AND deleted_at IS NULL`, [T, mccId, A1]);
+    await admin.query(`INSERT INTO mcc_operator_assignments (tenant_id, mcc_id, operator_user_id, assigned_by, reason) VALUES ($1, $2, $3, $4, 'ops3p live spec: custody for this test')`, [T, mccId, u, A1]);
+  };
   const pour = (token: string, membershipId: string, shift: 'morning' | 'evening') =>
     call(token, 'POST', '/v1/dairy/collections', { membershipId, shift, collectedOn: today, weightKg: '10.500', fatPct: '4.10', snfPct: '8.50' });
 
@@ -167,6 +175,7 @@ run('PC-56 OPS-3p · the counter is not the price (integration, real AppModule o
   it('(1) ONLY dairy.collect: a pour 201, a manual reading 201, the boards and the roll 200; every money / settings act refused by name', async () => {
     const perms = (await login(C)).perms;
     expect(perms.filter((p) => p.startsWith('dairy.'))).toEqual(['dairy.collect']);
+    await holdCustody(C);   // NAMED UPDATE (OPS-3b L1)
     const p = await pour(tok.C, mem1, 'morning');
     expect([p.status, p.body.data?.membershipId]).toEqual([201, mem1]);
     expect((await admin.query(`SELECT entered_by FROM milk_collections WHERE tenant_id = $1 AND id = $2`, [T, p.body.data.id])).rows).toEqual([{ entered_by: C }]);
@@ -204,6 +213,7 @@ run('PC-56 OPS-3p · the counter is not the price (integration, real AppModule o
 
   it('(2) ONLY dairy.read: every board 200; a pour and a reading 403 naming the counter set; everything else 403', async () => {
     expect((await login(R)).perms.filter((p) => p.startsWith('dairy.'))).toEqual(['dairy.read']);
+    await holdCustody(R);   // NAMED UPDATE (OPS-3b L1): the reader's roll follows custody too
     expect((await call(tok.R, 'GET', '/v1/dairy/counter/board')).status).toBe(200);
     expect((await call(tok.R, 'GET', '/v1/dairy/quality')).status).toBe(200);
     expect((await call(tok.R, 'GET', '/v1/dairy/bmc/monitor')).status).toBe(200);
@@ -257,6 +267,7 @@ run('PC-56 OPS-3p · the counter is not the price (integration, real AppModule o
     await desks.addMember(T, { userId: A1, canManage: true }, randomUUID(), deskId, D, 'counter operator for the morning shift', '127.0.0.1');
     const d = await login(D);
     expect(d.perms.filter((x) => x.startsWith('dairy.')).sort()).toEqual(['dairy.collect', 'dairy.read']);
+    await holdCustody(D);   // NAMED UPDATE (OPS-3b L1)
     expect((await pour(d.token, mem3, 'morning')).status).toBe(201);
     refusedByName(await call(d.token, 'POST', '/v1/dairy/rate-cards', { defaultName: 'x', animalType: 'cow', pricingModel: 'fat_pooled', ratePerKgFatMinor: '1', effectiveFrom: today }), { required: ['dairy.manage'] });
   });
@@ -336,6 +347,7 @@ run('PC-56 OPS-3p · the counter is not the price (integration, real AppModule o
     await admin.query(`INSERT INTO role_permissions (role_id, permission_code) SELECT id, 'dairy.collect' FROM roles WHERE code = $1`, [code]);
     const after = await login(L);
     expect(after.perms).toContain('dairy.collect');
+    await holdCustody(L);   // NAMED UPDATE (OPS-3b L1)
     const decoded = JSON.parse(Buffer.from(after.token.split('.')[1], 'base64url').toString('utf8'));
     expect(decoded.perms).toContain('dairy.collect');
     expect((await pour(after.token, mem3, 'evening')).status).toBe(201);

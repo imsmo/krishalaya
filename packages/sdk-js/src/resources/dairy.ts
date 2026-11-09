@@ -16,7 +16,7 @@ import {
   // PC-56 TENANT-6c-6 · W169's cycles, and the console that finally reaches them
   DairyBillCycle, DairyCycleConsole,
   // PC-56 TENANT-6d-1 · W170's tank
-  DairyBmcUnit, DairyBmcMonitor, DairyBmcReading,
+  DairyBmcUnit, DairyBmcMonitor, DairyBmcReading, DairyBmcReadingInput,
   DairyCentresConsole, DairyCentreCustodyRow, AssignMccOperatorInput, SetMccShiftWindowInput,
   DairyMembershipRoute, DairyMoveVerdict, DairyMoveCaution, MoveMembershipInput,
   DairyReview, DairyMccReviewInput, DairyBmcReviewInput,
@@ -417,9 +417,17 @@ export class DairyResource {
    *
    * Exactly one of `deviceRef` or `unitId`: a payload carrying both is a gateway that is not sure which tank it is
    * talking about. No idempotency key — two readings a second apart are two facts, not a retry.
+   *
+   * [PC-56 OPS-3b · OPS3-B17] NO `recordedAt`: a reading on this route is MANUAL and the SERVER records its time (the API's strict DTO
+   * refuses the key by name, `bmc.dto.ts`). The body is built from the four accepted keys only, so a caller that passes anything else
+   * (an untyped `recordedAt` included) never sends it.
    */
-  async recordBmcReading(input: { deviceRef?: string; unitId?: string; tempC: string; humidityPct?: string; recordedAt?: string }): Promise<DairyBmcReading> {
-    return (await this.http.request<DairyBmcReading>('POST', 'dairy/bmc/readings', { body: input })).data;
+  async recordBmcReading(input: DairyBmcReadingInput): Promise<DairyBmcReading> {
+    const body: DairyBmcReadingInput = { tempC: input.tempC };
+    if (input.unitId !== undefined) body.unitId = input.unitId;
+    if (input.deviceRef !== undefined) body.deviceRef = input.deviceRef;
+    if (input.humidityPct !== undefined) body.humidityPct = input.humidityPct;
+    return (await this.http.request<DairyBmcReading>('POST', 'dairy/bmc/readings', { body })).data;
   }
 
   // --- PC-54 W54-5: D2C milk subscriptions + the MCC day sheet ---

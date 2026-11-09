@@ -146,8 +146,15 @@ run('PC-56 OPS-3a · the counter (integration, real AppModule over HTTP)', () =>
     const ta = await get(tok.C, `/v1/dairy/mccs/memberships/list?box=mcc&mccId=${mcc1}&code=ta`);
     expect((ta.body.data as Array<{ memberCode: string }>).map((m) => m.memberCode).sort()).toEqual(['TA-001', 'TA-002']);   // case-blind prefix; TA-900 is the other centre's
     for (const m of ta.body.data as object[]) expect(Object.keys(m).some((k) => /name|phone|photo/i.test(k))).toBe(false);
+    // NAMED UPDATE (PC-56 OPS-3b · L1, lead decision 2026-11-09): the counter person no longer reaches the place rule for another centre's
+    // member — the API custody check refuses first, by name, with nothing written; an ADMINISTRATOR (dairy.manage, custody-free) still meets
+    // the place rule's own refusal, so the POUR_NOT_AT_THIS_CENTRE pin is kept.
+    const before = (await admin.query(`SELECT count(*)::int AS n FROM milk_collections WHERE tenant_id=$1`, [T])).rows[0].n;
     const away = await post(tok.C, '/v1/dairy/collections', pourBody(memAway, 'morning', today, { mccId: mcc1 }));
-    expect([away.status, away.body?.error?.code]).toEqual([409, 'POUR_NOT_AT_THIS_CENTRE']);
+    expect([away.status, away.body?.error?.code, away.body?.error?.details]).toEqual([403, 'DAIRY_CENTRE_NOT_IN_CUSTODY', { mccId: mcc2 }]);
+    expect((await admin.query(`SELECT count(*)::int AS n FROM milk_collections WHERE tenant_id=$1`, [T])).rows[0].n).toBe(before);
+    const awayAdmin = await post(tok.A1, '/v1/dairy/collections', pourBody(memAway, 'morning', today, { mccId: mcc1 }));
+    expect([awayAdmin.status, awayAdmin.body?.error?.code]).toEqual([409, 'POUR_NOT_AT_THIS_CENTRE']);
   });
 
   it('(1)+(2) B2: tomorrow → POUR_DATE_IN_FUTURE, nothing written, the replay refused the same; today → 201 with the server\'s price', async () => {

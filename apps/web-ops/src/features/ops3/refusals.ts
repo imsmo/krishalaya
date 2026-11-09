@@ -33,6 +33,18 @@
 //     latest reading with their times; "Close shift" refused by name; no difference worked out on the page.
 //   • `pos_act` (W3335–W3337) — REAL: confirm = the check step; success = the record's answer on `/pos/slip`; failure = "Nothing was
 //     recorded" + the server's named reason. "Retry" on W363 / W365 is a re-read (PARITY-DECOR); W364's Retry is DECOR (it reads nothing).
+//
+// OPS-3b · THE TANK (founder Q12-A, Q13-A, Q10-A, Q14-A, 2026-11-08; lead L1, 2026-11-09) builds:
+//   • `bmc` (W366, `/bmc`) — a READ of the cooler(s) at the centres in the signed-in person's OPEN custody (`GET /v1/dairy/mccs/mine`, then
+//     `GET /v1/dairy/bmc/monitor` filtered to those centres; a person who holds no centre is shown the organisation's coolers, and told so): per
+//     cooler the latest reading with its age and the server's verdict, the band, the tank volume, the STATED level and its time (no "%"), the
+//     stated compressor, the server's 24-hour counts, the series as the server's points (nothing drawn between them); the telemetry states; the
+//     MANUAL READING, REAL (`POST /v1/dairy/bmc/readings {unitId,tempC}`), labelled manual, no photo; "Request tanker dispatch" refused by name;
+//     band, level, compressor and retirement NOT offered ("set on your organisation's dairy console, not here").
+//   • `bmc_form` (W3282–W3285) — REAL: the manual reading's own states (form-error = the API's refusal of the value, values kept; review = the
+//     reading as typed and the cooler's band, claiming nothing the server has not said; success = the SERVER's answer; failure = the named refusal,
+//     L1's custody refusal among them). Back → `/bmc` (never the canon's "Retry — back to confirm" pointing at W366).
+//   • `bmc_act` (W3286–W3288) — DECOR for "Request tanker dispatch" (refused: no dispatch exists), PARITY-DECOR for "Retry" (a re-read of /bmc).
 export interface Tr { t(key: string, vars?: Record<string, string | number>): string }
 
 export type Ops3Surface =
@@ -46,6 +58,8 @@ export interface Ops3Refusal { id: string; canon: string; surfaces: readonly Ops
 export const SURFACES_3C: readonly Ops3Surface[] = ['rates', 'rate_export', 'rate_act'];
 /** The surfaces OPS-3a builds. */
 export const SURFACES_3A: readonly Ops3Surface[] = ['pos_home', 'pos_collect', 'pos_quality', 'pos_slip', 'pos_exceptions', 'pos_shift', 'pos_act'];
+/** The surfaces OPS-3b builds. */
+export const SURFACES_3B: readonly Ops3Surface[] = ['bmc', 'bmc_form', 'bmc_act'];
 const RATE_ALL: readonly Ops3Surface[] = ['rates', 'rate_export', 'rate_act'];
 const POS_PAGES: readonly Ops3Surface[] = ['pos_home', 'pos_collect', 'pos_quality', 'pos_slip', 'pos_exceptions', 'pos_shift'];
 
@@ -203,6 +217,58 @@ export const OPS3_REFUSALS: readonly Ops3Refusal[] = Object.freeze([
     key: 'ops3.refusal.posAuditTrail', why: 'no ops audit surface exists' },
   { id: 'pos_on_call', canon: 'W3337 "repeated failures page the on-call"', surfaces: ['pos_act'],
     key: 'ops3.refusal.posOnCall', why: 'no paging exists' },
+
+  // ══ OPS-3b · THE TANK — W366 (founder Q12-A, Q13-A, Q10-A, Q14-A) ══
+  { id: 'bmc_dispatch', canon: 'W366 "Request tanker dispatch" (FM:46, `chain-mutate:bmc` → W3286–W3288) · W3286–W3288 "Sharing actions on this module: Request tanker dispatch"', surfaces: ['bmc', 'bmc_act'],
+    key: 'ops3.refusal.bmcDispatch', why: 'founder Q12-A: refused by name — no tanker, dispatch or trip exists (survey C-1; `grep -rni tanker` finds comments only)' },
+  { id: 'bmc_manifest', canon: 'W366 "Dispatch — [time] tanker · Manifest: [n] L · composite [n]/[n]"', surfaces: ['bmc'],
+    key: 'ops3.refusal.bmcManifest', why: 'FALSE (survey F-13, OPS3-B12): no manifest exists' },
+  { id: 'bmc_seals', canon: 'W366 "sealed with numbered seals (photographed)"', surfaces: ['bmc'],
+    key: 'ops3.refusal.bmcSeals', why: 'FALSE: no seal and no photo exists' },
+  { id: 'bmc_weighbridge', canon: 'W366 "dairy-side weighbridge closes the loop"', surfaces: ['bmc'],
+    key: 'ops3.refusal.bmcWeighbridge', why: 'FALSE + LEGAL: no dairy-side weighbridge record exists' },
+  { id: 'bmc_reconcile', canon: 'W366 "MCC\'s litres and the dairy\'s litres reconcile per trip, to the litre, same day. A gap opens a query with the trip\'s own evidence"', surfaces: ['bmc'],
+    key: 'ops3.refusal.bmcReconcile', why: 'FALSE: no trip, so nothing is matched and no query opens' },
+  { id: 'bmc_agitator', canon: 'W366 "agitator running ✓" · state "Cooler empty — … agitator off"', surfaces: ['bmc'],
+    key: 'ops3.refusal.bmcAgitator', why: 'FALSE: no agitator column (0009, 0162)' },
+  { id: 'bmc_cip', canon: 'W366 state "Cooler empty — Post-dispatch state: cleaned, … next fill = evening shift. CIP wash log attaches here."', surfaces: ['bmc'],
+    key: 'ops3.refusal.bmcCip', why: 'FALSE: no empty state, no cleaning or CIP log exists' },
+  { id: 'bmc_composite', canon: 'W366 "Shift composite [n] / [n] — weighted fat/SNF of the morning pool · travels with the tanker manifest"', surfaces: ['bmc'],
+    key: 'ops3.refusal.bmcComposite', why: 'E3 + FALSE: no composite is worked out here; nothing "travels with" a manifest that does not exist' },
+  { id: 'bmc_fill_pct', canon: 'W366 "Fill level [n] L of [n] ([n]%) — evening shift needs the [time] tanker"', surfaces: ['bmc'],
+    key: 'ops3.refusal.bmcFillPct', why: 'E3: `fillPct` is never printed; the level is a person\'s statement, shown with its time; "needs the tanker" FALSE' },
+  { id: 'bmc_buyer_trace', canon: 'W366 "IoT ref feeding cold_chain_logs (the same trail the ghee trace shows buyers, W306)"', surfaces: ['bmc'],
+    key: 'ops3.refusal.bmcBuyerTrace', why: 'not verified (survey §1G): the buyer trace was not read, so it is not claimed' },
+  { id: 'bmc_diverted', canon: 'W366 "a breach follows the W306 rule: diverted, never silently sold as planned"', surfaces: ['bmc'],
+    key: 'ops3.refusal.bmcDiverted', why: 'FALSE as a consequence: a diversion is a separate act signed by two people (6d-6); a breach does not cause one' },
+  { id: 'bmc_photo', canon: 'W366 state "IoT sensor silent [n] min — Manual thermometer reading every 30 min with photo until the sensor returns"', surfaces: ['bmc', 'bmc_form'],
+    key: 'ops3.refusal.bmcPhoto', why: 'founder Q13-A: the manual reading is offered with no photo; no reading schedule exists' },
+  { id: 'bmc_operator_manager', canon: 'W366 states "Operator vs manager — Operators see and log; dispatch requests and alarm-threshold changes are the centre manager\'s (MM), recorded." · "Threshold changes are manager-restricted — … only the centre manager can change alarm thresholds or request dispatch"', surfaces: ['bmc'],
+    key: 'ops3.refusal.bmcOperatorManager', why: 'FALSE (Q14-A): no operator or centre-manager role exists; a cooler\'s band is set with dairy.manage on the organisation\'s console, recorded (`bmc-unit.service.ts` audit)' },
+  { id: 'bmc_fallback', canon: 'W366 state "Couldn\'t load cooler readings — The manual fallback log stays available — only the live feed failed."', surfaces: ['bmc', 'bmc_act'],
+    key: 'ops3.refusal.bmcFallback', why: 'when the monitor cannot be read the page knows no cooler, so it offers no form; it says what failed' },
+  { id: 'bmc_search', canon: 'W366 "Search BMC logs… ⌘K"', surfaces: ['bmc'],
+    key: 'ops3.refusal.bmcSearch', why: 'DECOR: no search route; the only input on this page is the manual reading (E7)' },
+  { id: 'bmc_plan_settings', canon: 'W366 flagged-off state "… Nothing is broken — it is not enabled. See plan settings."', surfaces: ['bmc'],
+    key: 'ops3.refusal.bmcPlanSettings', why: 'the S1…S6 precedent: a switched-off module says it is switched off; no settings page is pointed to' },
+  { id: 'bmc_pourer_count', canon: 'console chrome "[org] · dairy ops · [n] member pourers · 2 shifts" · avatar "MM"', surfaces: ['bmc'],
+    key: 'ops3.refusal.bmcPourerCount', why: 'founder Q10-A: no member on this page; no count is computed; "MM" is an avatar span, not a role (Q14-A)' },
+  // ══ the bmc form chain (W3282–W3285) ══
+  { id: 'bmc_form_maker_checker', canon: 'W3283 "Maker-checker friendly review step: everything you entered, shown read-only, with the diff against current values where applicable."', surfaces: ['bmc_form'],
+    key: 'ops3.refusal.bmcFormMakerChecker', why: 'no second person checks a reading, and there is no "current value" to differ from: the review echoes what was typed' },
+  { id: 'bmc_form_zero_sum', canon: 'W3284 "The change is applied and the audit trail has the entry (actor · time · reason · before/after). Money-adjacent actions reconcile zero-sum before this page ever shows."', surfaces: ['bmc_form'],
+    key: 'ops3.refusal.bmcFormZeroSum', why: 'FALSE: a reading moves no money and is not a change of anything — refused BY NAME' },
+  { id: 'bmc_form_audit_trail', canon: 'W3284 "the audit trail has the entry" · "View audit trail"', surfaces: ['bmc_form'],
+    key: 'ops3.refusal.bmcFormAuditTrail', why: 'no audit row is written for a reading; the reading\'s own row names who recorded it (`cold_chain_logs` by the signed-in user, E10); no ops audit surface exists' },
+  { id: 'bmc_form_on_call', canon: 'W3285 "repeated failures page the on-call"', surfaces: ['bmc_form'],
+    key: 'ops3.refusal.bmcFormOnCall', why: 'no paging exists' },
+  // ══ the bmc mutate chain (W3286–W3288) ══
+  { id: 'bmc_act_confirm_audit', canon: 'W3286 "confirming writes an audit-trail entry with actor, time and reason"', surfaces: ['bmc_act'],
+    key: 'ops3.refusal.bmcActConfirmAudit', why: 'reading the cooler again writes nothing' },
+  { id: 'bmc_act_zero_sum', canon: 'W3287 "The change is applied and the audit trail has the entry … Money-adjacent actions reconcile zero-sum before this page ever shows."', surfaces: ['bmc_act'],
+    key: 'ops3.refusal.bmcActZeroSum', why: 'FALSE on a re-read: nothing was changed or balanced — refused BY NAME' },
+  { id: 'bmc_act_on_call', canon: 'W3288 "repeated failures page the on-call"', surfaces: ['bmc_act'],
+    key: 'ops3.refusal.bmcActOnCall', why: 'no paging exists' },
 ]);
 export function ops3RefusalKeys(surface: Ops3Surface): string[] { return OPS3_REFUSALS.filter((r) => r.surfaces.includes(surface)).map((r) => r.key); }
 
@@ -232,12 +298,26 @@ export const OPS3_DELTAS: readonly { id: string; canon: string; built: string }[
   { id: 'pos_centre_from_custody', canon: 'survey E1 / brief OPS3-B14 "mccId from the signed-in person\'s custody"', built: '`GET /v1/dairy/mccs/mine` (new READ): the active centres in the caller\'s OPEN custody row and the organisation\'s today; none → the counter says so and offers no form. `?mcc=` picks among several; the record act re-checks it server-side before sending' },
   { id: 'pos_day_split', canon: 'brief OPS3-B15 "the day sheet split by hold state … or the pages carry the caveat"', built: 'BUILT as a pure read change: the day sheet returns payable / held / rejected sums and counts beside the total; the pages print the total labelled AND the split' },
   { id: 'dairy_record_moved', canon: '`/dairy` record form (PC-34 OW-4)', built: 'MOVED to `/pos/collect` (one write, one path — the 6d-4 rule); `/dairy` keeps the member\'s pours, the bills (generate, preview) and the active cards, and links the counter' },
+  // ── OPS-3b ──
+  { id: 'route_bmc', canon: 'W366 canon route `bmc`; the console sidebar "Centre · BMC cooler"', built: '`/bmc` at the canon address; the sidebar\'s Dairy group gains "Cooler" after the counter pages (E2: built routes only)' },
+  { id: 'bmc_scope_custody', canon: 'brief §E "bmcMonitor for the cooler(s) of the signed-in person\'s custody centre (via mccs/mine)"',
+    built: 'the monitor is NOT scoped to custody at the API (any dairy reader gets every active cooler); the page filters the tiles to the centres of `GET /v1/dairy/mccs/mine`. A person who holds no centre is shown the organisation\'s coolers, labelled so. The series is asked for BY the shown cooler\'s id, so the monitor never picks another centre\'s tank' },
+  { id: 'bmc_breaches_are_excursions', canon: 'brief §E "readings and breaches in the last 24 h (server counts)" · `DairyBmcTile.breaches24h`',
+    built: 'the server\'s `breaches24h` counts READINGS outside the band (`cold_chain_logs.is_breach`, manual ones included) — not breach records (0201: a breach is two device readings in a row). The page says "outside the band"' },
+  { id: 'bmc_source_unknown', canon: 'W366 state "IoT sensor silent [n] min" · brief §E "sensor silent (the telemetry verdict, true)"',
+    built: 'PREMISE PARTLY FALSE: the telemetry verdict is the age of the latest reading of ANY source, and the tile carries no source — so a manual reading makes the cooler read as live. The page says "No reading for N minutes" (true), never "sensor silent", and says the monitor does not tell which readings a sensor sent' },
+  { id: 'bmc_never_alarm', canon: 'brief §E "a manual reading — … never treated as a sensor alarm"',
+    built: 'PREMISE PARTLY FALSE: a manual reading never opens a breach (0201 `cold_chain_breach_on_reading`: device readings only), but an organisation\'s `cold_chain_breach` alert rule counts out-of-band readings of any source (`ops-alert.repository.ts` `coldChainBreachCounts`). The page says both' },
+  { id: 'bmc_form_review_echo', canon: 'W3283 review "the diff against current values"', built: 'the review is a GET state of `/bmc` that echoes the typed value and the cooler\'s band as the monitor sent it; no server review route exists for a reading (only for "Add BMC")' },
+  { id: 'bmc_form_back', canon: 'W3285 failure "Retry — back to confirm" → W366 (survey §1J canon defect)', built: 'failure: "Back to the cooler" → `/bmc` (the cooler it was for); W3283 review (0 inbound in the canon) is reached from the form' },
+  { id: 'bmc_act_reread', canon: 'W3286–W3288 confirm / success / failure (FM:46 "Request tanker dispatch", FM:47 "Retry")', built: 'DECOR for dispatch (refused by name in every state); PARITY-DECOR for Retry: the error state\'s Retry opens the confirm state, whose one link IS a re-read of `/bmc`' },
+  { id: 'shift_cooler_link', canon: 'W365 "Close shift & hand to BMC" → W366', built: 'NAMED UPDATE of OPS-3a\'s "There is no cooler page on this console." (false at merge): `/pos/shift-close` links the centre\'s cooler page `/bmc?mcc=…`; "Close shift" stays refused' },
 ]);
 
-/** The verdict values. `pending_3b` is deleted from the type by the wave that decides the last of its files (OPS-3a deleted `pending_3a`). */
-export type Ops3Verdict = 'BUILT (read)' | 'BUILT (honest)' | 'REAL' | 'DECOR' | 'PARITY-DECOR' | 'pending_3b';
+/** The verdict values. OPS-3a deleted `pending_3a`; OPS-3b decided the last 8 and deleted `pending_3b` (the 4c-7 rule): OPS-3 is 23 decided / 0 pending. */
+export type Ops3Verdict = 'BUILT (read)' | 'BUILT (honest)' | 'REAL' | 'DECOR' | 'PARITY-DECOR';
 export type Ops3Wave = '3a' | '3b' | '3c';
-/** Every canon file of OPS-3 (23), each with ONE verdict: 3c decides its 6 and 3a its 9; 3b's 8 wait for their wave. */
+/** Every canon file of OPS-3 (23), each with ONE verdict: 3c decides its 6, 3a its 9 and 3b its 8. */
 export const OPS3_CANON_FILES: readonly { file: string; wave: Ops3Wave; module: string; verdict: Ops3Verdict; note: string }[] = Object.freeze([
   // ── 3c · THE PRICE (6) — decided (founder Q1-A via HOTFIX-12, Q8-A, Q10-A, Q14-A, Q15-A) ──
   { file: 'W368-ops-rate-chart.html', wave: '3c', module: 'dairy', verdict: 'BUILT (read)', note: '/rates — a READ of the organisation\'s approved milk rate cards (GET /v1/dairy/rate-cards?activeOnly=true): name, milk type, pricing model in words, fat / SNF / base rates through the money formatter "per kg of fat / SNF / milk" (Q8-A), the days each covers, its approval state, its premium slabs and whether slabs are paid; the rule in words; two approved cards on one day for one milk type raised as an error; "Rates are changed on your organisation\'s dairy console, not here." + the HOTFIX-12 facts; no change button, no ready-reckoner, no poster, zero inputs' },
@@ -252,19 +332,19 @@ export const OPS3_CANON_FILES: readonly { file: string; wave: Ops3Wave; module: 
   { file: 'W362-ops-pos-quality.html', wave: '3a', module: 'dairy', verdict: 'REAL', note: '/pos/quality — the check step: the numbers as typed, "typed by the person at this counter — not read from a scale or an analyser", "Her pay is computed from them, and they cannot be changed afterwards"; "Record this pour" (POST /v1/dairy/collections, keyed); no accept, no per-kg rate, no retest' },
   { file: 'W363-ops-pos-slip.html', wave: '3a', module: 'dairy', verdict: 'BUILT (read)', note: '/pos/slip — "What was recorded": the server\'s answer to the record act (member code, readings, the server\'s price, the card\'s name and start date, the hold); "She can check this pour in her milk diary and object to her bill in its window."; no slip number, QR, print or SMS; Retry re-reads (PARITY-DECOR)' },
   { file: 'W364-ops-pos-exceptions.html', wave: '3a', module: 'dairy', verdict: 'BUILT (honest)', note: '/pos/exceptions — reads nothing: a recorded pour cannot be corrected here; one pour per member per shift; every reading typed by one person, no witness; no slip, no reprint; what she can do; Retry DECOR; zero inputs' },
-  { file: 'W365-ops-pos-shift.html', wave: '3a', module: 'dairy', verdict: 'BUILT (read)', note: '/pos/shift-close — the shift\'s server totals, labelled, with the split by hold state; the cooler\'s last stated level and its latest reading with their times (GET /v1/dairy/bmc/monitor); "Close shift" refused by name; no difference worked out; no /bmc link (not built); Retry re-reads (PARITY-DECOR)' },
+  { file: 'W365-ops-pos-shift.html', wave: '3a', module: 'dairy', verdict: 'BUILT (read)', note: '/pos/shift-close — the shift\'s server totals, labelled, with the split by hold state; the cooler\'s last stated level and its latest reading with their times (GET /v1/dairy/bmc/monitor); "Close shift" refused by name; no difference worked out; the centre\'s cooler page /bmc?mcc= linked (OPS-3b, a named update); Retry re-reads (PARITY-DECOR)' },
   { file: 'W3335-ops-pos-mutate-confirm.html', wave: '3a', module: 'dairy', verdict: 'REAL', note: '/pos/quality — the confirm state IS the check step; its "Record this pour" is the act' },
   { file: 'W3336-ops-pos-mutate-success.html', wave: '3a', module: 'dairy', verdict: 'REAL', note: '/pos/slip?act=success — "This pour is recorded", priced by the server; the zero-sum sentence refused BY NAME; Back → a fresh record form' },
   { file: 'W3337-ops-pos-mutate-failure.html', wave: '3a', module: 'dairy', verdict: 'REAL', note: '/pos/quality?act=failure&reason=… — "Nothing was recorded" + the server\'s named reason (POUR_DATE_IN_FUTURE, POUR_WINDOW_ALREADY_BILLED, DUPLICATE_COLLECTION with the one-pour rule, NO_ACTIVE_RATE_CARD, POUR_NOT_AT_THIS_CENTRE …); Back → the check step' },
-  // ── 3b · THE COOLER (8) — pending ──
-  { file: 'W366-ops-bmc.html', wave: '3b', module: 'dairy', verdict: 'pending_3b', note: 'OPS-3b (survey §1G)' },
-  { file: 'W3282-ops-bmc-form-form-error.html', wave: '3b', module: 'dairy', verdict: 'pending_3b', note: 'OPS-3b (survey §1J)' },
-  { file: 'W3283-ops-bmc-form-review.html', wave: '3b', module: 'dairy', verdict: 'pending_3b', note: 'OPS-3b (survey §1J)' },
-  { file: 'W3284-ops-bmc-form-success.html', wave: '3b', module: 'dairy', verdict: 'pending_3b', note: 'OPS-3b (survey §1J)' },
-  { file: 'W3285-ops-bmc-form-failure.html', wave: '3b', module: 'dairy', verdict: 'pending_3b', note: 'OPS-3b (survey §1J)' },
-  { file: 'W3286-ops-bmc-mutate-confirm.html', wave: '3b', module: 'dairy', verdict: 'pending_3b', note: 'OPS-3b (survey §1K)' },
-  { file: 'W3287-ops-bmc-mutate-success.html', wave: '3b', module: 'dairy', verdict: 'pending_3b', note: 'OPS-3b (survey §1K)' },
-  { file: 'W3288-ops-bmc-mutate-failure.html', wave: '3b', module: 'dairy', verdict: 'pending_3b', note: 'OPS-3b (survey §1K)' },
+  // ── 3b · THE TANK (8) — decided (founder Q12-A, Q13-A, Q10-A, Q14-A; lead L1) ──
+  { file: 'W366-ops-bmc.html', wave: '3b', module: 'dairy', verdict: 'BUILT (read)', note: '/bmc — a READ of the cooler(s) at the centres in your custody (GET /v1/dairy/mccs/mine + GET /v1/dairy/bmc/monitor, filtered): the latest reading, its age and the server\'s verdict, the band, the tank volume, the stated level "stated by a person at" its time (no %), the stated compressor, the server\'s 24-hour counts, the series as the server\'s points; "Log manual reading" REAL, labelled manual, no photo; "Request tanker dispatch" refused by name; band, level, compressor and retirement not offered; one input' },
+  { file: 'W3282-ops-bmc-form-form-error.html', wave: '3b', module: 'dairy', verdict: 'REAL', note: '/bmc?form=error — the API\'s refusal of the value (a number with at most one decimal), the typed value kept; nothing recorded; Back → the form' },
+  { file: 'W3283-ops-bmc-form-review.html', wave: '3b', module: 'dairy', verdict: 'REAL', note: '/bmc?form=review — the reading as typed and the cooler\'s band; "recorded at the moment you press Record this reading, by the server\'s clock; never opens a breach"; "Record this reading" (POST /v1/dairy/bmc/readings {unitId,tempC}); no maker-checker claim' },
+  { file: 'W3284-ops-bmc-form-success.html', wave: '3b', module: 'dairy', verdict: 'REAL', note: '/bmc?form=success — the SERVER\'s answer: the reading, its verdict, the band, the time it was recorded; the zero-sum and audit-trail sentences refused BY NAME; Back → /bmc' },
+  { file: 'W3285-ops-bmc-form-failure.html', wave: '3b', module: 'dairy', verdict: 'REAL', note: '/bmc?form=failure&reason=… — the named refusal (DAIRY_CENTRE_NOT_IN_CUSTODY, a retired cooler, no band — the reading kept —, an unknown cooler, no permission, switched off); Back → /bmc (not the canon\'s "Retry — back to confirm")' },
+  { file: 'W3286-ops-bmc-mutate-confirm.html', wave: '3b', module: 'dairy', verdict: 'PARITY-DECOR', note: '/bmc?act=confirm — "Request tanker dispatch" refused by name (DECOR); "Retry": reading the cooler again changes nothing, the link IS a re-read of /bmc' },
+  { file: 'W3287-ops-bmc-mutate-success.html', wave: '3b', module: 'dairy', verdict: 'PARITY-DECOR', note: '/bmc?act=success — the cooler is read afresh each time the page opens; nothing was changed; the zero-sum sentence refused BY NAME' },
+  { file: 'W3288-ops-bmc-mutate-failure.html', wave: '3b', module: 'dairy', verdict: 'PARITY-DECOR', note: '/bmc?act=failure — nothing was changed; Back → /bmc reads it again; nobody is paged' },
 ]);
 
 /** The five canon chain groups (survey §1I–§1M, 15 files, each exactly once) and the wave that owns each. */
@@ -277,10 +357,12 @@ export const OPS3_CHAIN_GROUPS: readonly { id: string; donor: string; wave: Ops3
 ]);
 
 // ── THE BUILT CHAINS: each is a query state of its parent page (the OPS-1 `Ops1Chain` / OPS-2 `Ops2Chain` shape). ──
-export type Chain3Id = 'rate_export' | 'rate_act' | 'pos_act';
+export type Chain3Id = 'rate_export' | 'rate_act' | 'pos_act' | 'bmc_form' | 'bmc_act';
 export interface Chain3Def {
-  id: Chain3Id; wave: Ops3Wave; kind: 'DECOR' | 'REAL' | 'PARITY-DECOR'; param: 'act' | 'export'; page: string; surface: Ops3Surface; states: readonly string[];
+  id: Chain3Id; wave: Ops3Wave; kind: 'DECOR' | 'REAL' | 'PARITY-DECOR'; param: 'act' | 'export' | 'form'; page: string; surface: Ops3Surface; states: readonly string[];
   key: (state: string) => string; files: readonly string[]; statement: string;
+  /** The PARITY-DECOR confirm state's re-read link label (default `ops3.chain.reread`, the rate cards'). */
+  reread?: string;
 }
 export const OPS3_CHAINS: readonly Chain3Def[] = Object.freeze([
   { id: 'rate_export', wave: '3c', kind: 'DECOR', param: 'export', page: '/rates', surface: 'rate_export', states: ['queued', 'ready'],
@@ -290,6 +372,11 @@ export const OPS3_CHAINS: readonly Chain3Def[] = Object.freeze([
   // OPS-3a: the record act's own states. confirm = the check step (/pos/quality); success is printed on /pos/slip; failure on /pos/quality.
   { id: 'pos_act', wave: '3a', kind: 'REAL', param: 'act', page: '/pos/quality', surface: 'pos_act', states: ['confirm', 'success', 'failure'],
     key: (s: string) => `ops3.chain.posAct.${s}`, files: ['W3335', 'W3336', 'W3337'], statement: 'ops3.pos.typed' },
+  // OPS-3b: the manual reading's own states (REAL), and the mutate chain (dispatch refused; Retry a re-read — PARITY-DECOR).
+  { id: 'bmc_form', wave: '3b', kind: 'REAL', param: 'form', page: '/bmc', surface: 'bmc_form', states: ['error', 'review', 'success', 'failure'],
+    key: (s: string) => `ops3.chain.bmcForm.${s}`, files: ['W3282', 'W3283', 'W3284', 'W3285'], statement: 'ops3.bmc.manual.label' },
+  { id: 'bmc_act', wave: '3b', kind: 'PARITY-DECOR', param: 'act', page: '/bmc', surface: 'bmc_act', states: ['confirm', 'success', 'failure'],
+    key: (s: string) => `ops3.chain.bmcAct.${s}`, files: ['W3286', 'W3287', 'W3288'], statement: 'ops3.bmc.readsOnly', reread: 'ops3.bmc.reread' },
 ]);
 export function chain3ById(id: Chain3Id): Chain3Def { return OPS3_CHAINS.find((c) => c.id === id) as Chain3Def; }
 /** The chain state a page was opened in (`?act=confirm`, `?export=queued` …), or null for the page itself / an unknown state. */

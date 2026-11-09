@@ -478,7 +478,8 @@ describe('PC-56 OPS-3c · the claims guard (ops3. scope, the price)', () => {
   });
   it.each(Object.entries(CATS))('%s: no ops3. value (or 3c nav label) trips a 3c guard or brand regex', (_lang, cat) => {
     // NAMED UPDATE (PC-56 OPS-3a): 94 → 282 — the counter's 188 `ops3.` keys join the scope, and every 3c guard holds over them too.
-    expect(scoped3(cat).length).toBe(282);
+    // NAMED UPDATE (PC-56 OPS-3b): 282 → 400 — the tank's 119 `ops3.` keys join (W365's false "no cooler page" key replaced by its link, −1).
+    expect(scoped3(cat).length).toBe(400);
     for (const [k, v] of scoped3(cat)) {
       for (const [name, hit] of GUARDS_3C) expect([k, name, hit(v)]).toEqual([k, name, false]);
       for (const [re] of BRAND_3C) expect([k, String(re), re.test(v)]).toEqual([k, String(re), false]);
@@ -583,6 +584,90 @@ describe('PC-56 OPS-3a · the claims guard (the counter)', () => {
     for (const rel of SOURCES_3A) {
       const src = fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
       for (const [re] of BRAND_3A) expect([rel, String(re), re.test(src)]).toEqual([rel, String(re), false]);
+    }
+  });
+});
+
+// ── PC-56 OPS-3b (brief §E6): THE TANK guards over the cooler's keys (`ops3.bmc.*`, `ops3.chain.bmcForm.*`, `ops3.chain.bmcAct.*`, the 3b refusals) and
+// its nav label. Each is proven on its OWN canon phrase (W366 and its chains; persons, places and figures anonymised) and NARROWED TO THE
+// AFFIRMATIVE — a sentence that carries a negation passes, the canon's claim is caught — and each is proven to let its negated form through. Then the
+// founder's option words and the code-proved facts are PINNED in English (present in hi / gu), and a brand guard runs over every 3b source.
+const NAV_3B = ['nav.bmc'];
+const is3b = (k: string) => k.startsWith('ops3.bmc.') || k.startsWith('ops3.chain.bmcForm.') || k.startsWith('ops3.chain.bmcAct.') || /^ops3\.refusal\.bmc[A-Z]/.test(k) || NAV_3B.includes(k);
+const scoped3b = (cat: Record<string, string>) => Object.entries(cat).filter(([k]) => is3b(k));
+const GUARDS_3B: ReadonlyArray<[name: string, hit: (v: string) => boolean, canon: string, negated: string]> = [
+  ['tanker', affirmative3(/tanker/i), 'Fill level 1,788 L of 2,000 — evening shift needs the 11:00 tanker', 'No tanker exists on this platform.'],
+  ['dispatch (offered)', affirmative3(/\bdispatch/i), 'Request tanker dispatch', 'Request tanker dispatch: not available.'],
+  ['manifest', affirmative3(/manifest/i), 'Dispatch — 11:00 tanker · Manifest: 1,788 L · composite 6.5/9.0', 'No manifest exists.'],
+  ['seal', affirmative3(/\bseal/i), 'sealed with numbered seals (photographed)', 'No seal is recorded.'],
+  ['reconcil', affirmative3(/reconcil/i), 'MCC\'s litres and the dairy\'s litres reconcile per trip, to the litre, same day.', 'Nothing is reconciled here.'],
+  ['agitator', affirmative3(/agitator/i), 'target ≤ 4.0 · agitator running ✓', 'No agitator is recorded.'],
+  ['CIP', affirmative3(/\bCIP\b/), 'Post-dispatch state: cleaned, agitator off, next fill = evening shift. CIP wash log attaches here.', 'No CIP log exists.'],
+  ['photo (required)', affirmative3(/photo/i), 'Manual thermometer reading every 30 min with photo until the sensor returns', 'No photo is taken or attached.'],
+  ['centre manager', affirmative3(/centre[- ]manager|center[- ]manager/i), 'dispatch requests and alarm-threshold changes are the centre manager\'s (MM), recorded.', 'There is no centre-manager role.'],
+  ['operator vs manager', affirmative3(/operators? vs\.? managers?|operator .*manager/i), 'Operator vs manager — Operators see and log', 'There is no operator or manager role here.'],
+  ['a level as a percentage', affirmative3(/\d+ ?%/), 'Fill level 1,788 L of 2,000 (89%)', 'No 89% is shown.'],
+  // the canon says it only NEGATED ("disclosed-not-interpolated", W366:70): the bare regex is proven on that phrase below; the affirmative guard is
+  // proven on the claim it exists to stop — a page that says its series is interpolated
+  ['interpolat (affirmative)', affirmative3(/interpolat/i), 'Temperature trail — since morning open: the readings are interpolated into one line.', 'Nothing is interpolated.'],
+  ['travels with', affirmative3(/travels with/i), 'weighted fat/SNF of the morning pool · travels with the tanker manifest', 'Nothing travels with a manifest.'],
+  ['weighbridge', affirmative3(/weighbridge/i), 'dairy-side weighbridge closes the loop', 'No weighbridge record exists here.'],
+  ['maker-checker', affirmative3(/maker[- ]checker/i), 'Maker-checker friendly review step: everything you entered, shown read-only', 'No maker-checker step exists.'],
+];
+const BRAND_3B: ReadonlyArray<[RegExp, string]> = [
+  [/Vanthali/i, 'Vanthali MCC'], [/Anand/i, 'Anand FPO · dairy ops'], [/\bMM\b/, 'the centre manager\'s (MM)'], [/\b214\b/, '214 member pourers'],
+  [/1,788|2,000 L|11:00 tanker|6\.5 ?\/ ?9\.0/, '1,788 L of 2,000 · 11:00 tanker · 6.5 / 9.0'], [/\bW306\b/, 'the W306 rule'],
+];
+const SOURCES_3B = ['components/ops3/BmcViews.tsx', 'features/ops3/bmc.ts', 'app/bmc/page.tsx', 'app/bmc/actions.ts', 'features/ops3/refusals.ts', 'components/ops3/Ops3Chain.tsx', 'components/Sidebar.tsx'];
+
+describe('PC-56 OPS-3b · the claims guard (the tank)', () => {
+  it('each guard is proven on its own canon phrase and lets its negated form through', () => {
+    for (const [name, hit, canon, negated] of GUARDS_3B) {
+      expect([name, hit(canon)]).toEqual([name, true]);
+      expect([name, 'negated', hit(negated)]).toEqual([name, 'negated', false]);
+    }
+    for (const [re, phrase] of BRAND_3B) expect([String(re), re.test(phrase)]).toEqual([String(re), true]);
+    expect(/interpolat/i.test('the trail continues on paper rather than pausing (disclosed-not-interpolated, W306).')).toBe(true);
+  });
+  it.each(Object.entries(CATS))('%s: no cooler value trips a 3b guard or a brand regex', (_lang, cat) => {
+    expect(scoped3b(cat).length).toBe(119);
+    for (const [k, v] of scoped3b(cat)) {
+      for (const [name, hit] of GUARDS_3B) expect([k, name, hit(v)]).toEqual([k, name, false]);
+      for (const [re] of BRAND_3B) expect([k, String(re), re.test(v)]).toEqual([k, String(re), false]);
+    }
+  });
+  it('the founder\'s option words and the code-proved facts are PINNED (en), and present in hi / gu', () => {
+    const PIN: Record<string, string> = {
+      // Q12-A, the option's own words
+      'ops3.bmc.readsOnly': 'This console reads the cooler and records manual readings only.',
+      'ops3.bmc.settingsElsewhere': 'A cooler\'s band, level, compressor and retirement are set on your organisation\'s dairy console, not here.',
+      'ops3.bmc.dispatchRefused': 'Request tanker dispatch: not available. No tanker, dispatch or manifest exists on this platform.',
+      // Q13-A: labelled as manual, no photo — each clause proved at merge (bmc-reading.service.ts; 0201's breach rule; ops-alert.repository.ts)
+      'ops3.bmc.manual.label': 'A manual reading is typed by a person and recorded at the moment it is entered, by the server\'s clock.',
+      'ops3.bmc.manual.noBreach': 'It never opens a breach: a breach is opened only by two sensor readings in a row outside the band.',
+      'ops3.bmc.manual.alertRule': 'An alert rule your organisation set that counts readings outside the band counts it too.',
+      'ops3.bmc.manual.noPhoto': 'No photo is taken or attached.',
+      'ops3.bmc.manual.title': 'Log manual reading',
+      'ops3.bmc.levelValue': '{volume} L, stated by a person at {at}',
+      'ops3.bmc.signedIn': 'Signed in as you.',
+      'ops3.bmc.reason.custody': 'You do not hold this cooler\'s centre, so the reading was refused. Custody is given on your organisation\'s dairy console. Nothing was recorded.',
+    };
+    for (const [k, v] of Object.entries(PIN)) expect([k, en[k]]).toEqual([k, v]);
+    for (const k of Object.keys(PIN)) for (const cat of [hi, gu]) expect([k, typeof cat[k] === 'string' && cat[k] !== en[k]]).toEqual([k, true]);
+    // "manual" is said in every language on the label and the form's title (a mutant drops it from one)
+    expect([/हाथ से/.test(hi['ops3.bmc.manual.label']), /હાથે/.test(gu['ops3.bmc.manual.label'])]).toEqual([true, true]);
+    expect([/हाथ से/.test(hi['ops3.bmc.manual.title']), /હાથે/.test(gu['ops3.bmc.manual.title'])]).toEqual([true, true]);
+    expect([/manual/i.test(en['ops3.bmc.manual.label']), /manual/i.test(en['ops3.bmc.manual.title'])]).toEqual([true, true]);
+    // the stated level says "a person" in every language, and no value ever says "sensor silent" (the tile carries no source)
+    expect([/व्यक्ति/.test(hi['ops3.bmc.levelValue']), /વ્યક્તિ/.test(gu['ops3.bmc.levelValue'])]).toEqual([true, true]);
+    for (const [k, v] of scoped3b(en)) expect([k, /sensor (is )?silent/i.test(v)]).toEqual([k, false]);
+    // "the organisation's console" for the settings, in hi / gu too
+    expect([/यहाँ नहीं/.test(hi['ops3.bmc.settingsElsewhere']), /અહીં નહીં/.test(gu['ops3.bmc.settingsElsewhere'])]).toEqual([true, true]);
+  });
+  it('brand guard over every new or changed 3b source', () => {
+    for (const rel of SOURCES_3B) {
+      const src = fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
+      for (const [re] of BRAND_3B.filter(([r]) => !/W306|MM/.test(String(r)))) expect([rel, String(re), re.test(src)]).toEqual([rel, String(re), false]);
     }
   });
 });

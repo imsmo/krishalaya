@@ -62,6 +62,15 @@ prunes partitions (Law 8). `UNIQUE(membership_id, collected_on, shift)` makes a 
   the 6c-1 STRANDED case). The readings are parsed and serialised as their digits (`core/database/pg-numeric`, OPS3-B18 — no double).
 - `GET /v1/dairy/mccs/mine` (PC-56 OPS-3a · OPS3-B14; `dairy.read` / `collect` / `manage`) — the active centres in the caller's OPEN custody
   row (`mcc_operator_assignments`) and the organisation's today. `GET /mccs/memberships/list` takes `code` (a member-code prefix).
+- **Custody at the API (PC-56 OPS-3b · L1, lead decision 2026-11-09).** A caller WITHOUT `dairy.manage` (a `dairy.collect` or `dairy.read`
+  holder) acts only for a centre in their OPEN custody: a pour only for a member of such a centre (and naming only such a centre), a manual
+  cooler reading only for a cooler at such a centre (`bmc_units.mcc_id`, NOT NULL), the roll (`box=mcc&mccId=`) only for such a centre —
+  otherwise `DAIRY_CENTRE_NOT_IN_CUSTODY` (403), raised before the day checks, `idem.remember`, the unit of work and any write. `box=mcc`
+  without a centre and `box=all` are NARROWED to the caller's custody centres. `dairy.manage` holders are unchanged (they act across centres).
+  A centre has ONE open custodian (0163 `uq_mcc_custody_open`), so one counter person per centre may record there without `dairy.manage`.
+- `POST /v1/dairy/bmc/readings` (`dairy.collect` or `dairy.manage`; no key) — a MANUAL reading, recorded at the SERVER's time; the strict DTO
+  refuses `recordedAt` by name (422 `VALIDATION_FAILED`); a manual reading never opens a breach (0201: device readings only), though an
+  organisation's `cold_chain_breach` alert rule counts its out-of-band readings of any source. `GET /v1/dairy/bmc/monitor` is NOT custody-scoped.
 - `GET /v1/dairy/d2c/mccs/:mccId/day-summary[?date]` — one centre's day per shift: pours, kg, the priced sum of ALL pours, and (PC-56 OPS-3a ·
   OPS3-B15) the same sum split server-side into `payableMinor` (hold `none`/`released`), `heldMinor`, `rejectedMinor`, with their counts.
 - `POST /v1/dairy/milk-bills/generate` (idempotent) · `GET[?box=mine|all]` · `GET /:id` · `POST /:id/{preview,approve}` · `POST /:id/pay` (idempotent, money).

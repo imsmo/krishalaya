@@ -435,3 +435,17 @@ export class PourWindowAlreadyBilledError extends DomainError {
       422, { collectedOn, billPeriodStart, billPeriodEnd });
   }
 }
+
+/**
+ * [PC-56 OPS-3b · L1 · lead decision 2026-11-09, from OPS-3a §2] CUSTODY, AT THE API. A caller who holds `dairy.collect` or `dairy.read` but NOT
+ * `dairy.manage` acts only for a centre in their OPEN custody (`mcc_operator_assignments`, opened and closed on the organisation's dairy console):
+ *   • records a pour only for a member of such a centre (and, if the pour names a centre, only such a centre);
+ *   • records a manual cooler reading only for a cooler at such a centre (`bmc_units.mcc_id`, NOT NULL since 0009 — every cooler has one);
+ *   • lists a centre's roll only for such a centre (a roll asked for with no centre is narrowed to their custody centres).
+ * Raised BEFORE `idem.remember`, the unit of work and any write. `dairy.manage` holders are unchanged: administrators act across centres.
+ */
+export class DairyCentreNotInCustodyError extends AppError {
+  constructor(mccId: string | null) {
+    super('DAIRY_CENTRE_NOT_IN_CUSTODY', 'You do not hold this centre. Custody is given on the organisation\'s dairy console.', 403, { mccId });
+  }
+}

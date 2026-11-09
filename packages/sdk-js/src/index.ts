@@ -66,7 +66,7 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
   // PC-56 TENANT-6c-6 · W169's cycles and the console that reaches them
   DairyBillCycle, DairyCycleConsole, DairyCycleBillRow, DairyCycleAct, DairyCycleActRefusal, DairyCycleActCaution,
   // PC-56 TENANT-6d-1 · W170's tank
-  DairyBmcUnit, DairyBmcMonitor, DairyBmcTile, DairyBmcReading, DairyBmcPlaybookStep,
+  DairyBmcUnit, DairyBmcMonitor, DairyBmcTile, DairyBmcReading, DairyBmcReadingInput, DairyBmcPlaybookStep,
   // PC-56 TENANT-6d-2 · W171's board, its custody register and the preference mix.
   DairyShiftWindow, DairyCustodyState, DairyCentreCustody, DairyTankCondition, DairyCentreRow,
   DairyCentreReconciliation, DairyPreferenceRow, DairyCentresConsole, DairyCentreCustodyRow,

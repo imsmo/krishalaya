@@ -122,6 +122,8 @@ export function pourFailureReason(status: number, code: string | undefined): Pou
     case 'POUR_NOT_AT_THIS_CENTRE': return 'notHere';
     case 'DAIRY_MEMBERSHIP_NOT_FOUND': return 'member';
     case 'COLLECTION_INVALID': return 'invalid';
+    // [PC-56 OPS-3b · L1] the API's own custody refusal: the member's centre (or the named one) is not in the signed-in person's open custody
+    case 'DAIRY_CENTRE_NOT_IN_CUSTODY': return 'custody';
     default: break;
   }
   if (status === 403) return 'forbidden';

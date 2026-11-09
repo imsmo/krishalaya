@@ -12,6 +12,7 @@ import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-r
 import { SqlExecutor, TxContext } from '../../../core/database/unit-of-work';
 import { numericFromScaled, scaledFromNumeric, scaledFromNumericOrNull } from '../../../core/database/pg-numeric';
 import { BmcUnit, BmcUnitProps, CompressorState } from '../domain/bmc-unit.entity';
+import { openCustodyCentreIds } from './dairy-custody.sql';
 
 const TEMP_SCALE = 1;    // numeric(4,1) — tenths of a degree
 const LITRE_SCALE = 2;   // numeric(10,2) — hundredths of a litre
@@ -91,6 +92,11 @@ export class BmcUnitRepository {
       `SELECT ${COLS} FROM bmc_units WHERE tenant_id=$1 AND iot_device_ref=$2 AND deleted_at IS NULL LIMIT 1`,
       [tenantId, deviceRef]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;
+  }
+
+  /** [PC-56 OPS-3b · L1] The centres in this person's OPEN custody (one query, `dairy-custody.sql.ts`) — a cooler's centre is `bmc_units.mcc_id`. */
+  async custodyCentreIds(tenantId: string, userId: string): Promise<string[]> {
+    return openCustodyCentreIds(this.replica.forTenant(tenantId), tenantId, userId);
   }
 
   async byId(x: SqlExecutor, tenantId: string, id: string): Promise<BmcUnit | null> {

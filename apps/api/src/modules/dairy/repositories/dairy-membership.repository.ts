@@ -5,6 +5,7 @@ import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-r
 import { TxContext } from '../../../core/database/unit-of-work';
 import { DairyMembership } from '../domain/dairy-membership.entity';
 import { PaymentCycle, AnimalType } from '../domain/dairy.events';
+import { openCustodyCentreIds } from './dairy-custody.sql';
 
 const COLS = `id, tenant_id, farmer_user_id, mcc_id, member_code, payment_cycle, default_animal_type, is_active, created_at`;
 function toDomain(r: any): DairyMembership {
@@ -62,17 +63,24 @@ export class DairyMembershipRepository {
     return r.rows.length > 0;
   }
 
-  async listFor(tenantId: string, q: { farmerUserId?: string; mccId?: string; code?: string; cursor?: { c: string; id: string }; limit: number }): Promise<DairyMembership[]> {
+  async listFor(tenantId: string, q: { farmerUserId?: string; mccId?: string; mccIds?: readonly string[]; code?: string; cursor?: { c: string; id: string }; limit: number }): Promise<DairyMembership[]> {
     const params: unknown[] = [tenantId];
     let where = `tenant_id=$1 AND deleted_at IS NULL`;
     const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
     if (q.farmerUserId) where += ` AND farmer_user_id=${p(q.farmerUserId)}`;
     if (q.mccId) where += ` AND mcc_id=${p(q.mccId)}`;
+    // [PC-56 OPS-3b · L1] a roll NARROWED to the caller's custody centres (an empty list is an empty roll, never "every centre").
+    if (q.mccIds) where += ` AND mcc_id = ANY(${p([...q.mccIds])}::uuid[])`;
     // [PC-56 OPS-3a · OPS3-B14 · founder Q10-A] "Search is by member code": a case-blind PREFIX of the code — never a name (the row carries none).
     if (q.code) where += ` AND starts_with(lower(member_code), lower(${p(q.code)}))`;
     if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at < ${cc} OR (created_at=${cc} AND id < ${ci}))`; }
     const lp = p(q.limit);
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM dairy_memberships WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);
     return r.rows.map(toDomain);
+  }
+
+  /** [PC-56 OPS-3b · L1] The centres in this person's OPEN custody (one query, `dairy-custody.sql.ts`). */
+  async custodyCentreIds(tenantId: string, userId: string): Promise<string[]> {
+    return openCustodyCentreIds(this.replica.forTenant(tenantId), tenantId, userId);
   }
 }

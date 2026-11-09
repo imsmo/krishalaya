@@ -8,7 +8,7 @@
 //                      print, SMS; her milk diary and her bill's window;
 //   pos-exceptions (W364) reads nothing, zero controls, the three cannot-statements;
 //   pos-shift (W365)   the server totals labelled, the cooler's stated level and latest reading with their times (no fill %), close refused, no
-//                      variance, no /bmc link.
+//                      variance; the centre's cooler page linked (OPS-3b, a named update).
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { PosCollectView, PosExceptionsView, PosHomeView, PosQualityView, PosShiftView, PosSlipView } from '../components/ops3/CounterViews';
@@ -182,12 +182,15 @@ describe('PC-56 OPS-3a · pos-shift (W365) — the shift\'s totals, read', () =>
     expect(/777|9\.9/.test(text(h))).toBe(false);                 // the other centre's cooler is not shown
     expect(text(h)).toContain('A cooler\'s level is stated by a person, not measured by a sensor.');
   });
-  it('no fill %, no variance, no difference worked out; "Close shift" refused by name; no /bmc link; no input', () => {
+  // NAMED UPDATE (PC-56 OPS-3b): "There is no cooler page on this console." became false at merge — the centre's cooler page is now LINKED
+  // (`/bmc?mcc=<this centre>`), and the false sentence is gone; every other pin of this test is kept.
+  it('no fill %, no variance, no difference worked out; "Close shift" refused by name; this centre\'s cooler page linked; no input', () => {
     expect(/%/.test(visible(h))).toBe(false); expect(/\b60\b/.test(text(h))).toBe(false);
     expect(/SN-SECRET/.test(h)).toBe(false);
     expect(h).toContain('data-kv-refused-act="close_shift"');
     expect(text(h)).toContain('Close shift: not available.');
-    expect(/href="\/bmc/.test(h)).toBe(false); expect(text(h)).toContain('There is no cooler page on this console.');
+    expect(h).toContain(`href="/bmc?mcc=${C1}"`); expect(text(h)).toContain('Open this centre\'s cooler page');
+    expect(text(h)).not.toContain('There is no cooler page on this console.');
     expect(CONTROLS.test(h)).toBe(false);
     expect(FALSE_3A.test(affirmed(h))).toBe(false);
     expect(/close (this |the )?shift/i.test(affirmed(h))).toBe(false);

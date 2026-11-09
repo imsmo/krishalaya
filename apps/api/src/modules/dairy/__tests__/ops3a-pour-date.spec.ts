@@ -29,7 +29,13 @@ function harness(o: { today?: string; billed?: { id: string; periodStart: string
   const idem = { remember: jest.fn(async (_k: string, _u: string, _s: string, fn: () => unknown) => { calls.push('idem.remember'); return fn(); }) };
   const uow = { run: jest.fn(async (_t: string, fn: (tx: unknown) => unknown) => { calls.push('uow.run'); return fn({ query: jest.fn() }); }) };
   const outbox = { write: jest.fn(async () => { calls.push('outbox'); }) };
-  const memberships = { getById: jest.fn(async () => ({ id: 'mem-1', defaultAnimalType: 'cow', farmerUserId: 'farmer-1' })) };
+  // NAMED UPDATE (PC-56 OPS-3b · L1, lead decision 2026-11-09): the counter person (COLLECT, no dairy.manage) now passes the API custody check
+  // FIRST — the membership's centre must be in their OPEN custody — so the harness holds 'mcc-1' in custody and the log gains 'custody' at its
+  // head. Every ordering assertion below is kept and only prefixed with it; the custody refusals themselves are pinned in ops3b-custody.spec.ts.
+  const memberships = {
+    getById: jest.fn(async () => ({ id: 'mem-1', defaultAnimalType: 'cow', farmerUserId: 'farmer-1', toProps: () => ({ mccId: 'mcc-1' }) })),
+    custodyCentreIds: jest.fn(async () => { calls.push('custody'); return ['mcc-1']; }),
+  };
   const routes = { asOf: jest.fn(async () => ({ mccId: 'mcc-1' })), earliest: jest.fn(async () => null) };
   const svc = new MilkCollectionService(uow as never, outbox as never, idem as never, { inc: jest.fn(), observe: jest.fn() } as never,
     repo as never, rateCards as never, memberships as never, { priorReviews90d: jest.fn(async () => 0), insert: jest.fn() } as never,
@@ -44,7 +50,7 @@ describe('PC-56 OPS-3a · OPS3-B2 · the pour\'s day is bounded, by name, before
     expect(e).toBeInstanceOf(PourDateInFutureError);
     expect([e.code, e.status ?? e.httpStatus ?? e.statusCode]).toEqual(['POUR_DATE_IN_FUTURE', 422]);
     expect(e.message).toBe('A pour cannot be recorded for a day after today. This pour is dated 2026-11-10; today is 2026-11-09 for your organisation.');
-    expect(h.calls).toEqual(['tenantToday']);
+    expect(h.calls).toEqual(['custody', 'tenantToday']);   // NAMED UPDATE (OPS-3b L1): custody first
     expect(h.idem.remember).not.toHaveBeenCalled(); expect(h.uow.run).not.toHaveBeenCalled(); expect(h.repo.insert).not.toHaveBeenCalled();
     expect(h.repo.liveBillCovering).not.toHaveBeenCalled();
   });
@@ -63,14 +69,14 @@ describe('PC-56 OPS-3a · OPS3-B2 · the pour\'s day is bounded, by name, before
     expect(e.code).toBe('POUR_WINDOW_ALREADY_BILLED');
     expect(e.details).toEqual({ collectedOn: '2026-10-20', billPeriodStart: '2026-10-16', billPeriodEnd: '2026-10-31' });
     expect(h.repo.liveBillCovering).toHaveBeenCalledWith('t1', 'mem-1', '2026-10-20');
-    expect(h.calls).toEqual(['tenantToday', 'liveBillCovering']);
+    expect(h.calls).toEqual(['custody', 'tenantToday', 'liveBillCovering']);   // NAMED UPDATE (OPS-3b L1): custody first
     expect(h.idem.remember).not.toHaveBeenCalled(); expect(h.uow.run).not.toHaveBeenCalled(); expect(h.repo.insert).not.toHaveBeenCalled();
   });
   it('THE ORDERING SPY: permission → today → billed window → idem.remember → the unit of work → the insert', async () => {
     const h = harness();
     await h.svc.record('t1', COLLECT as never, 'k3', { ...POUR } as never);
     const at = (c: string) => h.calls.indexOf(c);
-    expect(h.calls.slice(0, 4)).toEqual(['tenantToday', 'liveBillCovering', 'idem.remember', 'uow.run']);
+    expect(h.calls.slice(0, 5)).toEqual(['custody', 'tenantToday', 'liveBillCovering', 'idem.remember', 'uow.run']);   // NAMED UPDATE (OPS-3b L1)
     expect(at('liveBillCovering')).toBeLessThan(at('idem.remember'));
     expect(at('insert')).toBeGreaterThan(at('uow.run'));
     // the refusal source sits BEFORE the idempotency record in the file as well as in time

@@ -12,7 +12,7 @@ import { DairyMembershipRepository } from '../repositories/dairy-membership.repo
 import { MccCentreRepository } from '../repositories/mcc-centre.repository';
 import { DairyMembershipRouteRepository } from '../repositories/dairy-membership-route.repository';
 import { CreateMembershipDto } from '../dto/create-dairy-membership.dto';
-import { MccNotFoundError, MemberCodeExistsError, MembershipNotFoundError, DairyForbiddenError } from '../domain/dairy.errors';
+import { MccNotFoundError, MemberCodeExistsError, MembershipNotFoundError, DairyForbiddenError, DairyCentreNotInCustodyError } from '../domain/dairy.errors';
 import { DairyActor } from './mcc-centre.service';
 import { actorMayRead } from '../policies/dairy.policies';
 
@@ -78,7 +78,19 @@ export class DairyMembershipService {
     // boxes admit dairy.read, dairy.collect or dairy.manage. The row is the membership (id, member, centre, code, cycle, milk type)
     // — no name, phone or money. Enrolment (create) stays dairy.manage.
     if ((q.box === 'mcc' || q.box === 'all') && !actorMayRead(actor)) throw new DairyForbiddenError('requires dairy.read, dairy.collect or dairy.manage');
-    const rows = await this.repo.listFor(tenantId, { farmerUserId: q.box === 'mine' ? actor.userId : undefined, mccId: q.box === 'mcc' ? q.mccId : undefined, code: q.code, cursor: q.cursor, limit: q.limit });
+    // [PC-56 OPS-3b · L1 · lead decision 2026-11-09] THE ROLL FOLLOWS CUSTODY for every staff caller without `dairy.manage` (`dairy.collect` and
+    // `dairy.read` alike — no web board lists the roll for a reader): `box=mcc&mccId=` a centre they do not hold → DAIRY_CENTRE_NOT_IN_CUSTODY
+    // (403); `box=mcc` with no centre, or `box=all` → NARROWED to their custody centres (none held → an empty roll). `dairy.manage` unchanged.
+    let mccIds: string[] | undefined;
+    if ((q.box === 'mcc' || q.box === 'all') && actor.canManage !== true) {
+      const held = await this.repo.custodyCentreIds(tenantId, actor.userId);
+      if (q.box === 'mcc' && q.mccId) {
+        if (!held.includes(q.mccId)) throw new DairyCentreNotInCustodyError(q.mccId);
+      } else {
+        mccIds = held;
+      }
+    }
+    const rows = await this.repo.listFor(tenantId, { farmerUserId: q.box === 'mine' ? actor.userId : undefined, mccId: q.box === 'mcc' ? q.mccId : undefined, mccIds, code: q.code, cursor: q.cursor, limit: q.limit });
     const items = rows.map((m) => m.toJSON());
     const last = items[items.length - 1];
     const nextCursor = items.length === q.limit && last ? Buffer.from(`${(last as any).createdAt?.toISOString?.() ?? last.createdAt}|${last.id}`).toString('base64') : null;

@@ -41,7 +41,8 @@ export const RELABELLED: Record<keyof typeof CAT, string[]> = {
 /** GENUINELY litres — verified at source: `bmc_units.capacity_litres`, a cooler's stated `volumeLitres`, `mcc_centres.capacity_litres_shift`, an animal's yield. */
 const GENUINE: Record<keyof typeof CAT, string[]> = {
   // NAMED UPDATE (PC-56 OPS-3a): W365 prints a cooler's STATED level (`DairyBmcTile.volumeLitres`) of its `capacityLitres` tank — genuine litres.
-  'web-ops': ['ops3.pos.shiftPage.levelValue'],
+  // NAMED UPDATE (PC-56 OPS-3b): W366 prints the tank's volume (`capacityLitres`) and its STATED level (`volumeLitres`) — genuine litres.
+  'web-ops': ['ops3.pos.shiftPage.levelValue', 'ops3.bmc.capacityValue', 'ops3.bmc.levelValue'],
   'web-tenant': ['dairy.unit.litres', 'form.bmc.field.capacityLitres', 'form.centre.field.capacityLitresShift', 'dairy.bmc.acts.volumeLitres', 'dairy.mcc.capacity'],
   mobile: ['mcc.centre.capacityLitres', 'pashu.add.yield'],
 };
