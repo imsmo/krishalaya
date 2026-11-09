@@ -5,7 +5,7 @@
 // Mutations that create/record/settle require an Idempotency-Key (Law 3); callers pass a fresh UUID.
 import { HttpClient } from '../http';
 import {
-  Page, DairyMcc, DairyMembership, DairyRateCard, DairyCollection, MilkBill,
+  Page, DairyMcc, DairyMembership, DairyRateCard, DairyCollection, MilkBill, DairyDaySummaryRow, DairyCounterCentres,
   CreateMccInput, EnrolMemberInput, CreateRateCardInput, RecordCollectionInput, GenerateBillInput,
   DairyAnimalType, MilkBillStatus,
   DairyCounterBoard, DairyShift,
@@ -88,8 +88,9 @@ export class DairyResource {
   }
 
   // ---- memberships ----
-  async listMemberships(params: { box?: 'mine' | 'mcc' | 'all'; mccId?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<DairyMembership>> {
-    const r = await this.http.request<DairyMembership[]>('GET', 'dairy/mccs/memberships/list', { query: { box: params.box, mccId: params.mccId, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
+  /** `code` (PC-56 OPS-3a · OPS3-B14): a case-blind member-code PREFIX — the counter searches by code, never by name. */
+  async listMemberships(params: { box?: 'mine' | 'mcc' | 'all'; mccId?: string; code?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Page<DairyMembership>> {
+    const r = await this.http.request<DairyMembership[]>('GET', 'dairy/mccs/memberships/list', { query: { box: params.box, mccId: params.mccId, code: params.code, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
   async getMembership(id: string, signal?: AbortSignal): Promise<DairyMembership> {
@@ -454,8 +455,17 @@ export class DairyResource {
     return r.data as DairyCounterBoard;
   }
 
-  async mccDaySummary(mccId: string, date?: string, signal?: AbortSignal): Promise<Array<{ shift: string; slips: number; weightKg: string; amountMinor: string; waterFlags: number }>> {
-    return (await this.http.request<Array<{ shift: string; slips: number; weightKg: string; amountMinor: string; waterFlags: number }>>('GET', `dairy/d2c/mccs/${encodeURIComponent(mccId)}/day-summary`, { query: { date }, signal })).data;
+  /** One centre's day sheet per shift. PC-56 OPS-3a · OPS3-B15: `amountMinor` includes held and rejected pours; the split is the server's. */
+  async mccDaySummary(mccId: string, date?: string, signal?: AbortSignal): Promise<DairyDaySummaryRow[]> {
+    return (await this.http.request<DairyDaySummaryRow[]>('GET', `dairy/d2c/mccs/${encodeURIComponent(mccId)}/day-summary`, { query: { date }, signal })).data;
+  }
+
+  /**
+   * PC-56 OPS-3a · OPS3-B14 (founder Q14-A): the counter's own centre — the active centres whose OPEN custody row names the signed-in person
+   * (empty when none), and the organisation's today in its own zone. `GET /v1/dairy/mccs/mine`, dairy.read / collect / manage.
+   */
+  async counterCentres(signal?: AbortSignal): Promise<DairyCounterCentres> {
+    return (await this.http.request<DairyCounterCentres>('GET', 'dairy/mccs/mine', { signal })).data;
   }
 
   // --- PC-55 A5 `d2c-delivery-runs`. Drops are materialised by a server-side cadence job (idempotent at the

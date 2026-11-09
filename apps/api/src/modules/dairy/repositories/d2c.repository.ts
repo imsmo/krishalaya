@@ -12,7 +12,19 @@ import { pgDate } from '../../../core/database/pg-date';
 
 export interface D2cPlan { id: string; sellerUserId: string | null; productId: string; defaultName: string; frequency: string; qtyPerDelivery: string; unitCode: string; pricePerDeliveryMinor: string; deliveryWindow: string | null; isActive: boolean }
 export interface D2cSubscription { id: string; planId: string; customerUserId: string; addressId: string; status: string; startsOn: string; pausedUntil: string | null; billingMode: string }
-export interface ShiftSummaryRow { shift: string; slips: number; weightKg: string; amountMinor: string; waterFlags: number }
+export interface ShiftSummaryRow {
+  shift: string; slips: number; weightKg: string; amountMinor: string; waterFlags: number;
+  /**
+   * [PC-56 OPS-3a · OPS3-B15 · founder Q9-A] `amountMinor` is EVERY pour's priced amount, held and rejected ones included — the figure a
+   * counter must not read as "what will be paid". The same sum, split by the pour's hold state (milk-quality.state.ts), server-side:
+   *   • payable  — `none` or `released`, the only states a bill may include (BILLABLE_HOLD_STATES);
+   *   • held     — `held`: flagged and waiting for a decision; not billable yet;
+   *   • rejected — `rejected`: never billable.
+   * payable + held + rejected = amountMinor, row by row (the live spec pins it). `flaggedPours` counts pours whose hold state is not `none`
+   * (`MilkCollection.isFlagged`). Strings for money, integers for counts, as before.
+   */
+  payableMinor: string; heldMinor: string; rejectedMinor: string; heldPours: number; rejectedPours: number; flaggedPours: number;
+}
 
 const toPlan = (r: any): D2cPlan => ({ id: r.id, sellerUserId: r.seller_user_id, productId: r.product_id, defaultName: r.default_name, frequency: r.frequency, qtyPerDelivery: String(r.qty_per_delivery), unitCode: r.unit_code, pricePerDeliveryMinor: String(r.price_per_delivery_minor), deliveryWindow: r.delivery_window, isActive: r.is_active });
 const toSub = (r: any): D2cSubscription => ({ id: r.id, planId: r.plan_id, customerUserId: r.customer_user_id, addressId: r.address_id, status: r.status, startsOn: pgDate(r.starts_on), pausedUntil: r.paused_until ? pgDate(r.paused_until) : null, billingMode: r.billing_mode });
@@ -56,10 +68,18 @@ export class D2cRepository {
     const r = await this.replica.forTenant(tenantId).query(
       `SELECT shift::text, COUNT(*)::int AS slips, COALESCE(SUM(weight_kg),0)::text AS weight_kg,
               COALESCE(SUM(amount_minor),0)::text AS amount_minor,
-              COUNT(*) FILTER (WHERE water_flag)::int AS water_flags
+              COUNT(*) FILTER (WHERE water_flag)::int AS water_flags,
+              COALESCE(SUM(amount_minor) FILTER (WHERE hold_state IN ('none','released')),0)::text AS payable_minor,
+              COALESCE(SUM(amount_minor) FILTER (WHERE hold_state = 'held'),0)::text AS held_minor,
+              COALESCE(SUM(amount_minor) FILTER (WHERE hold_state = 'rejected'),0)::text AS rejected_minor,
+              COUNT(*) FILTER (WHERE hold_state = 'held')::int AS held_pours,
+              COUNT(*) FILTER (WHERE hold_state = 'rejected')::int AS rejected_pours,
+              COUNT(*) FILTER (WHERE hold_state <> 'none')::int AS flagged_pours
          FROM milk_collections WHERE tenant_id=$1 AND mcc_id=$2 AND collected_on=$3
         GROUP BY shift ORDER BY shift`, [tenantId, mccId, date]);
-    return r.rows.map((x: any) => ({ shift: x.shift, slips: x.slips, weightKg: x.weight_kg, amountMinor: x.amount_minor, waterFlags: x.water_flags }));
+    return r.rows.map((x: any) => ({ shift: x.shift, slips: x.slips, weightKg: x.weight_kg, amountMinor: x.amount_minor, waterFlags: x.water_flags,
+      payableMinor: x.payable_minor, heldMinor: x.held_minor, rejectedMinor: x.rejected_minor,
+      heldPours: x.held_pours, rejectedPours: x.rejected_pours, flaggedPours: x.flagged_pours }));
   }
 
   // ===== PC-55 A5 · delivery runs =====

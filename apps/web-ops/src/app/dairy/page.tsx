@@ -1,6 +1,6 @@
-// apps/web-ops/src/app/dairy/page.tsx · dairy collection POS (PC-34 OW-4). Four sections, each degrading
-// independently: (1) record a collection — member + shift + weighment + FAT/SNF quality + adulteration flags;
-// the SERVER prices the slip from the rate card (the POS never computes money); (2) member slip lookup
+// apps/web-ops/src/app/dairy/page.tsx · the dairy desk (PC-34 OW-4). Sections, each degrading independently. PC-56 OPS-3a: (1) the pour-record
+// form MOVED to the counter (`/pos/collect` — the centre in your custody, by member code, the day bounded; founder Q2-A, Q5-A, Q10-A); this page
+// links it; (2) member slip lookup
 // (member + date range → collections with server-priced amounts); (3) milk bills — generate for a period, preview a draft (PC-56 OPS-1a:
 // approve and pay are NOT on this console — founder Q2-A; the run is read at /payout); (4) rate charts, read-only.
 import type { Metadata } from 'next';
@@ -9,8 +9,8 @@ import { opsClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
 import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
-import { DAIRY_SHIFTS, ADULTERATION_FLAGS, BILL_STATUSES, isBillStatus, canPreview } from '../../features/dairy/pos';
-import { recordCollectionAction, generateBillAction, previewBillAction } from './actions';
+import { BILL_STATUSES, isBillStatus, canPreview } from '../../features/dairy/pos';
+import { generateBillAction, previewBillAction } from './actions';
 import Link from 'next/link';
 import type { DairyMembership, DairyCollection, MilkBill, DairyRateCard } from '@krishalaya/sdk-js';
 
@@ -20,8 +20,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('dairy.title'), robots: { index: false, follow: false } };
 }
 
-const OK = new Set(['collection', 'bill', 'preview']);
-const ERR = new Set(['collection', 'col_member', 'col_shift', 'col_date', 'col_weight', 'col_fat', 'col_snf', 'col_dup', 'bill', 'bill_member', 'bill_period', 'bill_dup', 'action', 'illegal']);
+const OK = new Set(['bill', 'preview']);
+const ERR = new Set(['bill', 'bill_member', 'bill_period', 'bill_dup', 'action', 'illegal']);
 
 export default async function DairyPosPage({ searchParams }: { searchParams: { ok?: string; error?: string; slipMember?: string; slipFrom?: string; slipTo?: string; billStatus?: string } }) {
   await requireSession('/dairy');
@@ -61,41 +61,9 @@ export default async function DairyPosPage({ searchParams }: { searchParams: { o
       {okKey && <p className="kv-success" role="status">{t.t(`dairy.ok.${okKey}`)}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`dairy.error.${errKey}`)}</p>}
 
-      <details className="kv-card" open>
-        <summary className="kv-card__title">{t.t('dairy.record')}</summary>
-        {membersFailed ? <p className="kv-error" role="alert">{t.t('dairy.loadError')}</p> : (
-          <form action={recordCollectionAction} className="kv-form">
-            <label htmlFor="dc-member" className="kv-field__label">{t.t('dairy.member')}</label>
-            <select id="dc-member" name="membershipId" className="kv-input" required defaultValue="">
-              <option value="" disabled>{t.t('dairy.memberChoose')}</option>
-              {members.map((m) => <option key={m.id} value={m.id}>{m.memberCode}</option>)}
-            </select>
-            <fieldset className="kv-fieldset">
-              <legend className="kv-field__label">{t.t('dairy.shift')}</legend>
-              {DAIRY_SHIFTS.map((s, i) => (
-                <label key={s} className="kv-radio"><input type="radio" name="shift" value={s} defaultChecked={i === 0} /> {t.t(`dairy.shift.${s}`)}</label>
-              ))}
-            </fieldset>
-            <label htmlFor="dc-date" className="kv-field__label">{t.t('dairy.date')}</label>
-            <input id="dc-date" name="collectedOn" type="date" className="kv-input" required />
-            <label htmlFor="dc-weight" className="kv-field__label">{t.t('dairy.weight')}</label>
-            <input id="dc-weight" name="weightKg" className="kv-input" required inputMode="decimal" pattern="\d{1,4}(\.\d{1,3})?" />
-            <label htmlFor="dc-fat" className="kv-field__label">{t.t('dairy.fat')}</label>
-            <input id="dc-fat" name="fatPct" className="kv-input" required inputMode="decimal" pattern="\d{1,2}(\.\d{1,2})?" />
-            <label htmlFor="dc-snf" className="kv-field__label">{t.t('dairy.snf')}</label>
-            <input id="dc-snf" name="snfPct" className="kv-input" required inputMode="decimal" pattern="\d{1,2}(\.\d{1,2})?" />
-            <fieldset className="kv-fieldset">
-              <legend className="kv-field__label">{t.t('dairy.exceptions')}</legend>
-              <label className="kv-radio"><input type="checkbox" name="waterFlag" value="1" /> {t.t('dairy.waterFlag')}</label>
-              {ADULTERATION_FLAGS.map((f) => (
-                <label key={f} className="kv-radio"><input type="checkbox" name="adulteration" value={f} /> {t.t(`dairy.flag.${f}`)}</label>
-              ))}
-            </fieldset>
-            <p className="kv-field__hint">{t.t('dairy.priceHint')}</p>
-            <button type="submit" className="kv-btn">{t.t('dairy.recordBtn')}</button>
-          </form>
-        )}
-      </details>
+      {/* PC-56 OPS-3a (founder Q2-A; one write, one path — the 6d-4 rule): the pour-record form MOVED to the counter, `/pos/collect`, which lists
+          only the centre in your custody by member code and bounds the day. This page keeps the member's pours, the bills and the cards. */}
+      <p className="kv-statement" data-kv-statement="ops3.pos.dairyMoved">{t.t('ops3.pos.dairyMoved')} <Link href="/pos/home" className="kv-btn--link" data-kv-real="pos">{t.t('ops3.pos.dairyMovedLink')}</Link></p>
 
       <h2>{t.t('dairy.slips')}</h2>
       <form method="get" action="/dairy" className="kv-inline-form" role="search" aria-label={t.t('dairy.slips')}>

@@ -40,14 +40,17 @@ describe('PC-56 OPS-3c · E2 · the reads, exactly; the chains first; the sideba
     const page = code(read(PAGE));
     for (const st of ["chain3State('rate_export'", "chain3State('rate_act'"]) expect([st, page.indexOf(st) > -1 && page.indexOf(st) < page.indexOf('opsClient()')]).toEqual([st, true]);
   });
-  it('the sidebar: a Dairy group of built routes only — /dairy, /payout, /rates; no /pos or /bmc', () => {
+  it('the sidebar: a Dairy group of built routes only — /dairy, /payout, /rates, then the four counter pages (OPS-3a); no /bmc', () => {
     const nav = read('components/Sidebar.tsx');
     const hrefs = Array.from(nav.matchAll(/href: '([^']+)'/g)).map((m) => m[1]);
     for (const h of hrefs) expect([h, fs.existsSync(path.join(SRC, 'app', h, 'page.tsx'))]).toEqual([h, true]);
     const i = hrefs.indexOf('/dairy');
     expect(hrefs.slice(i, i + 3)).toEqual(['/dairy', '/payout', '/rates']);
     expect(nav).toMatch(/href: '\/dairy', labelKey: 'nav\.dairy', group: 'nav\.dairyGroup'/);
-    expect(hrefs.some((h) => /^\/(pos|bmc)\b/.test(h))).toBe(false);
+    // NAMED UPDATE (PC-56 OPS-3a): the counter is BUILT, so the group gains its four opened pages, right after /rates; the cooler (/bmc) is not.
+    expect(hrefs.slice(i + 3, i + 7)).toEqual(['/pos/home', '/pos/collect', '/pos/shift-close', '/pos/exceptions']);
+    expect(hrefs.filter((h) => /^\/pos\b/.test(h))).toEqual(['/pos/home', '/pos/collect', '/pos/shift-close', '/pos/exceptions']);
+    expect(hrefs.some((h) => /^\/bmc\b/.test(h))).toBe(false);
     for (const rel of ALL_3C) expect([rel, /['"`]\/(pos|bmc)\b/.test(code(read(rel)))]).toEqual([rel, false]);
   });
 });

@@ -56,7 +56,7 @@ export type { Page, ListingCard, ListingQuery, BoostTier, BoostWalletPayResult, 
   AuditEntry, AuditWindow,
   AiReviewItem, AiReviewStatus, AiReviewQueueKind, EnqueueReviewInput, ResolveReviewInput,
   SearchHit, SearchEntityType, SearchEngine,
-  DairyMcc, DairyMembership, DairyRateCard, DairyRateCardApprovalState, DairyCollection, MilkBill,
+  DairyMcc, DairyMembership, DairyRateCard, DairyRateCardApprovalState, DairyCollection, MilkBill, DairyDaySummaryRow, DairyCounterCentres,
   // PC-56 TENANT-6a · the counter board
   DairyCounterBoard, DairyCounterCentre, DairyCycleWindow, DairyPayday, DairyAnalyzer, DairyBmcTemp,
   // PC-56 TENANT-6b-1 · the pour-level hold, its review record, and the premium slabs the engine finally reads

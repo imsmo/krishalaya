@@ -77,7 +77,9 @@ function gatedRoutes(): Route[] {
   return out;
 }
 const COLLECT_ROUTES = ['POST /v1/dairy/collections', 'POST /v1/dairy/bmc/readings'];
-const READ_ROUTES = ['GET /v1/dairy/counter/board', 'GET /v1/dairy/quality', 'GET /v1/dairy/bmc/monitor', 'GET /v1/dairy/d2c/mccs/:mccId/day-summary'];
+// NAMED UPDATE (PC-56 OPS-3a · OPS3-B14): `GET /v1/dairy/mccs/mine` (the counter's own centre, from custody) is a new board-class READ —
+// ANY(read, collect, manage), the same set as the four boards — so the sweeps treat it as one.
+const READ_ROUTES = ['GET /v1/dairy/counter/board', 'GET /v1/dairy/quality', 'GET /v1/dairy/bmc/monitor', 'GET /v1/dairy/d2c/mccs/:mccId/day-summary', 'GET /v1/dairy/mccs/mine'];
 
 run('PC-56 OPS-3p · the counter is not the price (integration, real AppModule over HTTP)', () => {
   let app: INestApplication; let http: any; let admin: Pool; let appPool: Pool; let cache: CacheService;   // eslint-disable-line @typescript-eslint/no-explicit-any

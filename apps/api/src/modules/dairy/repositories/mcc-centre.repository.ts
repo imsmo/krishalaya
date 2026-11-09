@@ -78,6 +78,21 @@ export class MccCentreRepository {
     }
   }
 
+  /**
+   * [PC-56 OPS-3a · OPS3-B14 · founder Q14-A] The ACTIVE centres whose OPEN custody row (`mcc_operator_assignments`, 0163 — ended_at IS NULL;
+   * `uq_mcc_custody_open` allows one per centre) names this person — the counter's centre is read from the custody REGISTER, not from the
+   * `operator_user_id` column it mirrors. Bounded: custody of more than a handful of centres is a desk, not a counter.
+   */
+  async inCustodyOf(tenantId: string, userId: string, limit = 20): Promise<MccCentre[]> {
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT ${COLS} FROM mcc_centres
+        WHERE tenant_id=$1 AND deleted_at IS NULL AND is_active=true
+          AND id IN (SELECT mcc_id FROM mcc_operator_assignments
+                      WHERE tenant_id=$1 AND operator_user_id=$2 AND ended_at IS NULL AND deleted_at IS NULL)
+        ORDER BY code, id LIMIT $3`, [tenantId, userId, limit]);
+    return r.rows.map(toDomain);
+  }
+
   async listFor(tenantId: string, q: { activeOnly: boolean; cursor?: { c: string; id: string }; limit: number }): Promise<MccCentre[]> {
     const params: unknown[] = [tenantId];
     let where = `tenant_id=$1 AND deleted_at IS NULL`;

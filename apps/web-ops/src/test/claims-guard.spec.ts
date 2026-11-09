@@ -477,7 +477,8 @@ describe('PC-56 OPS-3c · the claims guard (ops3. scope, the price)', () => {
     expect([affirmative3(/\bSMS\b/)('कोई SMS नहीं भेजा जाता।'), affirmative3(/\bSMS\b/)('કોઈ SMS મોકલાતો નથી.'), affirmative3(/\bSMS\b/)('SMS भेजा जाता है।')]).toEqual([false, false, true]);
   });
   it.each(Object.entries(CATS))('%s: no ops3. value (or 3c nav label) trips a 3c guard or brand regex', (_lang, cat) => {
-    expect(scoped3(cat).length).toBe(94);
+    // NAMED UPDATE (PC-56 OPS-3a): 94 → 282 — the counter's 188 `ops3.` keys join the scope, and every 3c guard holds over them too.
+    expect(scoped3(cat).length).toBe(282);
     for (const [k, v] of scoped3(cat)) {
       for (const [name, hit] of GUARDS_3C) expect([k, name, hit(v)]).toEqual([k, name, false]);
       for (const [re] of BRAND_3C) expect([k, String(re), re.test(v)]).toEqual([k, String(re), false]);
@@ -497,6 +498,91 @@ describe('PC-56 OPS-3c · the claims guard (ops3. scope, the price)', () => {
     for (const rel of SOURCES_3C) {
       const src = fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
       for (const [re] of BRAND_3C) expect([rel, String(re), re.test(src)]).toEqual([rel, String(re), false]);
+    }
+  });
+});
+
+// ── PC-56 OPS-3a (brief §E6): THE COUNTER guards over the counter's keys (`ops3.pos.*`, `ops3.chain.posAct.*`, the 3a refusals) and its four nav
+// labels. Each is proven on its OWN canon phrase (persons, places and figures anonymised) and NARROWED TO THE AFFIRMATIVE — a sentence that carries
+// a negation passes, the canon's claim is caught — and each is proven to let its negated form through. Then the founder's option words are PINNED
+// in English (and their presence asserted in hi / gu), and a brand guard runs over every 3a source.
+const NAV_3A = ['nav.posHome', 'nav.posCollect', 'nav.posShift', 'nav.posExceptions'];
+const is3a = (k: string) => k.startsWith('ops3.pos.') || k.startsWith('ops3.chain.posAct.') || /^ops3\.refusal\.pos[A-Z]/.test(k) || NAV_3A.includes(k);
+const scoped3a = (cat: Record<string, string>) => Object.entries(cat).filter(([k]) => is3a(k));
+const GUARDS_3A: ReadonlyArray<[name: string, hit: (v: string) => boolean, canon: string, negated: string]> = [
+  ['accept(ed) reading / by', affirmative3(/accept(ed)? (the )?(reading|by)/i), 'Tap \'Accept reading\' — the reading shows on the farmer zone FIRST', 'She is not asked to accept the reading.'],
+  // the canon's own line carries "not private", so it is caught PLAIN (no counter value names a joint acceptance at all); its negated form too
+  ['acceptance is joint (plain)', plain(/acceptance is joint|agreed by both/i), 'acceptance is joint, not private (W362)', 'She is not asked to agree to the reading.'],
+  ['machines read', affirmative3(/machines? (do the )?read/i), 'Machines do the reading; taps are only for consent', 'No machine reads anything here.'],
+  ['scale reads', affirmative3(/scale reads|weigher .*read/i), 'Pour → weigher + lactoscan read automatically', 'No scale reads the weight.'],
+  ['analyser read', affirmative3(/analy[sz]er read|read automatically|lactoscan/i), 'Analyzer (lactoscan) — read automatically', 'Nothing is read automatically.'],
+  // the canon prints "slip VS-[ref]"; "slip no." itself carries the word "no", so it is spelled out BEFORE the negation test (else "Slip no. 1"
+  // would read as a refusal — found by mutant M9) and the guard is proven on both spellings
+  ['slip no. / slip number', (v: string) => affirmative3(/slip number/i)(v.replace(/slip no\./gi, 'slip number')), 'Her proof: slip no. 0188, printed in seconds', 'No slip number is given.'],
+  ['QR', affirmative3(/\bQR\b/), 'QR → verify this slip online', 'No QR code exists.'],
+  ['reprint', affirmative3(/reprint/i), 'Slip reprint — Member + date + shift → reprint (marked REPRINT). Free, always', 'Nothing is reprinted.'],
+  ['SMS', affirmative3(/\bSMS\b/), 'SMS mirror to +91 98••• ••000', 'No SMS is sent.'],
+  ['printed slip', affirmative3(/printed slip|slip (is )?printed|prints? (the |a )?slip/i), 'The slip — her proof, printed in seconds · the slip is printed MANUAL', 'No slip is printed.'],
+  ['witness', affirmative3(/witness/i), 'Operator + one witness (any member) enter fat/SNF together', 'No witness is asked for.'],
+  ['supervisor PIN', affirmative3(/supervisor PIN|\bPIN\b/i), 'needs reason + supervisor PIN, becomes TWO records with a link', 'No supervisor PIN exists.'],
+  ['centre manager', affirmative3(/centre manager|center manager/i), 'dispatch requests and alarm-threshold changes are the centre manager\'s', 'No centre manager role exists.'],
+  ['offline / on this device / syncs', affirmative3(/offline|on this device|\bsyncs?\b|synced/i), 'Offline-first: every pour saves on this device and syncs when signal allows', 'Nothing is saved on this device or synced later.'],
+  ['cash (handed over)', affirmative3(/\bcash\b/i), 'cash handed over at the counter is counted at the shift\'s recon', 'This console records no cash.'],
+  ['variance', affirmative3(/variance/i), 'variance 0.96 kg (0.05%) within 0.1% — can-film loss, normal', 'No variance is worked out.'],
+  ['close shift (offered)', affirmative3(/close (this |the |morning |evening )?shift/i), 'Close shift & hand to BMC', 'Close shift: not available.'],
+  ['correct(ion) record', affirmative3(/correct(ion)? record|correction record/i), 'a correction record reverses and re-enters (both slips print, both link)', 'No correction record exists.'],
+];
+const BRAND_3A: ReadonlyArray<[RegExp, string]> = [
+  [/Vanthali/i, 'Vanthali MCC'], [/Anand/i, 'Anand FPO'], [/Jayaben/i, 'Operator: Jayaben S.'], [/Meera/i, 'Meera Ben D. · #0781'],
+  [/મીરા|मीरा/, 'મીરા બેન ડી.'], [/#0781|\b0781\b/, 'member #0781'], [/VS-0713/, 'VS-0713-M-0188'], [/1800-419|\*123#/, '1800-419-0123 · *123#'],
+  [/537\.36|67\.17|1,03,643|1,19,584|64\.90|1,842\.60|1,598\.2/, '= ₹537.36'],
+];
+const SOURCES_3A = ['components/ops3/CounterViews.tsx', 'features/ops3/counter.ts', 'features/ops3/counter-load.ts', 'app/pos/actions.ts', 'app/pos/home/page.tsx',
+  'app/pos/collect/page.tsx', 'app/pos/quality/page.tsx', 'app/pos/slip/page.tsx', 'app/pos/exceptions/page.tsx', 'app/pos/shift-close/page.tsx', 'features/ops3/refusals.ts'];
+
+describe('PC-56 OPS-3a · the claims guard (the counter)', () => {
+  it('each guard is proven on its own canon phrase and lets its negated form through', () => {
+    for (const [name, hit, canon, negated] of GUARDS_3A) {
+      expect([name, hit(canon)]).toEqual([name, true]);
+      expect([name, 'negated', hit(negated)]).toEqual([name, 'negated', false]);
+    }
+    for (const [re, phrase] of BRAND_3A) expect([String(re), re.test(phrase)]).toEqual([String(re), true]);
+  });
+  it.each(Object.entries(CATS))('%s: no counter value trips a 3a guard or a brand regex', (_lang, cat) => {
+    expect(scoped3a(cat).length).toBe(192);
+    for (const [k, v] of scoped3a(cat)) {
+      for (const [name, hit] of GUARDS_3A) expect([k, name, hit(v)]).toEqual([k, name, false]);
+      for (const [re] of BRAND_3A) expect([k, String(re), re.test(v)]).toEqual([k, String(re), false]);
+    }
+  });
+  it('the founder\'s option words and the proved facts are PINNED (en), and present in hi / gu', () => {
+    const PIN: Record<string, string> = {
+      'ops3.pos.recordBtn': 'Record this pour',
+      'ops3.pos.typed': 'These numbers were typed by the person at this counter — not read from a scale or an analyser.',
+      'ops3.pos.payFromThem': 'Her pay is computed from them, and they cannot be changed afterwards.',
+      'ops3.pos.diary': 'She can check this pour in her milk diary and object to her bill in its window.',
+      'ops3.pos.cannotCorrect': 'A recorded pour cannot be corrected here.',
+      'ops3.pos.onePour': 'Only one pour can be recorded for a member in each shift.',
+      'ops3.pos.pricedCaveat': 'Held or rejected pours are inside this figure.',
+      'ops3.pos.slip.title': 'What was recorded',
+      'ops3.pos.signedIn': 'Signed in as you. A pour you record is recorded under you.',
+      'ops3.pos.reason.future': 'A pour cannot be recorded for a day after today.',
+      'ops3.pos.shiftPage.closeRefused': 'Close shift: not available. This platform keeps no shift record, so a shift is not opened, closed or signed here.',
+    };
+    for (const [k, v] of Object.entries(PIN)) expect([k, en[k]]).toEqual([k, v]);
+    for (const k of Object.keys(PIN)) for (const cat of [hi, gu]) expect([k, typeof cat[k] === 'string' && cat[k] !== en[k]]).toEqual([k, true]);
+    expect([/दूध डायरी/.test(hi['ops3.pos.diary']), /દૂધ ડાયરી/.test(gu['ops3.pos.diary'])]).toEqual([true, true]);
+    expect([/सुधारा नहीं/.test(hi['ops3.pos.cannotCorrect']), /સુધારી શકાતું નથી/.test(gu['ops3.pos.cannotCorrect'])]).toEqual([true, true]);
+    // no counter value says "accept" affirmatively (en); the act's label is never W362's "મંજૂર" / "मंजूर" in hi / gu (there it means the
+    // APPROVED card, which the counter does name — so only the button and the chain titles are checked)
+    for (const [k, v] of scoped3a(en)) expect([k, /accept/i.test(v) && !NEG3.test(v)]).toEqual([k, false]);
+    for (const cat of [hi, gu]) for (const k of ['ops3.pos.recordBtn', 'ops3.chain.posAct.confirm.title', 'ops3.chain.posAct.success.title', 'nav.posCollect'])
+      expect([k, /मंजूर|મંજૂર|स्वीकार/.test(cat[k])]).toEqual([k, false]);
+  });
+  it('brand guard over every new or changed 3a source', () => {
+    for (const rel of SOURCES_3A) {
+      const src = fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
+      for (const [re] of BRAND_3A) expect([rel, String(re), re.test(src)]).toEqual([rel, String(re), false]);
     }
   });
 });

@@ -62,12 +62,14 @@ export class DairyMembershipRepository {
     return r.rows.length > 0;
   }
 
-  async listFor(tenantId: string, q: { farmerUserId?: string; mccId?: string; cursor?: { c: string; id: string }; limit: number }): Promise<DairyMembership[]> {
+  async listFor(tenantId: string, q: { farmerUserId?: string; mccId?: string; code?: string; cursor?: { c: string; id: string }; limit: number }): Promise<DairyMembership[]> {
     const params: unknown[] = [tenantId];
     let where = `tenant_id=$1 AND deleted_at IS NULL`;
     const p = (v: unknown) => { params.push(v); return `$${params.length}`; };
     if (q.farmerUserId) where += ` AND farmer_user_id=${p(q.farmerUserId)}`;
     if (q.mccId) where += ` AND mcc_id=${p(q.mccId)}`;
+    // [PC-56 OPS-3a · OPS3-B14 · founder Q10-A] "Search is by member code": a case-blind PREFIX of the code — never a name (the row carries none).
+    if (q.code) where += ` AND starts_with(lower(member_code), lower(${p(q.code)}))`;
     if (q.cursor) { const cc = p(q.cursor.c), ci = p(q.cursor.id); where += ` AND (created_at < ${cc} OR (created_at=${cc} AND id < ${ci}))`; }
     const lp = p(q.limit);
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM dairy_memberships WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT ${lp}`, params);

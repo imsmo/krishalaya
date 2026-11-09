@@ -144,12 +144,14 @@ describe('PC-56 TENANT-6d-6 · where a pour may be recorded', () => {
         earliest: jest.fn(async () => null),
       };
       const diversions = { liveFor: jest.fn(async () => diversion) };
-      const repo = { insert: jest.fn() };
+      // NAMED UPDATE (PC-56 OPS-3a · OPS3-B2, founder Q5-A): `record` asks whether a live bill covers the day, and the organisation's
+      // today, before the idempotency record — an unbilled past day here (the refusals are pinned in ops3a-pour-date.spec.ts).
+      const repo = { insert: jest.fn(), liveBillCovering: jest.fn(async () => null) };
       const uow = { run: jest.fn(async (_t: string, fn: (tx: unknown) => unknown) => fn({ query: jest.fn() })) };
       const idem = { remember: jest.fn(async (_k: string, _u: string, _s: string, fn: () => unknown) => fn()) };
       const svc = new MilkCollectionService(uow as never, { write: jest.fn() } as never, idem as never,
         { inc: jest.fn(), observe: jest.fn() } as never, repo as never,
-        { resolveActive: jest.fn(async () => ({ id: 'card', hasBonusSlabs: false, priceMinor: () => 100n, bonusMinor: () => 0n })) } as never,
+        { resolveActive: jest.fn(async () => ({ id: 'card', hasBonusSlabs: false, priceMinor: () => 100n, bonusMinor: () => 0n })), tenantToday: jest.fn(async () => '2099-12-31') } as never,
         memberships as never, { priorReviews90d: jest.fn(async () => 0), insert: jest.fn() } as never,
         { isEnabled: jest.fn(async () => false) } as never, routes as never, diversions as never, fakeNoticeVars());
       return { svc, repo, routes, diversions };

@@ -1,6 +1,5 @@
-// apps/web-ops/src/features/dairy/pos.ts · PURE dairy-POS logic (PC-34 OW-4). Mirrors RecordCollectionInput
-// (weightKg/fatPct/snfPct decimal strings — the SERVER prices the collection from the rate card; the POS never
-// computes money) + GenerateBillInput and the bill state machine (draft → previewed → approved → paid).
+// apps/web-ops/src/features/dairy/pos.ts · PURE dairy-desk logic (PC-34 OW-4): GenerateBillInput and the bill state machine (draft → previewed →
+// approved → paid), and the shift / flag vocabularies the counter reuses. (PC-56 OPS-3a moved the pour-record check to features/ops3/counter.ts.)
 export const DAIRY_SHIFTS = ['morning', 'evening'] as const;
 export const BILL_STATUSES = ['draft', 'previewed', 'disputed', 'approved', 'paid'] as const;
 export const ADULTERATION_FLAGS = ['water', 'starch', 'urea', 'detergent'] as const;
@@ -12,31 +11,8 @@ export function canPreview(status: string | undefined | null): boolean { return 
 export function canApprove(status: string | undefined | null): boolean { return status === 'previewed'; }
 export function canPay(status: string | undefined | null): boolean { return status === 'approved'; }
 
-const DEC = (max: number, dp: number) => new RegExp(`^\\d{1,${max}}(\\.\\d{1,${dp}})?$`);
-
-export type CollectionResult =
-  | { ok: true; value: { membershipId: string; shift: 'morning' | 'evening'; collectedOn: string; weightKg: string; fatPct: string; snfPct: string; waterFlag?: boolean; adulterationFlags?: string[] } }
-  | { ok: false; error: 'member' | 'shift' | 'date' | 'weight' | 'fat' | 'snf' };
-
-export function buildCollection(raw: { membershipId: string; shift: string; collectedOn: string; weightKg: string; fatPct: string; snfPct: string; waterFlag: boolean; adulteration: string[] }): CollectionResult {
-  const membershipId = raw.membershipId.trim();
-  if (!membershipId) return { ok: false, error: 'member' };
-  if (!(DAIRY_SHIFTS as readonly string[]).includes(raw.shift)) return { ok: false, error: 'shift' };
-  const collectedOn = raw.collectedOn.trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(collectedOn)) return { ok: false, error: 'date' };
-  const weightKg = raw.weightKg.trim();
-  if (!DEC(4, 3).test(weightKg) || Number(weightKg) <= 0) return { ok: false, error: 'weight' };
-  const fatPct = raw.fatPct.trim();
-  if (!DEC(2, 2).test(fatPct) || Number(fatPct) <= 0 || Number(fatPct) > 15) return { ok: false, error: 'fat' };
-  const snfPct = raw.snfPct.trim();
-  if (!DEC(2, 2).test(snfPct) || Number(snfPct) <= 0 || Number(snfPct) > 15) return { ok: false, error: 'snf' };
-  const adulterationFlags = raw.adulteration.filter((f) => (ADULTERATION_FLAGS as readonly string[]).includes(f));
-  const out: { membershipId: string; shift: 'morning' | 'evening'; collectedOn: string; weightKg: string; fatPct: string; snfPct: string; waterFlag?: boolean; adulterationFlags?: string[] } =
-    { membershipId, shift: raw.shift as 'morning' | 'evening', collectedOn, weightKg, fatPct, snfPct };
-  if (raw.waterFlag) out.waterFlag = true;
-  if (adulterationFlags.length) out.adulterationFlags = adulterationFlags;
-  return { ok: true, value: out };
-}
+// PC-56 OPS-3a: `buildCollection` (the pour-record form's check, with `Number(…)` bounds) is GONE with the form — the record act moved to the
+// counter, and its pattern-only check is `buildPour` in features/ops3/counter.ts (no float on the reading path, a day after today refused).
 
 export type BillGenResult =
   | { ok: true; value: { membershipId: string; periodStart: string; periodEnd: string } }

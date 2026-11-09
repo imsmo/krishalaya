@@ -40,7 +40,8 @@ export const RELABELLED: Record<keyof typeof CAT, string[]> = {
 };
 /** GENUINELY litres — verified at source: `bmc_units.capacity_litres`, a cooler's stated `volumeLitres`, `mcc_centres.capacity_litres_shift`, an animal's yield. */
 const GENUINE: Record<keyof typeof CAT, string[]> = {
-  'web-ops': [],
+  // NAMED UPDATE (PC-56 OPS-3a): W365 prints a cooler's STATED level (`DairyBmcTile.volumeLitres`) of its `capacityLitres` tank — genuine litres.
+  'web-ops': ['ops3.pos.shiftPage.levelValue'],
   'web-tenant': ['dairy.unit.litres', 'form.bmc.field.capacityLitres', 'form.centre.field.capacityLitresShift', 'dairy.bmc.acts.volumeLitres', 'dairy.mcc.capacity'],
   mobile: ['mcc.centre.capacityLitres', 'pashu.add.yield'],
 };
@@ -62,7 +63,8 @@ describe('PC-56 OPS-3c · Q8-A · the per-kg relabel (copy only)', () => {
     expect(n).toBe(22 * 3);
   });
   it('no `ops3.` value in web-ops says litre in any language', () => {
-    for (const l of LANGS) for (const [k, v] of Object.entries(CAT['web-ops'][l])) if (k.startsWith('ops3.')) expect([k, l, LITRE[l].test(v)]).toEqual([k, l, false]);
+    // NAMED UPDATE (PC-56 OPS-3a): every ops3. value but the GENUINE-litre keys above (which the positive control requires to say litre).
+    for (const l of LANGS) for (const [k, v] of Object.entries(CAT['web-ops'][l])) if (k.startsWith('ops3.') && !GENUINE['web-ops'].includes(k)) expect([k, l, LITRE[l].test(v)]).toEqual([k, l, false]);
   });
   it('the components that print a GENUINE litre use the genuine-litre keys; the hard-coded "/L" on the slab line is gone', () => {
     const wt = (rel: string) => fs.readFileSync(path.join(APPS, 'web-tenant', 'src', rel), 'utf8');

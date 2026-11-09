@@ -73,12 +73,12 @@ export class DairyMembershipService {
     if (m.farmerUserId !== actor.userId && !actor.canManage) throw new MembershipNotFoundError(id);
     return m.toJSON();
   }
-  async list(tenantId: string, actor: DairyActor, q: { box: 'mine' | 'mcc' | 'all'; mccId?: string; cursor?: { c: string; id: string }; limit: number }) {
+  async list(tenantId: string, actor: DairyActor, q: { box: 'mine' | 'mcc' | 'all'; mccId?: string; code?: string; cursor?: { c: string; id: string }; limit: number }) {
     // [PC-56 OPS-3p · founder Q6-A] THE CENTRE'S ROLL is a read the counter cannot work without (survey_ops3 E1 / §7.6): the staff
     // boxes admit dairy.read, dairy.collect or dairy.manage. The row is the membership (id, member, centre, code, cycle, milk type)
     // — no name, phone or money. Enrolment (create) stays dairy.manage.
     if ((q.box === 'mcc' || q.box === 'all') && !actorMayRead(actor)) throw new DairyForbiddenError('requires dairy.read, dairy.collect or dairy.manage');
-    const rows = await this.repo.listFor(tenantId, { farmerUserId: q.box === 'mine' ? actor.userId : undefined, mccId: q.box === 'mcc' ? q.mccId : undefined, cursor: q.cursor, limit: q.limit });
+    const rows = await this.repo.listFor(tenantId, { farmerUserId: q.box === 'mine' ? actor.userId : undefined, mccId: q.box === 'mcc' ? q.mccId : undefined, code: q.code, cursor: q.cursor, limit: q.limit });
     const items = rows.map((m) => m.toJSON());
     const last = items[items.length - 1];
     const nextCursor = items.length === q.limit && last ? Buffer.from(`${(last as any).createdAt?.toISOString?.() ?? last.createdAt}|${last.id}`).toString('base64') : null;

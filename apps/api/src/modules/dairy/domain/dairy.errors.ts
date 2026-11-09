@@ -405,3 +405,33 @@ export class RateCardOverlapError extends DomainError {
       409, { id, clashWith });
   }
 }
+
+/**
+ * [PC-56 OPS-3a · OPS3-B2 · founder Q5-A, 2026-11-08] "Refuse a future pour date, and a pour into a period already billed for her, by name,
+ * before anything is written." Both are raised by `MilkCollectionService.record` AFTER the permission check and the controller's key check and
+ * BEFORE `idem.remember`, the unit of work and any write — so nothing is stored, and a replay with the same key meets the same refusal.
+ *
+ * "Today" is the organisation's own, in its own zone (`tenants.country_code → countries.timezone`, the 6c-1 rule — read by
+ * `MilkRateCardRepository.tenantToday`), never the API process's clock.
+ */
+export class PourDateInFutureError extends DomainError {
+  constructor(collectedOn: string, today: string) {
+    super('POUR_DATE_IN_FUTURE',
+      `A pour cannot be recorded for a day after today. This pour is dated ${collectedOn}; today is ${today} for your organisation.`,
+      422, { collectedOn, today });
+  }
+}
+/**
+ * "Already billed" means, exactly: the member has a LIVE milk bill — not voided (`deleted_at IS NULL`, which `void()` stamps in the same
+ * statement as `status='voided'`), in any status (draft, previewed, disputed, approved or paid) — whose period
+ * (`period_start ≤ day ≤ period_end`) contains the pour's day. Such a pour could never be billed: the bill exists, one live bill per member per
+ * period is a UNIQUE index (`uq_milkbills_member_period`, 0158), and the next window does not contain the day — the "payable to nobody" case
+ * `DairyBillCycleService` logs as STRANDED (survey F-5, C-12). A voided bill does not count: its pours are released and the cycle rebuilds it.
+ */
+export class PourWindowAlreadyBilledError extends DomainError {
+  constructor(collectedOn: string, billPeriodStart: string, billPeriodEnd: string) {
+    super('POUR_WINDOW_ALREADY_BILLED',
+      `A pour cannot be recorded for ${collectedOn}: this member already has a bill for ${billPeriodStart} to ${billPeriodEnd}, and a pour recorded now would not be paid on any bill.`,
+      422, { collectedOn, billPeriodStart, billPeriodEnd });
+  }
+}

@@ -18,6 +18,7 @@
 //   DATABASE_ADMIN_URL=... DATABASE_URL=... TZ=Asia/Kolkata npx jest --selectProjects integration --testPathPattern tenant6c1
 import { realNoticeVars } from '../../../../test/helpers/notice-vars';
 import { randomUUID } from 'node:crypto';
+import { uuidv7 } from '../../../core/database/uuid.util';
 import { Pool } from 'pg';
 import { makeTenant, makeUser } from '../../../../test/helpers/fixtures';
 
@@ -386,10 +387,20 @@ run('PC-56 TENANT-6c-1 · the dairy payout cycle (integration, real Postgres)', 
       // unbilled milk and this platform has nowhere to put it (the window's bill exists, a supplementary bill is
       // forbidden, and the next window does not contain this pour's date). The wave that can fix it is the one that
       // owns preview/approve (TENANT-6c-2); what 6c-1 refuses to do is report it as "one member did not pour".
-      await collections.record(tenantIST, actor, `idem-${randomUUID()}`, {
-        membershipId: memA, mccId, shift: 'evening', collectedOn: win.to,
-        weightKg: '3.250', fatPct: '6.50', snfPct: '9.00', waterFlag: false, adulterationFlags: [],
-      } as never);
+      // NAMED UPDATE (PC-56 OPS-3a · OPS3-B2, founder Q5-A, 2026-11-08): the counter can no longer CREATE this case — a pour dated inside a
+      // window already billed for her is refused by name, before anything is written. That refusal is pinned first. The STRANDED detector
+      // below is kept, and still proven, for the rows that reach the table without the service (pours written before this rule, or by any
+      // other writer): the late pour is therefore placed by the ADMIN connection, copying her billed morning row as an unbilled evening one.
+      const late = { membershipId: memA, mccId, shift: 'evening', collectedOn: win.to, weightKg: '3.250', fatPct: '6.50', snfPct: '9.00', waterFlag: false, adulterationFlags: [] };
+      await expect(collections.record(tenantIST, actor, `idem-${randomUUID()}`, late as never)).rejects.toMatchObject({ code: 'POUR_WINDOW_ALREADY_BILLED' });
+      expect((await admin.query(`SELECT count(*)::int c FROM milk_collections WHERE tenant_id=$1 AND membership_id=$2 AND milk_bill_id IS NULL`, [tenantIST, memA])).rows[0].c).toBe(0);
+      await admin.query(
+        `INSERT INTO milk_collections (id, tenant_id, mcc_id, membership_id, shift, collected_on, weight_kg, fat_pct, snf_pct, density, water_flag, adulteration_flags,
+                                       rate_card_id, amount_minor, bonus_minor, bonus_applied, hold_state, entered_by, diversion_id)
+         SELECT $4, tenant_id, mcc_id, membership_id, 'evening', collected_on, 3.250, fat_pct, snf_pct, density, false, '[]'::jsonb,
+                rate_card_id, amount_minor, bonus_minor, bonus_applied, 'none', entered_by, diversion_id
+           FROM milk_collections WHERE tenant_id=$1 AND membership_id=$2 AND collected_on=$3::date AND shift='morning' LIMIT 1`,
+        [tenantIST, memA, win.to, uuidv7()]);
       const fresh = (await uow.run(tenantIST, (tx) => cycleRepo.getForUpdate(tx, tenantIST, closedCycleId), { userId: 'system' }))!;
       const out = await cycles.generateFor(tenantIST, fresh);
       // WHEN THIS WAS WRITTEN IT READ `generated: 1`, AND THAT WAS THE FINDING: the idempotency key was per (cycle,
@@ -458,7 +469,9 @@ run('PC-56 TENANT-6c-1 · the dairy payout cycle (integration, real Postgres)', 
       // being deleted: a line must name a TYPE from the `milk_deduction` vocabulary AND the row it settles. The old
       // payload — a type and an amount, and nothing else — is now refused at GENERATION, which is where an operator
       // can still do something about it. What a paid deduction looks like is TENANT-6c-4's own live spec.
-      const day2 = win.from;
+      // NAMED UPDATE (PC-56 OPS-3a · OPS3-B2): `win.from` lies inside memB's live cycle bill, so the counter now refuses a pour there by name
+      // (POUR_WINDOW_ALREADY_BILLED). This test is about the DEDUCTION payload, not the day: the pour goes on today, which no bill covers.
+      const day2 = today;
       await collections.record(tenantIST, actor, `idem-${randomUUID()}`, {
         membershipId: memB, mccId, shift: 'evening', collectedOn: day2,
         weightKg: '5.000', fatPct: '6.00', snfPct: '9.00', waterFlag: false, adulterationFlags: [],

@@ -34,7 +34,9 @@ describe('PC-56 OPS-3c · the rate chains', () => {
     expect(/\?act=confirm/.test(r('rate_act', 'failure'))).toBe(false);   // no "Retry — back to confirm" loop
   });
   it('every chain state: zero controls, the statement first, no canon false word in visible text, Back → /rates', () => {
-    for (const ch of OPS3_CHAINS) for (const s of ch.states) {
+    // NAMED UPDATE (PC-56 OPS-3a): OPS3_CHAINS now also holds 3a's REAL `pos_act` (pinned in ops3a-chains.render.test.tsx); THIS test is the rate
+    // chains', so it walks the 3c chains — every one of them, as before.
+    for (const ch of OPS3_CHAINS.filter((x): x is typeof x & { id: 'rate_export' | 'rate_act' } => x.wave === '3c')) for (const s of ch.states) {
       const h = r(ch.id, s);
       expect([ch.id, s, CONTROLS.test(h)]).toEqual([ch.id, s, false]);
       expect([ch.id, s, FALSE_3C.test(visible(h))]).toEqual([ch.id, s, false]);

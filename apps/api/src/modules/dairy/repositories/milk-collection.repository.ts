@@ -8,14 +8,18 @@ import { MilkCollection } from '../domain/milk-collection.entity';
 import { MilkShift } from '../domain/dairy.events';
 import { HoldState, BILLABLE_HOLD_STATES } from '../domain/milk-quality.state';
 import { pgDate } from '../../../core/database/pg-date';
+import { numericFromScaled, scaledFromNumeric } from '../../../core/database/pg-numeric';
 import { CollectionStampLostError } from '../domain/dairy.errors';
 // [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date — node-pg hands back LOCAL midnight and
 // `toISOString()` is a DAY EARLY anywhere ahead of UTC (see that file's header; the dairy double-payment proved it).
 
 const COLS = `id, tenant_id, mcc_id, membership_id, shift, collected_on, weight_kg, fat_pct, snf_pct, density, water_flag, adulteration_flags, rate_card_id, amount_minor, bonus_minor, bonus_applied, hold_state, entered_by, milk_bill_id, diversion_id, created_at`;
-// scaled-integer <-> decimal helpers (no float): kg×1000, pct×100
-const toMilli = (v: any): bigint => BigInt(Math.round(Number(v) * 1000));
-const toCenti = (v: any): bigint => BigInt(Math.round(Number(v) * 100));
+// scaled-integer <-> decimal helpers: kg×1000, pct×100. [PC-56 OPS-3a · OPS3-B18 · survey F-14] These were
+// `BigInt(Math.round(Number(v) * 1000))` and `(Number(m) / 1000).toFixed(3)` — a double on the path of the three readings
+// that set a farmer's pay. Exact for numeric(8,3)/(4,2) in practice, but "exact in practice" is the property that survives
+// review and then disagrees with the database; core/database/pg-numeric.ts reads and writes the DIGITS instead.
+const toMilli = (v: unknown): bigint => scaledFromNumeric(v, 3);
+const toCenti = (v: unknown): bigint => scaledFromNumeric(v, 2);
 function toDomain(r: any): MilkCollection {
   return MilkCollection.rehydrate({ id: r.id, tenantId: r.tenant_id, mccId: r.mcc_id, membershipId: r.membership_id, shift: r.shift as MilkShift,
     collectedOn: pgDate(r.collected_on),
@@ -28,8 +32,8 @@ function toDomain(r: any): MilkCollection {
     diversionId: r.diversion_id ?? null, createdAt: r.created_at });
 }
 // scaled integer → numeric string for the DB columns (weight 3dp, pct 2dp)
-const milliToKg = (m: bigint) => (Number(m) / 1000).toFixed(3);
-const centiToPct = (c: bigint) => (Number(c) / 100).toFixed(2);
+const milliToKg = (m: bigint) => numericFromScaled(m, 3);
+const centiToPct = (c: bigint) => numericFromScaled(c, 2);
 
 @Injectable()
 export class MilkCollectionRepository {
@@ -48,6 +52,26 @@ export class MilkCollectionRepository {
         WHERE tenant_id=$1 AND membership_id=$2 AND mcc_id=$3`, [tenantId, membershipId, mccId]);
     const d = (r.rows[0] as any)?.d;
     return d == null ? null : String(d);
+  }
+
+  /**
+   * [PC-56 OPS-3a · OPS3-B2 · founder Q5-A] The member's LIVE bill whose period contains this day, if there is one — the
+   * "already billed" test `MilkCollectionService.record` refuses on (`POUR_WINDOW_ALREADY_BILLED`), before any write.
+   *
+   * LIVE means not voided: `MilkBillRepository.void` stamps `deleted_at` in the same statement as `status='voided'`, and a
+   * voided bill's pours are released for the cycle to rebuild — so a pour into its window is still payable. Every other
+   * status counts, a DRAFT included: the draft already exists, `uq_milkbills_member_period` (0158) allows one live bill per
+   * member per period, and the generator does not re-open a bill to add a late pour (the 6c-1 STRANDED case).
+   * Served by `uq_milkbills_member_period (membership_id, period_start, period_end) WHERE deleted_at IS NULL`.
+   */
+  async liveBillCovering(tenantId: string, membershipId: string, day: string): Promise<{ id: string; periodStart: string; periodEnd: string } | null> {
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT id, period_start::text AS ps, period_end::text AS pe FROM milk_bills
+        WHERE tenant_id=$1 AND membership_id=$2 AND deleted_at IS NULL AND status <> 'voided'
+          AND period_start <= $3::date AND period_end >= $3::date
+        ORDER BY period_start, id LIMIT 1`, [tenantId, membershipId, day]);
+    const row = r.rows[0] as { id: string; ps: string; pe: string } | undefined;
+    return row ? { id: row.id, periodStart: row.ps, periodEnd: row.pe } : null;
   }
 
   /** Pours at a centre with no bill yet — the caution a move carries, counted rather than guessed. */

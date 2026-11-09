@@ -3,7 +3,7 @@
 import { Controller, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
-import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
+import { PermissionsGuard, RequireAnyPermission, RequirePermissions } from '../../../../core/auth/permissions.guard';
 import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
 import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
@@ -28,7 +28,8 @@ import {
   QueryRouteTrailSchema, QueryRouteTrailDto,
 } from '../../dto/membership-move.dto';
 import { MilkShift } from '../../domain/mcc-console';
-import { DairyPermissions, canManageDairy, canCloseSettlement, canCollectDairy, canReadDairy } from '../../policies/dairy.policies';
+import { DairyPermissions, DAIRY_READ_ANY, canManageDairy, canCloseSettlement, canCollectDairy, canReadDairy } from '../../policies/dairy.policies';
+import { DairyCounterCustodyReadModel } from '../../read-models/dairy-counter-custody.read-model';
 import { PreviewMccDto, PreviewMccSchema } from '../../dto/dairy-form-preview.dto';
 
 const ipOf = (r: Request) => r.ip || null;
@@ -43,6 +44,8 @@ export class MccController {
     private readonly memberships: DairyMembershipService,
     private readonly centres: DairyCentresReadModel,
     private readonly moves: DairyMembershipMoveService,
+    // [PC-56 OPS-3a · OPS3-B14] the counter's own centre, from the custody register.
+    private readonly counterCustody: DairyCounterCustodyReadModel,
   ) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageDairy(ctx), canCloseSettlement: canCloseSettlement(ctx), canCollect: canCollectDairy(ctx), canRead: canReadDairy(ctx) }; }
 
@@ -83,6 +86,16 @@ export class MccController {
   @Get()
   list(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryMccSchema) q: QueryMccDto) {
     return this.mccs.list(ctx.tenantId, { activeOnly: q.activeOnly, cursor: decodeCursor(q.cursor), limit: q.limit }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
+  }
+  /**
+   * [PC-56 OPS-3a · OPS3-B14 · founder Q14-A] THE COUNTER'S CENTRE: the active centres whose open custody row names the signed-in person, and the
+   * organisation's today in its own zone (the day a counter records for and reads). A person who holds no custody gets an EMPTY list — the
+   * counter then says so and offers no form. A READ (dairy.read, dairy.collect or dairy.manage). **Declared before `@Get(':id')`** (the
+   * route-order trap). It returns centres only: no custody history, no other person.
+   */
+  @Get('mine') @RequireAnyPermission(...DAIRY_READ_ANY)
+  mine(@CurrentContext() ctx: RequestContext) {
+    return this.counterCustody.mine(ctx.tenantId, this.actor(ctx)).then((data) => ({ data }));
   }
   @Get(':id')
   get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.mccs.getById(ctx.tenantId, id).then((data) => ({ data })); }
@@ -132,7 +145,7 @@ export class MccController {
   }
   @Get('memberships/list')
   listMemberships(@CurrentContext() ctx: RequestContext, @ZodQuery(QueryMembershipsSchema) q: QueryMembershipsDto) {
-    return this.memberships.list(ctx.tenantId, this.actor(ctx), { box: q.box, mccId: q.mccId, cursor: decodeCursor(q.cursor), limit: q.limit }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
+    return this.memberships.list(ctx.tenantId, this.actor(ctx), { box: q.box, mccId: q.mccId, code: q.code, cursor: decodeCursor(q.cursor), limit: q.limit }).then((res) => ({ data: res.items, meta: { nextCursor: res.nextCursor } }));
   }
   /**
    * W171: *"Moving house? The membership moves centres without losing history."*

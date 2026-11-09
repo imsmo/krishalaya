@@ -15,7 +15,8 @@ import { MilkCollectionRepository } from '../repositories/milk-collection.reposi
 import { MilkRateCardRepository } from '../repositories/milk-rate-card.repository';
 import { DairyMembershipRepository } from '../repositories/dairy-membership.repository';
 import { RecordCollectionDto } from '../dto/create-milk-collection.dto';
-import { MembershipNotFoundError, NoActiveRateCardError, DuplicateCollectionError, DairyForbiddenError, PourNotAtThisCentreError } from '../domain/dairy.errors';
+import { MembershipNotFoundError, NoActiveRateCardError, DuplicateCollectionError, DairyForbiddenError, PourNotAtThisCentreError, PourDateInFutureError, PourWindowAlreadyBilledError } from '../domain/dairy.errors';
+import { numericFromScaled } from '../../../core/database/pg-numeric';
 import { DairyMembershipRouteRepository } from '../repositories/dairy-membership-route.repository';
 import { DairyDiversionRepository } from '../repositories/dairy-diversion.repository';
 import { pourPlace } from '../domain/dairy-diversion';
@@ -55,6 +56,17 @@ export class MilkCollectionService {
   async record(tenantId: string, actor: DairyActor, idemKey: string, dto: RecordCollectionDto) {
     // [PC-56 OPS-3p · founder Q6-A] the COUNTER's act: dairy.collect, or dairy.manage (administrators keep it). Never dairy.read.
     if (!actorMayCollect(actor)) throw new DairyForbiddenError('requires dairy.collect or dairy.manage');
+    // [PC-56 OPS-3a · OPS3-B2 · founder Q5-A, 2026-11-08] THE POUR'S DAY IS BOUNDED, by name, before anything is written: after the
+    // permission check (above) and the controller's key check, and BEFORE `idem.remember`, the unit of work and any write — so a refused
+    // pour leaves no collection, review, outbox or idempotency row, and a replay with the same key meets the same refusal (the OPS-1a
+    // ordering; the unit spec pins it with an ordering spy). The organisation's today, in its own zone (the 6c-1 rule), never this
+    // process's clock. `YYYY-MM-DD` strings order lexically (the DTO's `dateStr`).
+    //   • a day after today → POUR_DATE_IN_FUTURE: it would be priced from a card in force on a day that has not come;
+    //   • a day inside a LIVE bill of this member → POUR_WINDOW_ALREADY_BILLED: it could never be billed (survey F-5 — "payable to nobody").
+    const today = await this.rateCards.tenantToday(tenantId);
+    if (dto.collectedOn > today) throw new PourDateInFutureError(dto.collectedOn, today);
+    const billed = await this.repo.liveBillCovering(tenantId, dto.membershipId, dto.collectedOn);
+    if (billed) throw new PourWindowAlreadyBilledError(dto.collectedOn, billed.periodStart, billed.periodEnd);
     return this.idem.remember(idemKey, actor.userId, 'dairy.collection.record', () =>
       timed(this.metrics, 'dairy.collection.record', { tenant: tenantId }, () =>
         this.uow.run(tenantId, async (tx) => {
@@ -164,7 +176,8 @@ export class MilkCollectionService {
   private serialize(c: MilkCollection) {
     const v = c.toProps();
     return { id: v.id, membershipId: v.membershipId, mccId: v.mccId, shift: v.shift, collectedOn: v.collectedOn,
-      weightKg: (Number(v.weightMilliKg) / 1000).toFixed(3), fatPct: (Number(v.fatCentiPct) / 100).toFixed(2), snfPct: (Number(v.snfCentiPct) / 100).toFixed(2),
+      // [PC-56 OPS-3a · OPS3-B18 · survey F-14] the readings as their DIGITS (core/database/pg-numeric) — no double on the reading path.
+      weightKg: numericFromScaled(v.weightMilliKg, 3), fatPct: numericFromScaled(v.fatCentiPct, 2), snfPct: numericFromScaled(v.snfCentiPct, 2),
       amountMinor: v.amountMinor.toString(), rateCardId: v.rateCardId, waterFlag: v.waterFlag, milkBillId: v.milkBillId, createdAt: v.createdAt,
       // [PC-56 TENANT-6b-1] The counter slip's own arithmetic: W168 promises the farmer sees it line by line, and a
       // premium that arrives inside one total is a premium nobody can check against the card on the wall.

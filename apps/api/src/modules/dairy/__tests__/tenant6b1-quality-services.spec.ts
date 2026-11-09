@@ -50,8 +50,13 @@ function recordHarness(o: { slabs?: Array<{ metric: 'fat' | 'snf'; minCentiPct: 
   const outbox: Array<{ aggregateType: string; eventType: string; payload: Record<string, unknown> }> = [];
   const flagAsked: string[] = [];
 
-  const repo = { insert: jest.fn(async (_tx: unknown, c: { toProps(): Record<string, unknown> }) => { inserted.push(c.toProps()); }) };
-  const rateCards = { resolveActive: jest.fn(async () => cardWith(o.slabs ?? [{ metric: 'fat', minCentiPct: 650, bonusMinorPerLitre: 50 }])) };
+  // NAMED UPDATE (PC-56 OPS-3a · OPS3-B2, founder Q5-A): `record` now asks the organisation's today and whether a live bill covers the
+  // pour's day BEFORE the idempotency record. This harness's pour is in the past (DAY) and unbilled — both stubs say so; the refusals
+  // themselves are pinned in ops3a-pour-date.spec.ts.
+  const repo = { insert: jest.fn(async (_tx: unknown, c: { toProps(): Record<string, unknown> }) => { inserted.push(c.toProps()); }),
+    liveBillCovering: jest.fn(async () => null) };
+  const rateCards = { resolveActive: jest.fn(async () => cardWith(o.slabs ?? [{ metric: 'fat', minCentiPct: 650, bonusMinorPerLitre: 50 }])),
+    tenantToday: jest.fn(async () => '2099-12-31') };
   const memberships = { getById: jest.fn(async () => membership({ farmerUserId: o.farmerUserId })) };
   const reviews = {
     priorReviews90d: jest.fn(async () => o.priors ?? 0),

@@ -1,5 +1,5 @@
 'use server';
-// apps/web-ops/src/app/dairy/actions.ts · dairy-POS mutations (PC-34 OW-4; PC-56 OPS-1a removed approve + pay). record + generate are
+// apps/web-ops/src/app/dairy/actions.ts · dairy-desk mutations (PC-34 OW-4; PC-56 OPS-1a removed approve + pay; OPS-3a moved record to /pos). generate is
 // Idempotency-Keyed (a slip or a bill must never double-fire); the SERVER prices collections from
 // the rate card and computes bill totals — the POS never does money math (Law 2/11).
 import { randomUUID } from 'node:crypto';
@@ -7,29 +7,12 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { opsClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
-import { buildCollection, buildBillGen } from '../../features/dairy/pos';
+import { buildBillGen } from '../../features/dairy/pos';
 import { SdkError } from '@krishalaya/sdk-js';
 
 function back(qs: string): never { redirect(`/dairy?${qs}`); }
 
-export async function recordCollectionAction(formData: FormData): Promise<void> {
-  await requireSession('/dairy');
-  const built = buildCollection({
-    membershipId: String(formData.get('membershipId') ?? ''),
-    shift: String(formData.get('shift') ?? ''),
-    collectedOn: String(formData.get('collectedOn') ?? ''),
-    weightKg: String(formData.get('weightKg') ?? ''),
-    fatPct: String(formData.get('fatPct') ?? ''),
-    snfPct: String(formData.get('snfPct') ?? ''),
-    waterFlag: formData.get('waterFlag') === '1',
-    adulteration: formData.getAll('adulteration').map(String),
-  });
-  if (!built.ok) back(`error=col_${built.error}`);
-  try { await opsClient().dairy.recordCollection(built.value, randomUUID()); }
-  catch (e) { back(`error=${e instanceof SdkError && e.status === 409 ? 'col_dup' : 'collection'}`); }
-  revalidatePath('/dairy');
-  back('ok=collection');
-}
+// PC-56 OPS-3a: `recordCollectionAction` MOVED to app/pos/actions.ts (`recordPourAction`) — one write, one path (the 6d-4 rule).
 
 export async function generateBillAction(formData: FormData): Promise<void> {
   await requireSession('/dairy');

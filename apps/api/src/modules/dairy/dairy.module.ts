@@ -33,6 +33,7 @@ import { MilkCollectionService } from './services/milk-collection.service';
 import { MilkBillService } from './services/milk-bill.service';
 import { MccCentreRepository } from './repositories/mcc-centre.repository';
 import { DairyMembershipRepository } from './repositories/dairy-membership.repository';
+import { DairyCounterCustodyReadModel } from './read-models/dairy-counter-custody.read-model';
 import { MilkRateCardRepository } from './repositories/milk-rate-card.repository';
 import { MilkCollectionRepository } from './repositories/milk-collection.repository';
 import { MilkBillRepository } from './repositories/milk-bill.repository';
@@ -156,6 +157,8 @@ import { DairyInsightsDataset } from './exports/dairy-insights.dataset';
       inject: [UNIT_OF_WORK, D2cRepository] },
     // PC-56 TENANT-6a
     DairyCounterRepository, DairyCounterReadModel,
+    // PC-56 OPS-3a · OPS3-B14 — the counter's centre, from the custody register
+    DairyCounterCustodyReadModel,
     // PC-56 TENANT-6b-1
     MilkQualityService, MilkQualityReviewRepository,
     // PC-56 TENANT-6b-2

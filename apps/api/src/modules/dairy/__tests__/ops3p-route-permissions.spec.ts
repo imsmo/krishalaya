@@ -49,6 +49,9 @@ const TABLE: Record<string, string> = {
   'GET /dairy/quality': READ,
   'GET /dairy/bmc/monitor': READ,
   'GET /dairy/d2c/mccs/:mccId/day-summary': READ,
+  // NAMED UPDATE (PC-56 OPS-3a · OPS3-B14, founder Q14-A): the counter's own centre — the active centres whose OPEN custody row names the
+  // caller, and the organisation's today. A new READ; the same ANY(read, collect, manage) as the boards, checked again in the read model.
+  'GET /dairy/mccs/mine': READ,
   // --- dairy.manage only, unchanged ---
   'GET /dairy/bill-cycles/console': `all:${M}`, 'GET /dairy/bill-cycles': `all:${M}`, 'GET /dairy/bill-cycles/:id': `all:${M}`,
   'POST /dairy/bill-cycles/:id/preview': `all:${M}|${SC}`, 'POST /dairy/bill-cycles/:id/approve': `all:${M}|${SC}`,

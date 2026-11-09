@@ -1910,6 +1910,8 @@ export type DairyRateCardApprovalState = 'awaiting_second_person' | 'approved' |
 /** A counter milk-collection row. amountMinor is server-priced from the rate card (float-free). */
 export interface DairyCollection {
   id: string; membershipId: string; mccId: string; shift: DairyShift; collectedOn: string;
+  /** PC-56 OPS-3a (E13): the three readings as the server's decimal strings — typed by a person at the counter (no device writes them). */
+  weightKg?: string; fatPct?: string; snfPct?: string;
   amountMinor: string; rateCardId: string; waterFlag: boolean; milkBillId: string | null; createdAt?: string | null;
   /* --- PC-56 TENANT-6b-1 · W168's quality desk ------------------------------------------------------------- */
   /** The analyzer's density reading — W168's own evidence for a water flag ("density 1.024 (low)"). The column
@@ -2137,7 +2139,8 @@ export interface RecordDeductionConsentInput { granted: boolean; channel: 'app' 
 export interface CreateMccInput { code: string; defaultName: string; regionId?: string; lat?: string; lng?: string; operatorUserId?: string; operatorReason?: string; capacityLitresShift?: string; analyzerModel?: string; analyzerSerial?: string; morningOpensAt?: string; morningClosesAt?: string; eveningOpensAt?: string; eveningClosesAt?: string; }
 export interface EnrolMemberInput { farmerUserId: string; mccId: string; memberCode: string; paymentCycle?: DairyPaymentCycle; defaultAnimalType?: DairyAnimalType; }
 export interface CreateRateCardInput { defaultName: string; animalType: DairyAnimalType; pricingModel: DairyPricingModel; ratePerKgFatMinor?: string; ratePerKgSnfMinor?: string; baseRatePerLitreMinor?: string; bonusSlabs?: DairyBonusSlab[]; effectiveFrom: string; effectiveTo?: string; }
-export interface RecordCollectionInput { membershipId: string; shift: DairyShift; collectedOn: string; weightKg: string; fatPct: string; snfPct: string; density?: string; waterFlag?: boolean; adulterationFlags?: string[]; }
+/** `mccId` (TENANT-6d-6): where the milk was taken — PC-56 OPS-3a sends the counter's own centre (custody). */
+export interface RecordCollectionInput { membershipId: string; shift: DairyShift; collectedOn: string; weightKg: string; fatPct: string; snfPct: string; density?: string; mccId?: string; waterFlag?: boolean; adulterationFlags?: string[]; }
 /** A deduction line must name the row it pays (`sourceId`) — see `MilkBill.deductions`. */
 export interface GenerateBillInput { membershipId: string; periodStart: string; periodEnd: string; deductions?: Array<{ type: string; amountMinor: string; sourceId: string }>; }
 // --- market-intel (mandi prices) + weather (P-19) — money is bigint minor STRINGS (Law 2) ---
@@ -2594,6 +2597,18 @@ export type DairyShiftClock =
 
 /** A centre's local wall-clock window, `HH:MM`, whole minutes (0163 refuses seconds a screen could not print). */
 export interface DairyShiftWindow { opens: string; closes: string }
+
+/** PC-56 OPS-3a · `GET /v1/dairy/d2c/mccs/:mccId/day-summary` — one shift's day sheet at one centre. Money as minor strings. */
+export interface DairyDaySummaryRow {
+  shift: string; slips: number; weightKg: string; waterFlags: number;
+  /** Every pour's priced amount — HELD AND REJECTED POURS INCLUDED. */
+  amountMinor: string;
+  /** OPS3-B15: the same sum split by hold state, server-side — payable (`none`/`released`, billable), held, rejected. */
+  payableMinor?: string; heldMinor?: string; rejectedMinor?: string;
+  heldPours?: number; rejectedPours?: number; flaggedPours?: number;
+}
+/** PC-56 OPS-3a · `GET /v1/dairy/mccs/mine` — the organisation's today, and the centres in the caller's open custody. */
+export interface DairyCounterCentres { today: string; centres: DairyMcc[] }
 
 /** The accrual window, DERIVED from the members' own `payment_cycle` preference (which nothing read before
  *  TENANT-6a), not a cycle the platform has committed to. */

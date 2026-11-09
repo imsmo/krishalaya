@@ -42,6 +42,11 @@ approved card's prices and dates frozen) and the exclusion `ex_rate_card_one_in_
 ## Lifecycle (Law 5 — state machine in `domain/milk-bill.state.ts`)
 `draft → previewed → approved → paid` (+ `disputed` from previewed, resolvable back). A cycle-close job
 generates the draft; the member previews/disputes within the window; the cooperative approves; payout → paid.
+**A recorded pour cannot be corrected (survey OPS-3 C-5, corrected PC-56 OPS-3a).** No route edits, reverses or re-enters a pour,
+and `kv_app` holds no UPDATE on `weight_kg` / `fat_pct` / `snf_pct` (0078) — only `milk_bill_id` (0080) and `hold_state` (0156). An
+upheld dispute VOIDS the bill and releases its pours UNCHANGED (`MilkBillService.void` → `detachFromBill`), so the rebuilt bill carries
+the same readings. The quality path can hold, clear or reject a FLAGGED pour; it cannot change a weight or a fat reading, and an unflagged
+pour never enters it. A correction record (reversal + re-entry, a second person) is founder Q4-A's later money wave.
 No version columns → mutations lock the row **FOR UPDATE**. `milk_collections` is **partitioned by
 `collected_on`** (auto-managed by `ensure_partitions` in migration 0014); every query carries the date so PG
 prunes partitions (Law 8). `UNIQUE(membership_id, collected_on, shift)` makes a counter entry idempotent.
@@ -50,7 +55,15 @@ prunes partitions (Law 8). `UNIQUE(membership_id, collected_on, shift)` makes a 
 - `POST /v1/dairy/mccs` (idempotent, `dairy.manage`) · `GET` · `GET /:id` · `POST /:id/active`
   · `POST /mccs/memberships` (enrol) · `GET /mccs/memberships/list[?box=mine|mcc|all]` · `GET /mccs/memberships/:id`.
 - `POST /v1/dairy/rate-cards` (idempotent, `dairy.manage`) · `POST /:id/approve` (idempotent, `dairy.manage`, a second person — HOTFIX-12) · `GET[?activeOnly]` (active = approved and active) · `GET /:id`.
-- `POST /v1/dairy/collections` (idempotent, `dairy.manage`) · `GET ?membershipId&from&to` (member-own or staff).
+- `POST /v1/dairy/collections` (idempotent, `dairy.collect` or `dairy.manage` — PC-56 OPS-3p) · `GET ?membershipId&from&to` (member-own or `dairy.manage`).
+  **The pour's day is bounded (PC-56 OPS-3a · OPS3-B2, founder Q5-A):** refused by name, after the permission and key checks and BEFORE
+  the idempotency record and any write — a day after the organisation's today, in its own zone (`POUR_DATE_IN_FUTURE`, 422), and a day
+  inside a LIVE (not voided) bill of that member, in any status (`POUR_WINDOW_ALREADY_BILLED`, 422; such a pour could never be billed —
+  the 6c-1 STRANDED case). The readings are parsed and serialised as their digits (`core/database/pg-numeric`, OPS3-B18 — no double).
+- `GET /v1/dairy/mccs/mine` (PC-56 OPS-3a · OPS3-B14; `dairy.read` / `collect` / `manage`) — the active centres in the caller's OPEN custody
+  row (`mcc_operator_assignments`) and the organisation's today. `GET /mccs/memberships/list` takes `code` (a member-code prefix).
+- `GET /v1/dairy/d2c/mccs/:mccId/day-summary[?date]` — one centre's day per shift: pours, kg, the priced sum of ALL pours, and (PC-56 OPS-3a ·
+  OPS3-B15) the same sum split server-side into `payableMinor` (hold `none`/`released`), `heldMinor`, `rejectedMinor`, with their counts.
 - `POST /v1/dairy/milk-bills/generate` (idempotent) · `GET[?box=mine|all]` · `GET /:id` · `POST /:id/{preview,approve}` · `POST /:id/pay` (idempotent, money).
 
 ## Security — threats considered
@@ -58,8 +71,9 @@ prunes partitions (Law 8). `UNIQUE(membership_id, collected_on, shift)` makes a 
   staff (`dairy.manage`) read tenant-wide. Bill/collection ownership resolves via the membership server-side.
 - **Anti-mass-assignment.** All DTOs are zod `.strict()`. Collection amount is server-computed from the
   resolved rate card (never client-supplied); the rate card is resolved by animal type + effective date.
-- **AuthZ throws.** `dairy.manage` gates every operator write (MCC, rate card, enrol, collect, generate,
-  approve, pay). Members have no write perm.
+- **AuthZ throws.** `dairy.manage` gates every operator write (MCC, rate card, enrol, generate, approve, pay) — **except recording a pour
+  and a manual cooler reading**, which since PC-56 OPS-3p (founder Q6-A) need `dairy.collect` OR `dairy.manage` (survey OPS-3 C-3,
+  corrected OPS-3a). Members have no write perm (but RAISE a dispute on their own bill).
 - **Money safety.** `milk_payment` is zero-sum + idempotent; a non-approved bill moves no money (unit-asserted);
   net can never be negative (deductions > gross rejected). Audit row on MCC create + bill pay (+ rate-card create
   and approve, HOTFIX-12). A pour has no audit row of its own: the pour row is the record (`entered_by`, append-only).
