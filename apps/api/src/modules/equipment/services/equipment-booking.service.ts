@@ -24,6 +24,14 @@
 //     `config.auth.exposeOtp`, which stays the identity module's test switch.
 //   • CANCEL keeps its administrator escape deliberately: on a confirmed hire it REFUNDS her deposit (escrow → her wallet) and
 //     moves nothing else, so it never spends her money.
+//
+// [PC-56 OPS-4a] THE HIRE — the first commit (survey_ops4 B6/B18, E10/E12/E14/E15; brief_ops4a §E):
+//   • E14 — a hire's rate day is the ORGANISATION's own calendar day of `scheduledAt` (`tenants.country_code → countries.timezone`, the
+//     6c-1 rule), resolved in SQL (`EquipmentRateRepository.tenantDay`) — no longer the UTC slice `scheduledAt.slice(0, 10)`.
+//   • E15 — quantities are parsed and printed as scaled strings (domain/scaled.ts); no `Number()` on a quantity.
+//   • E10 — QUOTE writes an audit row (the deposit before and after); CANCEL takes an Idempotency-Key and a reason validated by a strict
+//     DTO and writes an audit row (status before / after, the refund, the reason). The party refusal of cancel sits BEFORE
+//     `idem.remember` and any write (E12; a pre-read of the row, then the same check on the locked row).
 import { Inject, Injectable } from '@nestjs/common';
 import { createHmac, randomInt } from 'node:crypto';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
@@ -40,13 +48,13 @@ import { RateBasis, DomainEvent, EquipmentEventType } from '../domain/equipment.
 import { EquipmentBookingRepository } from '../repositories/equipment-booking.repository';
 import { EquipmentAssetRepository } from '../repositories/equipment-asset.repository';
 import { EquipmentRateRepository } from '../repositories/equipment-rate.repository';
-import { RequestBookingDto, QuoteBookingDto, StartBookingDto, CompleteBookingDto } from '../dto/create-equipment-booking.dto';
+import { RequestBookingDto, QuoteBookingDto, StartBookingDto, CompleteBookingDto, CancelBookingDto } from '../dto/create-equipment-booking.dto';
+import { parseScaled } from '../domain/scaled';
 import { BookingNotFoundError, AssetNotFoundError, AssetNotBookableError, NoActiveRateError, EquipmentForbiddenError, InvalidBookingError,
   EqConfirmNotRenterError, EqNotMachineOwnerError, SettleHoursNotConfirmedError, UsageConfirmNotRenterError, UsageAlreadyConfirmedError } from '../domain/equipment.errors';
 import { EquipmentActor } from './equipment-asset.service';
 
 const bookingNo = (id: string) => `EQ-${Date.now().toString(36).toUpperCase()}-${id.slice(0, 8).toUpperCase()}`;
-const parseScaled = (s: string, dec: number): bigint => { const [i, f = ''] = s.split('.'); return BigInt(i + (f + '0'.repeat(dec)).slice(0, dec)); };
 
 @Injectable()
 export class EquipmentBookingService {
@@ -75,7 +83,8 @@ export class EquipmentBookingService {
           if (!asset) throw new AssetNotFoundError(dto.assetId);
           if (!asset.isBookable) throw new AssetNotBookableError(asset.status);
           if (asset.ownerUserId === actor.userId) throw new InvalidBookingError('cannot rent your own asset');
-          const onDate = dto.scheduledAt.slice(0, 10);
+          // [PC-56 OPS-4a · E14] the organisation's own calendar day of the hire, not the UTC slice of the timestamp.
+          const onDate = await this.rates.tenantDay(tx, tenantId, dto.scheduledAt);
           const rate = await this.rates.resolveActive(tx, dto.assetId, dto.rateBasis, onDate);
           if (!rate) throw new NoActiveRateError(dto.rateBasis);
           const id = uuidv7();
@@ -89,8 +98,10 @@ export class EquipmentBookingService {
   }
 
   // ---- owner: quote the advance/deposit ----
-  async quote(tenantId: string, actor: EquipmentActor, id: string, dto: QuoteBookingDto) {
-    return this.ownerMutate(tenantId, actor, id, (b) => b.quote(BigInt(dto.advanceMinor)));
+  // [PC-56 OPS-4a · E10] recorded: one audit row with the deposit before and after (the owner's act, in the same transaction).
+  async quote(tenantId: string, actor: EquipmentActor, id: string, dto: QuoteBookingDto, ip: string | null = null) {
+    return this.ownerMutate(tenantId, actor, id, (b) => b.quote(BigInt(dto.advanceMinor)),
+      { action: 'equipment.booking.quoted', ip, snap: (b) => ({ status: b.status, advanceMinor: b.advanceMinor.toString() }) });
   }
 
   // ---- renter: confirm → ESCROW the advance ----
@@ -131,11 +142,17 @@ export class EquipmentBookingService {
   // ---- renter: cancel (requested/quoted/confirmed) — refunds any escrow ----
   // [PC-56 HOTFIX-13] The administrator escape is KEPT here, deliberately (brief B2): cancel only ever REFUNDS her held deposit
   // (escrow → her wallet) and moves no other money, so it never spends the payer's money.
-  async cancel(tenantId: string, actor: EquipmentActor, id: string, reason?: string) {
-    return this.uow.run(tenantId, async (tx) => {
+  // [PC-56 OPS-4a · E10/E12] keyed (Law 3), the reason validated by a strict DTO, one audit row; the party refusal BEFORE idem.remember.
+  async cancel(tenantId: string, actor: EquipmentActor, id: string, idemKey: string, dto: CancelBookingDto = {}, ip: string | null = null) {
+    const pre = await this.bookings.getById(tenantId, id);
+    if (!pre) throw new BookingNotFoundError(id);
+    if (pre.renterUserId !== actor.userId && pre.ownerUserId !== actor.userId && !actor.isAdmin) throw new EquipmentForbiddenError('not a party to this booking');
+    const reason = dto.reason;
+    return this.idem.remember(idemKey, actor.userId, 'equipment.booking.cancel', () => this.uow.run(tenantId, async (tx) => {
       const booking = await this.bookings.getForUpdate(tx, tenantId, id);
       if (!booking) throw new BookingNotFoundError(id);
       if (booking.renterUserId !== actor.userId && booking.ownerUserId !== actor.userId && !actor.isAdmin) throw new EquipmentForbiddenError('not a party to this booking');
+      const before = booking.status;
       const refund = booking.status === 'confirmed' ? booking.advanceMinor : 0n;
       booking.cancel(reason);
       if (refund > 0n) {
@@ -143,9 +160,11 @@ export class EquipmentBookingService {
           legs: [{ account: platform(PlatformAccount.Escrow), amountMinor: -refund }, { account: userMain(booking.renterUserId), amountMinor: refund }] });
       }
       await this.bookings.update(tx, booking);
+      await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: 'equipment.booking.cancelled', entityType: 'equipment_booking', entityId: booking.id,
+        oldValue: { status: before }, newValue: { status: booking.status, refundMinor: refund.toString(), reason: reason ?? null }, ip });
       await this.flush(tx, tenantId, booking.id, booking.pullEvents());
       return booking.toJSON();
-    }, { userId: actor.userId });
+    }, { userId: actor.userId }));
   }
 
   // ---- owner: SETTLE (completed → settled): escrow release + remainder/refund ----
@@ -243,7 +262,8 @@ export class EquipmentBookingService {
     }, { userId: 'system' });
   }
 
-  private async ownerMutate(tenantId: string, actor: EquipmentActor, id: string, fn: (b: EquipmentBooking) => void) {
+  private async ownerMutate(tenantId: string, actor: EquipmentActor, id: string, fn: (b: EquipmentBooking) => void,
+    record?: { action: string; ip: string | null; snap: (b: EquipmentBooking) => Record<string, unknown> }) {
     if (!actor.canManage) throw new EquipmentForbiddenError('requires equipment.manage');
     // [PC-56 HOTFIX-13] the machine's owner only — the administrator escape is gone; refused before the unit of work.
     const pre = await this.bookings.getById(tenantId, id);
@@ -253,8 +273,11 @@ export class EquipmentBookingService {
       const booking = await this.bookings.getForUpdate(tx, tenantId, id);
       if (!booking) throw new BookingNotFoundError(id);
       if (booking.ownerUserId !== actor.userId) throw new EqNotMachineOwnerError();
+      const old = record ? record.snap(booking) : null;
       fn(booking);
       await this.bookings.update(tx, booking);
+      if (record) await this.audit.write(tx, { tenantId, actorUserId: actor.userId, action: record.action, entityType: 'equipment_booking', entityId: booking.id,
+        oldValue: old, newValue: record.snap(booking), ip: record.ip });
       await this.flush(tx, tenantId, booking.id, booking.pullEvents());
       return booking.toJSON();
     }, { userId: actor.userId });

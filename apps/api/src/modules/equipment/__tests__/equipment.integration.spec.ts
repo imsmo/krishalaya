@@ -76,7 +76,8 @@ run('equipment CHC rental spine (integration, real Postgres + RLS + escrow settl
     const rateRepo = new EquipmentRateRepository(replica as any);
     const bookingRepo = new EquipmentBookingRepository(replica as any);
     assets = new EquipmentAssetService(uow, outbox, idem, new AllowAllQuota(), metrics, assetRepo);
-    rates = new EquipmentRateService(uow, outbox, metrics, rateRepo, assetRepo);
+    // NAMED UPDATE (PC-56 OPS-4a · E10): the rate service now writes an audit row per change, so it takes the AuditWriter. Nothing else changed.
+    rates = new EquipmentRateService(uow, outbox, metrics, rateRepo, assetRepo, audit);
     rentals = new EquipmentBookingService(uow, outbox, idem, metrics, audit, config, wallet, bookingRepo, assetRepo, rateRepo);
 
     await fund(renter, 1_000_000n);

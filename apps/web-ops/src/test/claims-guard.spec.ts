@@ -671,3 +671,90 @@ describe('PC-56 OPS-3b · the claims guard (the tank)', () => {
     }
   });
 });
+
+// ── PC-56 OPS-4a (brief §E "Guards"): THE HIRE guards over the `ops4.` scope and the hire nav labels. Each is proven on its OWN canon phrase
+// (W405–W409 and the two mutate chains; persons, machines and figures anonymised) and NARROWED TO THE AFFIRMATIVE — a sentence that carries a
+// negation passes, the canon's claim is caught — and each is proven to let its negated form through. Then the founder's words (Q1-A with the
+// lead's no-renter-app fact, Q2-A, Q3-A) are PINNED verbatim in English and by their key words in hi / gu, and a brand guard (survey F-16) runs
+// over every 4a source, fixture and value.
+const NAV_4A = ['nav.chcGroup', 'nav.chcDashboard', 'nav.chcBookings', 'nav.chcInsights', 'dash.wave.chc'];
+const scoped4 = (cat: Record<string, string>) => Object.entries(cat).filter(([k]) => k.startsWith('ops4.') || NAV_4A.includes(k));
+const GUARDS_4A: ReadonlyArray<[name: string, hit: (v: string) => boolean, canon: string, negated: string]> = [
+  // money
+  ['zero-sum', affirmative3(/zero-sum/i), 'Money-adjacent actions reconcile zero-sum before this page ever shows.', 'Nothing is reconciled zero-sum here, because nothing moves.'],
+  ['revenue', affirmative3(/revenue/i), 'Revenue MTD ₹[n] across all rate_basis lines', 'No revenue is shown.'],
+  ['utilisation', affirmative3(/utili[sz]ation/i), 'Utilization MTD Tractors — [n]%', 'No utilisation is shown.'],
+  ['of N (a ratio)', affirmative3(/\bof \d/i), 'Showing 4 of 87 this month', 'No count such as 4 of 87 is shown.'],
+  ['× (a product)', affirmative3(/×/), '6h × ₹950 = ₹5,700 est', 'Nothing like 6h × a rate is worked out: no.'],
+  ['= producing a number', affirmative3(/=\s*[₹\d]/), '8 tractors + 4 rotavators = 22', 'No total = 22 is printed.'],
+  ['MTD', affirmative3(/\bMTD\b/), 'Revenue MTD ₹[n]', 'No MTD figure exists.'],
+  ['subsidy', affirmative3(/subsid/i), 'Machinery-subsidy claims are the FPO\'s own filing … the subsidy file quotes them', 'No subsidy filing is supported.'],
+  // hire
+  ['disputed', affirmative3(/disput/i), 'hours logged 7.5 vs billed 9 · disputed', 'A hire cannot be disputed.'],
+  ['waitlist', affirmative3(/wait-?list|waiting list/i), 'the second is offered the waitlist', 'There is no waiting list.'],
+  ['first-come', affirmative3(/first[- ]come/i), 'first-come holds the slot', 'Nothing is first-come here: no slot is held.'],
+  ['odometer', affirmative3(/odometer/i), 'odometer step … synced', 'No odometer is read.'],
+  ['GPS', affirmative3(/\bGPS\b/), 'the tractor\'s own GPS trail decides — freeze only the disputed part', 'No GPS trail is recorded.'],
+  ['technician', affirmative3(/technician/i), 'only the maintenance technician', 'There is no technician role.'],
+  ['CHC manager', affirmative3(/CHC manager|centre manager|operator vs/i), 'Operator vs CHC manager — only the CHC manager edits rate cards', 'There is no CHC manager role.'],
+  // chrome
+  ['on-call', affirmative3(/on-call/i), 'repeated failures page the on-call.', 'Nobody on-call is paged: no.'],
+  ['audit trail', affirmative3(/audit[- ]trail/i), 'confirming writes an audit-trail entry with actor, time and reason', 'No audit trail is written when a page is read.'],
+];
+/** survey F-16 — real-sounding canon fixtures and figures: never in an ops4 value, source or fixture. */
+const BRAND_4A: ReadonlyArray<[RegExp, string]> = [
+  [/Anand/i, 'Anand FPO'], [/Kisan Mitra/i, 'Kisan Mitra Kiosk'], [/Kiran Ben/i, 'Kiran Ben V.'], [/Jashoda/i, 'Jashoda Ben R.'], [/R••• M\./, 'R••• M.'],
+  [/Vanthali/i, 'Vanthali'], [/BMC-VAN-01|SP-BHE-07|SP-VAN-12|\bWM-02\b|\bVB-01\b|REF-114/, 'BMC-VAN-01 · SP-BHE-07 · WM-02 · VB-01 · REF-114'],
+  [/\bT-03\b/, 'Tractor T-03'], [/Mahindra/i, 'Mahindra 575 DI'], [/GJ-1•/, 'GJ-1•-••-2214'], [/8802 41/, '8802 41•• ••62'], [/Jaffarabadi/i, 'Jaffarabadi'],
+  [/ORD-0713-0442/, 'ORD-0713-0442'], [/BK-2026-04\d\d/, 'BK-2026-0455'], [/2,84,650|52,250|5,700|6,800|18,400|78,000/, '₹2,84,650 · ₹52,250'], [/\b1,840\b|\b1,900\b/, '1,840 / 1,900 engine-hours'],
+];
+const SOURCES_4A = ['components/ops4/ChcViews.tsx', 'components/ops4/Ops4Chain.tsx', 'features/ops4/chc.ts', 'features/ops4/refusals.ts', 'app/chc/dashboard/page.tsx',
+  'app/chc/equipment-detail/page.tsx', 'app/chc/bookings/page.tsx', 'app/chc/insights/page.tsx', 'test-render/ops4a-fixtures.ts', 'components/Sidebar.tsx'];
+
+describe('PC-56 OPS-4a · the claims guard (ops4. scope, the hire)', () => {
+  it('each guard is proven on its own canon phrase and lets its negated form through', () => {
+    for (const [name, hit, canon, negated] of GUARDS_4A) {
+      expect([name, hit(canon)]).toEqual([name, true]);
+      expect([name, 'negated', hit(negated)]).toEqual([name, 'negated', false]);
+    }
+    for (const [re, phrase] of BRAND_4A) expect([String(re), re.test(phrase)]).toEqual([String(re), true]);
+  });
+  it.each(Object.entries(CATS))('%s: no ops4. value (or hire nav label) trips a 4a guard or a brand regex', (_lang, cat) => {
+    expect(scoped4(cat).length).toBe(171);
+    for (const [k, v] of scoped4(cat)) {
+      for (const [name, hit] of GUARDS_4A) expect([k, name, hit(v)]).toEqual([k, name, false]);
+      for (const [re] of BRAND_4A) expect([k, String(re), re.test(v)]).toEqual([k, String(re), false]);
+    }
+  });
+  it('the founder\'s words are PINNED verbatim (en) and carried by their key words in hi / gu; the lead\'s no-renter-app fact beside Q1', () => {
+    const PIN: Record<string, string> = {
+      // Q1-A (his own answer, built in HOTFIX-13)
+      'ops4.q1.words': 'The owner records the hours worked. Nothing beyond the deposit leaves the renter\'s wallet until she confirms those hours in her own app.',
+      // the lead's decision (brief §D): a fact the code proves — pinned by test/ops4a-pages.spec.ts "THE NO-RENTER-APP FACT"
+      'ops4.q1.noRenterApp': 'No app for renters to confirm hours exists on this platform yet, so a hire billed above its deposit cannot be settled.',
+      // Q2-A (his own answer)
+      'ops4.q2.words': 'Hire charges are paid into the wallet of the person who listed this machine — not into the organisation\'s account.',
+      // Q3-A (applied from OPS-1 Q2-A)
+      'ops4.q3.words': 'Quotes, starting, finishing and payment are done by the machine\'s owner in their own app, not on this console.',
+      'ops4.signedIn': 'Signed in as you. These pages show the machines you listed and the hires on them.',
+      'ops4.detail.engineHours': 'Engine hours as entered by the owner',
+    };
+    for (const [k, v] of Object.entries(PIN)) expect([k, en[k]]).toEqual([k, v]);
+    for (const k of Object.keys(PIN)) for (const cat of [hi, gu]) expect([k, typeof cat[k] === 'string' && cat[k] !== en[k]]).toEqual([k, true]);
+    // Q2's "not into the organisation's account", in every language (a mutant drops it from one)
+    expect([/not into the organisation's account/.test(en['ops4.q2.words']), /संगठन के खाते में नहीं/.test(hi['ops4.q2.words']), /સંસ્થાના ખાતામાં નહીં/.test(gu['ops4.q2.words'])]).toEqual([true, true, true]);
+    // the no-renter-app fact, in every language (a mutant drops it from one)
+    expect([/कोई ऐप अभी नहीं/.test(hi['ops4.q1.noRenterApp']), /કોઈ ઍપ હજી નથી/.test(gu['ops4.q1.noRenterApp'])]).toEqual([true, true]);
+    // Q1's "until she confirms" and Q3's "not on this console", in hi / gu
+    expect([/पुष्टि नहीं करती/.test(hi['ops4.q1.words']), /પુષ્ટિ ન કરે/.test(gu['ops4.q1.words'])]).toEqual([true, true]);
+    expect([/इस कंसोल पर नहीं/.test(hi['ops4.q3.words']), /આ કન્સોલ પર નહીં/.test(gu['ops4.q3.words'])]).toEqual([true, true]);
+    // no role claim (OPS-3 Q14-A): no value names a manager, operator or technician affirmatively — the guard above — and no "MM"
+    for (const [k, v] of scoped4(en)) expect([k, /\bMM\b/.test(v)]).toEqual([k, false]);
+  });
+  it('brand guard over every 4a source and fixture', () => {
+    for (const rel of SOURCES_4A) {
+      const src = fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
+      for (const [re] of BRAND_4A) expect([rel, String(re), re.test(src)]).toEqual([rel, String(re), false]);
+    }
+  });
+});

@@ -30,3 +30,7 @@ export class SettleHoursNotConfirmedError extends DomainError { constructor() { 
 export class UsageNotConfirmableError extends DomainError { constructor(status: string) { super('USAGE_NOT_CONFIRMABLE', `The hours can be confirmed only on a completed hire (this hire is ${status}).`, 409, { status }); } }
 /** The renter has already confirmed these hours; a confirmation is final. */
 export class UsageAlreadyConfirmedError extends DomainError { constructor() { super('USAGE_ALREADY_CONFIRMED', 'The renter has already confirmed the hours of this hire.', 409); } }
+
+// [PC-56 OPS-4a · E10] a rate line that a hire has already snapshotted is never overwritten in place (the hire's price is the record of
+// what that line said). Refused before any write.
+export class RateAlreadyPricedAHireError extends DomainError { constructor() { super('RATE_ALREADY_PRICED_A_HIRE', 'This rate line has already priced a hire, so it is not overwritten. A rate can be set from a different day.', 409); } }

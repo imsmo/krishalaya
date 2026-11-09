@@ -1,7 +1,8 @@
 // modules/equipment/controllers/v1/equipment.controller.ts · owner asset registry + rate cards + browse.
 // register/update/status/rates need equipment.manage (owner-only, enforced in service). Browse is any
 // authenticated tenant user (renters shopping). `equipment` flag.
-import { Controller, Get, Headers, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Headers, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
 import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
@@ -65,7 +66,7 @@ export class EquipmentController {
   maintenanceLogs(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.maintenance.logs(ctx.tenantId, id).then((data) => ({ data })); }
 
   @Post(':id/rates') @RequirePermissions(EquipmentPermissions.Manage)
-  setRate(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(CreateRateSchema) dto: CreateRateDto) { return this.rates.setRate(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data })); }
+  setRate(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(CreateRateSchema) dto: CreateRateDto) { return this.rates.setRate(ctx.tenantId, this.actor(ctx), id, dto, r.ip || null).then((data) => ({ data })); }   // [PC-56 OPS-4a] recorded
   @Get(':id/rates')
   listRates(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodQuery(QueryRatesSchema) q: QueryRatesDto) { return this.rates.list(ctx.tenantId, id, q.activeOnly).then((data) => ({ data })); }
 }

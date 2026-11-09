@@ -1,7 +1,7 @@
 // modules/equipment/controllers/v1/rentals.controller.ts · the rental booking lifecycle + escrow settlement.
 // request/confirm/confirm-usage/cancel are the renter (equipment.rent); quote/start/complete/settle are the owner
 // (equipment.manage) — [PC-56 HOTFIX-13] the machine's owner ONLY, no administrator escape; confirm and confirm-usage the renter ONLY. Money routes (confirm, settle) require an Idempotency-Key (Law 3). `equipment` flag.
-import { Body, Controller, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
@@ -11,7 +11,7 @@ import { CurrentContext } from '../../../../core/tenancy-context/current-context
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
 import { BadRequestError } from '../../../../shared/errors/app-error';
 import { EquipmentBookingService } from '../../services/equipment-booking.service';
-import { RequestBookingSchema, RequestBookingDto, QuoteBookingSchema, QuoteBookingDto, StartBookingSchema, StartBookingDto, CompleteBookingSchema, CompleteBookingDto } from '../../dto/create-equipment-booking.dto';
+import { RequestBookingSchema, RequestBookingDto, QuoteBookingSchema, QuoteBookingDto, CancelBookingSchema, CancelBookingDto, StartBookingSchema, StartBookingDto, CompleteBookingSchema, CompleteBookingDto } from '../../dto/create-equipment-booking.dto';
 import { QueryBookingsSchema, QueryBookingsDto } from '../../dto/query-equipment-booking.dto';
 import { EquipmentPermissions, canManageEquipment, canRentEquipment, isEquipmentAdmin } from '../../policies/equipment.policies';
 
@@ -38,7 +38,7 @@ export class RentalsController {
   get(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.getById(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
 
   @Post(':id/quote') @RequirePermissions(EquipmentPermissions.Manage)
-  quote(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(QuoteBookingSchema) dto: QuoteBookingDto) { return this.svc.quote(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data })); }
+  quote(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(QuoteBookingSchema) dto: QuoteBookingDto) { return this.svc.quote(ctx.tenantId, this.actor(ctx), id, dto, ipOf(r)).then((data) => ({ data })); }   // [PC-56 OPS-4a] recorded
 
   @Post(':id/confirm') @RequirePermissions(EquipmentPermissions.Rent)
   confirm(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @Headers('idempotency-key') key: string) {
@@ -63,6 +63,10 @@ export class RentalsController {
     if (!key) throw new BadRequestError('Idempotency-Key header required');
     return this.svc.confirmUsage(ctx.tenantId, this.actor(ctx), id, key, ipOf(r)).then((data) => ({ data }));
   }
+  /** [PC-56 OPS-4a · E10] Idempotency-Keyed (Law 3; 400 without), the body a strict DTO (an optional validated reason), one audit row. */
   @Post(':id/cancel')
-  cancel(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @Body('reason') reason?: string) { return this.svc.cancel(ctx.tenantId, this.actor(ctx), id, reason).then((data) => ({ data })); }
+  cancel(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @Headers('idempotency-key') key: string, @ZodBody(CancelBookingSchema) dto: CancelBookingDto) {
+    if (!key) throw new BadRequestError('Idempotency-Key header required');
+    return this.svc.cancel(ctx.tenantId, this.actor(ctx), id, key, dto, ipOf(r)).then((data) => ({ data }));
+  }
 }

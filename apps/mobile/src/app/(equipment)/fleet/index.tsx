@@ -29,7 +29,7 @@ export default function Fleet() {
             <Pressable onPress={() => router.push(`/(equipment)/fleet/${item.id}`)}>
               <Card>
                 <View style={styles.between}>
-                  <Text style={styles.name}>{item.defaultName}</Text>
+                  <Text style={styles.name}>{item.regNo ?? t('equip.req.asset')}</Text>{/* PC-56 OPS-4a · E1: an asset has no name field */}
                   <StatusPill label={t(`equip.asset.${item.status ?? 'active'}`)} tone={assetTone(item.status)} />
                 </View>
               </Card>

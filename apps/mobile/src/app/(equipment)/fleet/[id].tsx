@@ -51,7 +51,7 @@ export default function ManageAsset() {
 
   const chip = (on: boolean) => [styles.chip, on && styles.chipOn];
   return (
-    <ScreenScaffold title={asset.defaultName}>
+    <ScreenScaffold title={asset.regNo ?? t('equip.manage.title')}>
       <ScrollView>
         <Card>
           <StatusPill label={t(`equip.asset.${asset.status ?? 'active'}`)} tone={assetTone(asset.status)} />
@@ -68,7 +68,7 @@ export default function ManageAsset() {
         {rates.length === 0 ? <Text style={styles.muted}>{t('equip.rate.none')}</Text> : rates.map((r) => (
           <Card key={r.id}>
             <View style={styles.between}>
-              <Text style={styles.label}>{t(`equip.basis.${String(r.rateBasis ?? r.unitCode)}`) || r.unitCode}</Text>
+              <Text style={styles.label}>{t(`equip.basis.${r.rateBasis}`) || r.rateBasis}</Text>
               <MoneyText minor={r.rateMinor} langCode={lang} size="sm" />
             </View>
           </Card>

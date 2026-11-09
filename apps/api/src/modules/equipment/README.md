@@ -17,6 +17,11 @@ Gated by the **`equipment`** feature flag (default **OFF**).
 ## Money correctness — float-free (Law: never float)
 `total = rate_minor × actualQuantity` is computed with **exact bigint arithmetic**: quantities (hours/acres)
 are scaled integers (×100) and `total = rate × qtyCenti / 100` with round-half-up integer division. No float.
+[PC-56 OPS-4a — CORRECTED, survey F-15] the repository used to read and write the quantity through
+`Number()` (`BigInt(Math.round(Number(v) * 100))`, `(Number(c) / 100).toFixed(2)`); both directions are now
+string placement of the point (`domain/scaled.ts`), and the entity's `toJSON` prints them the same way.
+[PC-56 OPS-4a — E14] a hire's rate is the line in force on the ORGANISATION's own calendar day of `scheduledAt`
+(`tenants.country_code → countries.timezone`), no longer the UTC slice `scheduledAt.slice(0, 10)`.
 
 ## Security — OTP-gated start + anti over-billing
 The meter only starts after the renter hands over a one-time code: `confirm` generates an OTP, stores **only
@@ -33,6 +38,11 @@ deposit settles from the deposit alone. A hire she never confirms stays `complet
 times it out. Only the renter confirms (escrows her deposit) and confirms the hours; only the machine's owner
 quotes, starts, completes and settles — the `booking.manage` administrator escape is gone from all six; cancel
 keeps it (it only refunds her deposit).
+[PC-56 OPS-4a — CORRECTED, survey C-4] **no client calls `confirm-usage` yet**: no renter app exists on this
+platform (the SDK method exists; no web or mobile screen calls it), so a hire billed above its deposit cannot be
+settled until one does. Nor does any client request or confirm a hire (survey C-4).
+[PC-56 OPS-4a — founder Q2-A] the hire money goes to the wallet of the person who LISTED the machine
+(`userMain(ownerUserId)`), not to the organisation's account.
 
 ## Lifecycle (Law 5 — `domain/equipment-booking.state.ts`)
 `requested → quoted → confirmed → in_progress → completed → settled` (+ cancel from requested/quoted/confirmed).
@@ -45,7 +55,12 @@ its JOIN to `equipment_assets`, from which the owner is resolved — there is no
 - `POST /v1/equipment/rentals` (request, idempotent, `equipment.rent`) · `GET` (?box=renter|owner|all) · `GET /:id`
   · `POST /:id/quote` (owner) · `POST /:id/confirm` (renter, idempotent, escrow) · `POST /:id/start` (owner, OTP)
   · `POST /:id/complete` (owner) · `POST /:id/confirm-usage` (renter, idempotent — HOTFIX-13)
-  · `POST /:id/settle` (owner, idempotent, money; beyond the deposit only after `confirm-usage`) · `POST /:id/cancel`.
+  · `POST /:id/settle` (owner, idempotent, money; beyond the deposit only after `confirm-usage`) · `POST /:id/cancel`
+  (renter, owner or `booking.manage`; idempotent since OPS-4a, a strict body with an optional reason, audited).
+- `GET /:id/rates` needs `?assetId=` (the strict `QueryRatesSchema`); the SDK sends it since OPS-4a (survey C-13).
+- **Recorded (OPS-4a, survey F-7):** `POST /:id/rates` (before/after; a line that has already priced a hire is never
+  overwritten — `RATE_ALREADY_PRICED_A_HIRE`), quote, cancel, confirm-usage and settle each write an audit row.
+- **Not prevented (survey F-9, pinned live by ops4a-hire):** two hires of one machine for the same hour are both accepted.
 
 ## Threats considered
 - **No cross-party IDOR**: bookings read 404 unless caller is renter, owner, or admin; assets edited only by
@@ -65,12 +80,17 @@ confirmed/started/completed/settled/cancelled`.
 ## Jobs
 `booking-confirm-timeout.job.ts` — cancels bookings left un-confirmed past their scheduled time (no escrow
 held pre-confirm → nothing to refund), cross-tenant, bounded, `FOR UPDATE SKIP LOCKED`, idempotent.
+[PC-56 OPS-4a — CORRECTED, survey C-7] **it is not run by anything**: no process instantiates it
+(`grep ConfirmTimeout apps/worker` → none), and migration 0079 revokes every privilege on `equipment_bookings`
+from `kv_relay`, the pool it would need. Un-confirmed hires never expire today.
 
 ## Scope & deferrals
 **In scope:** equipment assets, per-asset rate cards, rental bookings (escrow hold → OTP start → metered completion → settlement), confirm-timeout job.
 **Deferred (schema in 0010, not wired):** DRONES (registrations / pilots / flights, DGCA DigitalSky + RPL
-expiry jobs, no-fly/weather pre-flight gate), maintenance logs, GPS area-trace (±2%) precise billing,
+expiry jobs, no-fly/weather pre-flight gate), GPS area-trace (±2%) precise billing,
 operator-pool integration (`operator_user_id` from labour), and the payments payout/intent linkage.
+[PC-56 OPS-4a — CORRECTED, survey C-8] maintenance logs are NOT deferred: PC-54 W54-12 wired them
+(`services/maintenance.service.ts`, `POST/GET /:id/maintenance-logs`, `GET maintenance/alerts`).
 
 ## Tests
 - `__tests__/equipment-domain.spec.ts` — rental state machine, float-free totals, advance/over-estimate bounds, OTP constant-time gate.

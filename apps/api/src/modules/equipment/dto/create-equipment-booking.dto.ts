@@ -21,3 +21,8 @@ export type StartBookingDto = z.infer<typeof StartBookingSchema>;
 
 export const CompleteBookingSchema = z.object({ actualQuantity: qtyStr }).strict();
 export type CompleteBookingDto = z.infer<typeof CompleteBookingSchema>;
+
+// [PC-56 OPS-4a · E10] cancel's body: strict (any other field → 422), the reason an optional trimmed sentence of 1–250 characters. It
+// was an unvalidated `@Body('reason')` (survey F-7). Optional because the owner's mobile cancel asks for none (brief §6 deviation).
+export const CancelBookingSchema = z.object({ reason: z.string().trim().min(1).max(250).optional() }).strict();
+export type CancelBookingDto = z.infer<typeof CancelBookingSchema>;

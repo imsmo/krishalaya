@@ -1,5 +1,7 @@
 // apps/mobile/src/app/(equipment)/rentals/index.tsx · booking requests (PC-50 W10-6; canon screen 310).
 // box=owner — rentals on MY machines. Status chips filter server-side.
+// [PC-56 OPS-4a · E1] the row prints the API's own fields (booking number, the quantity and its rate basis); the SDK no longer types
+// `assetName` / `quantity` / `unitCode`, which the API never returned.
 import React, { useCallback, useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -37,11 +39,11 @@ export default function BookingRequests() {
             <Pressable onPress={() => router.push(`/(equipment)/rentals/${item.id}`)}>
               <Card>
                 <View style={styles.between}>
-                  <Text style={styles.name}>{item.assetName ?? t('equip.req.asset')}</Text>
+                  <Text style={styles.name}>{item.bookingNo}</Text>
                   <StatusPill label={t(`equip.status.${item.status}`) || item.status} tone={rentalTone(item.status)} />
                 </View>
                 <View style={styles.between}>
-                  <Text style={styles.muted}>{item.quantity} {item.unitCode}</Text>
+                  <Text style={styles.muted}>{item.actualQuantity ?? item.estQuantity} · {t(`equip.basis.${item.rateBasis}`)}</Text>
                   {item.totalMinor ? <MoneyText minor={item.totalMinor} langCode={lang} size="sm" /> : null}
                 </View>
               </Card>

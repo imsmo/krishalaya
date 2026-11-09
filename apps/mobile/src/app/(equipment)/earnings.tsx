@@ -25,10 +25,10 @@ export default function EquipmentEarnings() {
           renderItem={({ item }) => (
             <Card>
               <View style={styles.between}>
-                <Text style={styles.name}>{item.assetName ?? item.id.slice(0, 8)}</Text>
+                <Text style={styles.name}>{item.bookingNo}</Text>
                 {item.totalMinor ? <MoneyText minor={item.totalMinor} langCode={lang} size="md" tone="positive" /> : null}
               </View>
-              <Text style={styles.muted}>{item.quantity} {item.unitCode}{item.completedAt ? ` · ${new Date(item.completedAt).toLocaleDateString()}` : ''}</Text>
+              <Text style={styles.muted}>{item.actualQuantity ?? item.estQuantity} · {t(`equip.basis.${item.rateBasis}`)}{item.completedAt ? ` · ${new Date(item.completedAt).toLocaleDateString()}` : ''}</Text>
             </Card>
           )}
           ListFooterComponent={<Text style={styles.muted}>{t('equip.earn.walletNote')}</Text>}

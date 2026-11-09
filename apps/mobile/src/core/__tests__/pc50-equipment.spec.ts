@@ -46,3 +46,17 @@ describe('settleRefusalKey — SETTLE_HOURS_NOT_CONFIRMED by name', () => {
     expect((en as Record<string, string>)[k]).toBe("Not settled: the renter has not confirmed these hours in her own app. Nothing beyond the deposit leaves the renter's wallet until she confirms those hours in her own app.");
   });
 });
+
+// PC-56 OPS-4a · NAMED UPDATE (brief §E "Mobile copy"): the owner's settle question said "The balance moves to your wallet now." — false
+// whenever settle is refused (SETTLE_HOURS_NOT_CONFIRMED). It now states only what `settle` does (equipment-booking.service.ts settle:
+// the deposit is released to the owner — the settler, who must be the machine's owner —; the shortfall leg from the renter's wallet runs
+// only when she has confirmed the hours). Pinned verbatim ×3; the old sentence can never come back.
+describe('OPS-4a · the settle question states only what settle does (×3)', () => {
+  const k = 'equip.detail.settleConfirm';
+  it('en verbatim; hi / gu translated (not the English), each naming the deposit and her confirmation', () => {
+    expect((en as Record<string, string>)[k]).toBe("Settle this job? Settling pays you from the hire's deposit, and from the renter's wallet only for hours she has confirmed.");
+    expect((hi as Record<string, string>)[k]).toBe('यह काम निपटाएँ? निपटाने पर आपको किराये की जमा राशि से भुगतान होता है, और किराएदार के वॉलेट से केवल उन घंटों के लिए जिनकी उसने पुष्टि की है।');
+    expect((gu as Record<string, string>)[k]).toBe('આ કામ પતાવવું? પતાવવાથી તમને ભાડાની જમા રકમમાંથી ચૂકવણી થાય છે, અને ભાડે લેનારના વૉલેટમાંથી ફક્ત એ કલાકો માટે જેની તેણે પુષ્ટિ કરી છે.');
+    for (const cat of [en, hi, gu] as Array<Record<string, string>>) expect(/balance moves to your wallet now|बकाया अभी|બાકી રકમ હમણાં/.test(cat[k])).toBe(false);
+  });
+});

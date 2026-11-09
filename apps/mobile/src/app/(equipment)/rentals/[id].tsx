@@ -3,6 +3,7 @@
 // requested; START on confirmed with the RENTER's OTP (presence proof — their consent, their wallet);
 // COMPLETE with actual usage; SETTLE idempotently (money moves server-side); cancel pre-start.
 // The renter's CONFIRM never appears here — it belongs to their device.
+// PC-56 OPS-4a: the settle question states only what `settle` does (equip.detail.settleConfirm, ×3); cancel is Idempotency-Keyed.
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams, useFocusEffect } from 'expo-router';
@@ -60,14 +61,14 @@ export default function RentalDetail() {
 
   const actions = ownerActionsFor(rental.status);
   return (
-    <ScreenScaffold title={rental.assetName ?? t('equip.detail.title')}>
+    <ScreenScaffold title={rental.bookingNo || t('equip.detail.title')}>
       <ScrollView>
         <Card>
           <View style={styles.between}>
             <StatusPill label={t(`equip.status.${rental.status}`) || rental.status} tone={rentalTone(rental.status)} />
             {rental.totalMinor ? <MoneyText minor={rental.totalMinor} langCode={lang} /> : null}
           </View>
-          <Text style={styles.muted}>{rental.quantity} {rental.unitCode}</Text>
+          <Text style={styles.muted}>{rental.actualQuantity ?? rental.estQuantity} · {t(`equip.basis.${rental.rateBasis}`)}</Text>
           {rental.advanceMinor ? <View style={styles.between}><Text style={styles.muted}>{t('equip.detail.advance')}</Text><MoneyText minor={rental.advanceMinor} langCode={lang} size="sm" /></View> : null}
           {rental.scheduledAt ? <Text style={styles.muted}>{t('equip.detail.scheduled')} {new Date(rental.scheduledAt).toLocaleString()}</Text> : null}
         </Card>
@@ -87,7 +88,7 @@ export default function RentalDetail() {
         )}
         {actions.includes('complete') && (
           <Card>
-            <Input label={t('equip.detail.actualQty', { unit: rental.unitCode })} value={actualQty} keyboardType="decimal-pad" onChangeText={setActualQty} />
+            <Input label={t('equip.detail.actualQty', { unit: t(`equip.basis.${rental.rateBasis}`) })} value={actualQty} keyboardType="decimal-pad" onChangeText={setActualQty} />
             <Button title={t('equip.action.complete')} disabled={busy} onPress={doComplete} />
           </Card>
         )}

@@ -40,4 +40,5 @@ export function startRental(id: string, otp: string): Promise<EquipmentRental> {
 export function completeRental(id: string, actualQuantity: string): Promise<EquipmentRental> { return apiClient().equipment.completeRental(id, actualQuantity); }
 /** The money leg — settles server-side, idempotent (Law 3). */
 export function settleRental(id: string): Promise<EquipmentRental> { return apiClient().equipment.settleRental(id, newId()); }
-export function cancelRental(id: string, reason?: string): Promise<EquipmentRental> { return apiClient().equipment.cancelRental(id, reason); }
+/** PC-56 OPS-4a · E10: cancel is Idempotency-Keyed (the API answers 400 without a key). */
+export function cancelRental(id: string, reason?: string): Promise<EquipmentRental> { return apiClient().equipment.cancelRental(id, newId(), reason); }

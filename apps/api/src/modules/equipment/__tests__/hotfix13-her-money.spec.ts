@@ -93,7 +93,8 @@ describe('PC-56 HOTFIX-13 · B2 — quote / start / complete / settle are the ma
 
   it('cancel KEEPS its administrator escape: on a confirmed hire it only refunds HER deposit (escrow → her wallet)', async () => {
     const h = harness(hire('confirmed'));
-    await h.svc.cancel(T, admin, 'b1');
+    // NAMED UPDATE (PC-56 OPS-4a · E10): cancel is now Idempotency-Keyed and takes a strict body; the escape and the legs are unchanged.
+    await h.svc.cancel(T, admin, 'b1', 'k-cancel', {}, null);
     const legs = (h.wallet.post.mock.calls as unknown as [unknown, { txnType: string; legs: { account: { userId?: string; kind?: string }; amountMinor: bigint }[] }][]).map((c) => c[1]);
     expect(legs).toHaveLength(1); expect(legs[0].txnType).toBe('escrow_release');
     expect(legs[0].legs.find((l) => l.amountMinor > 0n)!.account.userId).toBe('renter1');

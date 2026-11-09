@@ -6,6 +6,7 @@
 import { timingSafeEqual } from 'node:crypto';
 import { RentalStatus, assertTransition } from './equipment-booking.state';
 import { RateBasis, DomainEvent, EquipmentEventType } from './equipment.events';
+import { formatScaled } from './scaled';
 import { InvalidBookingError, OverEstimateError, BookingStartOtpInvalidError, BookingStartOtpNotIssuedError, UsageNotConfirmableError, UsageAlreadyConfirmedError, UsageConfirmNotRenterError } from './equipment.errors';
 
 /** Round-half-up integer division for positive bigints. */
@@ -111,7 +112,8 @@ export class EquipmentBooking {
 
   toJSON() { const v = this.props; return { id: v.id, bookingNo: v.bookingNo, renterUserId: v.renterUserId, assetId: v.assetId, ownerUserId: v.ownerUserId,
     operatorUserId: v.operatorUserId, taskDesc: v.taskDesc, rateBasis: v.rateBasis, rateMinor: v.rateMinor.toString(),
-    estQuantity: (Number(v.estQuantityCenti) / 100).toFixed(2), actualQuantity: v.actualQuantityCenti != null ? (Number(v.actualQuantityCenti) / 100).toFixed(2) : null,
+    // [PC-56 OPS-4a · E15] scaled strings by string placement of the point — never Number() on a quantity.
+    estQuantity: formatScaled(v.estQuantityCenti, 2), actualQuantity: v.actualQuantityCenti != null ? formatScaled(v.actualQuantityCenti, 2) : null,
     scheduledAt: v.scheduledAt, status: v.status, advanceMinor: v.advanceMinor.toString(), totalMinor: v.totalMinor?.toString() ?? null,
     startedAt: v.startedAt, completedAt: v.completedAt, createdAt: v.createdAt,
     // [PC-56 HOTFIX-13] whether — and when — the renter confirmed the hours (never the start code, never its hash).

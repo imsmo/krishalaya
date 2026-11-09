@@ -7,13 +7,15 @@ import { TxContext } from '../../../core/database/unit-of-work';
 import { EquipmentBooking } from '../domain/equipment-booking.entity';
 import { RateBasis } from '../domain/equipment.events';
 import { RentalStatus } from '../domain/equipment-booking.state';
+import { formatScaled, parseScaled } from '../domain/scaled';
 
 const SEL = `b.id, b.tenant_id, b.booking_no, b.renter_user_id, b.asset_id, a.owner_user_id, b.operator_user_id,
   b.task_desc, b.rate_basis, b.rate_minor, b.est_quantity, b.actual_quantity, b.scheduled_at, b.status,
   b.advance_minor, b.total_minor, b.start_otp_hash, b.started_at, b.completed_at, b.created_at,
   b.usage_confirmed_by, b.usage_confirmed_at
   FROM equipment_bookings b JOIN equipment_assets a ON a.id = b.asset_id`;
-const toCenti = (v: any): bigint => BigInt(Math.round(Number(v) * 100));
+// [PC-56 OPS-4a · OPS4-B18 / E15] numeric(10,2) arrives from pg as a STRING: parsed by string placement, never through Number().
+const toCenti = (v: unknown): bigint => parseScaled(String(v), 2);
 function toDomain(r: any): EquipmentBooking {
   return EquipmentBooking.rehydrate({ id: r.id, tenantId: r.tenant_id, bookingNo: r.booking_no, renterUserId: r.renter_user_id, assetId: r.asset_id,
     ownerUserId: r.owner_user_id, operatorUserId: r.operator_user_id, taskDesc: r.task_desc, rateBasis: r.rate_basis as RateBasis, rateMinor: BigInt(r.rate_minor),
@@ -22,7 +24,7 @@ function toDomain(r: any): EquipmentBooking {
     startOtpHash: r.start_otp_hash, startedAt: r.started_at, completedAt: r.completed_at, createdAt: r.created_at,
     usageConfirmedBy: r.usage_confirmed_by ?? null, usageConfirmedAt: r.usage_confirmed_at ?? null });
 }
-const centiToNum = (c: bigint) => (Number(c) / 100).toFixed(2);
+const centiToNum = (c: bigint) => formatScaled(c, 2);
 export interface BookingListQuery { renterUserId?: string; ownerUserId?: string; status?: string; cursor?: { c: string; id: string }; limit: number; }
 
 @Injectable()

@@ -34,7 +34,8 @@ export default async function InsightsPage() {
 
   const [bookings, rentals, bills] = await Promise.all([
     client.warehousing.bookings({ limit: 50 }).then((p) => p.items).catch(() => null),
-    client.equipment.rentals({ limit: 50 }).then((p) => p.items).catch(() => null),
+    // PC-56 OPS-4a (NAMED change, survey C-13): `box` is required now — the hires on the signed-in person's machines (it had read her renter list).
+    client.equipment.rentals({ box: 'owner', limit: 50 }).then((p) => p.items).catch(() => null),
     client.dairy.listBills({ box: 'all', limit: 50 }).then((p) => p.items).catch(() => null),
   ]);
 

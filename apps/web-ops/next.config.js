@@ -55,6 +55,10 @@ const nextConfig = {
       // PC-56 OPS-2a (survey E2): the OW-2 warehouse address → the canon's `warehouse/dashboard` (W370). Mirrors OPS2A_REDIRECTS in
       // src/features/ops2/intake.ts (pinned equal by src/test/ops2a-pages.spec.ts). `/warehouse/[id]` and the other `/warehouse/*` pages are untouched.
       { source: '/warehouse', destination: '/warehouse/dashboard', permanent: false },
+      // PC-56 OPS-4a (survey E2): the OW-3 hire addresses → the canon's `chc/*` (W405, W407). Mirrors OPS4A_REDIRECTS in src/features/ops4/chc.ts
+      // (pinned equal by src/test/ops4a-pages.spec.ts). The OW-3 pages and their money actions are deleted (founder Q3-A).
+      { source: '/equipment', destination: '/chc/dashboard', permanent: false },
+      { source: '/equipment/:id', destination: '/chc/bookings', permanent: false },
     ];
   },
   async headers() {
