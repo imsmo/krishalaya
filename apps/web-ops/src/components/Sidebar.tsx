@@ -41,11 +41,11 @@ const NAV: ReadonlyArray<{ href: string; labelKey: string; sub?: boolean; group?
   { href: '/attendance/face-enroll', labelKey: 'nav.attendance' }, // PC-56 OPS-1b · W397 (W398 linked from it)
   { href: '/canon/biometric', labelKey: 'nav.biometric', sub: true }, // PC-56 OPS-1b · W399 (a platform page — never under Dairy)
   { href: '/insights', labelKey: 'nav.insights' }, // OW-6
-  // PC-56 OPS-4c (survey E2): a Sensors group of the BUILT sensor routes only (`/devices` answers a 307 to the dashboard). The alert rules and the
-  // alert feed (`/devices/rules`, `/devices/alerts`) are OPS-5's and keep their own links from the alert pages.
+  // PC-56 OPS-4c (survey E2): a Sensors group of the BUILT sensor routes only (`/devices` answers a 307 to the dashboard).
+  // NAMED UPDATE (PC-56 OPS-5a, survey E1): "Alert rules" (W402) replaces the OW-7 `/devices/alerts` link (same nav key; both OW-7 pages 307 to it).
   { href: '/iot/dashboard', labelKey: 'nav.iotDashboard', group: 'nav.iotGroup' }, // PC-56 OPS-4c · W400 (the monitored subjects and the loggers; read)
   { href: '/iot/device-health', labelKey: 'nav.iotHealth', sub: true }, // PC-56 OPS-4c · W404 (the silences the server flagged; read)
-  { href: '/devices/alerts', labelKey: 'nav.iotAlerts', sub: true }, // OW-7 (PC-55 B4) — the alert feed and its rules (OPS-5 owns them; kept reachable)
+  { href: '/iot/alert-rules', labelKey: 'nav.iotAlerts', sub: true }, // PC-56 OPS-5a · W402 (the alert rules and what they fired; read + the change act)
   // OW-1 kiosk · OW-2 warehouse · OW-3 equipment/CHC · OW-4 dairy POS · OW-5 assisted money · OW-6 insights
   // are appended here by their waves (OPS_BUILD_BACKLOG.md) — never linked before they exist.
 ];

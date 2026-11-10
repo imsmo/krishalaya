@@ -32,7 +32,7 @@ import {
 } from '../domain/logistics.errors';
 import {
   BREACH_LIST_MONTHS, BUYER_OFFER_AFTER_MINUTES, COLD_CHAIN_SILENCE_MINUTES, REFUSED_BY_NAME, BreachAct, BreachOutcome, BuyerDecision,
-  breachActsFor, keyHint, medianAlertToAction, newDeviceKey, recordedLoss,
+  breachActsFor, keyHint, medianAlertToAction, newDeviceKey, recordedLoss, subjectShortRef,
 } from '../domain/logistics-ops';
 import { ColdChainLogRepository } from '../repositories/cold-chain-log.repository';
 import { BreachRow, ColdChainOpsRepository } from '../repositories/cold-chain-ops.repository';
@@ -43,7 +43,7 @@ import { TwinDevicesService } from '../../twin/services/twin-devices.service';
 
 export interface ColdActor { userId: string; canManage: boolean; canManageDevices?: boolean; ip?: string | null }
 const DAY = 86_400_000;
-const subjectRef = (id: string) => id.replace(/-/g, '').slice(0, 8).toUpperCase();
+const subjectRef = subjectShortRef;   // PC-56 OPS-5a: one definition, shared with the breach rule's alert (domain/logistics-ops.ts)
 
 /** [PC-56 TENANT-SW-f] every recorded breach outcome, on the outbox. */
 export const COLD_CHAIN_OUTCOME_EVENT = 'logistics.cold_chain_outcome_recorded';

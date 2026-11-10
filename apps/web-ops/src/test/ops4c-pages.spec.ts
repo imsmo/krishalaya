@@ -43,7 +43,12 @@ describe('PC-56 OPS-4c · the three pages are READS (positive control first)', (
     for (const f of SRC_FILES) expect([path.relative(SRC, f), WRITES.test(code(fs.readFileSync(f, 'utf8')))]).toEqual([path.relative(SRC, f), false]);
   });
   it('no server action under app/iot; every call the 4c pages make is a GET read', () => {
-    for (const f of SRC_FILES.filter((x) => /[\\/]app[\\/]iot[\\/]/.test(x))) expect([path.relative(SRC, f), /^\s*['"]use server['"]/m.test(fs.readFileSync(f, 'utf8'))]).toEqual([path.relative(SRC, f), false]);
+    // NAMED UPDATE (PC-56 OPS-5a): W402 (`app/iot/alert-rules`) carries the ONE server action under app/iot — the alert rule change, REAL by the
+    // brief (the alert chain W3292–W3294); it is pinned by test/ops5a-pages.spec.ts (it calls no cold-chain write). Every other app/iot file,
+    // the three 4c pages and W403 among them, still holds none — the exception is that one path, never a widening.
+    const ACTION_OK = path.join('app', 'iot', 'alert-rules', 'actions.ts');
+    expect(fs.existsSync(path.join(SRC, ACTION_OK))).toBe(true);
+    for (const f of SRC_FILES.filter((x) => /[\\/]app[\\/]iot[\\/]/.test(x) && path.relative(SRC, x) !== ACTION_OK)) expect([path.relative(SRC, f), /^\s*['"]use server['"]/m.test(fs.readFileSync(f, 'utf8'))]).toEqual([path.relative(SRC, f), false]);
     const calls = Object.values(P).flatMap((p) => Array.from(code(read(p)).matchAll(/\.(coldChain|twin)\.(\w+)\(/g)).map((m) => `${m[1]}.${m[2]}`));
     expect([...new Set(calls)].sort()).toEqual(['coldChain.breaches', 'coldChain.loggers', 'coldChain.subject', 'coldChain.subjects', 'twin.overview']);
   });
@@ -79,10 +84,15 @@ describe('PC-56 OPS-4c · E2 · the 307, the sidebar, the edges, the chain order
   it('next.config.js redirects() carries OPS4C_REDIRECTS as a 307 (permanent: false); the fleet page is gone; the alert pages stay', async () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const cfg = require(path.join(SRC, '..', 'next.config.js')) as { redirects: () => Promise<Array<{ source: string; destination: string; permanent: boolean }>> };
-    expect((await cfg.redirects()).filter((x) => x.source === '/devices' || x.source.startsWith('/devices/'))).toEqual(OPS4C_REDIRECTS.map((x) => ({ ...x, permanent: false })));
+    // NAMED UPDATE (PC-56 OPS-5a, survey E1): the two OW-7 alert pages now 307 to W402 too (OPS5A_REDIRECTS) — `/devices` itself is unchanged.
+    const ops5a = [{ source: '/devices/rules', destination: '/iot/alert-rules' }, { source: '/devices/alerts', destination: '/iot/alert-rules' }];
+    expect((await cfg.redirects()).filter((x) => x.source === '/devices' || x.source.startsWith('/devices/'))).toEqual([...OPS4C_REDIRECTS, ...ops5a].map((x) => ({ ...x, permanent: false })));
     expect(fs.existsSync(path.join(SRC, 'app/devices/page.tsx'))).toBe(false);
-    for (const p of ['app/devices/rules/page.tsx', 'app/devices/alerts/page.tsx', ...Object.values(P)]) expect([p, fs.existsSync(path.join(SRC, p))]).toEqual([p, true]);
-    for (const p of ['app/devices/rules/page.tsx', 'app/devices/alerts/page.tsx']) expect([p, /href="\/devices"/.test(read(p))]).toEqual([p, false]);
+    for (const p of Object.values(P)) expect([p, fs.existsSync(path.join(SRC, p))]).toEqual([p, true]);
+    // NAMED UPDATE (PC-56 OPS-5a): "the alert pages stay" was 4c's promise to OPS-5 — they are now W402 (`/iot/alert-rules`), and the OW-7
+    // files are deleted with their routes; W402 links no `/devices` address.
+    for (const p of ['app/devices/rules/page.tsx', 'app/devices/alerts/page.tsx']) expect([p, fs.existsSync(path.join(SRC, p))]).toEqual([p, false]);
+    for (const p of ['app/iot/alert-rules/page.tsx', 'components/ops5/AlertViews.tsx']) expect([p, /href="\/devices|'\/devices/.test(read(p))]).toEqual([p, false]);
     expect(read('app/dashboard/page.tsx')).toContain("{ key: 'devices', href: '/iot/dashboard' }");
   });
   it('the sidebar: a Sensors group of the two built sensor routes, then the alert pages; never /devices itself', () => {

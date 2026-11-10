@@ -82,3 +82,14 @@ rows — 45 BACKEND-READY, 6 gated on PC-54 (`iot-device-fleet`, `ops-alerting`)
       crossed). "Run the rules now" runs the SAME evaluator as the cadence and reports evaluated/fired/**suppressed**
       verbatim — hiding the suppressed count would make a working cooldown look like a broken evaluator.
       Dashboard row + nav added.
+      CORRECTED (PC-56 OPS-5a, survey C-3 / C-4 / E1 / E6 — the lines above are kept, not deleted):
+      • "A rule can be PAUSED, never deleted, so the alerts it already fired keep their author" was FALSE as built: nothing wrote an
+        author (`created_by`/`updated_by` were never set; no audit row for a create, edit, pause or acknowledge). Since HOTFIX-14 every
+        change is keyed and recorded (actor, before/after, reason) and a change that could make an alert quieter needs a second person;
+        since OPS-5a the feed's acknowledge is keyed and recorded too, and a breach's or a silence's own alert is refused there
+        (ALERT_ACK_ON_ITS_OWN_FILE — it is acknowledged on its own file). An alert row still carries no author of its own.
+      • "Quiet-hours notice: … never a bypass of somebody's night" — a CRITICAL alert reaches a person even in their quiet hours, by
+        design (TENANT-6d-5, 0165); the preferred channel is read by nothing in the spine (HOTFIX-14 §2.2). No escalation exists.
+      • Both pages are GONE (OPS-5a): `/devices/rules` and `/devices/alerts` answer a 307 to `/iot/alert-rules` (W402), which reads the
+        rules and what they sent and carries the change act (propose / confirm / withdraw). "Run the rules now" left this console (E6):
+        it paged real people on demand; the API route stays and writes an audit row. Acknowledge is not offered on W402.

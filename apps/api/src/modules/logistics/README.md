@@ -92,6 +92,23 @@ volume). Two worker jobs (apps/worker, system pool):
   route scheduled for today's weekday (→ notifications for the driver/consolidation point); idempotent per
   date via an `ops_job_runs` date-guard.
 
+## The alerts — corrected (PC-56 OPS-5a · survey F-3, F-4, F-7, C-3, C-6, E6; no migration)
+- **The out-of-band-readings rule (`cold_chain_breach`) names the SUBJECT (OPS5-B4).** It used to group by `device_ref` too and put that typed
+  label (free text a person types on a manual reading — it may carry a name) into the alert's `subject_ref`, its notification body and its SMS.
+  It now groups by `subject_type, subject_id` only and labels the alert by the server's short reference (`subjectShortRef`, the same 8 characters
+  0201's breach notice carries); the cooldown bucket is per subject id (the short reference is a label: two subjects made within the same
+  minute share it). The body says what it counts: out-of-band readings "from the logger or typed by a person" (0201 judges every reading).
+  The paragraph below ("still labels the out-of-band-readings rule's subject") is superseded — kept, not deleted.
+- **The feed's acknowledge (OPS5-B3).** Keyed (Idempotency-Key) and recorded (`logistics.alert_acknowledged`, the person named). A breach's or a
+  silence's OWN alert row (`rule_id` NULL) is refused `ALERT_ACK_ON_ITS_OWN_FILE` (409) before the idempotency record — a breach is acknowledged
+  on the breach (`cold_chain_breaches.acknowledged_at`, its own recorded act); acknowledging its feed row left the breach unacknowledged.
+- **`maintenance_due` on the organisation's day (OPS5-B6).** "No service in 365 days" is judged on `tenants.country_code → countries.timezone`,
+  never `CURRENT_DATE` (the database session's day).
+- **"Run the rules now" (E6)** writes one audit row (`logistics.alert_rules_evaluated_now`, the person and the counts). The field console no
+  longer offers it.
+- **C-6.** The controller's comment "cannot bypass quiet hours" was stale: a CRITICAL rule alert travels as `ops.alert_critical` (0165, not
+  opt-outable) and reaches a person in their quiet hours by design. No escalation exists.
+
 ## The device fleet and the silent-logger alert — corrected (PC-56 OPS-4c · survey C-12, C-17)
 - **C-12 (the OW-7 claim, corrected — the old words are kept here, not deleted).** OW-7 said of `GET /v1/logistics/cold-chain/devices`:
   *"a sensor appears only because it sent readings in the last 30 days … 'sensors we have heard from'"*. **That was false.** The fleet

@@ -62,6 +62,11 @@ const nextConfig = {
       // PC-56 OPS-4c (survey E2): the OW-7 sensor fleet (built on typed `device_ref`s — survey C-12) → the canon's `iot/dashboard` (W400). Mirrors
       // OPS4C_REDIRECTS in src/features/ops4/iot.ts (pinned equal by src/test/ops4c-pages.spec.ts). `/devices/rules` and `/devices/alerts` stay (OPS-5).
       { source: '/devices', destination: '/iot/dashboard', permanent: false },
+      // PC-56 OPS-5a (survey E1): the OW-7 rule and alert pages → the canon's `iot/alert-rules` (W402). Mirrors OPS5A_REDIRECTS in
+      // src/features/ops5/alerts.ts (pinned equal by src/test/ops5a-pages.spec.ts). Both pages, their server actions ("Run the rules now"
+      // among them — E6) and their `iot.` keys are deleted.
+      { source: '/devices/rules', destination: '/iot/alert-rules', permanent: false },
+      { source: '/devices/alerts', destination: '/iot/alert-rules', permanent: false },
     ];
   },
   async headers() {

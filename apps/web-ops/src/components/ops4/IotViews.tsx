@@ -16,6 +16,7 @@ import {
   type IotState, type SubjectType,
 } from '../../features/ops4/iot';
 import { Ops4Refusals } from './Ops4Chain';
+import { incidentHref } from '../../features/ops5/alerts';
 
 /** The Q6-A sentences printed (the second and the third; the first is stopped — see features/ops4/refusals.ts `q6_first_sentence`). */
 export const Q6_PRINTED = ['ops4.q6.typedNotSensor', 'ops4.q6.soilRegistryOnly'] as const;
@@ -113,6 +114,8 @@ export function IotDashboardView({ t, state, readAt, overview, lastBreach, logge
               <p data-kv-last-breach={lastBreach.id}>
                 {t.t('ops4.iot.dash.lastBreach', { type: t.t(`ops4.iot.type.${lastBreach.subjectType}`), ref: lastBreach.subjectRef, opened: at(t, lastBreach.openedAt) })}
                 {' '}{lastBreach.closedAt ? t.t('ops4.iot.breachClosed', { at: at(t, lastBreach.closedAt) }) : t.t('ops4.iot.breachOpen')}
+                {/* PC-56 OPS-5a (survey E1): the edge the canon drew only here — W400's last breach links its file (W403). */}
+                {' '}<Link className="kv-link" href={incidentHref(lastBreach.id)} data-kv-edge="W403">{t.t('ops5.alerts.openIncident')}</Link>
               </p>
             )}
           <p className="kv-muted" data-kv-statement="ops4.iot.breachRule">{t.t('ops4.iot.breachRule')}</p>
@@ -201,6 +204,8 @@ export function IotDeviceView({ t, state, readAt, hours, type, id, detail }: Iot
                 <li key={b.id} data-kv-breach={b.id}>
                   {t.t('ops4.iot.device.breach', { opened: at(t, b.openedAt), peak: b.peakC, direction: t.t(`ops4.iot.direction.${b.direction}`), n: b.readingsOut })}
                   {' '}{b.closedAt ? t.t('ops4.iot.breachClosed', { at: at(t, b.closedAt) }) : t.t('ops4.iot.breachOpen')}
+                  {/* PC-56 OPS-5a (survey E1): each breach links its file (W403), an edge the canon never drew. */}
+                  {' '}<Link className="kv-link" href={incidentHref(b.id)} data-kv-edge="W403">{t.t('ops5.alerts.openIncident')}</Link>
                 </li>
               ))}
             </ul>

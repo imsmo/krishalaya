@@ -915,3 +915,85 @@ describe('PC-56 OPS-4c · the claims guard (ops4. scope, the sensors)', () => {
     for (const re of MORE) expect([String(re), re.test(['SP-BHE-07', 'SP-VAN-12', 'WM-02', 'VB-01', '3.8 °C', '82 %', '11%', '30 Sep 2026', '26 h', 'Sat 11 Jul', 'Tue 14 Jul', '44 online'].join(' '))]).toEqual([String(re), true]);
   });
 });
+
+// ── PC-56 OPS-5a (brief §E "Registry, guards, rest"; survey E11): THE ALERT guards — each proven on its OWN canon phrase (W402, W403 and the alert
+// chain W3292–W3294; persons, places and figures anonymised) and narrowed to the affirmative where the canon's phrase is affirmative (a sentence
+// that carries a negation passes — each proven to let its negated form through), PLAIN where even a negated mention has no place — then run over
+// every `ops5.` value and the "Alert rules" nav label in en, hi and gu. Then Q1-A and Q3-A PINNED verbatim in English and by their key words in
+// hi / gu (a mutant that drops the Q1 sentence in one language is caught here and by the render test); and the brand guard (survey F-12) over
+// every 5a source and fixture.
+const NAV_5A = ['nav.iotAlerts'];
+const scoped5 = (cat: Record<string, string>) => Object.entries(cat).filter(([k]) => k.startsWith('ops5.') || NAV_5A.includes(k));
+const GUARDS_5A: ReadonlyArray<[name: string, hit: (v: string) => boolean, canon: string, negated?: string]> = [
+  // W402
+  ['maker-checker (plain)', plain(/maker[- ]checker/i), 'Rule edits are maker-checker and versioned'],
+  ['versioned (plain)', plain(/versioned/i), 'the prior version stays on file — maker-checker and versioned'],
+  ['escalat (plain)', plain(/escalat/i), 'Escalation ladder — every step recorded'],
+  ['ladder (plain)', plain(/\bladder\b/i), 'Escalation ladder — every step recorded: Operator — [n] minutes'],
+  ['rings the phone', affirmative3(/\brings? (the )?phones?\b/i), 'a critical [cooler] alert rings the phone at [time] the same as noon', 'Nothing here rings a phone.'],
+  ['2 a.m. (plain)', plain(/\b2 ?a\.m\./i), 'rings the phone at 2 a.m. the same as noon'],
+  ['vet desk', affirmative3(/vet desk/i), 'any breach · critical + vet desk', 'No vet desk is told.'],
+  ['humidity', affirmative3(/humidity/i), 'Warehouse chamber humidity > [n]% for [n]h · important', 'Humidity is not judged.'],
+  ['for N min (plain)', plain(/\bfor \d+ ?min/i), '> [n]°C for 30 min · critical · rings phone'.replace('[n]', '4')],
+  ['platform defaults (plain)', plain(/platform defaults?/i), 'This tenant is running the platform defaults shown above'],
+  ['archived (plain)', plain(/\barchived\b/i), 'the later maker-checker approval wins, the other is archived, not lost'],
+  ['checker / approver role', affirmative3(/\b(checker|approver)\b/i), 'only a second approver (checker) can confirm it live', 'There is no approver role.'],
+  // W403
+  ['cause', affirmative3(/\bcause\b/i), 'Cause — Door open at the hub transfer — a brief, identified cause', 'No cause is recorded.'],
+  ['door', affirmative3(/\bdoor\b/i), 'Door opens at the hub transfer', 'No door is sensed.'],
+  ['bump (plain)', plain(/\bbump\b/i), 'Buyer chooses to accept the lot — bump, not breach'],
+  ['not a breach (plain)', plain(/\bnot (a )?breach\b/i), 'bump, not breach'],
+  ['closed by a person', affirmative3(/\b(mark(s|ed)? (an |the )?incident closed|incident file closed|closed by)\b/i), 'only tenant ops can mark an incident closed', 'No person closes a breach.'],
+  ['tolerance (plain)', plain(/toleran/i), 'does not auto-apply to a brief, within-tolerance blip'],
+  ['trail attached (plain)', plain(/trail attached/i), 'Buyer informed of the blip with the reading trail attached'],
+  // the chains
+  ['on-call (plain)', plain(/on-call/i), 'repeated failures page the on-call'],
+  ['zero-sum (plain)', plain(/zero-sum/i), 'Money-adjacent actions reconcile zero-sum before this page ever shows'],
+  ['audit trail (plain)', plain(/audit[- ]trail/i), 'the audit trail has the entry (actor · time · reason · before/after)'],
+];
+const SOURCES_5A = ['components/ops5/AlertViews.tsx', 'components/ops5/Ops5Chain.tsx', 'features/ops5/alerts.ts', 'app/iot/alert-rules/page.tsx', 'app/iot/alert-rules/actions.ts',
+  'app/iot/alert-incident/page.tsx', 'test-render/ops5a-fixtures.ts', 'components/Sidebar.tsx', 'components/ops4/IotViews.tsx'];
+
+describe('PC-56 OPS-5a · the claims guard (ops5. scope, the alerts)', () => {
+  it('each guard is proven on its own canon phrase and lets its negated form through', () => {
+    for (const [name, hit, canon, negated] of GUARDS_5A) {
+      expect([name, hit(canon)]).toEqual([name, true]);
+      if (negated) expect([name, 'negated', hit(negated)]).toEqual([name, 'negated', false]);
+    }
+  });
+  it.each(Object.entries(CATS))('%s: no ops5. value (or the "Alert rules" label) trips a 5a guard, a 4c guard or a brand regex', (_lang, cat) => {
+    expect(scoped5(cat).length).toBe(248);
+    for (const [k, v] of scoped5(cat)) {
+      for (const [name, hit] of [...GUARDS_5A, ...GUARDS_4C]) expect([k, name, hit(v)]).toEqual([k, name, false]);
+      for (const [re] of BRAND_4A) expect([k, String(re), re.test(v)]).toEqual([k, String(re), false]);
+    }
+  });
+  it('Q1-A and Q3-A PINNED verbatim (en) and by their key words in hi / gu; the facts the page states, verbatim', () => {
+    const PIN: Record<string, string> = {
+      'ops5.q1.words': 'Acknowledging a breach, recording what was done and recording its outcome — including any loss — are done on the organisation\'s cold-chain console, not here.',
+      'ops5.alerts.secondPersonNotice': 'A change that could make an alert quieter — pausing a rule, removing a person, or raising a threshold — takes effect only when a second person confirms it. Until then the current rule keeps alerting. Every change is recorded with who made it and why.',
+      'ops5.alerts.noBreachRule': 'No breach rule is active, so when the server opens a breach it tells no one — except the driver, when the breach is on a shipment that has one. The breach is still recorded.',
+      'ops5.alerts.rulesTellBreach': 'The people named on an active breach rule are also the people the server tells when it opens a breach. When a logger falls silent, the server tells the people on active silence rules, or, if there are none, those on active breach rules.',
+      'ops5.alerts.signedIn': 'Signed in as you. This page needs the logistics.manage permission. It reads the organisation\'s alert rules and what they sent; a change to a rule is sent from here and recorded.',
+      'ops5.incident.signedIn': 'Signed in as you. This page only reads one breach, with the logistics.manage permission.',
+    };
+    for (const [k, v] of Object.entries(PIN)) expect([k, en[k]]).toEqual([k, v]);
+    for (const k of Object.keys(PIN)) for (const cat of [hi, gu]) expect([k, typeof cat[k] === 'string' && cat[k] !== en[k]]).toEqual([k, true]);
+    // Q1 in every language: the three acts, the loss, "the organisation's cold-chain console", "not here"
+    expect([/स्वीकार करना/.test(hi['ops5.q1.words']) && /नुकसान/.test(hi['ops5.q1.words']) && /संगठन के कोल्ड-चेन कंसोल पर किए जाते हैं, यहाँ नहीं।$/.test(hi['ops5.q1.words']),
+      /સ્વીકારવો/.test(gu['ops5.q1.words']) && /નુકસાન/.test(gu['ops5.q1.words']) && /સંસ્થાના કોલ્ડ-ચેન કન્સોલ પર થાય છે, અહીં નહીં\.$/.test(gu['ops5.q1.words'])]).toEqual([true, true]);
+    // Q3 in hi / gu: carried over from HOTFIX-14 byte for byte (verified there)
+    expect([/दूसरा व्यक्ति|दूसरे व्यक्ति/.test(hi['ops5.alerts.secondPersonNotice']), /બીજી વ્યક્તિ/.test(gu['ops5.alerts.secondPersonNotice'])]).toEqual([true, true]);
+    // "signed in as you" (OPS-3 Q14-A): no role, no "MM", no technician / on-call
+    for (const [k, v] of scoped5(en)) expect([k, /\bMM\b|\b(operator|centre manager|tenant ops)\b/i.test(v)]).toEqual([k, false]);
+  });
+  it('brand guard over every 5a source and fixture (no F-12 literal: "Anand FPO", "Vanthali", "Kisan Sathi", "REF-114", "SHP-2026-29841", "ખોરાક સલાહ", "6.4", "22 min", "Sat 11 Jul" …)', () => {
+    const MORE: ReadonlyArray<RegExp> = [/Kisan Sathi/i, /SHP-2026-29841/, /ખોરાક સલાહ/, /\b4\.5 ?°/, /\b6\.4\b/, /\b22 min\b/, /\b2 ?a\.m\./i, /Sat 11 Jul/, /\b70 ?%/, /okra/i];
+    for (const rel of SOURCES_5A) {
+      const src = fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
+      for (const [re] of BRAND_4A) expect([rel, String(re), re.test(src)]).toEqual([rel, String(re), false]);
+      for (const re of MORE) expect([rel, String(re), re.test(src)]).toEqual([rel, String(re), false]);
+    }
+    for (const re of MORE) expect([String(re), re.test(['Kisan Sathi', 'SHP-2026-29841', 'ખોરાક સલાહ', '4.5 °C', '6.4', '22 min', '2 a.m.', 'Sat 11 Jul', '70 %', 'okra'].join(' '))]).toEqual([String(re), true]);
+  });
+});

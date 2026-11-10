@@ -182,6 +182,11 @@ export function ingestFreshness(tsSeconds: number, nowMs: number): 'fresh' | 'st
 }
 
 /* ──────────────────────────────────────────── W239 / W240 · breaches ──────────────────────────────────────────── */
+/** The server's short reference for a monitored subject (8 hex characters of its id, upper case) — the same one 0201's breach notice
+ *  carries (`upper(left(replace(subject_id::text,'-',''),8))`). PC-56 OPS-5a (OPS5-B4): moved here from cold-chain.service so the
+ *  `cold_chain_breach` RULE labels its alert by the subject too — never by a typed `device_ref`. It is a LABEL, not a key: two subjects made
+ *  within the same ~65 s share the time prefix of a uuidv7, so nothing groups or dedupes on it (the rule groups by `subject_id`). */
+export const subjectShortRef = (id: string): string => id.replace(/-/g, '').slice(0, 8).toUpperCase();
 export const COLD_CHAIN_SILENCE_MINUTES = 15;
 export const BUYER_OFFER_AFTER_MINUTES = 15;
 export const BREACH_LIST_MONTHS = 12;

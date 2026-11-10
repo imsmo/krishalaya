@@ -232,10 +232,11 @@ export class ShipmentsResource {
   async alertFeed(params: { kind?: string; severity?: string; unacknowledgedOnly?: boolean; limit?: number } = {}, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
     return (await this.http.request<Array<Record<string, unknown>>>('GET', 'logistics/cold-chain/alerts/feed', { query: { kind: params.kind, severity: params.severity, unacknowledgedOnly: params.unacknowledgedOnly, limit: params.limit ?? 100 }, signal })).data;
   }
-  async acknowledgeAlert(id: string): Promise<{ id: string; acknowledged: boolean }> {
-    return (await this.http.request<{ id: string; acknowledged: boolean }>('POST', `logistics/cold-chain/alerts/${encodeURIComponent(id)}/acknowledge`, { body: {} })).data;
+  /** PC-56 OPS-5a (OPS5-B3): KEYED and recorded; a breach's or a silence's own alert is refused ALERT_ACK_ON_ITS_OWN_FILE (409). */
+  async acknowledgeAlert(id: string, idempotencyKey: string): Promise<{ id: string; acknowledged: boolean }> {
+    return (await this.http.request<{ id: string; acknowledged: boolean }>('POST', `logistics/cold-chain/alerts/${encodeURIComponent(id)}/acknowledge`, { idempotencyKey, body: {} })).data;
   }
-  /** Run the evaluator now (so a freshly written rule can be tested without waiting for the cadence). */
+  /** Run the evaluator now (recorded — PC-56 OPS-5a E6; the field console no longer offers it). */
   async evaluateAlertRules(): Promise<{ evaluated: number; fired: number; suppressed: number }> {
     return (await this.http.request<{ evaluated: number; fired: number; suppressed: number }>('POST', 'logistics/cold-chain/alert-rules/evaluate', { body: {} })).data;
   }

@@ -191,7 +191,10 @@ export class ColdChainController {
     return this.exportsPlane.enqueue(ctx.tenantId, { userId: ctx.userId, permissions: ctx.permissions }, reqKey(key), { datasetCode: COLD_BREACHES_DATASET, params: body }, ipOf(r)).then((data) => ({ data }));
   }
   // --- PC-55 A6 `ops-alert-rules`: rules CRUD + fired feed. Firing goes through the EXISTING notification
-  // spine (one outbox event) — this module adds no delivery channel and cannot bypass quiet hours. ---
+  // spine (one outbox event) — this module adds no delivery channel. ---
+  // CORRECTED (PC-56 OPS-5a, survey C-6): the old line said it "cannot bypass quiet hours". True for an `important` alert only: since
+  // TENANT-6d-5 a CRITICAL alert travels as `ops.alert_critical` (0165, not opt-outable) and reaches a person even in their quiet hours, by
+  // design. No escalation exists.
   // PC-56 HOTFIX-14 (OPS5-B1/B2): create and edit are KEYED and RECORDED; an edit that could make an alert quieter answers 202 with a
   // PROPOSAL (the rule untouched, alerting as before) and is applied only when a second person confirms it; a louder edit answers 200.
   @Post('alert-rules') @RequirePermissions(ShipmentPermissions.Manage)
@@ -232,14 +235,17 @@ export class ColdChainController {
   alertFeed(@CurrentContext() ctx: RequestContext, @ZodQuery(AlertFeedQuerySchema) q: z.infer<typeof AlertFeedQuerySchema>) {
     return this.alerts.feed(ctx.tenantId, this.actor(ctx), { kind: q.kind, severity: q.severity, unacknowledgedOnly: q.unacknowledgedOnly === 'true', limit: q.limit }).then((data) => ({ data }));
   }
+  /** PC-56 OPS-5a (OPS5-B3): KEYED and RECORDED; a breach's or a silence's own alert → ALERT_ACK_ON_ITS_OWN_FILE (409). */
   @Post('alerts/:id/acknowledge') @RequirePermissions(ShipmentPermissions.Manage)
-  acknowledgeAlert(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
-    return this.alerts.acknowledge(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data }));
+  acknowledgeAlert(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string, @Param('id') id: string) {
+    if (!UUID_RE.test(id)) throw new BadRequestError('id must be a uuid');
+    return this.alerts.acknowledge(ctx.tenantId, this.alertActor(ctx, r), reqKey(key), id).then((data) => ({ data }));
   }
-  /** "Run now" — so an operator can test a rule they just wrote instead of waiting for the cadence. */
+  /** "Run now" — the cadence's own evaluator on demand. PC-56 OPS-5a (E6): RECORDED (one audit row naming the person); no longer offered by
+   *  the field console. */
   @Post('alert-rules/evaluate') @RequirePermissions(ShipmentPermissions.Manage)
-  evaluateNow(@CurrentContext() ctx: RequestContext) {
-    return this.alerts.evaluateTenant(ctx.tenantId, ctx.userId).then((data) => ({ data }));
+  evaluateNow(@CurrentContext() ctx: RequestContext, @Req() r: Request) {
+    return this.alerts.evaluateNow(ctx.tenantId, this.alertActor(ctx, r)).then((data) => ({ data }));
   }
 
   // PC-54 W54-12: iot-device-fleet + ops-alerting v1. PC-56 OPS-4c (E13): the fleet is the registered loggers and their SIGNED readings

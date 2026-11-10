@@ -137,16 +137,23 @@ export class OpsAlertRepository {
   }
 
   // ===== evidence (from the W54-12 ledgered read-models; no new source of truth) =====
-  async coldChainBreachCounts(tenantId: string, windowHours: number, subjectType?: string): Promise<Array<{ deviceRef: string | null; subjectType: string; subjectId: string; breaches: number; lastTempC: string | null; lastAt: string }>> {
+  /**
+   * The `cold_chain_breach` rule's evidence: out-of-band readings (the row's own `is_breach`, judged by 0201 against the band copied at write
+   * for EVERY source — a reading from the logger or one typed by a person) per MONITORED SUBJECT in the window.
+   * PC-56 OPS-5a · OPS5-B4 (survey F-3 / C-5): grouped by the subject (`subject_type`, `subject_id`) ONLY — it used to group by `device_ref`
+   * too, a label a person types on a manual reading (free text that may carry a name), which then became the alert's `subject_ref`, its
+   * notification body and its SMS. `device_ref` is no longer read here at all.
+   */
+  async coldChainBreachCounts(tenantId: string, windowHours: number, subjectType?: string): Promise<Array<{ subjectType: string; subjectId: string; breaches: number; lastTempC: string | null; lastAt: string }>> {
     const r = await this.replica.forTenant(tenantId).query(
-      `SELECT device_ref, subject_type, subject_id, COUNT(*)::int AS breaches,
+      `SELECT subject_type, subject_id, COUNT(*)::int AS breaches,
               (ARRAY_AGG(temp_c ORDER BY recorded_at DESC))[1]::text AS last_temp_c, MAX(recorded_at) AS last_at
          FROM cold_chain_logs
         WHERE tenant_id=$1 AND is_breach AND recorded_at >= now() - ($2 || ' hours')::interval
           AND ($3::text IS NULL OR subject_type=$3)
-        GROUP BY device_ref, subject_type, subject_id ORDER BY breaches DESC LIMIT 200`,
+        GROUP BY subject_type, subject_id ORDER BY breaches DESC LIMIT 200`,
       [tenantId, String(windowHours), subjectType ?? null]);
-    return r.rows.map((x: any) => ({ deviceRef: x.device_ref, subjectType: x.subject_type, subjectId: x.subject_id, breaches: x.breaches, lastTempC: x.last_temp_c, lastAt: new Date(x.last_at).toISOString() }));
+    return r.rows.map((x: any) => ({ subjectType: x.subject_type, subjectId: x.subject_id, breaches: x.breaches, lastTempC: x.last_temp_c, lastAt: new Date(x.last_at).toISOString() }));
   }
   /**
    * Loggers that have gone quiet, measured in MINUTES.
@@ -179,9 +186,16 @@ export class OpsAlertRepository {
         ORDER BY last_seen ASC LIMIT 200`, [tenantId, String(silentMinutes)]);
     return r.rows.map((x: any) => ({ deviceId: x.device_id, serial: x.serial, lastSeen: new Date(x.last_seen).toISOString(), silentMinutes: x.silent_minutes }));
   }
+  /**
+   * `maintenance_due`'s evidence. PC-56 OPS-5a · OPS5-B6 (survey F-7, E9): "a year since the last service" is judged on the ORGANISATION's
+   * day — `tenants.country_code → countries.timezone` (both NOT NULL; the 6c-1 rule, as OPS-4a/4b's equipment repositories) — never
+   * `CURRENT_DATE`, the database session's day (UTC on a UTC server: from 00:00 to 05:30 IST it was still yesterday there).
+   */
   async maintenanceAlerts(tenantId: string, which: string): Promise<Array<{ assetId: string; alert: string; lastServiceOn: string | null }>> {
     const r = await this.replica.forTenant(tenantId).query(
-      `WITH latest AS (
+      `WITH org_day AS (
+         SELECT (now() AT TIME ZONE co.timezone)::date AS today FROM tenants t JOIN countries co ON co.code = t.country_code WHERE t.id=$1),
+       latest AS (
          SELECT DISTINCT ON (asset_id) asset_id, log_type, performed_on FROM equipment_maintenance_logs
           WHERE tenant_id=$1 AND deleted_at IS NULL ORDER BY asset_id, performed_on DESC, created_at DESC),
        last_service AS (
@@ -189,12 +203,13 @@ export class OpsAlertRepository {
           WHERE tenant_id=$1 AND log_type IN ('service','inspection') AND deleted_at IS NULL GROUP BY asset_id)
        SELECT a.id AS asset_id, s.on_date AS last_service_on,
               CASE WHEN l.log_type='breakdown' THEN 'needs_attention'
-                   WHEN s.on_date IS NULL OR s.on_date < CURRENT_DATE - 365 THEN 'service_due' END AS alert
+                   WHEN s.on_date IS NULL OR s.on_date < d.today - 365 THEN 'service_due' END AS alert
          FROM equipment_assets a
+         CROSS JOIN org_day d
          LEFT JOIN latest l ON l.asset_id = a.id
          LEFT JOIN last_service s ON s.asset_id = a.id
         WHERE a.tenant_id=$1 AND a.status != 'retired' AND a.deleted_at IS NULL
-          AND (l.log_type='breakdown' OR s.on_date IS NULL OR s.on_date < CURRENT_DATE - 365)
+          AND (l.log_type='breakdown' OR s.on_date IS NULL OR s.on_date < d.today - 365)
         LIMIT 200`, [tenantId]);
     return r.rows
       .map((x: any) => ({ assetId: x.asset_id, alert: x.alert as string, lastServiceOn: x.last_service_on ? pgDate(x.last_service_on) : null }))
@@ -232,10 +247,36 @@ export class OpsAlertRepository {
       acknowledgedAt: x.acknowledged_at ? new Date(x.acknowledged_at).toISOString() : null, acknowledgedBy: x.acknowledged_by,
     }));
   }
+  /** PC-56 OPS-5a (OPS5-B3): one fired alert, to judge an acknowledge BEFORE the idempotency record — a rule's own alert, or a breach's /
+   *  silence's (`rule_id` NULL: those are acknowledged on their own file). */
+  async findFired(tenantId: string, id: string, tx?: TxContext): Promise<{ id: string; ruleId: string | null; kind: string; acknowledgedAt: string | null } | null> {
+    const sql = `SELECT id, rule_id, kind, acknowledged_at FROM ops_fired_alerts WHERE tenant_id=$1 AND id=$2 AND deleted_at IS NULL${tx ? ' FOR UPDATE' : ''}`;
+    const r = tx ? await tx.query(sql, [tenantId, id]) : await this.replica.forTenant(tenantId).query(sql, [tenantId, id]);
+    const x = r.rows[0];
+    return x ? { id: x.id, ruleId: x.rule_id ?? null, kind: x.kind, acknowledgedAt: iso(x.acknowledged_at) } : null;
+  }
+  /** PC-56 OPS-5a (OPS5-B3): a RULE's alert only (`rule_id IS NOT NULL`) — a breach's or a silence's alert row is never acknowledged here. */
   async acknowledge(tx: TxContext, tenantId: string, id: string, by: string): Promise<boolean> {
     const r = await tx.query(
       `UPDATE ops_fired_alerts SET acknowledged_at=now(), acknowledged_by=$3
-        WHERE id=$1 AND tenant_id=$2 AND acknowledged_at IS NULL AND deleted_at IS NULL`, [id, tenantId, by]);
+        WHERE id=$1 AND tenant_id=$2 AND rule_id IS NOT NULL AND acknowledged_at IS NULL AND deleted_at IS NULL`, [id, tenantId, by]);
     return (r.rowCount ?? 0) > 0;
+  }
+  /**
+   * PC-56 OPS-5a (W402 "who last changed it and when"): the LAST recorded change that moved each rule — made, edited, or a proposal
+   * confirmed — from `audit_log` (HOTFIX-14 writes one row for each). `updated_at` cannot answer it: the evaluator touches
+   * `last_evaluated_at` every cadence and the standard trigger moves `updated_at` with it. A rule older than HOTFIX-14 has none.
+   */
+  async lastChanges(tenantId: string, ruleIds: string[]): Promise<Map<string, { action: string; at: string; actorUserId: string | null }>> {
+    const out = new Map<string, { action: string; at: string; actorUserId: string | null }>();
+    if (ruleIds.length === 0) return out;
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT DISTINCT ON (entity_id) entity_id::text AS rule_id, action, created_at, actor_user_id
+         FROM audit_log
+        WHERE tenant_id=$1 AND entity_type='ops_alert_rule' AND entity_id::text = ANY($2::text[])
+          AND action IN ('logistics.alert_rule_created', 'logistics.alert_rule_updated', 'logistics.alert_rule_change_confirmed')
+        ORDER BY entity_id, created_at DESC, id DESC`, [tenantId, ruleIds]);
+    for (const x of r.rows as any[]) out.set(x.rule_id, { action: x.action, at: iso(x.created_at) as string, actorUserId: x.actor_user_id ?? null });
+    return out;
   }
 }

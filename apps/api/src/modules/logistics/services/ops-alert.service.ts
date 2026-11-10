@@ -3,6 +3,9 @@
 // and adds NO delivery channel. So firing an alert = ONE outbox event ('ops.alert_fired'); communication's
 // DomainEventFanoutHandler + the seeded catalog row carry it to each recipient's own channels, honouring their
 // preferences and QUIET HOURS. An urgent alert is still not permitted to bypass a human's consent (Rule Zero).
+// CORRECTED (PC-56 OPS-5a, survey C-6 — kept, not deleted): "honouring … QUIET HOURS" holds for an `important` alert only. Since
+// TENANT-6d-5 a CRITICAL alert travels as `ops.alert_critical`, catalogued critical and not opt-outable (0165), which reaches a person
+// even in their quiet hours — by design. There is no escalation: one fan-out to the people named on the rule, nothing after.
 // The fired-log row is written in the SAME tx as the outbox event, so "we paged someone" and "we recorded that
 // we paged someone" can never disagree.
 import { Inject, Injectable } from '@nestjs/common';
@@ -14,6 +17,7 @@ import { uuidv7 } from '../../../core/database/uuid.util';
 import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from '../../../shared/errors/app-error';
 import { OpsAlertRepository, AlertRule, AlertRuleChange } from '../repositories/ops-alert.repository';
 import { LogisticsOpsRefusedError } from '../domain/logistics.errors';
+import { subjectShortRef } from '../domain/logistics-ops';
 import {
   validateThreshold, defaultsFor, dedupeKey, severityFor, alertTitle, outboxTypeFor, silenceText, silentMinutesOf, classifyRuleChange,
   type AlertKind, type AlertSeverity, type AlertRuleState,
@@ -210,9 +214,13 @@ export class OpsAlertService {
     this.assert(a);
     const [rules, open] = await Promise.all([this.repo.listRules(tenantId, q), this.repo.openChanges(tenantId)]);
     const byRule = new Map(open.map((c) => [c.ruleId, c]));
+    // PC-56 OPS-5a (W402): the rule's LAST recorded change — what it was and when, and whether it was the reader's own (never a name).
+    const last = await this.repo.lastChanges(tenantId, rules.map((r) => r.id));
     return rules.map((r) => {
       const c = byRule.get(r.id);
-      return { ...r, openChange: c ? this.changeWire(r.kind as AlertKind, c, a.userId) : null };
+      const l = last.get(r.id);
+      return { ...r, openChange: c ? this.changeWire(r.kind as AlertKind, c, a.userId) : null,
+        lastChange: l ? { action: l.action.replace('logistics.alert_rule_', ''), at: l.at, byYou: l.actorUserId === a.userId } : null };
     });
   }
   /** [HOTFIX-1] The PUBLIC read another module may call for "who would be told" (dairy's BMC monitor, W170). The
@@ -222,15 +230,43 @@ export class OpsAlertService {
   listRules(tenantId: string, q: { kind?: string; activeOnly?: boolean } = {}): Promise<AlertRule[]> { return this.repo.listRules(tenantId, q); }
   feed(tenantId: string, a: AlertActor, q: { kind?: string; severity?: string; unacknowledgedOnly?: boolean; limit: number }) { this.assert(a); return this.repo.feed(tenantId, q); }
 
-  async acknowledge(tenantId: string, a: AlertActor, id: string) {
+  /**
+   * PC-56 OPS-5a · OPS5-B3 (survey F-4, E3): acknowledging a RULE's alert is KEYED and RECORDED (one `audit_log` row naming the person).
+   * A breach's or a silence's own alert row (`rule_id` NULL — 0201 / the watch job write it) is refused BY NAME, `ALERT_ACK_ON_ITS_OWN_FILE`
+   * (409): a breach is acknowledged on the breach (`cold_chain_breaches.acknowledged_at`, its own recorded act) — acknowledging its feed row
+   * here took it off the "unacknowledged" list while the breach itself stayed unacknowledged. Every refusal that is a fact of the row is
+   * BEFORE the idempotency record (E12); "already acknowledged" depends on what a first call writes, so it is judged inside (HOTFIX-13).
+   */
+  async acknowledge(tenantId: string, a: AlertActor, key: string, id: string) {
     this.assert(a);
-    const ok = await this.uow.run(tenantId, (tx) => this.repo.acknowledge(tx, tenantId, id, a.userId), { userId: a.userId });
-    if (!ok) throw new ConflictError('alert not found or already acknowledged');
-    return { id, acknowledged: true };
+    const fired = await this.repo.findFired(tenantId, id);
+    if (!fired) throw new NotFoundError('alert not found');
+    if (fired.ruleId === null) {
+      throw refuse('ALERT_ACK_ON_ITS_OWN_FILE', 'This alert belongs to a breach or a silence; it is acknowledged on its own file, not here', 409, { kind: fired.kind });
+    }
+    return this.idem.remember(key, a.userId, 'logistics.alert_acknowledge', () => this.uow.run(tenantId, async (tx) => {
+      const ok = await this.repo.acknowledge(tx, tenantId, id, a.userId);
+      if (!ok) throw new ConflictError('alert already acknowledged');
+      await this.audit.write(tx, { tenantId, actorUserId: a.userId, action: 'logistics.alert_acknowledged', entityType: 'ops_fired_alert', entityId: id,
+        oldValue: { acknowledgedAt: null }, newValue: { acknowledged: true, ruleId: fired.ruleId, kind: fired.kind }, reason: null, ip: a.ip ?? null });
+      return { id, acknowledged: true };
+    }, { userId: a.userId }));
   }
 
-  /** EVALUATE one tenant's active rules against the ledgered read-models. Called by the cadence job (and
-   *  available as a Manage-gated "run now" so an operator can test a rule they just wrote). */
+  /**
+   * PC-56 OPS-5a (E6): "run the rules now" — the same evaluator the cadence runs (same dedupe buckets and cooldowns), on demand. It pages
+   * real people, so it is RECORDED: one `audit_log` row naming the person, with what it evaluated, fired and suppressed. (The field console
+   * no longer offers it; the route stays for the organisation's tools.)
+   */
+  async evaluateNow(tenantId: string, a: AlertActor) {
+    this.assert(a);
+    const out = await this.evaluateTenant(tenantId, a.userId);
+    await this.uow.run(tenantId, (tx) => this.audit.write(tx, { tenantId, actorUserId: a.userId, action: 'logistics.alert_rules_evaluated_now', entityType: 'ops_alert_rule',
+      entityId: null, oldValue: null, newValue: out, reason: null, ip: a.ip ?? null }), { userId: a.userId });
+    return out;
+  }
+
+  /** EVALUATE one tenant's active rules against the ledgered read-models. Called by the cadence job (and by `evaluateNow`, recorded). */
   async evaluateTenant(tenantId: string, actorUserId = 'system'): Promise<{ evaluated: number; fired: number; suppressed: number }> {
     const rules = await this.repo.activeRulesForTenant(tenantId);
     if (rules.length === 0) return { evaluated: 0, fired: 0, suppressed: 0 };
@@ -240,7 +276,9 @@ export class OpsAlertService {
     for (const rule of rules) {
       const hits = await this.evidenceFor(tenantId, rule);
       for (const hit of hits) {
-        const key = dedupeKey(rule.id, hit.subjectRef, now, rule.cooldownMinutes);
+        // PC-56 OPS-5a: the cooldown bucket is per SUBJECT (`dedupeOn`, the subject's id for a breach rule) — the printed short reference is a
+        // label and can be shared by two subjects made within the same minute (domain/logistics-ops.ts `subjectShortRef`).
+        const key = dedupeKey(rule.id, hit.dedupeOn ?? hit.subjectRef, now, rule.cooldownMinutes);
         const wrote = await this.uow.run(tenantId, async (tx) => {
           const id = uuidv7();
           const created = await this.repo.recordFired(tx, {
@@ -276,19 +314,22 @@ export class OpsAlertService {
   // `severity` is the TYPED union rather than `string` (TENANT-6d-5): it now decides which catalogued event carries the
   // alert — and therefore whether it may wake somebody — so the compiler, not a runtime string compare, is what
   // guarantees only a real severity reaches that decision.
-  private async evidenceFor(tenantId: string, rule: AlertRule): Promise<Array<{ subjectType: string | null; subjectRef: string | null; severity: AlertSeverity; detail: Record<string, unknown>; body: string }>> {
+  private async evidenceFor(tenantId: string, rule: AlertRule): Promise<Array<{ subjectType: string | null; subjectRef: string | null; dedupeOn?: string; severity: AlertSeverity; detail: Record<string, unknown>; body: string }>> {
     const t = rule.threshold as Record<string, number | string | undefined>;
     if (rule.kind === 'cold_chain_breach') {
       const windowHours = Number(t.windowHours ?? 6);
       const minBreaches = Number(t.minBreaches ?? 1);
       const rows = await this.repo.coldChainBreachCounts(tenantId, windowHours, t.subjectType as string | undefined);
+      // PC-56 OPS-5a · OPS5-B4 (survey F-3): the alert names the SUBJECT by the server's short reference — never a `device_ref` a person
+      // typed (it went into `subject_ref`, the body and the SMS). The body says what is counted: out-of-band readings of either source,
+      // "from the logger or typed by a person" (0201's `is_breach` is set on every reading against the band copied at write).
       return rows.filter((r) => r.breaches >= minBreaches).map((r) => ({
-        subjectType: r.subjectType, subjectRef: r.deviceRef ?? r.subjectId,
+        subjectType: r.subjectType, subjectRef: subjectShortRef(r.subjectId), dedupeOn: r.subjectId,
         severity: severityFor('cold_chain_breach', { breaches: r.breaches }),
         detail: { breaches: r.breaches, windowHours, lastTempC: r.lastTempC, lastAt: r.lastAt, subjectId: r.subjectId },
         // PC-56 TENANT-SW-e: a RULE counts OUT-OF-BAND READINGS (the rows' own excursion flag, against the band copied at write) — the
         // operator chose the count. A BREACH is a different object (two consecutive DEVICE readings, opened and alerted by the database).
-        body: `${r.breaches} out-of-band reading(s) in the last ${windowHours}h on ${r.subjectType} ${r.deviceRef ?? r.subjectId} (last ${r.lastTempC ?? '?'}°C).`,
+        body: `${r.breaches} out-of-band reading(s), from the logger or typed by a person, in the last ${windowHours}h on ${r.subjectType} ${subjectShortRef(r.subjectId)} (last ${r.lastTempC ?? '?'}°C).`,
       }));
     }
     if (rule.kind === 'device_silent') {
