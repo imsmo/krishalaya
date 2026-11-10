@@ -29,6 +29,11 @@ export interface PartnerAccessTokenClaims {
   sub: string; pid: string; sid: string; roles: string[]; perms: string[]; realm: 'partner'; typ: 'partner_access'; iat?: number;
 }
 
+/** PC-56 GOV-0: the government realm's access-token claims — `aid` (the government authority) and `realm: 'gov'`, never `tid` or `pid`. */
+export interface GovAccessTokenClaims {
+  sub: string; aid: string; sid: string; roles: string[]; perms: string[]; realm: 'gov'; typ: 'gov_access'; iat?: number;
+}
+
 @Injectable()
 export class TokenService {
   constructor(private readonly config: AppConfig) {}
@@ -49,6 +54,8 @@ export class TokenService {
       if (c.typ !== 'access') return null;
       // PC-56 PARTNER-0: a PARTNER token is never a tenant token — its `typ` already differs; a `realm`/`pid` claim refuses it here too.
       if ((c as any).realm !== undefined || (c as any).pid !== undefined) return null;
+      // PC-56 GOV-0: nor a GOVERNMENT token (its `typ` and `realm` already differ; an `aid` claim refuses it here too).
+      if ((c as any).aid !== undefined) return null;
       return {
         sub: String(c.sub ?? ''), tid: String((c as any).tid ?? ''), sid: String((c as any).sid ?? ''),
         roles: Array.isArray((c as any).roles) ? (c as any).roles : [],
@@ -86,6 +93,37 @@ export class TokenService {
         roles: Array.isArray((c as any).roles) ? (c as any).roles : [],
         perms: Array.isArray((c as any).perms) ? (c as any).perms : [],
         realm: 'partner', typ: 'partner_access',
+        ...(typeof c.iat === 'number' ? { iat: c.iat } : {}),
+      };
+    } catch { return null; }
+  }
+
+  /**
+   * PC-56 GOV-0 · THE GOVERNMENT REALM'S ACCESS TOKEN (GOV-1 Q2-A): `{ sub, aid, sid, roles, perms, realm: 'gov' }` under its own `typ`
+   * ('gov_access') and with NO `tid` and NO `pid` — no tenant verifier and no partner verifier reads it, and it reads neither of theirs.
+   */
+  mintGovAccessToken(input: Omit<GovAccessTokenClaims, 'typ' | 'realm' | 'iat'>): string {
+    const a = this.config.auth;
+    return jwt.sign(
+      { aid: input.aid, sid: input.sid, roles: input.roles, perms: input.perms, realm: 'gov', typ: 'gov_access' },
+      a.accessSecret,
+      { subject: input.sub, issuer: a.issuer, audience: a.audience, expiresIn: a.accessTtlSec, algorithm: 'HS256' },
+    );
+  }
+
+  /** A government access token, or null — the `typ`, the `realm` and the `aid` must ALL be present; a `tid` or a `pid` refuses it. */
+  verifyGovAccessToken(token: string): GovAccessTokenClaims | null {
+    try {
+      const a = this.config.auth;
+      const c = jwt.verify(token, a.accessSecret, { issuer: a.issuer, audience: a.audience, algorithms: ['HS256'] }) as jwt.JwtPayload;
+      if (c.typ !== 'gov_access') return null;
+      if ((c as any).realm !== 'gov') return null;
+      if (typeof (c as any).aid !== 'string' || !(c as any).aid || (c as any).tid !== undefined || (c as any).pid !== undefined) return null;
+      return {
+        sub: String(c.sub ?? ''), aid: String((c as any).aid), sid: String((c as any).sid ?? ''),
+        roles: Array.isArray((c as any).roles) ? (c as any).roles : [],
+        perms: Array.isArray((c as any).perms) ? (c as any).perms : [],
+        realm: 'gov', typ: 'gov_access',
         ...(typeof c.iat === 'number' ? { iat: c.iat } : {}),
       };
     } catch { return null; }

@@ -236,13 +236,14 @@ export class AuthService {
   async openSessionIn(
     tx: TxContext,
     userId: string,
-    ctx: { ip: string | null; device?: DeviceInput; phone?: string | null; method: 'otp' | 'signup'; partnerId?: string },
+    ctx: { ip: string | null; device?: DeviceInput; phone?: string | null; method: 'otp' | 'signup'; partnerId?: string; authorityId?: string },
   ): Promise<{ sessionId: string; refreshToken: string }> {
     const deviceId = ctx.device ? await this.devices.upsert(tx, userId, ctx.device) : null;
     const sessionId = uuidv7();
     const r = this.refresh.issue();
     // PC-56 PARTNER-0: `partnerId` makes it a PARTNER-realm session (sessions.realm = 'partner', 0225's CHECK) — the same one place mints both.
-    const session = Session.create({ id: sessionId, userId, deviceId, refreshTokenHash: r.hash, ip: ctx.ip, expiresAt: r.expiresAt, partnerId: ctx.partnerId ?? null });
+    // PC-56 GOV-0: `authorityId` makes it a GOVERNMENT-realm session (sessions.realm = 'gov', 0239's CHECK) — still this one place.
+    const session = Session.create({ id: sessionId, userId, deviceId, refreshTokenHash: r.hash, ip: ctx.ip, expiresAt: r.expiresAt, partnerId: ctx.partnerId ?? null, authorityId: ctx.authorityId ?? null });
     await this.sessions.insert(tx, session);
     // A signup is a login too, and it belongs in the same ledger: an operator investigating an account takeover must see
     // the first session as well as every one after it.
@@ -266,7 +267,7 @@ export class AuthService {
    * PC-56 TENANT-SW-c: open a session for a person who has just proven their phone by another route (an accepted staff invite), inside
    * the caller's transaction — PENDING when they have confirmed TOTP, exactly like the OTP sign-in. Call `finishSignIn` after commit.
    */
-  async openProvenSessionIn(tx: TxContext, userId: string, ctx: { ip: string | null; device?: DeviceInput; phone?: string | null; partnerId?: string }): Promise<{ sessionId: string; refreshToken: string; pending: boolean }> {
+  async openProvenSessionIn(tx: TxContext, userId: string, ctx: { ip: string | null; device?: DeviceInput; phone?: string | null; partnerId?: string; authorityId?: string }): Promise<{ sessionId: string; refreshToken: string; pending: boolean }> {
     const { sessionId, refreshToken } = await this.openSessionIn(tx, userId, { ...ctx, method: 'otp' });
     const pending = await this.team.hasConfirmedTotpTx(tx, userId);
     if (pending) await this.team.markSessionPendingTx(tx, sessionId);
@@ -314,6 +315,41 @@ export class AuthService {
   /** Mint the PARTNER token pair: `{ sub, pid, sid, roles, perms, realm: 'partner' }` — never a `tid`. Roles/perms are DB-resolved by the caller. */
   mintPartner(user: User, partnerId: string, sessionId: string, refreshToken: string, access: { roles: string[]; permissions: string[] }): AuthTokens {
     const accessToken = this.tokens.mintPartnerAccessToken({ sub: user.id, pid: partnerId, sid: sessionId, roles: access.roles, perms: access.permissions });
+    return { accessToken, refreshToken, expiresInSec: this.config.auth.accessTtlSec, user: user.toPublic() };
+  }
+
+  // ═════════════════════════════════════ PC-56 GOV-0 · the GOVERNMENT realm's session acts (the same one place that mints credentials)
+  /** Rotate a GOV session's refresh token. Null when unknown, revoked, expired, pending, or not a gov session (a tenant or partner token). */
+  async rotateGovSessionIn(tx: TxContext, refreshToken: string, ip: string | null): Promise<{ userId: string; sessionId: string; authorityId: string; refreshToken: string } | null> {
+    const session = await this.sessions.getByRefreshHashForUpdate(tx, this.tokens.hashRefreshToken(refreshToken), 'gov');
+    if (!session || !session.isValid() || !session.authorityId) return null;
+    const posture = await this.team.sessionByRefreshHashForUpdate(tx, this.tokens.hashRefreshToken(refreshToken), 'gov');
+    if (!posture || posture.pending) return null;
+    const r = this.refresh.issue();
+    session.rotate(r.hash, r.expiresAt);
+    await this.sessions.rotate(tx, session);
+    await this.loginEvents.record(tx, { userId: session.userId, phone: null, succeeded: true, method: 'refresh', ip, deviceFingerprint: null });
+    return { userId: session.userId, sessionId: session.id, authorityId: session.authorityId, refreshToken: r.token };
+  }
+  /** The second factor for a PENDING gov session (challenge = its refresh token): the tenant checks, gov realm only. */
+  async completeGovTwoFactorIn(tx: TxContext, challengeToken: string, input: { code?: string | null; recoveryCode?: string | null }, ip: string | null): Promise<{ userId: string; sessionId: string; authorityId: string; refreshToken: string }> {
+    const s = await this.team.sessionByRefreshHashForUpdate(tx, this.tokens.hashRefreshToken(challengeToken), 'gov');
+    if (!s || !s.pending || s.revoked || s.expired || s.ageSec > TWO_FACTOR_CHALLENGE_SECONDS || !s.authorityId) throw swcRefused('TWO_FACTOR_CHALLENGE_INVALID');
+    const user = await this.users.getForUpdate(tx, s.userId);
+    if (!user || !user.isLoginable) throw swcRefused('TWO_FACTOR_CHALLENGE_INVALID');
+    const via = await this.twoFactor.verifyInTx(tx, user.id, { code: input.code ?? null, recoveryCode: input.recoveryCode ?? null });
+    const r = this.refresh.issue();
+    await this.team.completeTwoFactorTx(tx, s.id, r.hash, r.expiresAt);
+    await this.loginEvents.record(tx, { userId: user.id, phone: null, succeeded: true, method: via === 'recovery' ? 'recovery_code' : 'totp', ip, deviceFingerprint: null });
+    return { userId: user.id, sessionId: s.id, authorityId: s.authorityId, refreshToken: r.token };
+  }
+  /** Does this person hold a confirmed authenticator? (GOV-1 Q5-A: no gov session is opened without one.) */
+  hasConfirmedTotpIn(tx: TxContext, userId: string): Promise<boolean> { return this.team.hasConfirmedTotpTx(tx, userId); }
+  /** End every gov session of a person for one authority (their last live role there was removed). */
+  async revokeGovSessionsIn(tx: TxContext, userId: string, authorityId: string): Promise<number> { return this.sessions.revokeGovSessions(tx, userId, authorityId); }
+  /** Mint the GOV token pair: `{ sub, aid, sid, roles, perms, realm: 'gov' }` — never a `tid` or a `pid`. Roles/perms DB-resolved by the caller. */
+  mintGov(user: User, authorityId: string, sessionId: string, refreshToken: string, access: { roles: string[]; permissions: string[] }): AuthTokens {
+    const accessToken = this.tokens.mintGovAccessToken({ sub: user.id, aid: authorityId, sid: sessionId, roles: access.roles, perms: access.permissions });
     return { accessToken, refreshToken, expiresInSec: this.config.auth.accessTtlSec, user: user.toPublic() };
   }
 

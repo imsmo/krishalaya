@@ -53,6 +53,8 @@ module.exports = {
         '<rootDir>/modules/partner-api/__tests__/**/*.spec.ts',
         // PC-56 PARTNER-0 · the partner console realm (identity + RBAC + the consent-gated read).
         '<rootDir>/modules/partner-console/__tests__/**/*.spec.ts',
+        // PC-56 GOV-0 · the government console realm (memberships, sign-in, the recorded read).
+        '<rootDir>/modules/gov-console/__tests__/**/*.spec.ts',
         '<rootDir>/modules/insurance/__tests__/**/*.spec.ts',
         '<rootDir>/modules/schemes/__tests__/**/*.spec.ts',
         '<rootDir>/modules/services-marketplace/__tests__/**/*.spec.ts',

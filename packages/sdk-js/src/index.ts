@@ -170,6 +170,7 @@ export type { OrgWalletOverview, OrgAccountRow, OrgBalanceVerdict, OrgMovementRo
 export * from './resources/fintech';
 export * from './resources/partner-api';
 export * from './resources/partner';   // PC-56 PARTNER-0 · the partner console realm
+export * from './resources/gov';   // PC-56 GOV-0 · the government console realm
 export type { ProductBatch, CreateBatchInput, CatalogueProduct } from './resources/catalogue'; // PC-50 W10-4; PC-56 OPS-2a: CatalogueProduct
 export type { EquipmentAsset, EquipmentRate, EquipmentRental, MaintenanceEntry } from './resources/equipment'; // PC-50 W10-6 · PC-56 OPS-4b MaintenanceEntry
 export type { RiderPayoutStatement } from './resources/logistics'; // PC-55 A7

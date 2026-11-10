@@ -54,6 +54,7 @@ import { ReturnsResource } from './resources/returns';
 import { FintechResource, InsuranceAuthoringResource } from './resources/fintech';
 import { PartnerApiResource } from './resources/partner-api';
 import { PartnerResource } from './resources/partner';   // PC-56 PARTNER-0
+import { GovResource } from './resources/gov';   // PC-56 GOV-0
 import { EquipmentResource } from './resources/equipment';
 import { MarketResource, WeatherResource } from './resources/market';
 import { AssistantResource } from './resources/assistant';
@@ -144,6 +145,8 @@ export class KrishalayaClient {
   readonly partnerApi: PartnerApiResource;
   /** PC-56 PARTNER-0 — the partner CONSOLE realm (`/v1/partner/*`): sign-in to a partner organisation, its team, the consent-gated applications. */
   readonly partner: PartnerResource;
+  /** PC-56 GOV-0 — the GOVERNMENT console realm (`/v1/gov/*`): sign-in to an authority (phone code + authenticator), its people, the recorded read. */
+  readonly gov: GovResource;
   readonly insuranceAuthoring: InsuranceAuthoringResource;
   readonly equipment: EquipmentResource;
   readonly tenancy: TenancyResource;
@@ -272,6 +275,7 @@ export class KrishalayaClient {
     this.fintech = new FintechResource(this.http);
     this.partnerApi = new PartnerApiResource(this.http);
     this.partner = new PartnerResource(this.http);
+    this.gov = new GovResource(this.http);
     this.insuranceAuthoring = new InsuranceAuthoringResource(this.http);
     this.equipment = new EquipmentResource(this.http);
     this.tenancy = new TenancyResource(this.http);

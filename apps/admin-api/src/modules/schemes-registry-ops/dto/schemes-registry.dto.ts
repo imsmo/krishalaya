@@ -170,3 +170,12 @@ export const SchemeExportSchema = z.object({
   limit: z.coerce.number().int().min(1).max(20000).optional(),
 }).strict();
 export type SchemeExportDto = z.infer<typeof SchemeExportSchema>;
+
+/** PC-56 GOV-0 · the platform appoints an authority's FIRST head: an existing account by phone, a term of 1–12 months (the service names a
+ *  wrong one), a reason. The end date is written by 0239's guard, never sent. */
+export const AppointAuthorityHeadSchema = z.object({
+  phone: z.string().min(8).max(20),
+  termMonths: z.number().int(),
+  reason: z.string().max(2000),
+}).strict();
+export type AppointAuthorityHeadDto = z.infer<typeof AppointAuthorityHeadSchema>;

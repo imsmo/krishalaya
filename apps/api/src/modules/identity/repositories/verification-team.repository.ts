@@ -556,11 +556,12 @@ export class VerificationTeamRepository {
 
   // ═══════════════════════════════════════════════ sessions (PERSON table)
   // PC-56 PARTNER-0: the challenge (a pending session's refresh token) is answered only inside its own realm.
-  async sessionByRefreshHashForUpdate(tx: TxContext, hash: string, realm: 'tenant' | 'partner' = 'tenant'): Promise<{ id: string; userId: string; pending: boolean; ageSec: number; revoked: boolean; expired: boolean; partnerId: string | null } | null> {
-    const r = await tx.query<any>(`SELECT id, user_id, two_factor_pending, extract(epoch FROM (now() - created_at))::int AS age, revoked_at IS NOT NULL AS revoked, expires_at <= now() AS expired, partner_id
+  // PC-56 GOV-0: and the government realm's ('gov', authority_id) the same way.
+  async sessionByRefreshHashForUpdate(tx: TxContext, hash: string, realm: 'tenant' | 'partner' | 'gov' = 'tenant'): Promise<{ id: string; userId: string; pending: boolean; ageSec: number; revoked: boolean; expired: boolean; partnerId: string | null; authorityId: string | null } | null> {
+    const r = await tx.query<any>(`SELECT id, user_id, two_factor_pending, extract(epoch FROM (now() - created_at))::int AS age, revoked_at IS NOT NULL AS revoked, expires_at <= now() AS expired, partner_id, authority_id
       FROM sessions WHERE refresh_token_hash = $1 AND realm = $2 FOR UPDATE`, [hash, realm]);
     const x = r.rows[0];
-    return x ? { id: x.id, userId: x.user_id, pending: Boolean(x.two_factor_pending), ageSec: Number(x.age), revoked: Boolean(x.revoked), expired: Boolean(x.expired), partnerId: x.partner_id ?? null } : null;
+    return x ? { id: x.id, userId: x.user_id, pending: Boolean(x.two_factor_pending), ageSec: Number(x.age), revoked: Boolean(x.revoked), expired: Boolean(x.expired), partnerId: x.partner_id ?? null, authorityId: x.authority_id ?? null } : null;
   }
   async markSessionPendingTx(tx: TxContext, sessionId: string): Promise<void> {
     await tx.query(`UPDATE sessions SET two_factor_pending = true WHERE id = $1`, [sessionId]);

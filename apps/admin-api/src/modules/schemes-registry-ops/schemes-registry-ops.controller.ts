@@ -17,6 +17,7 @@ import { SchemeVersionService } from './services/scheme-version.service';
 import { AuthorityPortalService } from './services/authority-portal.service';
 import { SchemeExportService } from './services/scheme-export.service';
 import { PortalSyncService } from './services/portal-sync.service';
+import { AuthorityHeadService } from './services/authority-head.service';
 import {
   CreateAuthoritySchema, CreateAuthorityDto, UpdateAuthoritySchema, UpdateAuthorityDto,
   CreateSchemeSchema, CreateSchemeDto, UpdateSchemeMetaSchema, UpdateSchemeMetaDto,
@@ -26,7 +27,7 @@ import {
   SaveDraftSchema, SaveDraftDto, PublishVersionSchema, PublishVersionDto,
   DiscardDraftSchema, DiscardDraftDto, QueryVersionsSchema, QueryVersionsDto,
   MapPortalSchema, MapPortalDto, UnmapPortalSchema, UnmapPortalDto,
-  SchemeExportSchema, SchemeExportDto,
+  SchemeExportSchema, SchemeExportDto, AppointAuthorityHeadSchema, AppointAuthorityHeadDto,
 } from './dto/schemes-registry.dto';
 
 const admin = (req: any): AdminRequestContext => req.admin;
@@ -45,6 +46,7 @@ export class SchemesRegistryOpsController {
     private readonly versions: SchemeVersionService,
     private readonly portals: AuthorityPortalService,
     private readonly exports: SchemeExportService,
+    private readonly heads: AuthorityHeadService,
   ) {}
 
   /* ======================= authorities ======================= */
@@ -83,6 +85,13 @@ export class SchemesRegistryOpsController {
   @Post('authorities/:id/portal/unmap') @RequireOwnerPermission(OwnerPermissions.SchemesRegistryManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
   unmapPortal(@Req() req: any, @Param('id') id: string, @ZodBody(UnmapPortalSchema) dto: UnmapPortalDto) {
     return this.portals.unmapPortal(admin(req), id, dto).then((data) => ({ data }));
+  }
+
+  /* PC-56 GOV-0 (GOV-1 Q4-A) — the platform appoints an authority's FIRST head (FIDO2 + step-up, Law 11); after that the authority grants its
+     own roles with a second person in the government console. Refused while the authority has a current head. */
+  @Post('authorities/:id/head') @RequireOwnerPermission(OwnerPermissions.SchemesRegistryManage) @UseGuards(HardwareKeyGuard, StepUpReauthGuard)
+  appointHead(@Req() req: any, @Param('id') id: string, @ZodBody(AppointAuthorityHeadSchema) dto: AppointAuthorityHeadDto) {
+    return this.heads.appoint(admin(req), id, dto);
   }
 
   /* ======================= schemes ======================= */

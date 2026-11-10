@@ -10,6 +10,7 @@ import { READ_REPLICA } from './read-replica.provider';
 import { PgUnitOfWork } from './unit-of-work.pg';
 import { PgReadReplicaProvider } from './read-replica.pg';
 import { PartnerRealmUnitOfWork } from './partner-realm-uow';   // PC-56 PARTNER-0
+import { GovRealmUnitOfWork } from './gov-realm-uow';   // PC-56 GOV-0
 
 @Global()
 @Module({
@@ -19,7 +20,8 @@ import { PartnerRealmUnitOfWork } from './partner-realm-uow';   // PC-56 PARTNER
     { provide: UNIT_OF_WORK, useClass: PgUnitOfWork },
     { provide: READ_REPLICA, useClass: PgReadReplicaProvider },
     PartnerRealmUnitOfWork,
+    GovRealmUnitOfWork,
   ],
-  exports: [PgPoolProvider, ShardRouter, UNIT_OF_WORK, READ_REPLICA, PartnerRealmUnitOfWork],
+  exports: [PgPoolProvider, ShardRouter, UNIT_OF_WORK, READ_REPLICA, PartnerRealmUnitOfWork, GovRealmUnitOfWork],
 })
 export class DatabaseModule {}

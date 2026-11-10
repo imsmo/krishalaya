@@ -15,6 +15,7 @@ import { AppConfig } from '../../../core/config/app-config';
 import { openEnvelope, resolveKek, sealEnvelope } from '../../../core/secrets/secret-envelope';
 import { SessionPostureService } from '../../../core/auth/session-posture.guard';
 import { PartnerRealmUnitOfWork } from '../../../core/database/partner-realm-uow';
+import { GovRealmUnitOfWork } from '../../../core/database/gov-realm-uow';
 import { VerificationTeamRepository } from '../repositories/verification-team.repository';
 import { hashRecoveryCode, looksLikeRecoveryCode, matchedStep, newRecoveryCodes, newTotpSecret, otpauthUri } from '../domain/totp';
 import { namedSwcRefusal, swcRefused } from '../domain/swc.errors';
@@ -28,7 +29,13 @@ import { namedSwcRefusal, swcRefused } from '../domain/swc.errors';
  *     (core/database/partner-realm-uow: shard 0, app.tenant_id '', app.partner_id = the token's partner) and the audit row has NO tenant
  *     and names the partner (`newValue.partnerId`), which is exactly what 0225's `al_insert_partner_realm` policy admits.
  */
-export interface TwoFactorActor { userId: string; tenantId: string; ip: string | null; requestId: string | null; partnerId?: string }
+/**
+ * PC-56 GOV-0 — A GOVERNMENT PERSON, the same way: `authorityId` set → the act runs in the GOV-REALM unit of work (shard 0, app.tenant_id '',
+ * app.authority_id = the authority) and the audit row has NO tenant and names the authority (`newValue.authorityId`), which is exactly what
+ * 0239's `al_insert_gov_realm` admits. GOV-1 Q5-A: a government person enrols BEFORE any gov session exists (the enrolment step of the
+ * sign-in), so the actor is the person whose phone and live membership the sign-in just proved.
+ */
+export interface TwoFactorActor { userId: string; tenantId: string; ip: string | null; requestId: string | null; partnerId?: string; authorityId?: string }
 const aad = (userId: string) => `user_totp:${userId}`;
 
 @Injectable()
@@ -42,6 +49,7 @@ export class TwoFactorService {
     private readonly posture: SessionPostureService,
     // Optional only so a hand-built tenant service (the SW-c spec) needs no partner plumbing; Nest always injects it (DatabaseModule, @Global).
     @Optional() private readonly partnerUow?: PartnerRealmUnitOfWork,
+    @Optional() private readonly govUow?: GovRealmUnitOfWork,
   ) {
     // the platform's one KEK (13a / 13c): production without it refuses to boot already; dev uses the documented dev key
     this.kek = resolveKek(config.webhookSigningKek, config.isProd);
@@ -49,7 +57,12 @@ export class TwoFactorService {
 
   /** The realm's unit of work (see the header): the tenant's, or the partner realm's for a partner actor. */
   private run<T>(a: TwoFactorActor, fn: (tx: TxContext) => Promise<T>): Promise<T> {
+    if (a.authorityId) return this.gov().run(a.authorityId, fn, { userId: a.userId });
     return a.partnerId ? this.partner().run(a.partnerId, fn, { userId: a.userId }) : this.uow.run(a.tenantId, fn, { userId: a.userId });
+  }
+  private gov(): GovRealmUnitOfWork {
+    if (!this.govUow) throw new Error('TwoFactorService: the gov-realm unit of work is not wired');
+    return this.govUow;
   }
   private partner(): PartnerRealmUnitOfWork {
     if (!this.partnerUow) throw new Error('TwoFactorService: the partner-realm unit of work is not wired');
@@ -57,10 +70,12 @@ export class TwoFactorService {
   }
   /** The audit row's owner: the tenant, or (partner realm) no tenant + the partner named in the row. */
   private trail(a: TwoFactorActor, value: Record<string, unknown>): { tenantId: string | null; newValue: Record<string, unknown> } {
+    if (a.authorityId) return { tenantId: null, newValue: { ...value, authorityId: a.authorityId } };
     return a.partnerId ? { tenantId: null, newValue: { ...value, partnerId: a.partnerId } } : { tenantId: a.tenantId, newValue: value };
   }
 
   state(a: TwoFactorActor) {
+    if (a.authorityId) return this.gov().run(a.authorityId, (tx) => this.repo.totpState('', a.userId, tx), { userId: a.userId });
     return a.partnerId ? this.partner().run(a.partnerId, (tx) => this.repo.totpState('', a.userId, tx), { userId: a.userId }) : this.repo.totpState(a.tenantId, a.userId);
   }
 

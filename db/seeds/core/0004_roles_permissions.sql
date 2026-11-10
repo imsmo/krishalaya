@@ -385,3 +385,29 @@ BEGIN
     ON CONFLICT DO NOTHING;
   END IF;
 END $$;
+
+-- [PC-56 GOV-0] THE GOVERNMENT REALM'S ROLES AS DATA (GOV-1 Q2-A/Q4-A, lead-applied 2026-11-10; migration 0239 inserts the same rows where
+-- missing). Two roles of scope 'authority', five permissions, the matrix: authority_head = every authority.* permission · authority_officer =
+-- applications.read + members.read + members.request. GUARDED on 0239 having run (the 0225 reason: before it, `roles.scope` refuses 'authority').
+DO $$
+BEGIN
+  IF to_regclass('public.authority_memberships') IS NOT NULL THEN
+    INSERT INTO roles (code, default_name, scope, requires_kyc, requires_approval, module_code) VALUES
+      ('authority_head',    'Authority head (approves and removes the authority''s roles)', 'authority', false, true, 'M17'),
+      ('authority_officer', 'Authority officer (reads applications to the authority''s schemes)', 'authority', false, true, 'M17')
+    ON CONFLICT (code) DO NOTHING;
+    INSERT INTO permissions (code, default_name, module_code) VALUES
+      ('authority.applications.read', 'Government console: read applications to this authority''s schemes (masked; every opening recorded)', 'M17'),
+      ('authority.members.read',      'Government console: read this authority''s people and their roles', 'M17'),
+      ('authority.members.request',   'Government console: request a role for a person (a second person approves)', 'M17'),
+      ('authority.members.approve',   'Government console: approve a requested role (never your own request, never for yourself)', 'M17'),
+      ('authority.members.remove',    'Government console: remove a role at once, with a reason', 'M17')
+    ON CONFLICT (code) DO NOTHING;
+    INSERT INTO role_permissions (role_id, permission_code)
+    SELECT r.id, p.code FROM roles r JOIN permissions p ON
+           (r.code = 'authority_head'    AND p.code LIKE 'authority.%')
+        OR (r.code = 'authority_officer' AND p.code IN ('authority.applications.read', 'authority.members.read', 'authority.members.request'))
+     WHERE r.scope = 'authority'
+    ON CONFLICT DO NOTHING;
+  END IF;
+END $$;

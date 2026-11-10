@@ -15,9 +15,10 @@ import { SchemeVersionService } from './services/scheme-version.service';
 import { AuthorityPortalService } from './services/authority-portal.service';
 import { SchemeExportService } from './services/scheme-export.service';
 import { PortalSyncService } from './services/portal-sync.service';
+import { AuthorityHeadService } from './services/authority-head.service';   // PC-56 GOV-0
 
 @Module({
   controllers: [SchemesRegistryOpsController],
-  providers: [SchemesRegistryRepository, SchemeCrudService, EligibilityRulesEditorService, WindowCalendarService, SchemesDepthService, SchemeVersionService, AuthorityPortalService, SchemeExportService, PortalSyncService],
+  providers: [SchemesRegistryRepository, SchemeCrudService, EligibilityRulesEditorService, WindowCalendarService, SchemesDepthService, SchemeVersionService, AuthorityPortalService, SchemeExportService, PortalSyncService, AuthorityHeadService],
 })
 export class SchemesRegistryOpsModule {}
