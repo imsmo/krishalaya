@@ -385,10 +385,20 @@ describe('PC-56 TENANT-6b-2 · the SQL behind the desk', () => {
     expect(await repo.exemplarPour('t1', '2026-07-01', '2026-07-15', 'rc1')).toBeNull();
   });
 
-  it('asks the DATABASE for its own calendar day, unshifted', async () => {
-    const { repo, sqlOf } = capturing((sql) => (sql.includes('current_date') ? [{ d: '2026-07-13' }] : []));
+  // NAMED UPDATE (PC-56 OPS-5b · OPS5-B6 · survey F-7): this test pinned `SELECT current_date` — the database SESSION's day. The desk's (and
+  // the insights') today is now the ORGANISATION's day on the database's clock: `now() AT TIME ZONE countries.timezone` through the tenant's
+  // country, never `current_date` (a pour is dated by that same organisation's day — MilkRateCardRepository.tenantToday). Strengthened, not
+  // weakened: it now also pins the tenant parameter, the join, the absence of `current_date`, and a refusal when no zone answers.
+  it('asks the DATABASE for the ORGANISATION\'s calendar day (its country\'s zone), unshifted — never the session\'s current_date', async () => {
+    const { repo, sqlOf, calls } = capturing((sql) => (sql.includes('AT TIME ZONE co.timezone') ? [{ d: '2026-07-13' }] : []));
     expect(await repo.today('t1')).toBe('2026-07-13');
-    expect(sqlOf('current_date')!.sql).not.toMatch(/current_date\s*[-+]/);
+    const q = sqlOf('AT TIME ZONE co.timezone')!;
+    expect(q.sql).toMatch(/now\(\) AT TIME ZONE co\.timezone/);
+    expect(q.sql).toMatch(/JOIN countries co ON co\.code = t\.country_code/);
+    expect(q.params).toEqual(['t1']);
+    expect(calls.some((c) => /current_date/i.test(c.sql))).toBe(false);
+    const { repo: none } = capturing(() => []);
+    await expect(none.today('t1')).rejects.toThrow(/no country timezone/);
   });
 });
 

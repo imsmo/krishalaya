@@ -68,7 +68,9 @@ describe('PC-56 OPS-4a · Q3-A · this console only reads machine hire', () => {
   });
   it('E1: every `equipment.rentals(` call in every client names its box', () => {
     const calls = CLIENT_FILES.flatMap((f) => Array.from(code(fs.readFileSync(f, 'utf8')).matchAll(/\.equipment\.rentals\(([^)]*)\)/g)).map((m) => [path.relative(APPS, f), m[1]]));
-    expect(calls.length).toBeGreaterThanOrEqual(4);   // web-ops: the hire dashboard, the hires, /insights; mobile: the owner's hires
+    // NAMED UPDATE (PC-56 OPS-5b, E16): OW-6's `/insights` (which read the latest 50 hires) is retired — W369 reads dairy insights only — so the
+    // callers are three: web-ops the hire dashboard and the hires; mobile the owner's hires. Every one still must name its box (the loop below).
+    expect(calls.length).toBeGreaterThanOrEqual(3);   // web-ops: the hire dashboard, the hires; mobile: the owner's hires
     for (const [f, args] of calls) expect([f, /\bbox\s*:\s*'(owner|renter|all)'/.test(args)]).toEqual([f, true]);
   });
 });

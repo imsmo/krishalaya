@@ -962,7 +962,9 @@ describe('PC-56 OPS-5a · the claims guard (ops5. scope, the alerts)', () => {
     }
   });
   it.each(Object.entries(CATS))('%s: no ops5. value (or the "Alert rules" label) trips a 5a guard, a 4c guard or a brand regex', (_lang, cat) => {
-    expect(scoped5(cat).length).toBe(248);
+    // NAMED UPDATE (PC-56 OPS-5b): the `ops5.` scope grows by 5b's 154 keys (W369 and the insights chains) to 402 — every one of them still runs
+    // through every 5a and 4c guard and the brand regexes here, and through 5b's own guards in the block below.
+    expect(scoped5(cat).length).toBe(402);
     for (const [k, v] of scoped5(cat)) {
       for (const [name, hit] of [...GUARDS_5A, ...GUARDS_4C]) expect([k, name, hit(v)]).toEqual([k, name, false]);
       for (const [re] of BRAND_4A) expect([k, String(re), re.test(v)]).toEqual([k, String(re), false]);
@@ -995,5 +997,85 @@ describe('PC-56 OPS-5a · the claims guard (ops5. scope, the alerts)', () => {
       for (const re of MORE) expect([rel, String(re), re.test(src)]).toEqual([rel, String(re), false]);
     }
     for (const re of MORE) expect([String(re), re.test(['Kisan Sathi', 'SHP-2026-29841', 'ખોરાક સલાહ', '4.5 °C', '6.4', '22 min', '2 a.m.', 'Sat 11 Jul', '70 %', 'okra'].join(' '))]).toEqual([String(re), true]);
+  });
+});
+
+// ── PC-56 OPS-5b (brief §E "Registry, guards, rest"; survey E11): THE INSIGHT guards — each proven on its OWN canon phrase (W369 and the insights
+// chains W3321–W3325; persons, places and figures anonymised) and run over EVERY `ops5.` value and the moved "Insights" nav label in en, hi and gu,
+// with the 5a and 4c guards and the brand regexes. PLAIN where even a negated mention has no place on the page (the render test pins "no %, streak,
+// target, nightly" on W369 itself); `on time` is AFFIRMATIVE — the server's own payout refusal says it "cannot say whether money was paid on
+// time", and that sentence is printed (proven to pass); `leaderboard` is plain EXCEPT in its own refusal key. Then Q2-A and Q4-A PINNED verbatim
+// in English and by their key words in hi / gu (a mutant that drops the Q4 sentence in hi is caught here); "signed in as you" (no role); and the
+// brand guard (survey F-12) over every 5b source and fixture.
+const NAV_5B = ['nav.iotAlerts', 'nav.insights'];
+const scoped5b = (cat: Record<string, string>) => Object.entries(cat).filter(([k]) => k.startsWith('ops5.') || NAV_5B.includes(k));
+const GUARDS_5B: ReadonlyArray<[name: string, hit: (v: string) => boolean, canon: string, negated?: string]> = [
+  ['nightly (plain)', plain(/nightly/i), 'Centre insights · Nightly compute'],
+  ['stamped (plain)', plain(/stamped/i), 'Yesterday\'s stamped cards stand (as-of law)'],
+  ['as-of (plain)', plain(/\bas[- ]of\b/i), 'Yesterday\'s stamped cards stand (as-of law)'],
+  ['target (plain)', plain(/target/i), 'First week of data — targets show from day one'],
+  ['retention (plain)', plain(/retention/i), 'Retention is a relationship number wearing a percentage'],
+  ['% (plain)', plain(/%|٪|प्रतिशत/), 'retest rate [n].9% · morning fill hits [n]9%'.replace(/\[n\]/g, '0')],
+  ['streak (plain)', plain(/streak/i), 'adulteration hits 0 for [n] straight days (the streak is on the counter poster)'],
+  ['on time', affirmative3(/\bon time\b/i), 'Money on time — Last [n] cycles: every CONFIRMED line paid', 'This platform does not record the day a payment arrived, so it cannot say whether money was paid on time.'],
+  ['day N after (plain)', plain(/\bday \d+ after\b/i), 'every CONFIRMED line paid on day 2 after close'],
+  ['breach-minutes (plain)', plain(/breach[- ]minutes/i), 'BMC & dispatch — 0 breach-minutes this month'],
+  ['tanker (plain)', plain(/tanker/i), 'tanker recon gap 0 L across [n] trips'],
+  // narrowed to the canon's own use (a cooler's load): 5a's form legitimately says "Fill only the boxes for the kind you chose".
+  ['fill (plain)', plain(/\bmorning fill\b|\bfill (hits|rate|level)\b/i), 'morning fill hits [n]'],
+  ['payback (plain)', plain(/payback/i), 'the case for the second cooler … with its payback math'],
+  ['illness (plain)', plain(/illness/i), '[n] illness in family (support flag)'],
+  ['private dairy (plain)', plain(/private dairy/i), '[n] selling to a private dairy (rate conversation)'],
+  ['nudge (plain)', plain(/nudge/i), 'feed-advisory nudge in [language], not a flag'],
+  ['centre manager (plain)', plain(/centre manager/i), 'trends a centre manager can act on before the FPO asks'],
+];
+const LEADERBOARD = plain(/leaderboard|लीडरबोर्ड|લીડરબોર્ડ/i);
+const SOURCES_5B = ['components/ops5/InsightsViews.tsx', 'features/ops5/insights.ts', 'app/insights/page.tsx', 'app/insights/actions.ts',
+  'app/insights/exports/[id]/download/route.ts', 'test-render/ops5b-fixtures.ts', 'components/Sidebar.tsx', 'features/ops5/refusals.ts'];
+
+describe('PC-56 OPS-5b · the claims guard (ops5. scope, the insights)', () => {
+  it('each guard is proven on its own canon phrase and lets its negated form through; the leaderboard guard on its own', () => {
+    for (const [name, hit, canon, negated] of GUARDS_5B) {
+      expect([name, hit(canon)]).toEqual([name, true]);
+      if (negated) expect([name, 'negated', hit(negated)]).toEqual([name, 'negated', false]);
+    }
+    expect(LEADERBOARD('a counter screen never becomes a leaderboard of neighbours')).toBe(true);
+  });
+  it.each(Object.entries(CATS))('%s: no ops5. value (or the Alert rules / Insights label) trips a 5b, 5a or 4c guard or a brand regex; "leaderboard" only in its refusal', (_lang, cat) => {
+    expect(scoped5b(cat).length).toBe(403);
+    for (const [k, v] of scoped5b(cat)) {
+      for (const [name, hit] of [...GUARDS_5B, ...GUARDS_5A, ...GUARDS_4C]) expect([k, name, hit(v)]).toEqual([k, name, false]);
+      for (const [re] of BRAND_4A) expect([k, String(re), re.test(v)]).toEqual([k, String(re), false]);
+      if (k !== 'ops5.refusal.leaderboard') expect([k, 'leaderboard', LEADERBOARD(v)]).toEqual([k, 'leaderboard', false]);
+    }
+  });
+  it('Q2-A and Q4-A PINNED verbatim (en) and by their key words in hi / gu; the payout refusal and "signed in as you", verbatim', () => {
+    const PIN: Record<string, string> = {
+      'ops5.ins.q2': 'This page shows the whole organisation\'s totals. It names no member and ranks no one.',
+      'ops5.ins.q4': 'These figures are for the whole organisation, from every centre\'s recorded pours. Figures for one centre are not computed yet.',
+      'ops5.ins.payout.refused': 'This platform does not record the day a payment arrived, so it cannot say whether money was paid on time.',
+      'ops5.ins.signedIn': 'Signed in as you. This page needs the dairy.manage permission. It only reads the organisation\'s milk figures; the file export is asked for from here and recorded.',
+      'ops5.ins.export.statement': 'The file holds the whole organisation\'s figures and names no person. Asking for it, making its download link and every fetch are recorded.',
+    };
+    for (const [k, v] of Object.entries(PIN)) expect([k, en[k]]).toEqual([k, v]);
+    for (const k of Object.keys(PIN)) for (const cat of [hi, gu]) expect([k, typeof cat[k] === 'string' && cat[k] !== en[k]]).toEqual([k, true]);
+    // Q4 in every language: the whole organisation, every centre, "not computed yet" for one centre
+    expect([/पूरे संगठन/.test(hi['ops5.ins.q4']) && /हर केंद्र/.test(hi['ops5.ins.q4']) && /किसी एक केंद्र के आँकड़े अभी नहीं निकाले जाते।$/.test(hi['ops5.ins.q4']),
+      /આખી સંસ્થા/.test(gu['ops5.ins.q4']) && /દરેક કેન્દ્ર/.test(gu['ops5.ins.q4']) && /કોઈ એક કેન્દ્રના આંકડા હજી ગણવામાં આવતા નથી\.$/.test(gu['ops5.ins.q4'])]).toEqual([true, true]);
+    // Q2 in every language: no member named, no one ranked
+    expect([/किसी सदस्य का नाम नहीं/.test(hi['ops5.ins.q2']) && /क्रम में नहीं/.test(hi['ops5.ins.q2']),
+      /કોઈ સભ્યનું નામ લેતું નથી/.test(gu['ops5.ins.q2']) && /ક્રમ આપતું નથી/.test(gu['ops5.ins.q2'])]).toEqual([true, true]);
+    // no role, no "MM", no schedule claim in any 5b key
+    for (const [k, v] of scoped5b(en).filter(([x]) => x.startsWith('ops5.ins.') || x.startsWith('ops5.chain.insights'))) expect([k, /\bMM\b|\b(operator|centre manager|tenant ops|manager)\b/i.test(v)]).toEqual([k, false]);
+  });
+  it('brand guard over every 5b source and fixture (no F-12 literal: "Anand FPO", "Vanthali MCC", "Kisan Sathi", "ખોરાક સલાહ" and every listed figure)', () => {
+    const MORE: ReadonlyArray<RegExp> = [/Kisan Sathi/i, /ખોરાક સલાહ/, /\b3,?610\b/, /\b238\b/, /\b6\.6\b/, /\b6\.5\b/, /\b8\.9\b/, /\b0\.9 ?%/, /\b34 (straight )?days\b/,
+      /\b89 ?%/, /\b1,000 ?L\b/, /\b20 trips\b/];
+    for (const rel of SOURCES_5B) {
+      const src = fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
+      for (const [re] of BRAND_4A) expect([rel, String(re), re.test(src)]).toEqual([rel, String(re), false]);
+      for (const re of MORE) expect([rel, String(re), re.test(src)]).toEqual([rel, String(re), false]);
+    }
+    for (const re of MORE) expect([String(re), re.test(['Kisan Sathi', 'ખોરાક સલાહ', '3,610', '238', '6.6', '6.5', '8.9', '0.9%', '34 straight days', '89%', '1,000 L', '20 trips'].join(' '))]).toEqual([String(re), true]);
   });
 });

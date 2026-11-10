@@ -121,11 +121,21 @@ export class DairyQualityRepository {
     return x ? { weightMilliKg: big(x.weight_milli_kg), fatCentiPct: big(x.fat_centi), snfCentiPct: big(x.snf_centi) } : null;
   }
 
-  /** Today, as the DATABASE's calendar day — the same discipline TENANT-6a set: a desk asked for "today" must not
-   *  disagree with the day SQL `current_date` stamped on the pours. */
+  /** Today, as the ORGANISATION's calendar day — `tenants.country_code → countries.timezone` (both NOT NULL; the 6c-1 rule),
+   *  read on the DATABASE's clock, never the Node process's.
+   *
+   *  [PC-56 OPS-5b · OPS5-B6 · survey F-7] It was `SELECT current_date` — the database SESSION's day. A pour is dated by the
+   *  organisation's day (`MilkCollectionService.record` bounds `collectedOn` by `MilkRateCardRepository.tenantToday`, the same
+   *  expression as here), so on a session running in UTC the insights window (W172 / web-ops W369) ended on YESTERDAY from 00:00 to
+   *  05:30 IST and the newest day's pours and money fell out of "current". SHARED: the quality desk (`DairyQualityReadModel`, W168)
+   *  reads its default day through this same function and now judges the organisation's day too. */
   async today(tenantId: string): Promise<string> {
-    const r = await this.replica.forTenant(tenantId).query(`SELECT current_date::text AS d`);
-    return String((r.rows[0] as any)?.d ?? '');
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT to_char(now() AT TIME ZONE co.timezone, 'YYYY-MM-DD') AS d
+         FROM tenants t JOIN countries co ON co.code = t.country_code WHERE t.id = $1`, [tenantId]);
+    const d = (r.rows[0] as { d?: string } | undefined)?.d;
+    if (!d) throw new Error(`dairy: tenant ${tenantId} has no country timezone, so its today is unknown`);
+    return String(d);
   }
 
   /** The membership mix by payment cycle — the input TENANT-6a's window derivation needs, read here too so the quality

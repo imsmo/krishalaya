@@ -57,6 +57,16 @@ rows — 45 BACKEND-READY, 6 gated on PC-54 (`iot-device-fleet`, `ops-alerting`)
       server-computed; 403 → honest permission note) + operational snapshot (status breakdown of the LATEST 50
       per register, labeled as a snapshot never a total; true totals need read-models → PC-54 note).
       **OPS CANON FULLY DISPOSITIONED**: OW-0..6 built/resolved; OW-7 gated on PC-54.
+      CORRECTED (PC-56 OPS-5b, survey C-8 / F-9 / E16 — the lines above are kept, not deleted):
+      • "OPS CANON FULLY DISPOSITIONED" was FALSE for `/insights`: the canon's `/insights` is W369, the dairy centre's insights page
+        (dairy chrome, dairy sidebar), not tenant analytics. OW-6's page printed the organisation's GMV and payouts paid on the field
+        console, whose money rule is "only READS" (OPS-1 Q2-A), with an `'INR'` fallback when no currency came back (a Rule-Zero
+        literal); the analytics read beside it also returns a per-seller sales ranking (`topSellers`) the page never printed.
+      • OPS-5b retired it: web-ops no longer calls `client.tenancy.analytics` (a source assertion, test/ops5b-pages.spec.ts); the
+        tenant analytics stay on the organisation's console. `/insights` is now W369 — a READ of `GET /v1/dairy/insights` (the
+        whole organisation's milk figures as the server words them; no member, no reason, no rank, no %), behind `dairy` +
+        `dairy_insights` and `dairy.manage`; its export is REAL on the tenant export plane; it sits in the Dairy sidebar group.
+        The OW-6 snapshot ("latest 50 per register") and its `ins.` keys (19) are gone.
 - [x] **OW-7 · IoT fleet + ops alerting** ✅ **BUILT 2026-08-06 (PC-55 B4)** — **OW-0..OW-7 ALL BUILT: the ops
       console is complete.** No backend change was needed (W54-12 fleet/breach reads + PC-55 A6 rule CRUD, cadence
       evaluator, fired feed and acknowledge were already there).

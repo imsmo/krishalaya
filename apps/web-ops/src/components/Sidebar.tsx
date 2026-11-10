@@ -35,12 +35,14 @@ const NAV: ReadonlyArray<{ href: string; labelKey: string; sub?: boolean; group?
   { href: '/pos/shift-close', labelKey: 'nav.posShift', sub: true }, // PC-56 OPS-3a · W365 (the shift's totals; read)
   { href: '/pos/exceptions', labelKey: 'nav.posExceptions', sub: true }, // PC-56 OPS-3a · W364 (honest; reads nothing)
   { href: '/bmc', labelKey: 'nav.bmc', sub: true }, // PC-56 OPS-3b · W366 (the cooler at your centre; read + the manual reading)
+  // NAMED UPDATE (PC-56 OPS-5b, survey E1): `/insights` is W369 now — the organisation's dairy insights — and moves into the Dairy group (the canon's
+  // sidebar, W369:23-28); OW-6's top-level "Insights" link is gone with OW-6's page. Same nav key, a dairy label.
+  { href: '/insights', labelKey: 'nav.insights', sub: true }, // PC-56 OPS-5b · W369 (the whole organisation's milk figures; read + the export)
   { href: '/aeps/home', labelKey: 'nav.aeps' }, // PC-56 OPS-1b · W390 (OW-5's `/money` answers a 307 to /aeps/withdrawal)
   { href: '/aeps/withdrawal', labelKey: 'nav.aepsRecord', sub: true }, // PC-56 OPS-1b · W391
   { href: '/aeps/exceptions', labelKey: 'nav.aepsExceptions', sub: true }, // PC-56 OPS-1b · W392
   { href: '/attendance/face-enroll', labelKey: 'nav.attendance' }, // PC-56 OPS-1b · W397 (W398 linked from it)
   { href: '/canon/biometric', labelKey: 'nav.biometric', sub: true }, // PC-56 OPS-1b · W399 (a platform page — never under Dairy)
-  { href: '/insights', labelKey: 'nav.insights' }, // OW-6
   // PC-56 OPS-4c (survey E2): a Sensors group of the BUILT sensor routes only (`/devices` answers a 307 to the dashboard).
   // NAMED UPDATE (PC-56 OPS-5a, survey E1): "Alert rules" (W402) replaces the OW-7 `/devices/alerts` link (same nav key; both OW-7 pages 307 to it).
   { href: '/iot/dashboard', labelKey: 'nav.iotDashboard', group: 'nav.iotGroup' }, // PC-56 OPS-4c · W400 (the monitored subjects and the loggers; read)

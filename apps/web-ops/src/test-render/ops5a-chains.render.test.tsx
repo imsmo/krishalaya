@@ -92,8 +92,12 @@ describe('PC-56 OPS-5a · the alert chain from W403 (PARITY-DECOR)', () => {
     for (const id of ['act_zero_sum', 'act_on_call', 'incident_audit', 'incident_close', 'closed_by_person']) expect(h).toContain(`data-kv-refusal="${id}"`);
     expect(FALSE_5A.test(affirmed(visible(h)))).toBe(false);
   });
+  // NAMED UPDATE (PC-56 OPS-5b): OPS5_CHAINS now also holds 5b's two insights chains (rendered in ops5b-chains.render.test.tsx); THIS test is
+  // the 5a pair, selected by wave — still every state of both, in hi and gu.
   it('every state of both chains renders its own title in hi / gu', () => {
-    for (const c of OPS5_CHAINS) for (const cat of [hi, gu]) for (const st of c.states)
-      expect(text(chain(c.id, st, c.id === 'alert_act' ? '/iot/alert-rules' : W403, null, cat))).toContain(cat[`${c.key(st)}.title`]);
+    const fiveA = OPS5_CHAINS.filter((c) => c.wave === '5a');
+    expect(fiveA.map((c) => c.id)).toEqual(['alert_act', 'incident_act']);
+    for (const c of fiveA) for (const cat of [hi, gu]) for (const st of c.states)
+      expect(text(chain(c.id as 'alert_act' | 'incident_act', st, c.id === 'alert_act' ? '/iot/alert-rules' : W403, null, cat))).toContain(cat[`${c.key(st)}.title`]);
   });
 });

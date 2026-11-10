@@ -3,6 +3,8 @@
 // server's own answer; its statement is Q3-A's sentence. Opened from W403 it is PARITY-DECOR: the confirm state's one link IS a re-read of the
 // breach; its statement is Q1-A's sentence; nothing is written. Every state prints its refusals BY NAME (the canon's zero-sum and on-call sentences
 // among them, refused with their own words and NEVER printed) and links Back to the page that opened it — W403's chain returns to W403, never W402.
+// NAMED UPDATE (PC-56 OPS-5b): the Back and re-read labels come from the chain's own definition (5a's two keep their words); the two insights
+// chains render here too — the export (REAL: `children` carries the plane's job — queued or ready) and the re-read (PARITY-DECOR, Back → W369).
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { chain5ById, OPS5_REFUSALS, type Chain5Id, type Ops5Surface, type Tr } from '../../features/ops5/refusals';
@@ -29,9 +31,9 @@ export function Ops5Chain({ t, chain, state, page, children }: { t: Tr; chain: C
       {children}
       {/* PARITY-DECOR: the confirm state's one link IS the re-read of the page that opened it (from W403: the same breach). */}
       {c.kind === 'PARITY-DECOR' && state === 'confirm'
-        ? <p className="kv-pager"><Link className="kv-btn" href={page} data-kv-real="reread">{t.t('ops5.chain.reread')}</Link></p> : null}
+        ? <p className="kv-pager"><Link className="kv-btn" href={page} data-kv-real="reread">{t.t(c.rereadKey)}</Link></p> : null}
       <Ops5Refusals t={t} surface={c.surface} />
-      <p className="kv-pager"><Link className="kv-btn kv-btn--muted" href={page} data-kv-back={page}>{t.t(chain === 'alert_act' ? 'ops5.chain.backRules' : 'ops5.chain.backIncident')}</Link></p>
+      <p className="kv-pager"><Link className="kv-btn kv-btn--muted" href={page} data-kv-back={page}>{t.t(c.backKey)}</Link></p>
     </section>
   );
 }
