@@ -721,7 +721,8 @@ describe('PC-56 OPS-4a · the claims guard (ops4. scope, the hire)', () => {
   });
   it.each(Object.entries(CATS))('%s: no ops4. value (or hire nav label) trips a 4a guard or a brand regex', (_lang, cat) => {
     // NAMED UPDATE (PC-56 OPS-4b): 4b's 96 `ops4.` values join the scope (a widening: every 4a guard now also runs over them) — 171 → 267.
-    expect(scoped4(cat).length).toBe(267);
+    // NAMED UPDATE (PC-56 OPS-4c): 4c's 132 `ops4.` values join the scope (a widening again) — 267 → 399.
+    expect(scoped4(cat).length).toBe(399);
     for (const [k, v] of scoped4(cat)) {
       for (const [name, hit] of GUARDS_4A) expect([k, name, hit(v)]).toEqual([k, name, false]);
       for (const [re] of BRAND_4A) expect([k, String(re), re.test(v)]).toEqual([k, String(re), false]);
@@ -797,7 +798,8 @@ describe('PC-56 OPS-4b · the claims guard (ops4. scope, upkeep and animals)', (
     }
   });
   it.each(Object.entries(CATS))('%s: no ops4. value (or hire nav label) trips a 4b guard, a 4a guard or a brand regex', (_lang, cat) => {
-    expect(scoped4b(cat).length).toBe(268);
+    // NAMED UPDATE (PC-56 OPS-4c): 4c's 132 `ops4.` values join the scope (a widening: every 4b and 4a guard runs over them) — 268 → 400.
+    expect(scoped4b(cat).length).toBe(400);
     for (const [k, v] of scoped4b(cat)) {
       for (const [name, hit] of [...GUARDS_4B, ...GUARDS_4A]) expect([k, name, hit(v)]).toEqual([k, name, false]);
       for (const [re] of BRAND_4A) expect([k, String(re), re.test(v)]).toEqual([k, String(re), false]);
@@ -832,5 +834,84 @@ describe('PC-56 OPS-4b · the claims guard (ops4. scope, upkeep and animals)', (
       for (const [re] of BRAND_4A) expect([rel, String(re), re.test(src)]).toEqual([rel, String(re), false]);
       for (const re of MORE) expect([rel, String(re), re.test(src)]).toEqual([rel, String(re), false]);
     }
+  });
+});
+
+// ── PC-56 OPS-4c (brief §E "Registry, guards, rest"): THE SENSOR guards — each proven on its OWN canon phrase (W400, W401, W404 and their chains;
+// devices, places and figures anonymised) and narrowed to the affirmative (a sentence that carries a negation passes, the canon's claim is caught;
+// each proven to let its negated form through) — then run over every `ops4.` value and the hire + sensor nav labels in en, hi and gu. The
+// `interpolat` guard is PLAIN: the canon's only line with it (W404:41) is itself negated, so the word may not appear at all. Then the Q6-A sentences
+// that ARE printed (the second and the third) are PINNED verbatim in English and by their key words in hi / gu; the FIRST is pinned ABSENT (its
+// premise — "timed by the server" — is false at merge); and the brand guard (survey F-16) runs over every 4c source and fixture.
+const NAV_4C = [...NAV_4B, 'nav.iotGroup', 'nav.iotDashboard', 'nav.iotHealth', 'nav.iotAlerts'];
+const scoped4c = (cat: Record<string, string>) => Object.entries(cat).filter(([k]) => k.startsWith('ops4.') || NAV_4C.includes(k));
+const GUARDS_4C: ReadonlyArray<[name: string, hit: (v: string) => boolean, canon: string, negated?: string]> = [
+  ['battery', affirmative3(/battery/i), 'Battery [n]% healthy', 'No battery level is recorded.'],
+  ['calibrat', affirmative3(/calibrat/i), 'Calibration due within 30 days — [n] devices', 'No calibration date is recorded.'],
+  ['cadence', affirmative3(/cadence/i), 'reading cadence every [n] min', 'No reading cadence is set.'],
+  ['online', affirmative3(/\bonline\b/i), '[n] devices · [n] online · [n] silent over an hour', 'No device is called online.'],
+  ['synced?', affirmative3(/\bsync(ed)?\b/i), 'Device registry sync error — Retry sync', 'Nothing is synced here.'],
+  ['right now', affirmative3(/right now/i), '[cooler] is reading [n]°C right now', 'No reading is shown as right now.'],
+  ['GPS', affirmative3(/\bGPS\b/), 'live GPS ref attached', 'No GPS is read.'],
+  ['telecom', affirmative3(/telecom/i), 'Likely cause: signal / telecom outage', 'No telecom outage is detected.'],
+  ['paged', affirmative3(/\bpaged\b/i), 'Action: vet desk paged', 'Nobody is paged.'],
+  ['field visit', affirmative3(/field visit/i), 'Action: field visit queued', 'No field visit is queued.'],
+  ['technician', affirmative3(/technician/i), 'flagged unverified until a technician confirms the offset', 'There is no technician role.'],
+  ['centre manager', affirmative3(/centre manager/i), 'only the centre manager (MM) edits alert thresholds on W402', 'There is no centre manager role.'],
+  ['maker-checker', affirmative3(/maker[- ]checker/i), 'maker-checker and versioned', 'No maker-checker step exists.'],
+  ['annotation', affirmative3(/annotation/i), 'a correction is a new annotation on the reading', 'No annotation can be added.'],
+  ['interpolat (plain)', plain(/interpolat/i), 'readings are disclosed as manual, never interpolated to look automatic'],
+];
+const SOURCES_4C = ['components/ops4/IotViews.tsx', 'features/ops4/iot.ts', 'app/iot/dashboard/page.tsx', 'app/iot/device/page.tsx', 'app/iot/device-health/page.tsx',
+  'test-render/ops4c-fixtures.ts', 'features/ops4/refusals.ts', 'components/Sidebar.tsx'];
+
+describe('PC-56 OPS-4c · the claims guard (ops4. scope, the sensors)', () => {
+  it('each guard is proven on its own canon phrase and lets its negated form through', () => {
+    for (const [name, hit, canon, negated] of GUARDS_4C) {
+      expect([name, hit(canon)]).toEqual([name, true]);
+      if (negated) expect([name, 'negated', hit(negated)]).toEqual([name, 'negated', false]);
+    }
+  });
+  it.each(Object.entries(CATS))('%s: no ops4. value (or hire / sensor nav label) trips a 4c, 4b or 4a guard or a brand regex', (_lang, cat) => {
+    expect(scoped4c(cat).length).toBe(404);
+    for (const [k, v] of scoped4c(cat)) {
+      for (const [name, hit] of [...GUARDS_4C, ...GUARDS_4B, ...GUARDS_4A]) expect([k, name, hit(v)]).toEqual([k, name, false]);
+      for (const [re] of BRAND_4A) expect([k, String(re), re.test(v)]).toEqual([k, String(re), false]);
+    }
+  });
+  it('Q6-A: the second and third sentences PINNED verbatim (en) and by their key words in hi / gu; the FIRST is ABSENT (premise false)', () => {
+    const PIN: Record<string, string> = {
+      'ops4.q6.typedNotSensor': 'A reading typed by a person does not show that a sensor is working.',
+      'ops4.q6.soilRegistryOnly': 'Soil pods and weather masts are registered only — this platform receives no readings from them.',
+      'ops4.iot.source.device': 'from the logger',
+      'ops4.iot.source.manual': 'typed by a person',
+      'ops4.iot.signedIn': 'Signed in as you. These pages only read, with the logistics.manage permission. Thresholds, breach acts and manual readings are done on their own consoles, not here.',
+      'ops4.iot.breachRule': 'The server opens a breach when two signed readings from the logger in a row are outside the band; a reading typed by a person never opens one.',
+      'ops4.iot.health.typedNeverEnds': 'A reading typed by a person never ends a silence: only the logger\'s next signed reading does.',
+    };
+    for (const [k, v] of Object.entries(PIN)) expect([k, en[k]]).toEqual([k, v]);
+    for (const k of Object.keys(PIN)) for (const cat of [hi, gu]) expect([k, typeof cat[k] === 'string' && cat[k] !== en[k]]).toEqual([k, true]);
+    // the soil-pod sentence in every language (a mutant drops it from one): "registered only" and "receives no readings"
+    expect([/केवल पंजीकृत/.test(hi['ops4.q6.soilRegistryOnly']) && /कोई रीडिंग प्राप्त नहीं करता/.test(hi['ops4.q6.soilRegistryOnly']),
+      /ફક્ત નોંધાયેલા/.test(gu['ops4.q6.soilRegistryOnly']) && /કોઈ રીડિંગ મેળવતું નથી/.test(gu['ops4.q6.soilRegistryOnly'])]).toEqual([true, true]);
+    // the typed-reading sentence in every language
+    expect([/सेंसर काम कर रहा है/.test(hi['ops4.q6.typedNotSensor']) && /नहीं दिखाती/.test(hi['ops4.q6.typedNotSensor']),
+      /સેન્સર કામ કરે છે/.test(gu['ops4.q6.typedNotSensor']) && /બતાવતું નથી/.test(gu['ops4.q6.typedNotSensor'])]).toEqual([true, true]);
+    // the source words in every language, and never swapped
+    expect([hi['ops4.iot.source.device'], gu['ops4.iot.source.device']]).toEqual(['लॉगर से', 'લૉગરમાંથી']);
+    expect([/टाइप/.test(hi['ops4.iot.source.manual']), /ટાઇપ/.test(gu['ops4.iot.source.manual'])]).toEqual([true, true]);
+    // the FIRST Q6 sentence is NOT printed (premise false: a signed reading carries the device's own time — test/ops4c-pages.spec.ts)
+    for (const cat of [en, hi, gu]) for (const v of Object.values(cat)) expect(/timed by the server|signed by a registered device and timed/i.test(v)).toBe(false);
+    // no role claim (OPS-3 Q14-A), no "MM"
+    for (const [k, v] of scoped4c(en)) expect([k, /\bMM\b/.test(v)]).toEqual([k, false]);
+  });
+  it('brand guard over every 4c source and fixture (no F-16 literal: "Vanthali", "BMC-VAN-01", "SP-BHE-07", "SP-VAN-12", "WM-02", "VB-01", "3.8", "82 %", "30 Sep 2026" …)', () => {
+    const MORE: ReadonlyArray<RegExp> = [/SP-BHE-07/, /SP-VAN-12/, /\bWM-02\b/, /\bVB-01\b/, /\b3\.8\b/, /\b82 ?%/, /\b11 ?%/, /30 Sep 2026/, /\b26 ?h\b/, /Sat 11 Jul/, /Tue 14 Jul/, /\b44 online\b/];
+    for (const rel of SOURCES_4C) {
+      const src = fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
+      for (const [re] of BRAND_4A) expect([rel, String(re), re.test(src)]).toEqual([rel, String(re), false]);
+      for (const re of MORE) expect([rel, String(re), re.test(src)]).toEqual([rel, String(re), false]);
+    }
+    for (const re of MORE) expect([String(re), re.test(['SP-BHE-07', 'SP-VAN-12', 'WM-02', 'VB-01', '3.8 °C', '82 %', '11%', '30 Sep 2026', '26 h', 'Sat 11 Jul', 'Tue 14 Jul', '44 online'].join(' '))]).toEqual([String(re), true]);
   });
 });

@@ -7,10 +7,9 @@
 // minutes rather than a vague "don't spam me".
 //
 // TWO THINGS THIS CONSOLE MUST NOT PRETEND:
-//   1. THE FLEET IS NOT A REGISTRY. `GET cold-chain/devices` derives the fleet from LEDGERED READINGS over the last
-//      30 days — a device that never reported does not appear, because the platform has no evidence it exists. So
-//      "3 devices" means "3 devices we have heard from", and the page says exactly that instead of implying an
-//      inventory nobody maintains.
+//   1. (CORRECTED, PC-56 OPS-4c — survey C-12, kept not deleted.) "THE FLEET IS NOT A REGISTRY … derives the fleet from LEDGERED
+//      READINGS" was FALSE as built: it grouped typed `device_ref`s, which only a person's MANUAL reading writes. The fleet is now the
+//      registered loggers and their SIGNED readings (API, E13); the OW-7 fleet page is a 307 to `/iot/dashboard`.
 //   2. A CHANNEL HINT IS NOT A DELIVERY GUARANTEE. Firing rides the existing notification spine, where each
 //      recipient's own preferences and QUIET HOURS still apply. `channelHint` is a preference; it can never
 //      bypass a person's night. The rule form says so.
@@ -179,42 +178,10 @@ export function buildRulePatch(raw: { isActive?: string; cooldownMinutes?: strin
 }
 
 // ---------------------------------------------------------------------------
-// Reading the fleet honestly
+// Reading the fleet — REMOVED (PC-56 OPS-4c). `DeviceRow`, `hoursSince`, `deviceHealth` and `fleetSummary` served only the OW-7 `/devices`
+// page, which listed typed `device_ref`s as "sensors we have heard from" (survey C-12). That page is deleted (`/devices` → 307 `/iot/dashboard`);
+// silence is now the SERVER's verdict from signed readings (`GET …/cold-chain/loggers` silences, W404), never a client threshold.
 // ---------------------------------------------------------------------------
-export interface DeviceRow { deviceRef?: string; lastSeen?: string | null; readings24h?: number | null; breaches24h?: number | null; lastTempC?: string | null }
-
-export function hoursSince(iso: string | null | undefined, nowMs: number): number | null {
-  if (!iso) return null;
-  const t = Date.parse(iso);
-  if (!Number.isFinite(t)) return null;
-  return Math.max(0, Math.floor((nowMs - t) / 3_600_000));
-}
-
-/** What a device's own readings say about it. Ordered so the WORST truth wins: a sensor that has gone quiet is
- *  reported as silent even if its last readings were breaching, because a silent sensor means we no longer know
- *  what the cargo is doing — which is the more dangerous ignorance.
- *  `silentAfterHours` defaults to 12, matching the API's own device_silent default; it is a parameter so a console
- *  view can align with whatever threshold the tenant's rule actually uses instead of guessing. */
-export function deviceHealth(d: DeviceRow, nowMs: number, silentAfterHours = 12): 'silent' | 'breaching' | 'ok' | 'unknown' {
-  const age = hoursSince(d.lastSeen, nowMs);
-  if (age === null) return 'unknown';
-  if (age >= silentAfterHours) return 'silent';
-  if ((d.breaches24h ?? 0) > 0) return 'breaching';
-  return 'ok';
-}
-
-/** Fleet counters for the page header — derived from the rows on screen, and labelled as such (this is a 30-day
- *  reporting window, not an equipment inventory). */
-export function fleetSummary(rows: readonly DeviceRow[], nowMs: number, silentAfterHours = 12): { total: number; silent: number; breaching: number; ok: number } {
-  let silent = 0, breaching = 0, ok = 0;
-  for (const d of rows) {
-    const h = deviceHealth(d, nowMs, silentAfterHours);
-    if (h === 'silent' || h === 'unknown') silent += 1;
-    else if (h === 'breaching') breaching += 1;
-    else ok += 1;
-  }
-  return { total: rows.length, silent, breaching, ok };
-}
 
 export interface FiredAlertRow { id?: string; kind?: string | null; severity?: string | null; acknowledgedAt?: string | null; firedAt?: string | null; subjectRef?: string | null; title?: string | null; evidence?: Record<string, unknown> | null }
 

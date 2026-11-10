@@ -138,11 +138,12 @@ export class OpsAlertService {
       // measured gap so the notification says what it was judged against, not just that it happened.
       const silentMinutes = silentMinutesOf(rule.threshold as Record<string, unknown>);
       const rows = await this.repo.silentDevices(tenantId, silentMinutes);
+      // PC-56 OPS-4c (E13): a REGISTERED LOGGER, by its serial, judged on its SIGNED readings only (the repository) — never a typed reference.
       return rows.map((r) => ({
-        subjectType: 'device', subjectRef: r.deviceRef,
+        subjectType: 'device', subjectRef: r.serial,
         severity: severityFor('device_silent', { silentMinutes: r.silentMinutes }),
-        detail: { lastSeen: r.lastSeen, silentMinutes: r.silentMinutes, thresholdMinutes: silentMinutes },
-        body: `Sensor ${r.deviceRef} has not reported for ${silenceText(r.silentMinutes)} (last seen ${r.lastSeen}).`,
+        detail: { deviceId: r.deviceId, lastSeen: r.lastSeen, silentMinutes: r.silentMinutes, thresholdMinutes: silentMinutes },
+        body: `Logger ${r.serial} has not reported for ${silenceText(r.silentMinutes)} (last signed reading received ${r.lastSeen}).`,
       }));
     }
     const which = String(t.alert ?? 'any');

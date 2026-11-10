@@ -65,6 +65,12 @@ rows — 45 BACKEND-READY, 6 gated on PC-54 (`iot-device-fleet`, `ops-alerting`)
       installed is simply absent (check against your own installation list). THE WORST TRUTH WINS: a sensor that has
       gone quiet reads as QUIET even while its last readings were breaching, because once it stops reporting nobody
       knows what the cargo is doing. Unknown sensors are counted WITH the silent ones, never into "ok".
+      **CORRECTED (PC-56 OPS-4c, survey C-12 — the words above are kept, not deleted): "a sensor appears only because it sent
+      readings in the last 30 days" was FALSE.** The fleet grouped `device_ref`, which only a MANUAL reading writes (a person's
+      typed reference, or a cooler's reference stamped on a person's reading); a signed logger never appeared, and a typed reading
+      made a "sensor" look heard from. OPS-4c: the fleet and the `device_silent` rule read registered loggers and their SIGNED
+      readings only; `/devices` answers a 307 to `/iot/dashboard` (W400). Soil pods and weather masts are registered only — no
+      reading of theirs is received (C-17, founder TENANT-12).
       /devices/rules — rule CRUD offering exactly the threshold keys the API accepts per kind, with the API's own
       defaults shown and applied when a box is left blank (a blank form still produces a WORKING rule, never a
       silently disabled one). Cooldown stated in real minutes (5 … 10080) because that is the number the dedupe

@@ -75,26 +75,35 @@ export class OpsAlertRepository {
     return r.rows.map((x: any) => ({ deviceRef: x.device_ref, subjectType: x.subject_type, subjectId: x.subject_id, breaches: x.breaches, lastTempC: x.last_temp_c, lastAt: new Date(x.last_at).toISOString() }));
   }
   /**
-   * Sensors that have gone quiet, measured in MINUTES.
+   * Loggers that have gone quiet, measured in MINUTES.
    *
    * PC-56 TENANT-6d-5. This query used to floor the gap to whole hours, which is why W170's *"operator called
    * automatically after 15 min silence"* could never fire: a fifteen-minute gap was `silent_hours = 0`, below every
    * legal threshold, and the alert body would have read *"has not reported for ~0h"* even if it had.
    *
+   * PC-56 OPS-4c · OPS4-B8 / E13 (survey C-12). It also used to group `device_ref` — a label only a MANUAL reading writes — so a person
+   * typing a temperature against a cooler's sensor reference kept that "sensor" looking alive, and the rule said nothing when the real
+   * logger died (the canon's own law, W404: "readings are disclosed as manual, never interpolated to look automatic"). Now it reads the
+   * logger registry (`twin_devices`, kind `cold_chain_logger`, registered) and ONLY its signed readings (`source = 'device'`, by
+   * `device_id`): a manual reading never satisfies or resets a silence. The gap is measured from `server_recorded_at` — when the server
+   * received the last signed reading — the same clock the cold-chain watch job uses (`twin_devices.last_reading_at`).
+   *
    * The 30-day window is unchanged — a sensor nobody has heard from in a month is a decommissioning question, not an
    * alert — and it is deliberately WIDER than the maximum threshold (43,200 minutes = 30 days) rather than derived
    * from it, so the two numbers cannot silently converge into a rule that can never match.
    */
-  async silentDevices(tenantId: string, silentMinutes: number): Promise<Array<{ deviceRef: string; lastSeen: string; silentMinutes: number }>> {
+  async silentDevices(tenantId: string, silentMinutes: number): Promise<Array<{ deviceId: string; serial: string; lastSeen: string; silentMinutes: number }>> {
     const r = await this.replica.forTenant(tenantId).query(
-      `SELECT device_ref, MAX(recorded_at) AS last_seen,
-              FLOOR(EXTRACT(EPOCH FROM (now() - MAX(recorded_at))) / 60)::int AS silent_minutes
-         FROM cold_chain_logs
-        WHERE tenant_id=$1 AND device_ref IS NOT NULL AND recorded_at >= now() - interval '30 days'
-        GROUP BY device_ref
-       HAVING MAX(recorded_at) < now() - ($2 || ' minutes')::interval
+      `SELECT d.id AS device_id, d.serial, MAX(l.server_recorded_at) AS last_seen,
+              FLOOR(EXTRACT(EPOCH FROM (now() - MAX(l.server_recorded_at))) / 60)::int AS silent_minutes
+         FROM twin_devices d
+         JOIN cold_chain_logs l ON l.tenant_id = d.tenant_id AND l.device_id = d.id AND l.source = 'device'
+                               AND l.recorded_at >= now() - interval '30 days'
+        WHERE d.tenant_id=$1 AND d.kind_code = 'cold_chain_logger' AND d.status = 'registered'
+        GROUP BY d.id, d.serial
+       HAVING MAX(l.server_recorded_at) < now() - ($2 || ' minutes')::interval
         ORDER BY last_seen ASC LIMIT 200`, [tenantId, String(silentMinutes)]);
-    return r.rows.map((x: any) => ({ deviceRef: x.device_ref, lastSeen: new Date(x.last_seen).toISOString(), silentMinutes: x.silent_minutes }));
+    return r.rows.map((x: any) => ({ deviceId: x.device_id, serial: x.serial, lastSeen: new Date(x.last_seen).toISOString(), silentMinutes: x.silent_minutes }));
   }
   async maintenanceAlerts(tenantId: string, which: string): Promise<Array<{ assetId: string; alert: string; lastServiceOn: string | null }>> {
     const r = await this.replica.forTenant(tenantId).query(

@@ -117,7 +117,8 @@ describe('PC-56 TENANT-6d-5 · the fifteen minutes', () => {
         id: 'r-1', kind: 'device_silent', ruleName: 'silence 15', threshold: { silentMinutes: 15 },
         recipientUserIds: ['op-1'], channelHint: 'ivr', cooldownMinutes: 5,
       }]),
-      silentDevices: jest.fn(async () => [{ deviceRef: 'dev-1', lastSeen: '2026-08-21T14:00:00Z', silentMinutes: 20 }]),
+      // NAMED UPDATE (PC-56 OPS-4c · E13): the repository returns a registered logger (id + serial), never a typed `deviceRef`.
+      silentDevices: jest.fn(async () => [{ deviceId: 'd-1', serial: 'LOG-1', lastSeen: '2026-08-21T14:00:00Z', silentMinutes: 20 }]),
       recordFired: jest.fn(async () => true),
       touchEvaluated: jest.fn(async () => undefined),
     };
@@ -129,6 +130,7 @@ describe('PC-56 TENANT-6d-5 · the fifteen minutes', () => {
       const [, ev] = outbox.write.mock.calls[0] as unknown as [unknown, Record<string, any>];
       // And the body says the gap in minutes, with the threshold it was judged against beside it.
       expect(ev.payload.body).toContain('20 min');
+      expect(ev.payload.subjectRef).toBe('LOG-1');   // NAMED UPDATE (OPS-4c): the logger's serial
       expect(ev.payload.detail).toMatchObject({ silentMinutes: 20, thresholdMinutes: 15 });
       expect(ev.eventType).toBe(OPS_ALERT_OUTBOX_TYPE);
     });

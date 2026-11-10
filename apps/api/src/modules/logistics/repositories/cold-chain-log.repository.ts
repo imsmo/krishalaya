@@ -57,15 +57,28 @@ export class ColdChainLogRepository {
     return r.rows.map(toDomain);
   }
 
-  /** PC-54 W54-12 `iot-device-fleet` v1: the fleet IS what the ledgered readings prove — per device_ref
-   *  last-seen / 24h reading + excursion counts / last temp. No phantom registry. */
-  async deviceFleet(tenantId: string): Promise<Array<Record<string, unknown>>> {
+  /**
+   * THE DEVICE FLEET — the registered loggers and what their SIGNED readings prove (PC-56 OPS-4c · OPS4-B8 / E13).
+   *
+   * Survey C-12: this read used to group `cold_chain_logs.device_ref` — a label written ONLY by MANUAL readings (a person's typed
+   * `deviceRef`, or the cooler's `iot_device_ref` stamped onto a person's cooler reading), while a signed logger's readings carry
+   * `device_id` and never `device_ref`. So a typed thermometer reading made a "sensor" look heard from, and a real logger never appeared.
+   * Now: the logger registry (`twin_devices`, kind `cold_chain_logger`) joined to its OWN signed readings (`source = 'device'`, by
+   * `device_id`). A manual reading never makes a logger count as heard from. "Last heard" is `server_recorded_at` — when the server
+   * received the reading (the device's own `recorded_at` is its clock, bounded by the server). The 30-day window prunes partitions.
+   */
+  async deviceFleet(tenantId: string): Promise<Array<{ deviceId: string; serial: string; label: string | null; lastSeen: string; readings24h: number; breaches24h: number; lastTempC: string | null }>> {
     const r = await this.replica.forTenant(tenantId).query(
-      `SELECT device_ref, MAX(recorded_at) AS last_seen, COUNT(*) FILTER (WHERE recorded_at >= now() - interval '24 hours')::int AS readings_24h,
-              COUNT(*) FILTER (WHERE is_breach AND recorded_at >= now() - interval '24 hours')::int AS breaches_24h,
-              (ARRAY_AGG(temp_c ORDER BY recorded_at DESC))[1]::text AS last_temp_c
-         FROM cold_chain_logs WHERE tenant_id=$1 AND device_ref IS NOT NULL AND recorded_at >= now() - interval '30 days'
-        GROUP BY device_ref ORDER BY last_seen DESC LIMIT 200`, [tenantId]);
-    return r.rows.map((x: any) => ({ deviceRef: x.device_ref, lastSeen: new Date(x.last_seen).toISOString(), readings24h: x.readings_24h, breaches24h: x.breaches_24h, lastTempC: x.last_temp_c }));
+      `SELECT d.id AS device_id, d.serial, d.label, MAX(l.server_recorded_at) AS last_seen,
+              COUNT(*) FILTER (WHERE l.recorded_at >= now() - interval '24 hours')::int AS readings_24h,
+              COUNT(*) FILTER (WHERE l.is_breach AND l.recorded_at >= now() - interval '24 hours')::int AS breaches_24h,
+              (ARRAY_AGG(l.temp_c ORDER BY l.recorded_at DESC, l.id DESC))[1]::text AS last_temp_c
+         FROM twin_devices d
+         JOIN cold_chain_logs l ON l.tenant_id = d.tenant_id AND l.device_id = d.id AND l.source = 'device'
+                               AND l.recorded_at >= now() - interval '30 days'
+        WHERE d.tenant_id=$1 AND d.kind_code = 'cold_chain_logger'
+        GROUP BY d.id, d.serial, d.label ORDER BY last_seen DESC LIMIT 200`, [tenantId]);
+    return r.rows.map((x: any) => ({ deviceId: x.device_id, serial: x.serial, label: x.label ?? null, lastSeen: new Date(x.last_seen).toISOString(),
+      readings24h: x.readings_24h, breaches24h: x.breaches_24h, lastTempC: x.last_temp_c ?? null }));
   }
 }

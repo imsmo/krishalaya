@@ -59,6 +59,9 @@ const nextConfig = {
       // (pinned equal by src/test/ops4a-pages.spec.ts). The OW-3 pages and their money actions are deleted (founder Q3-A).
       { source: '/equipment', destination: '/chc/dashboard', permanent: false },
       { source: '/equipment/:id', destination: '/chc/bookings', permanent: false },
+      // PC-56 OPS-4c (survey E2): the OW-7 sensor fleet (built on typed `device_ref`s — survey C-12) → the canon's `iot/dashboard` (W400). Mirrors
+      // OPS4C_REDIRECTS in src/features/ops4/iot.ts (pinned equal by src/test/ops4c-pages.spec.ts). `/devices/rules` and `/devices/alerts` stay (OPS-5).
+      { source: '/devices', destination: '/iot/dashboard', permanent: false },
     ];
   },
   async headers() {

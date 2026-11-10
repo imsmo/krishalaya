@@ -131,19 +131,35 @@ run('PC-56 TENANT-6d-5 · the call and the fifteen minutes (integration, real Po
     it('MATCHES a sensor quiet for twenty minutes against a fifteen-minute rule', async () => {
       // The thing that was impossible. `FLOOR(epoch / 3600)` made this gap `0`, below `silentHours >= 1`, so no rule
       // could ever fire on W170's own number.
-      await readings.record(tenantA, actor as never, { unitId: unitHeld, tempC: '4.0' });
+      //
+      // NAMED UPDATE (PC-56 OPS-4c · OPS4-B8 / E13, survey C-12). This test used to make the "sensor" quiet with a MANUAL
+      // cooler reading (which stamps the cooler's typed `iot_device_ref`) and found it by that typed reference — the very
+      // behaviour E13 retires: a person typing a temperature is not a sensor reporting. The sensor is now a REGISTERED
+      // LOGGER (a `twin_devices` row of kind `cold_chain_logger`) and its last SIGNED reading (`source = 'device'`, written
+      // here by the fixture superuser, as 0201 allows), received twenty minutes ago. The minutes assertions are unchanged;
+      // and a manual reading typed against the same cooler NOW must not make the logger look heard from (a strengthening).
+      const logger = (await admin.query(
+        `INSERT INTO twin_devices (tenant_id, kind_code, serial, registered_by) VALUES ($1, 'cold_chain_logger', 'LOG-D5-HELD', $2) RETURNING id`,
+        [tenantA, desk])).rows[0].id as string;
       await admin.query(
-        `UPDATE cold_chain_logs SET recorded_at = now() - interval '20 minutes'
-          WHERE tenant_id=$1 AND subject_id=$2`, [tenantA, unitHeld]);
+        `INSERT INTO cold_chain_logs (tenant_id, subject_type, subject_id, temp_c, recorded_at, source, device_id)
+         VALUES ($1, 'bmc_unit', $2, 4.0, now() - interval '20 minutes', 'device', $3)`, [tenantA, unitHeld, logger]);
+      await admin.query(
+        `UPDATE cold_chain_logs SET server_recorded_at = now() - interval '20 minutes'
+          WHERE tenant_id=$1 AND device_id=$2 AND recorded_at >= now() - interval '1 hour'`, [tenantA, logger]);
+      await readings.record(tenantA, actor as never, { unitId: unitHeld, tempC: '4.0' });   // typed by a person, now
 
       const rows = await alertRepo.silentDevices(tenantA, 15);
-      const mine = rows.find((r) => r.deviceRef === 'dev-d5-held');
+      const mine = rows.find((r) => r.deviceId === logger);
       expect(mine).toBeDefined();
+      expect(mine!.serial).toBe('LOG-D5-HELD');
       // Twenty whole minutes, not zero hours.
       expect(mine!.silentMinutes).toBeGreaterThanOrEqual(19);
       expect(mine!.silentMinutes).toBeLessThanOrEqual(21);
+      // the typed cooler reference is not a device
+      expect(JSON.stringify(rows)).not.toContain('dev-d5-held');
       // And a threshold ABOVE the gap still matches nothing, which is the other half of the same query being right.
-      expect((await alertRepo.silentDevices(tenantA, 60)).find((r) => r.deviceRef === 'dev-d5-held')).toBeUndefined();
+      expect((await alertRepo.silentDevices(tenantA, 60)).find((r) => r.deviceId === logger)).toBeUndefined();
     });
 
     it('accepts a fifteen-minute rule and says the gap in minutes when it fires', async () => {

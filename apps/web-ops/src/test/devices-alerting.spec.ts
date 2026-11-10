@@ -4,7 +4,7 @@
 import {
   ALERT_KINDS, ALERT_SEVERITIES, CHANNEL_HINTS, COOLDOWN_MAX, COOLDOWN_MIN, MAX_RECIPIENTS, THRESHOLD_KEYS,
   isAlertKind, isAlertSeverity, isChannelHint, defaultsFor, buildThreshold, parseRecipients, buildAlertRule,
-  buildRulePatch, hoursSince, deviceHealth, fleetSummary, needsAck, feedOrder,
+  buildRulePatch, needsAck, feedOrder,
 } from '../features/devices/alerting';
 
 const U1 = '00000000-0000-7000-8000-000000000001';
@@ -124,42 +124,9 @@ describe('buildRulePatch — an edit is not a back door around the create rules'
   });
 });
 
-describe('reading the fleet honestly', () => {
-  const NOW = Date.parse('2026-08-06T12:00:00.000Z');
-  const at = (iso: string) => ({ deviceRef: 'd1', lastSeen: iso, readings24h: 10, breaches24h: 0 });
-
-  it('measures silence in whole hours since the last reading', () => {
-    expect(hoursSince('2026-08-06T11:00:00.000Z', NOW)).toBe(1);
-    expect(hoursSince('2026-08-06T12:30:00.000Z', NOW)).toBe(0);   // a future stamp is never negative
-    expect(hoursSince(null, NOW)).toBeNull();
-    expect(hoursSince('not a date', NOW)).toBeNull();
-  });
-
-  it('THE WORST TRUTH WINS: a quiet sensor reads as quiet even while its last readings were breaching', () => {
-    const quietAndBreaching = { deviceRef: 'd1', lastSeen: '2026-08-05T12:00:00.000Z', readings24h: 0, breaches24h: 4 };
-    expect(deviceHealth(quietAndBreaching, NOW)).toBe('silent');
-  });
-  it('flags breaching only while the sensor is still reporting, and ok otherwise', () => {
-    expect(deviceHealth({ ...at('2026-08-06T11:00:00.000Z'), breaches24h: 2 }, NOW)).toBe('breaching');
-    expect(deviceHealth(at('2026-08-06T11:00:00.000Z'), NOW)).toBe('ok');
-    expect(deviceHealth({ deviceRef: 'd', lastSeen: null }, NOW)).toBe('unknown');
-  });
-  it('honours the silence threshold it is given, exactly at the boundary', () => {
-    expect(deviceHealth(at('2026-08-06T00:00:00.000Z'), NOW, 12)).toBe('silent');   // exactly 12h → silent
-    expect(deviceHealth(at('2026-08-06T00:30:00.000Z'), NOW, 12)).toBe('ok');       // 11h → still reporting
-    expect(deviceHealth(at('2026-08-06T00:30:00.000Z'), NOW, 6)).toBe('silent');    // a stricter rule says quiet
-  });
-  it('counts unknown sensors WITH the silent ones (never quietly into "ok")', () => {
-    const rows = [
-      at('2026-08-06T11:00:00.000Z'),
-      { ...at('2026-08-06T11:00:00.000Z'), breaches24h: 3 },
-      at('2026-08-01T11:00:00.000Z'),
-      { deviceRef: 'x', lastSeen: null },
-    ];
-    expect(fleetSummary(rows, NOW, 12)).toEqual({ total: 4, silent: 2, breaching: 1, ok: 1 });
-    expect(fleetSummary([], NOW)).toEqual({ total: 0, silent: 0, breaching: 0, ok: 0 });
-  });
-});
+// NAMED UPDATE (PC-56 OPS-4c · E13, survey C-12): the "reading the fleet honestly" block is DELETED with the code it tested. `hoursSince`,
+// `deviceHealth` and `fleetSummary` judged typed `device_ref`s on the OW-7 `/devices` page (now a 307 to `/iot/dashboard`); the silence they
+// guessed client-side is now the server's (signed readings only), pinned live in apps/api ops4c-sensors and on W404 in iot-health.render.
 
 describe('the fired feed puts the thing that is still on fire on top', () => {
   it('acknowledgement is the axis that matters most, then severity, then recency', () => {

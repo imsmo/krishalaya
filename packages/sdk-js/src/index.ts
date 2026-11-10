@@ -173,6 +173,7 @@ export * from './resources/partner';   // PC-56 PARTNER-0 · the partner console
 export type { ProductBatch, CreateBatchInput, CatalogueProduct } from './resources/catalogue'; // PC-50 W10-4; PC-56 OPS-2a: CatalogueProduct
 export type { EquipmentAsset, EquipmentRate, EquipmentRental, MaintenanceEntry } from './resources/equipment'; // PC-50 W10-6 · PC-56 OPS-4b MaintenanceEntry
 export type { RiderPayoutStatement } from './resources/logistics'; // PC-55 A7
+export type { ColdFleetRow } from './resources/logistics'; // PC-56 OPS-4c (E13): the registered loggers, signed readings only
 // Types defined in their resource modules but previously never re-exported from this barrel — the six web
 // consoles import them via `from '@krishalaya/sdk-js'`, which failed to typecheck until now (surfaced by the
 // first full `pnpm build` of web-ops/web-gov). Grouped by module, same style as the lines above.

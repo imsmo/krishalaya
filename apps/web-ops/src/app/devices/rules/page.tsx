@@ -54,7 +54,7 @@ export default async function AlertRulesPage({ searchParams }: { searchParams: {
       <div className="kv-page-head">
         <h1>{t.t('iot.rulesTitle')}</h1>
         <span>
-          <Link href="/devices" className="kv-btn--link">← {t.t('iot.title')}</Link>
+          <Link href="/iot/dashboard" className="kv-btn--link">← {t.t('iot.title')}</Link>
           {' · '}
           <Link href="/devices/alerts" className="kv-btn--link">{t.t('iot.alertsLink')}</Link>
         </span>

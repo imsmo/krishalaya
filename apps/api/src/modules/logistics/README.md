@@ -92,6 +92,28 @@ volume). Two worker jobs (apps/worker, system pool):
   route scheduled for today's weekday (→ notifications for the driver/consolidation point); idempotent per
   date via an `ops_job_runs` date-guard.
 
+## The device fleet and the silent-logger alert — corrected (PC-56 OPS-4c · survey C-12, C-17)
+- **C-12 (the OW-7 claim, corrected — the old words are kept here, not deleted).** OW-7 said of `GET /v1/logistics/cold-chain/devices`:
+  *"a sensor appears only because it sent readings in the last 30 days … 'sensors we have heard from'"*. **That was false.** The fleet
+  grouped `cold_chain_logs.device_ref`, a label written ONLY by MANUAL readings (a person's typed `deviceRef`, or the cooler's
+  `iot_device_ref` stamped onto a person's cooler reading), while a signed logger's readings carry `device_id` and never `device_ref`. A
+  typed reading made a "sensor" look heard from, a real logger never appeared, and the `device_silent` rule (same column) said nothing when a
+  logger died but a person kept typing.
+- **Now (OPS4-B8 / E13, no migration):** the fleet (`ColdChainLogRepository.deviceFleet`) and the `device_silent` evidence
+  (`OpsAlertRepository.silentDevices`) read the logger registry (`twin_devices`, kind `cold_chain_logger`) joined to its OWN signed readings
+  (`source = 'device'`, by `device_id`); "last heard" is `server_recorded_at` (when the server received it). A manual reading never makes a
+  logger count as heard from and never satisfies or resets a silence. The alert names the logger by its serial. The typed `device_ref` list is
+  retired (no caller needed it: web-ops `/devices` answers a 307 to `/iot/dashboard`). `device_ref` is still WRITTEN by manual readings (the
+  dairy cooler stamps its reference) and still labels the out-of-band-readings rule's subject — a label, never a device.
+- **A device reading's time.** `recorded_at` is the DEVICE's own clock; the database refuses one more than a minute ahead of its clock or
+  older than 24 hours (`[COLD_CHAIN_DEVICE_TIME]`), and stamps `server_recorded_at` with its own clock. A manual reading is recorded at the
+  server's time (`[COLD_CHAIN_MANUAL_TIME_IS_SERVER]`; the strict DTO refuses a body time).
+- **C-17 (soil pods and weather masts).** Registry only (founder, TENANT-12, DELTA-046 "device registry only, readings refused"): they can
+  be registered in `twin_devices`; the signed ingest route accepts only a `cold_chain_logger` and the database refuses a device reading from
+  any other kind, so no reading of theirs exists or is received, and their `last_reading_at` stays NULL.
+- **Absent (pinned live, `ops4c-sensors.integration.spec.ts`):** no battery, calibration, cadence or sync route exists — nothing records a
+  battery level or a calibration date.
+
 ## Endpoints
 Shipments: `POST /v1/shipments` (ops create) · `GET /v1/shipments?box=all|mine[&status=&orderId=]` ·
 `GET /v1/shipments/:id` · `POST /v1/shipments/:id/assign` · `…/schedule-pickup` · `…/picked-up` ·

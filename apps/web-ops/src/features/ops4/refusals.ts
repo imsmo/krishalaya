@@ -4,7 +4,7 @@
 // (test/claims-guard.spec.ts, the `ops4.` scope) keeps the canon's false words out of every `ops4.` value.
 //
 // OPS-4 is three screen waves after HOTFIX-13 (founder, 2026-11-09; `05_OPS.md` "OPS-4 SPLIT"): 4a → 4b → 4c. This registry carries ALL 30 canon
-// files; the files of the waves not yet built stay `pending_4b` / `pending_4c` until their wave decides them (the 4c-7 rule).
+// files. NAMED UPDATE (PC-56 OPS-4c): every file is decided (30 / 30); the `pending_*` verdicts are deleted from the type (the 4c-7 rule).
 //
 // OPS-4a · THE HIRE (founder Q1-A — built in HOTFIX-13 —, Q2-A, 2026-11-09; Q3-A applied by the lead from OPS-1 Q2-A) builds:
 //   • `chc_dashboard` (W405, `/chc/dashboard`) — a READ of the signed-in person's machines (`GET /v1/equipment/assets?box=mine`, each by its
@@ -32,6 +32,23 @@
 //     Q5 words. Q4's second sentence ("An owner sees her animals and their tags in her own app.") is NOT printed — its premise is false at
 //     merge: the owner's app shows only the last four digits of each tag (`(pashupalak)/animals/index.tsx`, `[id].tsx`) — reported, not reworded.
 //   • `eartag_act` (W3310–W3312) — DECOR: its trigger is "Retry" on a page that reads nothing.
+//
+// OPS-4c · THE SENSORS (founder door Q6-A, applied by the lead from OPS-3 Q13-A and the OPS-3b lesson; the 4c first commit — OPS4-B8 / E13:
+// the device fleet and the `device_silent` rule read registered loggers and their SIGNED readings only) builds:
+//   • `iot_dashboard` (W400, `/iot/dashboard`) — a READ of the monitored subjects by type (`GET …/cold-chain/subjects`), each with its latest
+//     reading, ITS SOURCE ("from the logger" / "typed by a person"), its own time, its age and the server's status; the breaches in 7 days and
+//     the last breach as the server returns them; the registered loggers (`GET …/loggers`); soil pods and weather masts "registered: N ·
+//     readings: none" from the twin registry's own counts when that read is on. No sum, no "online", no battery, no "right now".
+//   • `iot_device` (W401, `/iot/device?type=&id=&hours=`) — a READ of one subject's trail over the server's hours window (a GET filter): each
+//     point by its source with both times named, the band, its breaches, its logger's serial, the breach rule as the server implements it;
+//     nothing drawn between points; no battery, calibration, cadence or annotation.
+//   • `iot_health` (W404, `/iot/device-health`) — a READ of the loggers the server has flagged silent, each with its last signed reading's
+//     receipt time and the alert state; the silence threshold is the server's own number (`silenceMinutes`), never written in the page.
+//   • `iot_act` (W3326–W3328, on W400 and W401) and `device_act` (W3307–W3309, on W404) — PARITY-DECOR: "Retry" re-reads ("sync" refused by
+//     name); query states of their parent (`?act=`); Back → the page that opened it.
+//   Q6-A's FIRST sentence ("… signed by a registered device and timed by the server.") is NOT printed — its premise is false at merge: a signed
+//   reading's `recorded_at` is the DEVICE's own clock (bounded by the server: refused if more than a minute ahead or a day old); the server
+//   only records when it received it (`server_recorded_at`). Reported, not reworded.
 export interface Tr { t(key: string, vars?: Record<string, string | number>): string }
 
 export type Ops4Surface =
@@ -46,11 +63,12 @@ export interface Ops4Refusal { id: string; canon: string; surfaces: readonly Ops
 export const SURFACES_4A: readonly Ops4Surface[] = ['chc_dashboard', 'chc_equipment', 'chc_bookings', 'chc_insights', 'chc_act', 'equipment_act'];
 /** The surfaces OPS-4b builds. */
 export const SURFACES_4B: readonly Ops4Surface[] = ['chc_maintenance', 'chc_form', 'eartag', 'animal_register', 'animal_transfer', 'eartag_act'];
-/** The surfaces OPS-4c builds (pending). */
+/** The surfaces OPS-4c builds. */
 export const SURFACES_4C: readonly Ops4Surface[] = ['iot_dashboard', 'iot_device', 'iot_health', 'iot_act', 'device_act'];
 // NAMED UPDATE (PC-56 OPS-4b): the console chrome refusals also print on the maintenance page (W408 carries the same chrome).
 const CHC_PAGES: readonly Ops4Surface[] = ['chc_dashboard', 'chc_equipment', 'chc_bookings', 'chc_insights', 'chc_maintenance'];
 const ANIMAL_PAGES: readonly Ops4Surface[] = ['eartag', 'animal_register', 'animal_transfer', 'eartag_act'];
+const IOT_PAGES: readonly Ops4Surface[] = ['iot_dashboard', 'iot_device', 'iot_health'];
 
 export const OPS4_REFUSALS: readonly Ops4Refusal[] = Object.freeze([
   // ══ the console chrome on every hire page (W405–W409) ══
@@ -192,6 +210,66 @@ export const OPS4_REFUSALS: readonly Ops4Refusal[] = Object.freeze([
     key: 'ops4.refusal.eartagZeroSum', why: 'FALSE: nothing was changed — refused BY NAME' },
   { id: 'eartag_on_call', canon: 'W3312 "repeated failures page the on-call"', surfaces: ['eartag_act'],
     key: 'ops4.refusal.eartagOnCall', why: 'no paging exists' },
+  // ══ OPS-4c · the sensor pages (W400, W401, W404) — console chrome ══
+  { id: 'iot_chrome_counts', canon: 'console chrome "[org] · Field Ops · IoT & machinery · sensors [n] · assets [n]"', surfaces: IOT_PAGES,
+    key: 'ops4.refusal.iotChromeCounts', why: 'FALSE as counts (survey shared chrome): the pages list what the server returns; nothing is totalled' },
+  { id: 'iot_centre_manager', canon: 'W400–W404 states "Operator vs centre manager — only the centre manager (MM) edits alert thresholds on W402 — maker-checker and versioned" · "only the centre manager can log a manual thermometer reading against this device or acknowledge a breach" · "only the centre manager can page the vet desk"', surfaces: IOT_PAGES,
+    key: 'ops4.refusal.iotCentreManager', why: 'FALSE (C-15; OPS-3 Q14-A "signed in as you"): thresholds, breach acts and manual readings are `logistics.manage`\'s (`setThreshold` and `breachAct` recorded with a reason) — one person, no second checker' },
+  { id: 'iot_search', canon: 'console chrome "Search devices/assets/insights… ⌘K" · "MM"', surfaces: IOT_PAGES,
+    key: 'ops4.refusal.iotSearch', why: 'DECOR: no search route; no input but W401\'s hours window (E7)' },
+  { id: 'iot_plan_settings', canon: 'flagged-off state "… Nothing is broken — it is not enabled. See plan settings."', surfaces: IOT_PAGES,
+    key: 'ops4.refusal.iotPlanSettings', why: 'the S1…S6 precedent: a switched-off module says it is switched off' },
+  // ══ W400 · the dashboard ══
+  { id: 'iot_fleet_sum', canon: 'W400 "[n] devices · [n] online · [n] silent over an hour · [n] battery-critical ([n] + [n] + [n] = [n])"', surfaces: ['iot_dashboard'],
+    key: 'ops4.refusal.iotFleetSum', why: 'client sum refused (E3); "online" is not a state the server has; battery FALSE' },
+  { id: 'iot_right_now', canon: 'W400 "[cooler] … is reading [n]°C right now"', surfaces: ['iot_dashboard'],
+    key: 'ops4.refusal.iotRightNow', why: 'a reading is shown with its source, its own time and its age — never as "right now"' },
+  { id: 'iot_soil_readings', canon: 'W400 "Soil-moisture pods [n] / Weather masts [n] — generic device registry … readings shown here, the table underneath still to be built"', surfaces: ['iot_dashboard', 'iot_health'],
+    key: 'ops4.refusal.iotSoilReadings', why: 'FALSE (C-17, founder TENANT-12 "device registry only, readings refused"): registered only; no reading is received' },
+  { id: 'iot_incident_file', canon: 'W400 "✓ 0 active breaches. Last breach [day] — resolved. View the incident file (→ W403)"', surfaces: ['iot_dashboard'],
+    key: 'ops4.refusal.iotIncidentFile', why: 'W403 is OPS-5\'s and not built: no link until it is' },
+  { id: 'iot_sync', canon: 'W400 state "Device registry sync error … Retry sync" (FM:106 → W3326)', surfaces: ['iot_dashboard', 'iot_act'],
+    key: 'ops4.refusal.iotSync', why: 'FALSE: nothing syncs; Retry re-reads the page (PARITY-DECOR)' },
+  { id: 'iot_promise_keeper', canon: 'W400 "a sensor is a promise-keeper on battery"', surfaces: ['iot_dashboard'],
+    key: 'ops4.refusal.iotPromiseKeeper', why: 'FALSE: no battery is recorded' },
+  // ══ the three pages: battery, calibration ══
+  { id: 'iot_battery', canon: 'W400 "[n] battery-critical" · W401 "Battery [n]% healthy" · W404 "[vaccine box] battery [n]%"', surfaces: IOT_PAGES,
+    key: 'ops4.refusal.iotBattery', why: 'FALSE: no column anywhere records a battery (pinned: no route, no column)' },
+  { id: 'iot_calibration', canon: 'W401 "Calibration due [date]" · state "Calibration overdue … readings … flagged unverified until a technician confirms the offset" · W404 "Calibration due within 30 days — [n] devices … Each date is recorded on the device record, never estimated"', surfaces: IOT_PAGES,
+    key: 'ops4.refusal.iotCalibration', why: 'FALSE: no calibration date exists; no technician role (C-15)' },
+  // ══ W401 · one subject ══
+  { id: 'iot_cadence', canon: 'W401 "reading cadence every [n] min" · "Reading cadence [n] min · recorded_at, cold_chain_logs"', surfaces: ['iot_device'],
+    key: 'ops4.refusal.iotCadence', why: 'FALSE: no cadence is set or recorded' },
+  { id: 'iot_alarm_minutes', canon: 'W401 "Alarm fires at [n] minutes above [n]°C after fill stabilises"', surfaces: ['iot_device'],
+    key: 'ops4.refusal.iotAlarmMinutes', why: 'FALSE: the breach rule is two consecutive signed readings outside the band (0201 cold_chain_breach_on_reading)' },
+  { id: 'iot_annotation', canon: 'W401 "Evidence rule: raw readings are immutable … a correction is a new annotation on the reading"', surfaces: ['iot_device'],
+    key: 'ops4.refusal.iotAnnotation', why: '"immutable" TRUE (kv_app holds no UPDATE); "annotation" FALSE — no annotation table' },
+  { id: 'iot_line', canon: 'W401 "Temperature trail — last [n] hours" (a line drawn through the readings)', surfaces: ['iot_device'],
+    key: 'ops4.refusal.iotLine', why: 'the server\'s points only; nothing between two readings is drawn or estimated' },
+  { id: 'iot_manual_protocol', canon: 'W401 / W404 "manual thermometer protocol active"', surfaces: ['iot_device', 'iot_health'],
+    key: 'ops4.refusal.iotManualProtocol', why: 'FALSE: no protocol switch exists; a typed reading is labelled typed by a person' },
+  // ══ W404 · device health ══
+  { id: 'iot_own_threshold', canon: 'W404 "A silent sensor is a question, not an answer — [n] devices silent past their own threshold + [n] battery-critical, out of [n]"', surfaces: ['iot_health'],
+    key: 'ops4.refusal.iotOwnThreshold', why: 'FALSE: one platform number (`COLD_CHAIN_SILENCE_MINUTES`) decides a server-flagged silence; "out of [n]" is a total' },
+  { id: 'iot_likely_cause', canon: 'W404 table "Likely cause" · "signal / telecom outage"', surfaces: ['iot_health'],
+    key: 'ops4.refusal.iotLikelyCause', why: 'FALSE: no cause is recorded or guessed; no signal is measured' },
+  { id: 'iot_field_visit', canon: 'W404 "Action: field visit queued" · state "Field visit overdue … until a technician logs the visit"', surfaces: ['iot_health'],
+    key: 'ops4.refusal.iotFieldVisit', why: 'FALSE: no visit, queue or technician exists' },
+  { id: 'iot_paged', canon: 'W404 "vet desk paged" · state "only the centre manager can page the vet desk or close a battery-critical flag"', surfaces: ['iot_health'],
+    key: 'ops4.refusal.iotPaged', why: 'FALSE: nothing pages; a silence is alerted to the people named on the organisation\'s rules ("alerted, not called")' },
+  // ══ the two mutate chains (W3326–W3328 iot, W3307–W3309 device) ══
+  { id: 'iot_confirm_audit', canon: 'W3326 "confirming writes an audit-trail entry with actor, time and reason"', surfaces: ['iot_act'],
+    key: 'ops4.refusal.iotConfirmAudit', why: 'reading a page again writes nothing' },
+  { id: 'iot_zero_sum', canon: 'W3327 "The change is applied and the audit trail has the entry (actor · time · reason · before/after). Money-adjacent actions reconcile zero-sum before this page ever shows."', surfaces: ['iot_act'],
+    key: 'ops4.refusal.iotZeroSum', why: 'FALSE on a re-read — refused BY NAME' },
+  { id: 'iot_on_call', canon: 'W3328 "repeated failures page the on-call"', surfaces: ['iot_act'],
+    key: 'ops4.refusal.iotOnCall', why: 'no paging exists' },
+  { id: 'device_confirm_audit', canon: 'W3307 "confirming writes an audit-trail entry with actor, time and reason"', surfaces: ['device_act'],
+    key: 'ops4.refusal.deviceConfirmAudit', why: 'reading a page again writes nothing' },
+  { id: 'device_zero_sum', canon: 'W3308 "The change is applied and the audit trail has the entry … Money-adjacent actions reconcile zero-sum before this page ever shows."', surfaces: ['device_act'],
+    key: 'ops4.refusal.deviceZeroSum', why: 'FALSE on a re-read — refused BY NAME' },
+  { id: 'device_on_call', canon: 'W3309 "repeated failures page the on-call"', surfaces: ['device_act'],
+    key: 'ops4.refusal.deviceOnCall', why: 'no paging exists' },
 ]);
 export function ops4RefusalKeys(surface: Ops4Surface): string[] { return OPS4_REFUSALS.filter((r) => r.surfaces.includes(surface)).map((r) => r.key); }
 
@@ -225,13 +303,25 @@ export const OPS4_DELTAS: readonly { id: string; canon: string; built: string }[
   { id: 'animals_edges', canon: 'W395 and W396 have 0 inbound links; W394 only its own chain (survey §0 header)', built: 'drawn: the kiosk home (W380) links all three animal pages; each animal page links the other two and the kiosk home' },
   { id: 'eartag_decor', canon: 'FM:102 W394 "Retry" (`chain-mutate:eartag`)', built: 'DECOR: W394 reads nothing; `?act=` states say there is nothing to read again, offer no re-read, and go Back to W394' },
   { id: 'q4_second_sentence', canon: 'brief §D Q4-A "An owner sees her animals and their tags in her own app."', built: 'PREMISE FALSE — NOT PRINTED: the owner\'s app lists her animals but shows only the last four digits of each tag ("••••" + 4). Only "This desk does not look up animals by tag." is printed; the lead / founder owns the replacement words' },
+  // ── OPS-4c ──
+  { id: 'route_4c', canon: 'W400 `iot/dashboard`, W401 `iot/device`, W404 `iot/device-health`', built: 'the three at their canon addresses; W401 takes `?type=&id=` (one monitored subject — the canon\'s "device" is a subject with a logger mounted on it) and `?hours=` (a GET filter)' },
+  { id: 'devices_redirect', canon: 'OW-7 `/devices` "sensors we have heard from" (survey C-12: built on typed `device_ref`s)', built: 'a REAL 307 (next.config.js, permanent: false): `/devices` → `/iot/dashboard`; the OW-7 fleet page is deleted with its superseded `iot.` keys; `/devices/rules` and `/devices/alerts` stay for OPS-5 (their back link now names `/iot/dashboard`)' },
+  { id: 'device_truth', canon: 'survey F-4 / E13 — the fleet and `device_silent` grouped `device_ref`, which only a MANUAL reading writes', built: 'the 4c first commit (OPS4-B8): both read registered loggers and their SIGNED readings only (`source = \'device\'`, by `device_id`); the typed list is retired; the alert names the logger by its serial (pinned live, ops4c-sensors)' },
+  { id: 'q6_first_sentence', canon: 'brief §D Q6-A "Readings marked \'from the logger\' were signed by a registered device and timed by the server."', built: 'PREMISE FALSE — NOT PRINTED: a signed reading\'s time is the DEVICE\'s own clock (0201: refused if more than 1 minute ahead or 24 hours old); the server records when it received it. The other two Q6 sentences are printed; the lead / founder owns the replacement words' },
+  { id: 'soil_registry_counts', canon: 'W400 "Soil-moisture pods [n] / Weather masts [n]"', built: 'the twin registry\'s OWN counts (`GET /v1/twin/overview` `devices.soilPods` / `weatherMasts`, behind `digital_twin`) with "readings: none"; when that read is off or refused, nothing is said about them beyond the Q6 sentence' },
+  { id: 'w401_edges', canon: 'W401 is reached from W400 only (survey §1G)', built: 'drawn: each subject row on W400 links `/iot/device?type=&id=`; W404 links its logger\'s subject when the server names it' },
+  { id: 'sidebar_sensors', canon: 'console sidebar "Sensors · IoT dashboard · Device health · Alert rules"', built: 'a Sensors group of the BUILT routes only: the sensor dashboard and device health (Alert rules, W402, is OPS-5\'s — `/devices/rules` keeps its own link)' },
+  { id: 'cooler_label', canon: 'brief §D PII "a cooler by its centre code"', built: 'a subject is printed by the SERVER\'s label (`subjects`: a shipment by its AWB number or reference, a cooler by its serial or model or reference) and its type; the subjects read carries no centre code — no person, no farmer, ever' },
+  { id: 'iot_chains_back', canon: 'W3327 / W3328 / W3308 / W3309 "Back to the screen" (no screen named)', built: 'Back → the page that opened the chain (`?act=` on W400, W401 — keeping its subject — or W404); never another page' },
+  { id: 'times_utc_4c', canon: 'W401 "recorded_at, cold_chain_logs"', built: 'each instant is printed as the server\'s own date and minute, labelled UTC (the OPS-3b `atText`); a reading\'s age is whole minutes before the page was read' },
 ]);
 
-/** The verdict values. `pending_4b` / `pending_4c` are deleted from the type when the last of their files is decided (the 4c-7 rule). */
+/** The verdict values. */
 // NAMED UPDATE (PC-56 OPS-4b): `pending_4b` is deleted from the type — its last file is decided (the 4c-7 rule).
-export type Ops4Verdict = 'BUILT (read)' | 'BUILT (honest)' | 'REAL' | 'DECOR' | 'PARITY-DECOR' | 'pending_4c';
+// NAMED UPDATE (PC-56 OPS-4c): `pending_4c` is deleted too — all 30 files are decided (the PARTNER-4c precedent).
+export type Ops4Verdict = 'BUILT (read)' | 'BUILT (honest)' | 'REAL' | 'DECOR' | 'PARITY-DECOR';
 export type Ops4Wave = '4a' | '4b' | '4c';
-/** Every canon file of OPS-4 (30), each with ONE verdict: 4a decides its 10, 4b its 11; 4c's 9 are pending. */
+/** Every canon file of OPS-4 (30), each with ONE verdict: 4a decides its 10, 4b its 11, 4c its 9. */
 export const OPS4_CANON_FILES: readonly { file: string; wave: Ops4Wave; module: 'equipment' | 'livestock' | 'logistics'; verdict: Ops4Verdict; note: string }[] = Object.freeze([
   // ── 4a · THE HIRE (10) — decided (founder Q1-A via HOTFIX-13, Q2-A; Q3-A applied from OPS-1 Q2-A) ──
   { file: 'W405-ops-chc-dashboard.html', wave: '4a', module: 'equipment', verdict: 'BUILT (read)', note: '/chc/dashboard — a READ of your machines (GET /v1/equipment/assets?box=mine; category + registration number, never a person) linked to W406, and the hires on them counted by the server\'s status (GET /v1/equipment/rentals?box=owner, the latest 100, said so); no revenue, no %, no utilisation; the Q2 words; zero inputs' },
@@ -256,16 +346,16 @@ export const OPS4_CANON_FILES: readonly { file: string; wave: Ops4Wave; module: 
   { file: 'W3310-ops-eartag-mutate-confirm.html', wave: '4b', module: 'livestock', verdict: 'DECOR', note: '/animals/eartag-scan?act=confirm — W394 reads nothing: there is nothing to read again; no re-read; Back → W394' },
   { file: 'W3311-ops-eartag-mutate-success.html', wave: '4b', module: 'livestock', verdict: 'DECOR', note: '?act=success — nothing was changed; the zero-sum sentence refused BY NAME; Back → W394' },
   { file: 'W3312-ops-eartag-mutate-failure.html', wave: '4b', module: 'livestock', verdict: 'DECOR', note: '?act=failure — nothing was changed; nobody is paged; Back → W394' },
-  // ── 4c · THE SENSORS (9) — pending (founder Q6) ──
-  { file: 'W400-ops-iot-dashboard.html', wave: '4c', module: 'logistics', verdict: 'pending_4c', note: 'survey §1F: READ of signed loggers and subjects (after OPS4-B8)' },
-  { file: 'W401-ops-iot-device.html', wave: '4c', module: 'logistics', verdict: 'pending_4c', note: 'survey §1G: READ of one subject\'s trail' },
-  { file: 'W404-ops-device-health.html', wave: '4c', module: 'logistics', verdict: 'pending_4c', note: 'survey §1H: READ of server-flagged silences' },
-  { file: 'W3326-ops-iot-mutate-confirm.html', wave: '4c', module: 'logistics', verdict: 'pending_4c', note: 'survey §1P: PARITY-DECOR' },
-  { file: 'W3327-ops-iot-mutate-success.html', wave: '4c', module: 'logistics', verdict: 'pending_4c', note: 'survey §1P: PARITY-DECOR' },
-  { file: 'W3328-ops-iot-mutate-failure.html', wave: '4c', module: 'logistics', verdict: 'pending_4c', note: 'survey §1P: PARITY-DECOR' },
-  { file: 'W3307-ops-device-mutate-confirm.html', wave: '4c', module: 'logistics', verdict: 'pending_4c', note: 'survey §1O: PARITY-DECOR' },
-  { file: 'W3308-ops-device-mutate-success.html', wave: '4c', module: 'logistics', verdict: 'pending_4c', note: 'survey §1O: PARITY-DECOR' },
-  { file: 'W3309-ops-device-mutate-failure.html', wave: '4c', module: 'logistics', verdict: 'pending_4c', note: 'survey §1O: PARITY-DECOR' },
+  // ── 4c · THE SENSORS (9) — decided (founder door Q6-A, applied by the lead; the 4c first commit, OPS4-B8 / E13) ──
+  { file: 'W400-ops-iot-dashboard.html', wave: '4c', module: 'logistics', verdict: 'BUILT (read)', note: '/iot/dashboard — the monitored subjects by type (GET …/cold-chain/subjects), each with its latest reading, its source ("from the logger" / "typed by a person"), its own time, its age and the server\'s status, linked to W401; breaches in 7 days and the last breach as the server returns them; the registered loggers; soil pods and weather masts "registered: N · readings: none"; no sum, no online, no battery, no right now; Retry PARITY-DECOR ("sync" refused)' },
+  { file: 'W401-ops-iot-device.html', wave: '4c', module: 'logistics', verdict: 'BUILT (read)', note: '/iot/device?type=&id=&hours= — one subject\'s trail over the server\'s hours window (a GET filter): each point by its source, "the device\'s time" / "the time the person recorded it" and "received by the server", the band, its breaches, its logger\'s serial, the breach rule as the server implements it (two signed readings in a row outside the band); nothing drawn between points; no battery, calibration, cadence or annotation' },
+  { file: 'W404-ops-device-health.html', wave: '4c', module: 'logistics', verdict: 'BUILT (read)', note: '/iot/device-health — the loggers the server has flagged silent (GET …/loggers silences), each with its last signed reading\'s receipt time, when it was flagged and the alert state; the silence threshold is the server\'s own number (silenceMinutes), never written in the page; no cause, action, battery, calibration, field visit or paging' },
+  { file: 'W3326-ops-iot-mutate-confirm.html', wave: '4c', module: 'logistics', verdict: 'PARITY-DECOR', note: '?act=confirm on W400 / W401 — "Retry sync" is refused: nothing syncs; the link IS a re-read of the page that opened it' },
+  { file: 'W3327-ops-iot-mutate-success.html', wave: '4c', module: 'logistics', verdict: 'PARITY-DECOR', note: '?act=success — the page is read afresh each time it opens; nothing was changed; the zero-sum sentence refused BY NAME' },
+  { file: 'W3328-ops-iot-mutate-failure.html', wave: '4c', module: 'logistics', verdict: 'PARITY-DECOR', note: '?act=failure — nothing was changed; Back → the page that opened it (W400, or W401 with its subject); nobody is paged' },
+  { file: 'W3307-ops-device-mutate-confirm.html', wave: '4c', module: 'logistics', verdict: 'PARITY-DECOR', note: '/iot/device-health?act=confirm — "Retry": the link IS a re-read of W404' },
+  { file: 'W3308-ops-device-mutate-success.html', wave: '4c', module: 'logistics', verdict: 'PARITY-DECOR', note: '?act=success — nothing was changed; the zero-sum sentence refused BY NAME' },
+  { file: 'W3309-ops-device-mutate-failure.html', wave: '4c', module: 'logistics', verdict: 'PARITY-DECOR', note: '?act=failure — nothing was changed; Back → /iot/device-health (W404); nobody is paged' },
 ]);
 
 /** The six canon chain groups (survey §1L–§1Q, 19 files, each exactly once) and the wave that owns each. */
@@ -280,13 +370,16 @@ export const OPS4_CHAIN_GROUPS: readonly { id: string; donor: string; wave: Ops4
 
 // ── THE BUILT CHAINS: each is a query state of the page that opened it (the Ops3Chain shape): `?act=` for the mutate chains, `?form=` for the
 // chc form (OPS-4b, REAL — the maintenance entry). ──
-export type Chain4Id = 'chc_act' | 'equipment_act' | 'chc_form' | 'eartag_act';
+export type Chain4Id = 'chc_act' | 'equipment_act' | 'chc_form' | 'eartag_act' | 'iot_act' | 'device_act';
 export interface Chain4Def { id: Chain4Id; wave: Ops4Wave; kind: 'PARITY-DECOR' | 'REAL' | 'DECOR'; param: 'act' | 'form'; surface: Ops4Surface; states: readonly string[]; key: (state: string) => string; files: readonly string[]; statement: string }
 export const OPS4_CHAINS: readonly Chain4Def[] = Object.freeze([
   { id: 'chc_act', wave: '4a', kind: 'PARITY-DECOR', param: 'act', surface: 'chc_act', states: ['confirm', 'success', 'failure'], key: (s: string) => `ops4.chain.chcAct.${s}`, files: ['W3304', 'W3305', 'W3306'], statement: 'ops4.readsOnly' },
   { id: 'equipment_act', wave: '4a', kind: 'PARITY-DECOR', param: 'act', surface: 'equipment_act', states: ['confirm', 'success', 'failure'], key: (s: string) => `ops4.chain.eqAct.${s}`, files: ['W3318', 'W3319', 'W3320'], statement: 'ops4.readsOnly' },
   { id: 'chc_form', wave: '4b', kind: 'REAL', param: 'form', surface: 'chc_form', states: ['error', 'review', 'success', 'failure'], key: (s: string) => `ops4.chain.chcForm.${s}`, files: ['W3300', 'W3301', 'W3302', 'W3303'], statement: 'ops4.upkeep.ownerOnly' },
   { id: 'eartag_act', wave: '4b', kind: 'DECOR', param: 'act', surface: 'eartag_act', states: ['confirm', 'success', 'failure'], key: (s: string) => `ops4.chain.eartagAct.${s}`, files: ['W3310', 'W3311', 'W3312'], statement: 'ops4.q4.words' },
+  // PC-56 OPS-4c: the sensor pages' two mutate chains, PARITY-DECOR — "Retry" (W400's "Retry sync", W401's, W404's) re-reads the page that opened it.
+  { id: 'iot_act', wave: '4c', kind: 'PARITY-DECOR', param: 'act', surface: 'iot_act', states: ['confirm', 'success', 'failure'], key: (s: string) => `ops4.chain.iotAct.${s}`, files: ['W3326', 'W3327', 'W3328'], statement: 'ops4.iot.readsOnly' },
+  { id: 'device_act', wave: '4c', kind: 'PARITY-DECOR', param: 'act', surface: 'device_act', states: ['confirm', 'success', 'failure'], key: (s: string) => `ops4.chain.deviceAct.${s}`, files: ['W3307', 'W3308', 'W3309'], statement: 'ops4.iot.readsOnly' },
 ]);
 export function chain4ById(id: Chain4Id): Chain4Def { return OPS4_CHAINS.find((c) => c.id === id) as Chain4Def; }
 /** The chain state a page was opened in (`?act=confirm`, `?form=review` …), or null for the page itself / an unknown state. */

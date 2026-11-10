@@ -41,7 +41,8 @@ describe('PC-56 OPS-2a · E2 · the 307, the old page, the sidebar', () => {
     // NAMED UPDATE (PC-56 OPS-3c): the Dairy group joins AFTER the three warehouse groups (/dairy · /payout · /rates); the warehouse order is unchanged.
     // NAMED UPDATE (PC-56 OPS-4a): the Machinery group (the built hire pages) joins between the warehouse groups and Dairy, where OW-3's
     // `/equipment` entry stood; the warehouse order is unchanged.
-    expect(Array.from(nav.matchAll(/group: '([^']+)'/g)).map((m) => m[1])).toEqual(['nav.whGroupIntake', 'nav.whGroupReceipts', 'nav.whGroupMoney', 'nav.chcGroup', 'nav.dairyGroup']);
+    // NAMED UPDATE (PC-56 OPS-4c): the Sensors group (the built sensor pages) joins after Dairy, where OW-7's `/devices` entry stood.
+    expect(Array.from(nav.matchAll(/group: '([^']+)'/g)).map((m) => m[1])).toEqual(['nav.whGroupIntake', 'nav.whGroupReceipts', 'nav.whGroupMoney', 'nav.chcGroup', 'nav.dairyGroup', 'nav.iotGroup']);
     expect(/https?:\/\//.test(code(nav))).toBe(false);   // no cross-app link
   });
 });

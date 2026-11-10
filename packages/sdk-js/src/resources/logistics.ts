@@ -25,6 +25,9 @@ export interface RiderPayoutStatement {
   settlement: { paid: boolean; note: string };
 }
 
+/** PC-56 OPS-4c (E13) — one registered logger in `GET /v1/logistics/cold-chain/devices`: its signed readings only. */
+export interface ColdFleetRow { deviceId: string; serial: string; label: string | null; lastSeen: string; readings24h: number; breaches24h: number; lastTempC: string | null }
+
 export class ShipmentsResource {
   constructor(private readonly http: HttpClient) {}
 
@@ -106,8 +109,10 @@ export class ShipmentsResource {
   }
 
   // --- PC-54 W54-12: iot-device-fleet + ops-alerting v1 (Manage-gated read-models) ---
-  async coldChainDevices(signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
-    return (await this.http.request<Array<Record<string, unknown>>>('GET', 'logistics/cold-chain/devices', { signal })).data;
+  /** PC-56 OPS-4c (E13): the REGISTERED LOGGERS and what their SIGNED readings prove (`source='device'`, by `device_id`). The old typed
+   *  `deviceRef` list is retired: a manual reading never makes a logger look heard from. `lastSeen` = when the server received the last one. */
+  async coldChainDevices(signal?: AbortSignal): Promise<ColdFleetRow[]> {
+    return (await this.http.request<ColdFleetRow[]>('GET', 'logistics/cold-chain/devices', { signal })).data;
   }
   async coldChainBreaches(params: { hours?: number; limit?: number } = {}, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
     return (await this.http.request<Array<Record<string, unknown>>>('GET', 'logistics/cold-chain/breaches', { query: { hours: params.hours ?? 24, limit: params.limit ?? 100 }, signal })).data;

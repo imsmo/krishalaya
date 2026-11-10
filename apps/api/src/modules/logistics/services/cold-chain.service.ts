@@ -130,7 +130,7 @@ export class ColdChainService {
       recordedAt: p.recordedAt, serverRecordedAt: p.serverRecordedAt ?? null, sequenceNo: p.sequenceNo ?? null };
   }
 
-  /** PC-54 W54-12 fleet read (logistics.manage — enforced at the controller like the other reads). */
+  /** The device fleet: registered loggers and their SIGNED readings only (PC-56 OPS-4c E13; logistics.manage — enforced at the controller). */
   deviceFleet(tenantId: string) { return this.repo.deviceFleet(tenantId); }
 
   /* ───────────────────────────── thresholds (the band's only source) ───────────────────────────── */

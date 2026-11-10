@@ -62,7 +62,7 @@ export default async function FiredAlertsPage({ searchParams }: {
       <div className="kv-page-head">
         <h1>{t.t('iot.alertsTitle')}</h1>
         <span>
-          <Link href="/devices" className="kv-btn--link">← {t.t('iot.title')}</Link>
+          <Link href="/iot/dashboard" className="kv-btn--link">← {t.t('iot.title')}</Link>
           {' · '}
           <Link href="/devices/rules" className="kv-btn--link">{t.t('iot.rulesLink')}</Link>
         </span>

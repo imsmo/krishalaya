@@ -205,7 +205,8 @@ export class ColdChainController {
     return this.alerts.evaluateTenant(ctx.tenantId, ctx.userId).then((data) => ({ data }));
   }
 
-  // PC-54 W54-12: iot-device-fleet + ops-alerting v1 (read-models over the ledgered readings).
+  // PC-54 W54-12: iot-device-fleet + ops-alerting v1. PC-56 OPS-4c (E13): the fleet is the registered loggers and their SIGNED readings
+  // (`source='device'`, by `device_id`) — the typed `device_ref` list is retired (survey C-12). No battery, calibration, cadence or sync route exists.
   @Get('devices') @RequirePermissions(ShipmentPermissions.Manage)
   devices(@CurrentContext() ctx: RequestContext) { return this.coldChain.deviceFleet(ctx.tenantId).then((data) => ({ data })); }
   /** W240 (PC-56 TENANT-SW-e): every BREACH (two consecutive device readings out of band) for 12 months, µs keyset; `hours` kept for
