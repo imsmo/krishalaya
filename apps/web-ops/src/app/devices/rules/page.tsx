@@ -11,6 +11,10 @@
 //   • recipients are platform users, and the page says plainly that their own notification preferences and QUIET
 //     HOURS still apply — `channelHint` is a preference, never a bypass of somebody's night;
 //   • a rule can be PAUSED but not deleted, so the alerts it already fired keep their author.
+//   • PC-56 HOTFIX-14 (OPS-5 Q3-A): every change carries a reason; a change that could make an alert quieter (a pause, a person removed,
+//     a threshold loosened, a longer cooldown) is only PROPOSED — the server answers 202 and the rule stays as it is until ANOTHER person
+//     confirms it here ("proposed — waiting for a second person"); the proposer may withdraw it. The page is NOT rebuilt (OPS-5a does).
+//     The proposal's free-text reason is recorded on the server and not printed here (house rule: no free text on the ops console).
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireSession } from '../../../lib/session';
@@ -19,15 +23,16 @@ import { DataTable } from '../../../components/DataTable';
 import { getTranslator, getLang } from '../../../lib/i18n';
 import { formatDate } from '@krishalaya/i18n';
 import { ALERT_KINDS, CHANNEL_HINTS, COOLDOWN_MAX, COOLDOWN_MIN, MAINTENANCE_ALERTS, MAX_RECIPIENTS, THRESHOLD_KEYS, defaultsFor } from '../../../features/devices/alerting';
-import { createRuleAction, patchRuleAction } from '../actions';
+import { confirmChangeAction, createRuleAction, patchRuleAction, withdrawChangeAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
   return { title: getTranslator().t('iot.rulesTitle'), robots: { index: false, follow: false } };
 }
 
-const OK = new Set(['created', 'patched', 'paused']);
-const ERR = new Set(['create', 'patch', 'forbidden', 'notfound', 'conflict', 'rule',
+const OK = new Set(['created', 'patched', 'paused', 'proposed', 'confirmed', 'withdrawn']);
+const ERR = new Set(['create', 'patch', 'forbidden', 'notfound', 'conflict', 'rule', 'confirm', 'withdraw',
+  'confirmerIsProposer', 'changeAlreadyOpen', 'changeNotOpen', 'changedSinceProposal', 'withdrawNotProposer', 'recipientNotMember', 'reasonRequired', 'r_reason',
   'r_kind', 'r_name', 'r_recipients', 'r_recipientId', 'r_tooManyRecipients', 'r_cooldown', 'r_channel', 'r_empty',
   'r_threshold_windowHours', 'r_threshold_minBreaches', 'r_threshold_subjectType', 'r_threshold_silentHours', 'r_threshold_maintenanceAlert']);
 
@@ -35,7 +40,10 @@ type RuleRow = {
   id?: string; kind?: string; ruleName?: string; threshold?: Record<string, unknown>;
   recipientUserIds?: string[]; channelHint?: string | null; cooldownMinutes?: number; isActive?: boolean;
   lastFiredAt?: string | null; createdAt?: string;
+  openChange?: { id?: string; proposedByYou?: boolean; changes?: Array<{ field?: string; direction?: string }> } | null;
 };
+const CHANGE_FIELDS = new Set(['isActive', 'recipientsRemoved', 'recipientsAdded', 'cooldownMinutes', 'minBreaches', 'windowHours', 'subjectType', 'silentMinutes', 'alert', 'ruleName', 'channelHint']);
+const DIRECTIONS = new Set(['quieter', 'louder', 'neutral']);
 
 export default async function AlertRulesPage({ searchParams }: { searchParams: { ok?: string; error?: string } }) {
   await requireSession('/devices/rules');
@@ -61,6 +69,7 @@ export default async function AlertRulesPage({ searchParams }: { searchParams: {
       </div>
       <p className="kv-field__hint">{t.t('iot.rulesHint')}</p>
       <p className="kv-notice" role="note">{t.t('iot.quietHoursNotice')}</p>
+      <p className="kv-notice" role="note">{t.t('iot.secondPersonNotice')}</p>
 
       {okKey && <p className="kv-success" role="status">{t.t(`iot.ok.${okKey}`)}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`iot.error.${errKey}`)}</p>}
@@ -83,14 +92,39 @@ export default async function AlertRulesPage({ searchParams }: { searchParams: {
               {
                 header: t.t('iot.colState'),
                 cell: (r) => (
-                  <form action={patchRuleAction} className="kv-inline-form">
-                    <input type="hidden" name="id" value={r.id ?? ''} />
-                    <input type="hidden" name="isActive" value={r.isActive === false ? '1' : '0'} />
-                    <span className="kv-badge">{t.t(r.isActive === false ? 'iot.paused' : 'iot.active')}</span>{' '}
-                    <button type="submit" className="kv-btn kv-btn--muted kv-btn--sm">
-                      {t.t(r.isActive === false ? 'iot.resumeBtn' : 'iot.pauseBtn')}
-                    </button>
-                  </form>
+                  <>
+                    <form action={patchRuleAction} className="kv-inline-form">
+                      <input type="hidden" name="id" value={r.id ?? ''} />
+                      <input type="hidden" name="isActive" value={r.isActive === false ? '1' : '0'} />
+                      <span className="kv-badge">{t.t(r.isActive === false ? 'iot.paused' : 'iot.active')}</span>{' '}
+                      <input name="reason" className="kv-input" minLength={10} maxLength={500} required aria-label={t.t('iot.reason')} placeholder={t.t('iot.reason')} />{' '}
+                      <button type="submit" className="kv-btn kv-btn--muted kv-btn--sm">
+                        {t.t(r.isActive === false ? 'iot.resumeBtn' : 'iot.pauseBtn')}
+                      </button>
+                    </form>
+                    {r.openChange && (
+                      <div className="kv-fine" data-testid="open-change">
+                        <span className="kv-badge">{t.t('iot.proposedWaiting')}</span>
+                        <ul>
+                          {(r.openChange.changes ?? []).filter((c) => CHANGE_FIELDS.has(String(c.field)) && DIRECTIONS.has(String(c.direction))).map((c) => (
+                            <li key={String(c.field)}>{t.t(`iot.change.${c.field}`)} — {t.t(`iot.dir.${c.direction}`)}</li>
+                          ))}
+                        </ul>
+                        {r.openChange.proposedByYou ? (
+                          <form action={withdrawChangeAction} className="kv-inline-form">
+                            <input type="hidden" name="changeId" value={r.openChange.id ?? ''} />
+                            <span>{t.t('iot.proposedByYou')}</span>{' '}
+                            <button type="submit" className="kv-btn kv-btn--muted kv-btn--sm">{t.t('iot.withdrawBtn')}</button>
+                          </form>
+                        ) : (
+                          <form action={confirmChangeAction} className="kv-inline-form">
+                            <input type="hidden" name="changeId" value={r.openChange.id ?? ''} />
+                            <button type="submit" className="kv-btn kv-btn--sm">{t.t('iot.confirmBtn')}</button>
+                          </form>
+                        )}
+                      </div>
+                    )}
+                  </>
                 ),
               },
             ]}
@@ -154,6 +188,11 @@ export default async function AlertRulesPage({ searchParams }: { searchParams: {
               <label htmlFor="ru-cd" className="kv-field__label">{t.t('iot.colCooldown')}</label>
               <input id="ru-cd" name="cooldownMinutes" className="kv-input" inputMode="numeric" pattern="\d{1,5}" aria-describedby="ru-cd-hint" />
               <p id="ru-cd-hint" className="kv-field__hint">{t.t('iot.cooldownHint', { min: String(COOLDOWN_MIN), max: String(COOLDOWN_MAX) })}</p>
+            </div>
+
+            <div className="kv-field">
+              <label htmlFor="ru-why" className="kv-field__label">{t.t('iot.reason')}</label>
+              <textarea id="ru-why" name="reason" className="kv-textarea" rows={2} minLength={10} maxLength={500} required />
             </div>
 
             <div className="kv-form__actions">

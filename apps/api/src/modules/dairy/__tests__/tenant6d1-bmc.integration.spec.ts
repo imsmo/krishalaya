@@ -85,7 +85,7 @@ run('PC-56 TENANT-6d-1 · W170 the tank (integration, real Postgres)', () => {
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, new MccOperatorAssignmentRepository(replica as never));
     units = new BmcUnitService(uow, outbox, idem, metrics, audit, unitRepo, mccRepo);
     readings = new BmcReadingService(uow, metrics, unitRepo, coldChain);
-    rm = new DairyBmcReadModel(replica as never, unitRepo, new OpsAlertService(uow, outbox, new OpsAlertRepository(replica as never)), flags, metrics);
+    rm = new DairyBmcReadModel(replica as never, unitRepo, new OpsAlertService(uow, outbox, new OpsAlertRepository(replica as never), idem, audit /* NAMED UPDATE (PC-56 HOTFIX-14): rule changes are keyed and audited */), flags, metrics);
 
     mccId = (await mccs.create(tenantA, actor as never, `idem-${randomUUID()}`, { code: 'MCC-D1-01', defaultName: 'Vanthali' } as never, null)).id;
   }, 180000);

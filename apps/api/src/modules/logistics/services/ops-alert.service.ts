@@ -8,15 +8,33 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork } from '../../../core/database/unit-of-work';
 import { OUTBOX_WRITER, OutboxWriter } from '../../../core/outbox/outbox.writer';
+import { IDEMPOTENCY_SERVICE, IdempotencyService } from '../../../core/idempotency/idempotency.service';
+import { AuditWriter } from '../../../core/audit/audit.writer';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from '../../../shared/errors/app-error';
-import { OpsAlertRepository, AlertRule } from '../repositories/ops-alert.repository';
+import { OpsAlertRepository, AlertRule, AlertRuleChange } from '../repositories/ops-alert.repository';
+import { LogisticsOpsRefusedError } from '../domain/logistics.errors';
 import {
-  validateThreshold, defaultsFor, dedupeKey, severityFor, alertTitle, outboxTypeFor, silenceText, silentMinutesOf,
-  type AlertKind, type AlertSeverity,
+  validateThreshold, defaultsFor, dedupeKey, severityFor, alertTitle, outboxTypeFor, silenceText, silentMinutesOf, classifyRuleChange,
+  type AlertKind, type AlertSeverity, type AlertRuleState,
 } from '../domain/ops-alert.rules';
 
-export interface AlertActor { userId: string; canManage: boolean }
+export interface AlertActor { userId: string; canManage: boolean; ip?: string | null }
+export type AlertRulePatch = { ruleName?: string; threshold?: Record<string, unknown>; recipientUserIds?: string[]; channelHint?: string | null; cooldownMinutes?: number; isActive?: boolean; reason?: string };
+export type AlertRuleCreate = { kind: AlertKind; ruleName: string; threshold?: Record<string, unknown>; recipientUserIds: string[]; channelHint?: string; cooldownMinutes?: number; reason?: string };
+
+/** The rule's movable fields — 0237's projection, key for key (the guard compares a change row's `after` to exactly this). */
+export const stateOf = (r: AlertRule): AlertRuleState => ({
+  ruleName: r.ruleName, threshold: r.threshold ?? {}, recipientUserIds: [...(r.recipientUserIds ?? [])],
+  channelHint: r.channelHint ?? null, cooldownMinutes: r.cooldownMinutes, isActive: r.isActive,
+});
+/** Canonical JSON (sorted keys) — "the rule moved since the proposal" is a deep comparison, never a reference one. */
+const canon = (v: unknown): string => JSON.stringify(v, (_k, x) => (x && typeof x === 'object' && !Array.isArray(x)
+  ? Object.keys(x).sort().reduce((o: Record<string, unknown>, k) => { o[k] = (x as Record<string, unknown>)[k]; return o; }, {}) : x));
+export const sameState = (a: AlertRuleState, b: AlertRuleState) => canon(a) === canon(b);
+
+const REASON_MIN = 10;
+const refuse = (code: string, message: string, status: number, details: Record<string, unknown> = {}) => new LogisticsOpsRefusedError(code, message, status, details);
 
 @Injectable()
 export class OpsAlertService {
@@ -24,44 +42,184 @@ export class OpsAlertService {
     @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWork,
     @Inject(OUTBOX_WRITER) private readonly outbox: OutboxWriter,
     private readonly repo: OpsAlertRepository,
+    @Inject(IDEMPOTENCY_SERVICE) private readonly idem: IdempotencyService,
+    private readonly audit: AuditWriter,
   ) {}
   private assert(a: AlertActor) { if (!a.canManage) throw new ForbiddenError('requires logistics.manage'); }
+  private reasonOf(raw: string | undefined): string {
+    const reason = (raw ?? '').trim();
+    if (reason.length < REASON_MIN) throw refuse('REASON_REQUIRED', 'A reason of at least 10 characters is recorded with every alert rule change', 422);
+    return reason;
+  }
+  /** F-10 (PC-56 HOTFIX-14): a rule names only active members of this organisation — the notification spine itself checks no membership. */
+  private async assertMembers(tenantId: string, userIds: string[]) {
+    if (userIds.length === 0) return;
+    const outsiders = await this.repo.nonMembers(tenantId, userIds);   // a read — before the idempotency record and the unit of work (E12)
+    if (outsiders.length > 0) throw refuse('ALERT_RECIPIENT_NOT_MEMBER', 'An alert rule names only people who are members of this organisation', 422, { count: outsiders.length });
+  }
 
-  async createRule(tenantId: string, a: AlertActor, dto: { kind: AlertKind; ruleName: string; threshold?: Record<string, unknown>; recipientUserIds: string[]; channelHint?: string; cooldownMinutes?: number }) {
+  /**
+   * PC-56 HOTFIX-14 (OPS5-B1): a NEW rule makes alerting louder, so it applies at once — keyed, strictly validated, recorded (an
+   * `audit_log` row with the rule as made and the reason; `created_by`/`updated_by` written). Every refusal is BEFORE the idempotency
+   * record (E12).
+   */
+  async createRule(tenantId: string, a: AlertActor, key: string, dto: AlertRuleCreate) {
     this.assert(a);
+    const reason = this.reasonOf(dto.reason);
     const threshold = { ...defaultsFor(dto.kind), ...(dto.threshold ?? {}) };
     const v = validateThreshold(dto.kind, threshold);
     if (!v.ok) throw new BadRequestError(v.error);
     if (dto.recipientUserIds.length === 0) throw new BadRequestError('a rule with no recipients would page nobody — name at least one user');
-    const id = uuidv7();
-    const res = await this.uow.run(tenantId, (tx) => this.repo.insertRule(tx, {
-      id, tenantId, kind: dto.kind, ruleName: dto.ruleName, threshold,
-      recipientUserIds: dto.recipientUserIds, channelHint: dto.channelHint, cooldownMinutes: dto.cooldownMinutes ?? 60,
-    }), { userId: a.userId });
-    if (!res.ok) throw new ConflictError(`a rule named '${dto.ruleName}' already exists`);
-    return { id, kind: dto.kind, threshold };
+    const recipients = [...new Set(dto.recipientUserIds)];
+    await this.assertMembers(tenantId, recipients);
+    return this.idem.remember(key, a.userId, 'logistics.alert_rule_create', () => this.uow.run(tenantId, async (tx) => {
+      const id = uuidv7();
+      const state: AlertRuleState = { ruleName: dto.ruleName, threshold, recipientUserIds: recipients, channelHint: dto.channelHint ?? null, cooldownMinutes: dto.cooldownMinutes ?? 60, isActive: true };
+      const res = await this.repo.insertRule(tx, { id, tenantId, kind: dto.kind, ruleName: dto.ruleName, threshold, recipientUserIds: recipients, channelHint: dto.channelHint, cooldownMinutes: state.cooldownMinutes, by: a.userId });
+      if (!res.ok) throw new ConflictError(`a rule named '${dto.ruleName}' already exists`);
+      await this.audit.write(tx, { tenantId, actorUserId: a.userId, action: 'logistics.alert_rule_created', entityType: 'ops_alert_rule', entityId: id,
+        oldValue: null, newValue: { kind: dto.kind, ...state }, reason, ip: a.ip ?? null });
+      return { id, kind: dto.kind, threshold, status: 'applied' as const };
+    }, { userId: a.userId }));
   }
 
-  async updateRule(tenantId: string, a: AlertActor, id: string, patch: { ruleName?: string; threshold?: Record<string, unknown>; recipientUserIds?: string[]; channelHint?: string | null; cooldownMinutes?: number; isActive?: boolean }) {
+  /**
+   * PC-56 HOTFIX-14 · NOBODY SILENCES THE ALARM ALONE (OPS5-B1 + OPS5-B2, OPS-5 Q3-A). An edit is classified field by field
+   * (`classifyRuleChange`): a change that could make an alert QUIETER (a pause, a person removed, a threshold loosened, a longer
+   * cooldown — or any mix containing one) becomes a PROPOSAL — the rule is untouched and keeps alerting until ANOTHER `logistics.manage`
+   * holder confirms it; a change that can only make alerting LOUDER (or names nothing that decides who is told) applies at once. Both
+   * are keyed and recorded with their before/after and the reason. Refusals by name, before the idempotency record (E12); the locked
+   * row is re-judged inside the transaction, and 0237's guard refuses a quieter UPDATE that no confirmed change row matches.
+   */
+  async updateRule(tenantId: string, a: AlertActor, key: string, id: string, patch: AlertRulePatch) {
     this.assert(a);
+    const reason = this.reasonOf(patch.reason);
+    const existing = await this.repo.findRule(tenantId, id);
+    if (!existing) throw new NotFoundError('rule not found');
+    const kind = existing.kind as AlertKind;
     if (patch.threshold) {
-      const rules = await this.repo.listRules(tenantId);
-      const existing = rules.find((r) => r.id === id);
-      if (!existing) throw new NotFoundError('rule not found');
-      const v = validateThreshold(existing.kind as AlertKind, patch.threshold);
+      const v = validateThreshold(kind, patch.threshold);
       if (!v.ok) throw new BadRequestError(v.error);
     }
     if (patch.recipientUserIds && patch.recipientUserIds.length === 0) throw new BadRequestError('a rule must keep at least one recipient');
-    const ok = await this.uow.run(tenantId, (tx) => this.repo.updateRule(tx, tenantId, id, patch), { userId: a.userId });
-    if (!ok) throw new NotFoundError('rule not found');
-    return { id };
+    const plan = (rule: AlertRule) => {
+      const before = stateOf(rule);
+      const after: AlertRuleState = {
+        ruleName: patch.ruleName ?? before.ruleName,
+        threshold: patch.threshold ?? before.threshold,
+        recipientUserIds: patch.recipientUserIds ? [...new Set(patch.recipientUserIds)] : before.recipientUserIds,
+        // F-11: `channelHint: null` CLEARS it (the old COALESCE could not); an absent key keeps it.
+        channelHint: 'channelHint' in patch ? patch.channelHint ?? null : before.channelHint,
+        cooldownMinutes: patch.cooldownMinutes ?? before.cooldownMinutes,
+        isActive: patch.isActive ?? before.isActive,
+      };
+      return { before, after, ...classifyRuleChange(kind, before, after) };
+    };
+    const first = plan(existing);
+    await this.assertMembers(tenantId, first.after.recipientUserIds.filter((u) => !first.before.recipientUserIds.includes(u)));
+    // ALERT_RULE_CHANGE_ALREADY_OPEN depends on STATE the first call itself creates, so it is judged INSIDE the idempotency record, on the
+    // locked rule (the HOTFIX-13 precedent): a retried request replays its own 202, a different request is refused and its claim released.
+
+    return this.idem.remember(key, a.userId, 'logistics.alert_rule_update', () => this.uow.run(tenantId, async (tx) => {
+      const rule = await this.repo.findRule(tenantId, id, tx, true);
+      if (!rule) throw new NotFoundError('rule not found');
+      const p = plan(rule);
+      if (p.verdict === 'propose') {
+        if (await this.repo.openChangeFor(tenantId, id, tx)) throw this.alreadyOpen();
+        const changeId = uuidv7();
+        await this.repo.insertChange(tx, { id: changeId, tenantId, ruleId: id, before: p.before, after: p.after, reason, by: a.userId });
+        await this.audit.write(tx, { tenantId, actorUserId: a.userId, action: 'logistics.alert_rule_change_proposed', entityType: 'ops_alert_rule', entityId: id,
+          oldValue: p.before, newValue: { ...p.after, changeId, changes: p.changes }, reason, ip: a.ip ?? null });
+        return { id, status: 'proposed' as const, changeId, changes: p.changes };
+      }
+      const ok = await this.repo.updateRule(tx, tenantId, id, p.after, a.userId);
+      if (!ok) throw new NotFoundError('rule not found');
+      await this.audit.write(tx, { tenantId, actorUserId: a.userId, action: 'logistics.alert_rule_updated', entityType: 'ops_alert_rule', entityId: id,
+        oldValue: p.before, newValue: { ...p.after, changes: p.changes }, reason, ip: a.ip ?? null });
+      return { id, status: 'applied' as const, changes: p.changes };
+    }, { userId: a.userId }));
+  }
+  private alreadyOpen() { return refuse('ALERT_RULE_CHANGE_ALREADY_OPEN', 'This rule already has a proposed change waiting for a second person', 409); }
+
+  /** WHO may confirm — a fact of the person, stable across a retry, so it is refused BEFORE the idempotency record (E12) and again inside. */
+  private assertNotProposer(change: AlertRuleChange | null, me: string): asserts change is AlertRuleChange {
+    if (!change) throw refuse('ALERT_RULE_CHANGE_NOT_FOUND', 'That proposed change does not exist in this organisation', 404);
+    if (change.proposedBy === me) throw refuse('ALERT_RULE_CONFIRMER_IS_PROPOSER', 'A second person confirms this change — not the person who proposed it', 403);
+  }
+  /** The full set, on the LOCKED rows inside the idempotency record: the state refusals (still open; the rule unmoved) depend on what a first
+   *  call writes, so judging them before the record would answer a retried confirmation "not open" instead of replaying it (HOTFIX-13). */
+  private assertConfirmable(change: AlertRuleChange | null, rule: AlertRule | null, me: string): asserts change is AlertRuleChange {
+    this.assertNotProposer(change, me);
+    if (change.state !== 'proposed') throw refuse('ALERT_RULE_CHANGE_NOT_OPEN', `That change is no longer waiting (it is ${change.state})`, 409);
+    if (!rule || !sameState(stateOf(rule), change.before)) {
+      throw refuse('ALERT_RULE_CHANGED_SINCE_PROPOSAL', 'The rule has changed since this was proposed; nothing was overwritten — withdraw it and propose again', 409);
+    }
   }
 
-  rules(tenantId: string, a: AlertActor, q: { kind?: string; activeOnly?: boolean }) { this.assert(a); return this.repo.listRules(tenantId, q); }
+  /** PC-56 HOTFIX-14: a SECOND `logistics.manage` holder confirms — the rule becomes the proposal's `after`, in the same transaction. */
+  async confirmChange(tenantId: string, a: AlertActor, key: string, changeId: string) {
+    this.assert(a);
+    this.assertNotProposer(await this.repo.findChange(tenantId, changeId), a.userId);
+    return this.idem.remember(key, a.userId, 'logistics.alert_rule_change_confirm', () => this.uow.run(tenantId, async (tx) => {
+      const change = await this.repo.findChange(tenantId, changeId, tx, true);
+      const rule = change ? await this.repo.findRule(tenantId, change.ruleId, tx, true) : null;
+      this.assertConfirmable(change, rule, a.userId);
+      if (!(await this.repo.confirmChange(tx, tenantId, changeId, a.userId))) throw refuse('ALERT_RULE_CHANGE_NOT_OPEN', 'That change is no longer waiting', 409);
+      if (!(await this.repo.updateRule(tx, tenantId, change.ruleId, change.after, a.userId))) throw new NotFoundError('rule not found');
+      await this.audit.write(tx, { tenantId, actorUserId: a.userId, action: 'logistics.alert_rule_change_confirmed', entityType: 'ops_alert_rule', entityId: change.ruleId,
+        oldValue: change.before, newValue: { ...change.after, changeId, proposedBy: change.proposedBy }, reason: change.reason, ip: a.ip ?? null });
+      return { id: changeId, ruleId: change.ruleId, state: 'confirmed' as const };
+    }, { userId: a.userId }));
+  }
+
+  /** PC-56 HOTFIX-14: the PROPOSER withdraws their own proposal (the rule never moved; it keeps alerting as it was). */
+  async withdrawChange(tenantId: string, a: AlertActor, key: string, changeId: string) {
+    this.assert(a);
+    const mine = (c: AlertRuleChange | null): AlertRuleChange => {
+      if (!c) throw refuse('ALERT_RULE_CHANGE_NOT_FOUND', 'That proposed change does not exist in this organisation', 404);
+      if (c.proposedBy !== a.userId) throw refuse('ALERT_RULE_WITHDRAW_NOT_PROPOSER', 'Only the person who proposed this change can withdraw it', 403);
+      return c;
+    };
+    mine(await this.repo.findChange(tenantId, changeId));   // who — before the idempotency record (E12)
+    return this.idem.remember(key, a.userId, 'logistics.alert_rule_change_withdraw', () => this.uow.run(tenantId, async (tx) => {
+      const c = mine(await this.repo.findChange(tenantId, changeId, tx, true));
+      if (c.state !== 'proposed') throw refuse('ALERT_RULE_CHANGE_NOT_OPEN', `That change is no longer waiting (it is ${c.state})`, 409);
+      if (!(await this.repo.withdrawChange(tx, tenantId, changeId, a.userId))) throw refuse('ALERT_RULE_CHANGE_NOT_OPEN', 'That change is no longer waiting', 409);
+      await this.audit.write(tx, { tenantId, actorUserId: a.userId, action: 'logistics.alert_rule_change_withdrawn', entityType: 'ops_alert_rule', entityId: c.ruleId,
+        oldValue: { changeId, state: 'proposed' }, newValue: { changeId, state: 'withdrawn' }, reason: null, ip: a.ip ?? null });
+      return { id: changeId, ruleId: c.ruleId, state: 'withdrawn' as const };
+    }, { userId: a.userId }));
+  }
+
+  private changeWire(kind: AlertKind, c: AlertRuleChange, me: string) {
+    return { id: c.id, ruleId: c.ruleId, state: c.state, before: c.before, after: c.after, reason: c.reason,
+      changes: classifyRuleChange(kind, c.before, c.after).changes,
+      proposedBy: c.proposedBy, proposedByYou: c.proposedBy === me, proposedAt: c.proposedAt,
+      confirmedBy: c.confirmedBy, confirmedAt: c.confirmedAt, withdrawnAt: c.withdrawnAt };
+  }
+  /** GET …/alert-rules/:id/changes — every proposal on one rule and how it ended (read). */
+  async changes(tenantId: string, a: AlertActor, ruleId: string) {
+    this.assert(a);
+    const rule = await this.repo.findRule(tenantId, ruleId);
+    if (!rule) throw new NotFoundError('rule not found');
+    return (await this.repo.listChanges(tenantId, ruleId)).map((c) => this.changeWire(rule.kind as AlertKind, c, a.userId));
+  }
+
+  /** The rules, each with its OPEN proposal if any (so the console can offer confirm to another person and withdraw to the proposer). */
+  async rules(tenantId: string, a: AlertActor, q: { kind?: string; activeOnly?: boolean }) {
+    this.assert(a);
+    const [rules, open] = await Promise.all([this.repo.listRules(tenantId, q), this.repo.openChanges(tenantId)]);
+    const byRule = new Map(open.map((c) => [c.ruleId, c]));
+    return rules.map((r) => {
+      const c = byRule.get(r.id);
+      return { ...r, openChange: c ? this.changeWire(r.kind as AlertKind, c, a.userId) : null };
+    });
+  }
   /** [HOTFIX-1] The PUBLIC read another module may call for "who would be told" (dairy's BMC monitor, W170). The
    *  caller has already enforced its own permission; this exists so no module reaches into OpsAlertRepository —
-   *  which LogisticsModule never exported, so `DairyBmcReadModel` could not be constructed and the API could not boot. */
-  listRules(tenantId: string): Promise<AlertRule[]> { return this.repo.listRules(tenantId); }
+   *  which LogisticsModule never exported, so `DairyBmcReadModel` could not be constructed and the API could not boot.
+   *  PC-56 HOTFIX-14 (F-2): it takes the same filter as the rule list, so the cooler monitor can ask for ACTIVE rules only. */
+  listRules(tenantId: string, q: { kind?: string; activeOnly?: boolean } = {}): Promise<AlertRule[]> { return this.repo.listRules(tenantId, q); }
   feed(tenantId: string, a: AlertActor, q: { kind?: string; severity?: string; unacknowledgedOnly?: boolean; limit: number }) { this.assert(a); return this.repo.feed(tenantId, q); }
 
   async acknowledge(tenantId: string, a: AlertActor, id: string) {

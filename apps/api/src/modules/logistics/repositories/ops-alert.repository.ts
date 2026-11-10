@@ -5,6 +5,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-replica.provider';
 import { TxContext } from '../../../core/database/unit-of-work';
 import { pgDate } from '../../../core/database/pg-date';
+import type { AlertRuleState } from '../domain/ops-alert.rules';
 // [PC-56 TENANT-6b-1] `date` columns are read through core/database/pg-date. The shape this file used —
 // `String(row.some_date).slice(0, 10)` — yields "Mon Jul 13" for the JS Date node-pg hands back for a `date`
 // (oid 1082), in EVERY timezone. Verified against the live schema: every column it was applied to here is a
@@ -13,39 +14,112 @@ import { pgDate } from '../../../core/database/pg-date';
 export interface AlertRule {
   id: string; kind: string; ruleName: string; threshold: Record<string, unknown>; recipientUserIds: string[];
   channelHint: string | null; cooldownMinutes: number; isActive: boolean; lastEvaluatedAt: string | null;
+  // PC-56 HOTFIX-14 (OPS5-B1): who made the rule and who last changed it — written from this hotfix on (NULL on older rows).
+  createdBy?: string | null; updatedBy?: string | null; updatedAt?: string | null;
 }
 const toRule = (x: any): AlertRule => ({
   id: x.id, kind: x.kind, ruleName: x.rule_name, threshold: x.threshold ?? {},
   recipientUserIds: x.recipient_user_ids ?? [], channelHint: x.channel_hint,
   cooldownMinutes: x.cooldown_minutes, isActive: x.is_active,
   lastEvaluatedAt: x.last_evaluated_at ? new Date(x.last_evaluated_at).toISOString() : null,
+  createdBy: x.created_by ?? null, updatedBy: x.updated_by ?? null, updatedAt: x.updated_at ? new Date(x.updated_at).toISOString() : null,
+});
+
+/** PC-56 HOTFIX-14 · one row of `ops_alert_rule_changes` (0237): a change that could make an alert quieter, proposed by one person. */
+export interface AlertRuleChange {
+  id: string; ruleId: string; state: 'proposed' | 'confirmed' | 'withdrawn';
+  before: AlertRuleState; after: AlertRuleState; reason: string;
+  proposedBy: string; proposedAt: string; confirmedBy: string | null; confirmedAt: string | null; withdrawnAt: string | null;
+}
+const iso = (v: unknown) => (v ? new Date(v as string).toISOString() : null);
+const toChange = (x: any): AlertRuleChange => ({
+  id: x.id, ruleId: x.rule_id, state: x.state, before: x.before, after: x.after, reason: x.reason,
+  proposedBy: x.proposed_by, proposedAt: iso(x.proposed_at) as string, confirmedBy: x.confirmed_by ?? null,
+  confirmedAt: iso(x.confirmed_at), withdrawnAt: iso(x.withdrawn_at),
 });
 
 @Injectable()
 export class OpsAlertRepository {
   constructor(@Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider) {}
 
-  async insertRule(tx: TxContext, r: { id: string; tenantId: string; kind: string; ruleName: string; threshold: Record<string, unknown>; recipientUserIds: string[]; channelHint?: string; cooldownMinutes: number }): Promise<{ ok: true } | { ok: false; conflict: 'duplicate_name' }> {
-    try {
-      await tx.query(
-        `INSERT INTO ops_alert_rules (id, tenant_id, kind, rule_name, threshold, recipient_user_ids, channel_hint, cooldown_minutes)
-         VALUES ($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7,$8)`,
-        [r.id, r.tenantId, r.kind, r.ruleName, JSON.stringify(r.threshold), JSON.stringify(r.recipientUserIds), r.channelHint ?? null, r.cooldownMinutes]);
-      return { ok: true };
-    } catch (e: unknown) {
-      if ((e as { code?: string }).code === '23505') return { ok: false, conflict: 'duplicate_name' };
-      throw e;
-    }
+  async insertRule(tx: TxContext, r: { id: string; tenantId: string; kind: string; ruleName: string; threshold: Record<string, unknown>; recipientUserIds: string[]; channelHint?: string; cooldownMinutes: number; by: string }): Promise<{ ok: true } | { ok: false; conflict: 'duplicate_name' }> {
+    // PC-56 HOTFIX-14 (OPS5-B1, survey C-3): the author is WRITTEN — `created_by` / `updated_by` existed since 0001 and nothing wrote them.
+    // The duplicate-name check is a read first (an INSERT that fails 23505 would abort the transaction the audit row rides in).
+    const dup = await tx.query(`SELECT 1 FROM ops_alert_rules WHERE tenant_id=$1 AND lower(rule_name)=lower($2) AND deleted_at IS NULL LIMIT 1`, [r.tenantId, r.ruleName]);
+    if ((dup.rowCount ?? 0) > 0) return { ok: false, conflict: 'duplicate_name' };
+    await tx.query(
+      `INSERT INTO ops_alert_rules (id, tenant_id, kind, rule_name, threshold, recipient_user_ids, channel_hint, cooldown_minutes, created_by, updated_by)
+       VALUES ($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7,$8,$9,$9)`,
+      [r.id, r.tenantId, r.kind, r.ruleName, JSON.stringify(r.threshold), JSON.stringify(r.recipientUserIds), r.channelHint ?? null, r.cooldownMinutes, r.by]);
+    return { ok: true };
   }
-  async updateRule(tx: TxContext, tenantId: string, id: string, patch: { ruleName?: string; threshold?: Record<string, unknown>; recipientUserIds?: string[]; channelHint?: string | null; cooldownMinutes?: number; isActive?: boolean }): Promise<boolean> {
+  /**
+   * PC-56 HOTFIX-14 (F-11): the rule is set to a WHOLE state the service computed — never `COALESCE(new, old)`, which could not clear
+   * `channelHint` (a `null` meant "keep"). `updated_by` names the person. 0237's guard refuses a quieter state here unless a change row
+   * confirmed by a second person in this same transaction says exactly this.
+   */
+  async updateRule(tx: TxContext, tenantId: string, id: string, next: AlertRuleState, by: string): Promise<boolean> {
     const r = await tx.query(
-      `UPDATE ops_alert_rules SET rule_name=COALESCE($3,rule_name), threshold=COALESCE($4::jsonb,threshold),
-              recipient_user_ids=COALESCE($5::jsonb,recipient_user_ids), channel_hint=COALESCE($6,channel_hint),
-              cooldown_minutes=COALESCE($7,cooldown_minutes), is_active=COALESCE($8,is_active), version=version+1
+      `UPDATE ops_alert_rules SET rule_name=$3, threshold=$4::jsonb, recipient_user_ids=$5::jsonb, channel_hint=$6,
+              cooldown_minutes=$7, is_active=$8, version=version+1, updated_by=$9
         WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
-      [id, tenantId, patch.ruleName ?? null, patch.threshold ? JSON.stringify(patch.threshold) : null,
-       patch.recipientUserIds ? JSON.stringify(patch.recipientUserIds) : null, patch.channelHint ?? null,
-       patch.cooldownMinutes ?? null, patch.isActive ?? null]);
+      [id, tenantId, next.ruleName, JSON.stringify(next.threshold), JSON.stringify(next.recipientUserIds), next.channelHint,
+       next.cooldownMinutes, next.isActive, by]);
+    return (r.rowCount ?? 0) > 0;
+  }
+  /** PC-56 HOTFIX-14 (F-11): a rule found BY ITS ID — never through `listRules` (LIMIT 200: the 201st rule answered "not found"). */
+  async findRule(tenantId: string, id: string, tx?: TxContext, forUpdate = false): Promise<AlertRule | null> {
+    const sql = `SELECT * FROM ops_alert_rules WHERE tenant_id=$1 AND id=$2 AND deleted_at IS NULL${forUpdate ? ' FOR UPDATE' : ''}`;
+    const r = tx ? await tx.query(sql, [tenantId, id]) : await this.replica.forTenant(tenantId).query(sql, [tenantId, id]);
+    return r.rows[0] ? toRule(r.rows[0]) : null;
+  }
+  /** PC-56 HOTFIX-14 (F-10): the named people who are NOT active members of this organisation (none → []). */
+  async nonMembers(tenantId: string, userIds: string[]): Promise<string[]> {
+    if (userIds.length === 0) return [];
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT u FROM unnest($2::uuid[]) AS u
+        WHERE NOT EXISTS (SELECT 1 FROM user_tenant_roles m WHERE m.tenant_id=$1 AND m.user_id=u AND m.is_active AND m.deleted_at IS NULL)`,
+      [tenantId, userIds]);
+    return (r.rows as Array<{ u: string }>).map((x) => x.u);
+  }
+
+  // ===== PC-56 HOTFIX-14 · the proposals (0237 `ops_alert_rule_changes`) =====
+  async insertChange(tx: TxContext, c: { id: string; tenantId: string; ruleId: string; before: AlertRuleState; after: AlertRuleState; reason: string; by: string }): Promise<void> {
+    await tx.query(
+      `INSERT INTO ops_alert_rule_changes (id, tenant_id, rule_id, before, after, reason, proposed_by, created_by, updated_by)
+       VALUES ($1,$2,$3,$4::jsonb,$5::jsonb,$6,$7,$7,$7)`,
+      [c.id, c.tenantId, c.ruleId, JSON.stringify(c.before), JSON.stringify(c.after), c.reason, c.by]);
+  }
+  async findChange(tenantId: string, id: string, tx?: TxContext, forUpdate = false): Promise<AlertRuleChange | null> {
+    const sql = `SELECT * FROM ops_alert_rule_changes WHERE tenant_id=$1 AND id=$2 AND deleted_at IS NULL${forUpdate ? ' FOR UPDATE' : ''}`;
+    const r = tx ? await tx.query(sql, [tenantId, id]) : await this.replica.forTenant(tenantId).query(sql, [tenantId, id]);
+    return r.rows[0] ? toChange(r.rows[0]) : null;
+  }
+  async openChangeFor(tenantId: string, ruleId: string, tx?: TxContext): Promise<AlertRuleChange | null> {
+    const sql = `SELECT * FROM ops_alert_rule_changes WHERE tenant_id=$1 AND rule_id=$2 AND state='proposed' AND deleted_at IS NULL LIMIT 1`;
+    const r = tx ? await tx.query(sql, [tenantId, ruleId]) : await this.replica.forTenant(tenantId).query(sql, [tenantId, ruleId]);
+    return r.rows[0] ? toChange(r.rows[0]) : null;
+  }
+  async openChanges(tenantId: string): Promise<AlertRuleChange[]> {
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT * FROM ops_alert_rule_changes WHERE tenant_id=$1 AND state='proposed' AND deleted_at IS NULL ORDER BY proposed_at DESC LIMIT 200`, [tenantId]);
+    return r.rows.map(toChange);
+  }
+  async listChanges(tenantId: string, ruleId: string): Promise<AlertRuleChange[]> {
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT * FROM ops_alert_rule_changes WHERE tenant_id=$1 AND rule_id=$2 AND deleted_at IS NULL ORDER BY proposed_at DESC, id DESC LIMIT 100`, [tenantId, ruleId]);
+    return r.rows.map(toChange);
+  }
+  async confirmChange(tx: TxContext, tenantId: string, id: string, by: string): Promise<boolean> {
+    const r = await tx.query(
+      `UPDATE ops_alert_rule_changes SET state='confirmed', confirmed_by=$3, confirmed_at=now(), updated_by=$3
+        WHERE tenant_id=$1 AND id=$2 AND state='proposed' AND deleted_at IS NULL`, [tenantId, id, by]);
+    return (r.rowCount ?? 0) > 0;
+  }
+  async withdrawChange(tx: TxContext, tenantId: string, id: string, by: string): Promise<boolean> {
+    const r = await tx.query(
+      `UPDATE ops_alert_rule_changes SET state='withdrawn', withdrawn_at=now(), updated_by=$3
+        WHERE tenant_id=$1 AND id=$2 AND state='proposed' AND deleted_at IS NULL`, [tenantId, id, by]);
     return (r.rowCount ?? 0) > 0;
   }
   async listRules(tenantId: string, q: { kind?: string; activeOnly?: boolean } = {}): Promise<AlertRule[]> {

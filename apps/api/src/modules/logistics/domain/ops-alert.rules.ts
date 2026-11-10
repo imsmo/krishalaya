@@ -138,6 +138,83 @@ export function outboxTypeFor(severity: AlertSeverity): string {
   return severity === 'critical' ? OPS_ALERT_CRITICAL_OUTBOX_TYPE : OPS_ALERT_OUTBOX_TYPE;
 }
 
+/**
+ * PC-56 HOTFIX-14 · NOBODY SILENCES THE ALARM ALONE (OPS-5 Q3-A, applied by the lead under the founder's instruction of 2026-11-10).
+ *
+ * WHICH WAY DOES A RULE CHANGE MOVE THE ALARM? The rules decide who is told — including who the DATABASE tells about a cold-chain
+ * breach (0201's `cold_chain_breach_on_reading` reads the active breach rules' recipients) and who the watch job tells about a silent
+ * logger. So a change that could make an alert QUIETER is a PROPOSAL until a second person confirms it; a change that can only make
+ * alerting LOUDER applies at once (recorded either way). A MIXED change — one field louder, another quieter — is a proposal as a whole.
+ *
+ * The direction of each field, verified against the evaluator (`OpsAlertService.evidenceFor`) and the repository queries:
+ *   isActive           true → false QUIETER (a paused rule is never evaluated and its people are not told of a breach); false → true LOUDER.
+ *   recipientUserIds   a person removed QUIETER; a person added LOUDER (both at once → mixed → a proposal). Order alone is NEUTRAL.
+ *   cooldownMinutes    longer QUIETER (fewer repeats: the dedupe bucket widens); shorter LOUDER.
+ *   cold_chain_breach  minBreaches higher QUIETER (`breaches >= minBreaches`); lower LOUDER.
+ *                      windowHours SHORTER is QUIETER — the rule counts out-of-band readings in the last `windowHours` hours, so a
+ *                      narrower window counts fewer and fires less; LONGER is LOUDER. (The brief's "widening the window the wrong
+ *                      way" is, for this rule, NARROWING it.)
+ *                      subjectType: a filter added or changed QUIETER (some subjects drop out); a filter removed LOUDER (every subject).
+ *   device_silent      silentMinutes (through `silentMinutesOf`, the legacy hours key included) LONGER QUIETER; shorter LOUDER.
+ *   maintenance_due    alert 'any' → one flag QUIETER; one flag → the other QUIETER (that flag's machines drop out); → 'any' LOUDER.
+ *   ruleName           NEUTRAL — it names the rule, it never decides who is told.
+ *   channelHint        NEUTRAL — carried in the payload only; the notification spine never reads it (grep: no reader in
+ *                      modules/communication), so it cannot quiet anyone.
+ * Defaults are the evaluator's own (`?? 6`, `?? 1`, `?? 'any'`): a PATCH that REPLACES the threshold and drops a key falls back to them,
+ * so dropping `windowHours: 24` reads as 24 → 6, QUIETER — exactly what the evaluator would do with it.
+ *
+ * Mirrored in SQL by 0237's `ops_alert_rules_hf14_guard` (the database refuses a quieter UPDATE without a confirmed change row).
+ */
+export const BREACH_WINDOW_HOURS_DEFAULT = 6;
+export const BREACH_MIN_BREACHES_DEFAULT = 1;
+
+/** The fields of a rule that a change may move (what a proposal's `before` / `after` hold — 0237's projection, key for key). */
+export interface AlertRuleState {
+  ruleName: string; threshold: Record<string, unknown>; recipientUserIds: string[];
+  channelHint: string | null; cooldownMinutes: number; isActive: boolean;
+}
+export type ChangeDirection = 'louder' | 'quieter' | 'neutral';
+export interface RuleFieldChange { field: string; direction: ChangeDirection }
+export interface RuleChangeVerdict { verdict: 'apply' | 'propose'; changes: RuleFieldChange[] }
+
+const num = (v: unknown, dflt: number): number => (typeof v === 'number' && Number.isFinite(v) ? v : dflt);
+const str = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? v : null);
+
+/** PURE: classify a rule change field by field, then the whole (any quieter field → a proposal). */
+export function classifyRuleChange(kind: AlertKind, before: AlertRuleState, after: AlertRuleState): RuleChangeVerdict {
+  const changes: RuleFieldChange[] = [];
+  const push = (field: string, direction: ChangeDirection) => changes.push({ field, direction });
+
+  if (before.isActive !== after.isActive) push('isActive', after.isActive ? 'louder' : 'quieter');
+
+  const was = new Set(before.recipientUserIds); const now = new Set(after.recipientUserIds);
+  if ([...was].some((u) => !now.has(u))) push('recipientsRemoved', 'quieter');
+  if ([...now].some((u) => !was.has(u))) push('recipientsAdded', 'louder');
+
+  if (before.cooldownMinutes !== after.cooldownMinutes) push('cooldownMinutes', after.cooldownMinutes > before.cooldownMinutes ? 'quieter' : 'louder');
+
+  const b = before.threshold ?? {}; const a = after.threshold ?? {};
+  if (kind === 'cold_chain_breach') {
+    const bm = num(b.minBreaches, BREACH_MIN_BREACHES_DEFAULT); const am = num(a.minBreaches, BREACH_MIN_BREACHES_DEFAULT);
+    if (bm !== am) push('minBreaches', am > bm ? 'quieter' : 'louder');
+    const bw = num(b.windowHours, BREACH_WINDOW_HOURS_DEFAULT); const aw = num(a.windowHours, BREACH_WINDOW_HOURS_DEFAULT);
+    if (bw !== aw) push('windowHours', aw < bw ? 'quieter' : 'louder');
+    const bs = str(b.subjectType); const as = str(a.subjectType);
+    if (bs !== as) push('subjectType', as === null ? 'louder' : 'quieter');
+  } else if (kind === 'device_silent') {
+    const bs = silentMinutesOf(b); const as = silentMinutesOf(a);
+    if (bs !== as) push('silentMinutes', as > bs ? 'quieter' : 'louder');
+  } else {
+    const bAlert = str(b.alert) ?? 'any'; const aAlert = str(a.alert) ?? 'any';
+    if (bAlert !== aAlert) push('alert', aAlert === 'any' ? 'louder' : 'quieter');
+  }
+
+  if (before.ruleName !== after.ruleName) push('ruleName', 'neutral');
+  if ((before.channelHint ?? null) !== (after.channelHint ?? null)) push('channelHint', 'neutral');
+
+  return { verdict: changes.some((c) => c.direction === 'quieter') ? 'propose' : 'apply', changes };
+}
+
 /** Human-facing one-liners (the notification body renders from these; templates hold the layout). */
 export function alertTitle(kind: AlertKind): string {
   return kind === 'cold_chain_breach' ? 'Cold-chain breach detected'

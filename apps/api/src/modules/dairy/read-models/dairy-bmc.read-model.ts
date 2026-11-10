@@ -159,7 +159,9 @@ export class DairyBmcReadModel {
         this.units.monitor(tenantId, 24),
         this.units.thresholds(x, tenantId),
         this.units.windowCounts(tenantId, 90),
-        this.alerts.listRules(tenantId).catch(() => []),
+        // PC-56 HOTFIX-14 (F-2): ACTIVE rules only — a paused rule is never evaluated and its people are not told of a breach
+        // (0201 reads `is_active`), so counting it here said someone would be told when nobody would.
+        this.alerts.listRules(tenantId, { activeOnly: true }).catch(() => []),
         this.opsAlertDelivery(x),
         // Read rather than assumed: the monitor must not draw a button whose route answers not-found (TENANT-6d-2's
         // ruling on the flag guard — a 404 from a flag is indistinguishable from a broken screen).

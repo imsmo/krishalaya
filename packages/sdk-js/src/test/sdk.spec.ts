@@ -1961,13 +1961,39 @@ describe('ops-alert-rules', () => {
       ? { body: { data: { id: 'r1', kind: 'cold_chain_breach', threshold: { windowHours: 6, minBreaches: 1 } } } }
       : { body: { data: [] } });
     const c = createClient({ ...base, fetchImpl: fn });
-    const r = await c.shipments.createAlertRule({ kind: 'cold_chain_breach', ruleName: 'Reefer breaches', recipientUserIds: ['00000000-0000-7000-8000-000000000001'] });
+    // NAMED UPDATE (PC-56 HOTFIX-14): a rule is created KEYED and with a reason — every change is recorded with who made it and why.
+    const r = await c.shipments.createAlertRule({ kind: 'cold_chain_breach', ruleName: 'Reefer breaches', recipientUserIds: ['00000000-0000-7000-8000-000000000001'], reason: 'Reefer van needs breach alerts' }, 'idem-rule-1');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-rule-1');
     expect(calls[0].url).toBe('https://api.test/v1/logistics/cold-chain/alert-rules');
     const body = JSON.parse(String(calls[0].init.body));
     expect(body.recipientUserIds).toHaveLength(1);        // a rule always names humans, never "everyone"
     expect(r.threshold.windowHours).toBe(6);              // server applied its defaults
     await c.shipments.alertFeed({ unacknowledgedOnly: true });
     expect(calls[1].url).toContain('alerts/feed?unacknowledgedOnly=true');
+  });
+});
+
+// --- PC-56 HOTFIX-14 · nobody silences the alarm alone ---
+describe('ops-alert-rules · second person (HOTFIX-14)', () => {
+  it('edits keyed with a reason; a quieter edit comes back proposed; confirm / withdraw / changes hit their routes, keyed', async () => {
+    const { fn, calls } = fakeFetch((_c, n) => (n === 1
+      ? { status: 202, body: { data: { id: 'r1', status: 'proposed', changeId: 'c1', changes: [{ field: 'isActive', direction: 'quieter' }] } } }
+      : n === 4 ? { body: { data: [] } } : { body: { data: { id: 'c1', ruleId: 'r1', state: n === 2 ? 'confirmed' : 'withdrawn' } } }));
+    const c = createClient({ ...base, fetchImpl: fn });
+    const up = await c.shipments.updateAlertRule('r1', { isActive: false, reason: 'Cooler sent for repair today' }, 'idem-p');
+    expect(up.status).toBe('proposed');
+    expect(calls[0].init.method).toBe('PATCH');
+    expect(calls[0].url).toBe('https://api.test/v1/logistics/cold-chain/alert-rules/r1');
+    expect((calls[0].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-p');
+    expect(JSON.parse(String(calls[0].init.body))).toEqual({ isActive: false, reason: 'Cooler sent for repair today' });
+    await c.shipments.confirmAlertRuleChange('c1', 'idem-c');
+    expect(calls[1].url).toBe('https://api.test/v1/logistics/cold-chain/alert-rules/changes/c1/confirm');
+    expect((calls[1].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-c');
+    await c.shipments.withdrawAlertRuleChange('c1', 'idem-w');
+    expect(calls[2].url).toBe('https://api.test/v1/logistics/cold-chain/alert-rules/changes/c1/withdraw');
+    expect((calls[2].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-w');
+    await c.shipments.alertRuleChanges('r1');
+    expect(calls[3].url).toBe('https://api.test/v1/logistics/cold-chain/alert-rules/r1/changes');
   });
 });
 

@@ -124,7 +124,7 @@ describe('PC-56 TENANT-6d-5 · the fifteen minutes', () => {
     };
     const outbox = { write: jest.fn() };
     const uow = { run: jest.fn(async (_t: string, fn: (tx: unknown) => unknown) => fn({ query: jest.fn() })) };
-    const svc = new OpsAlertService(uow as never, outbox as never, repo as never);
+    const svc = new OpsAlertService(uow as never, outbox as never, repo as never, {} as never, {} as never);   // NAMED UPDATE (HOTFIX-14): idem + audit (unused by the evaluator)
     return svc.evaluateTenant('t1').then(() => {
       expect(repo.silentDevices).toHaveBeenCalledWith('t1', 15);
       const [, ev] = outbox.write.mock.calls[0] as unknown as [unknown, Record<string, any>];

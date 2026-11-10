@@ -98,8 +98,17 @@ export function buildThreshold(kind: AlertKind, raw: { windowHours: string; minB
 export interface AlertRuleInput {
   kind: AlertKind; ruleName: string; threshold: Record<string, unknown>;
   recipientUserIds: string[]; channelHint?: ChannelHint; cooldownMinutes?: number;
+  reason: string;   // PC-56 HOTFIX-14: every change is recorded with who made it and why (the API refuses < 10 characters)
 }
-export type RuleFormError = 'kind' | 'name' | 'recipients' | 'recipientId' | 'tooManyRecipients' | 'cooldown' | 'channel' | `threshold_${string}`;
+export type RuleFormError = 'kind' | 'name' | 'recipients' | 'recipientId' | 'tooManyRecipients' | 'cooldown' | 'channel' | 'reason' | `threshold_${string}`;
+
+/** PC-56 HOTFIX-14: the API's own floor — a reason of at least 10 characters (trimmed) on every rule change. */
+export const REASON_MIN = 10;
+export const REASON_MAX = 500;
+function reasonOf(raw: string | undefined): string | null {
+  const r = (raw ?? '').trim();
+  return r.length >= REASON_MIN && r.length <= REASON_MAX ? r : null;
+}
 export type RuleFormResult = { ok: true; value: AlertRuleInput } | { ok: false; error: RuleFormError };
 
 const UUID = /^[0-9a-fA-F-]{36}$/;
@@ -117,7 +126,7 @@ export function parseRecipients(raw: string): { ok: true; value: string[] } | { 
 
 export function buildAlertRule(raw: {
   kind: string; ruleName: string; recipients: string; channelHint: string; cooldownMinutes: string;
-  windowHours: string; minBreaches: string; subjectType: string; silentHours: string; maintenanceAlert: string;
+  windowHours: string; minBreaches: string; subjectType: string; silentHours: string; maintenanceAlert: string; reason?: string;
 }): RuleFormResult {
   if (!isAlertKind(raw.kind)) return { ok: false, error: 'kind' };
   const ruleName = raw.ruleName.trim();
@@ -129,7 +138,7 @@ export function buildAlertRule(raw: {
   const threshold = buildThreshold(raw.kind, raw);
   if (!threshold.ok) return { ok: false, error: `threshold_${threshold.error}` as RuleFormError };
 
-  const value: AlertRuleInput = { kind: raw.kind, ruleName, threshold: threshold.value, recipientUserIds: recipients.value };
+  const value: AlertRuleInput = { kind: raw.kind, ruleName, threshold: threshold.value, recipientUserIds: recipients.value, reason: '' };
 
   const channel = raw.channelHint.trim();
   if (channel) {
@@ -143,6 +152,9 @@ export function buildAlertRule(raw: {
     if (n < COOLDOWN_MIN || n > COOLDOWN_MAX) return { ok: false, error: 'cooldown' };
     value.cooldownMinutes = n;
   }
+  const reason = reasonOf(raw.reason);
+  if (reason === null) return { ok: false, error: 'reason' };
+  value.reason = reason;
   return { ok: true, value };
 }
 
@@ -152,7 +164,9 @@ export type RulePatchResult =
 
 /** A PATCH must carry at least one real change (the API refuses an empty body), and every field it does carry is
  *  validated by the same rules as creation — an edit is not a back door around them. */
-export function buildRulePatch(raw: { isActive?: string; cooldownMinutes?: string; ruleName?: string; recipients?: string }): RulePatchResult {
+// PC-56 HOTFIX-14: an edit carries a reason (≥ 10 characters). The SERVER decides whether it applies at once (louder) or becomes a
+// proposal waiting for a second person (anything that could make an alert quieter) — this console never guesses which.
+export function buildRulePatch(raw: { isActive?: string; cooldownMinutes?: string; ruleName?: string; recipients?: string; reason?: string }): RulePatchResult {
   const out: Record<string, unknown> = {};
   if (raw.isActive === '1' || raw.isActive === '0') out.isActive = raw.isActive === '1';
   const name = (raw.ruleName ?? '').trim();
@@ -174,6 +188,9 @@ export function buildRulePatch(raw: { isActive?: string; cooldownMinutes?: strin
     out.recipientUserIds = parsed.value;
   }
   if (Object.keys(out).length === 0) return { ok: false, error: 'empty' };
+  const reason = reasonOf(raw.reason);
+  if (reason === null) return { ok: false, error: 'reason' };
+  out.reason = reason;
   return { ok: true, value: out };
 }
 

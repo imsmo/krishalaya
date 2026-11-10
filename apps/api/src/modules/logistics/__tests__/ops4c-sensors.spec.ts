@@ -70,7 +70,7 @@ describe('PC-56 OPS-4c · E13 · the alert names the logger', () => {
     };
     const outbox = { write: jest.fn() };
     const uow = { run: jest.fn(async (_t: string, fn: (tx: unknown) => unknown) => fn({ query: jest.fn() })) };
-    await new OpsAlertService(uow as never, outbox as never, repo as never).evaluateTenant('t1');
+    await new OpsAlertService(uow as never, outbox as never, repo as never, {} as never, {} as never).evaluateTenant('t1');   // NAMED UPDATE (HOTFIX-14): idem + audit
     const [, ev] = outbox.write.mock.calls[0] as unknown as [unknown, { payload: Record<string, any> }];
     expect(ev.payload.subjectRef).toBe('LOG-9');
     expect(ev.payload.body).toBe('Logger LOG-9 has not reported for 25 min (last signed reading received 2026-11-10T02:00:00.000Z).');

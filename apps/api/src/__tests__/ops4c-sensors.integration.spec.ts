@@ -156,7 +156,8 @@ run('PC-56 OPS-4c · the sensors (integration, real AppModule over HTTP, signed 
   });
 
   it('THE CANON\'S LAW (W404:41): the logger falls silent while a person keeps typing → the silence stands and the alert fires', async () => {
-    const rule = await api('POST', 'logistics/cold-chain/alert-rules', { kind: 'device_silent', ruleName: 'Logger quiet 15 min', threshold: { silentMinutes: 15 }, recipientUserIds: [ADM] });
+    // NAMED UPDATE (PC-56 HOTFIX-14 · OPS5-B1): a rule is created KEYED and with a reason (every change is recorded with who made it and why).
+    const rule = await api('POST', 'logistics/cold-chain/alert-rules', { kind: 'device_silent', ruleName: 'Logger quiet 15 min', threshold: { silentMinutes: 15 }, recipientUserIds: [ADM], reason: 'Logger silence alert for the test cooler' }, idem());
     expect(rule.status).toBe(201);
     // the server's own silence (the watch job reads twin_devices.last_reading_at, which only a signed reading writes)
     expect(await app.get(ColdChainWatchJob).sweep(relayPool, [T])).toMatchObject({ silences: 1, failed: 0 });

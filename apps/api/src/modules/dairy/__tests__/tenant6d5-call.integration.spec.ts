@@ -97,7 +97,7 @@ run('PC-56 TENANT-6d-5 · the call and the fifteen minutes (integration, real Po
     const unitRepo = new BmcUnitRepository(replica as never);
     const custody = new MccOperatorAssignmentRepository(replica as never);
     alertRepo = new OpsAlertRepository(replica as never);
-    alerts = new OpsAlertService(uow, outbox, alertRepo);
+    alerts = new OpsAlertService(uow, outbox, alertRepo, idem, audit);   // NAMED UPDATE (PC-56 HOTFIX-14): rule changes are keyed and audited
     mccs = new MccCentreService(uow, outbox, idem, metrics, audit, mccRepo, custody);
     units = new BmcUnitService(uow, outbox, idem, metrics, audit, unitRepo, mccRepo);
     readings = new BmcReadingService(uow, metrics, unitRepo, new ColdChainService(uow, metrics, new ColdChainLogRepository(replica as never), new ColdChainOpsRepository(replica as never), idem, outbox, audit, config, {} as never, {} as never));
@@ -163,7 +163,8 @@ run('PC-56 TENANT-6d-5 · the call and the fifteen minutes (integration, real Po
     });
 
     it('accepts a fifteen-minute rule and says the gap in minutes when it fires', async () => {
-      const rule: any = await alerts.createRule(tenantA, alertActor as never, {
+      const rule: any = await alerts.createRule(tenantA, alertActor as never, `idem-${randomUUID()}`, {   // NAMED UPDATE (HOTFIX-14): keyed, with a reason
+        reason: 'BMC alerting for the test centre',
         kind: 'device_silent', ruleName: 'BMC silence 15 min',
         threshold: { silentMinutes: 15 }, recipientUserIds: [raju], channelHint: 'ivr', cooldownMinutes: 5,
       });
@@ -194,7 +195,8 @@ run('PC-56 TENANT-6d-5 · the call and the fifteen minutes (integration, real Po
     });
 
     it('REFUSES a rule carrying both units, live at the edge', async () => {
-      await expect(alerts.createRule(tenantA, alertActor as never, {
+      await expect(alerts.createRule(tenantA, alertActor as never, `idem-${randomUUID()}`, {   // NAMED UPDATE (HOTFIX-14): keyed, with a reason
+        reason: 'BMC alerting for the test centre',
         kind: 'device_silent', ruleName: 'both units', threshold: { silentMinutes: 15, silentHours: 12 }, recipientUserIds: [raju],
       })).rejects.toThrow();
     });
@@ -247,7 +249,8 @@ run('PC-56 TENANT-6d-5 · the call and the fifteen minutes (integration, real Po
       // Five breaches in the window is `severityFor`'s own critical threshold. Before this wave the event type was the
       // same for every severity, so this alert was catalogued `important` and suppressed on every phone channel
       // overnight.
-      await alerts.createRule(tenantA, alertActor as never, {
+      await alerts.createRule(tenantA, alertActor as never, `idem-${randomUUID()}`, {   // NAMED UPDATE (HOTFIX-14): keyed, with a reason
+        reason: 'BMC alerting for the test centre',
         kind: 'cold_chain_breach', ruleName: 'BMC breaches', threshold: { windowHours: 6, minBreaches: 5 },
         recipientUserIds: [raju], cooldownMinutes: 5,
       });

@@ -2,13 +2,13 @@
 // (validate→authorize→delegate, no logic). All writes need logistics.manage; gated by the `logistics` flag.
 // Route creates require an Idempotency-Key; cold-chain readings are append-only (idempotency unnecessary — each
 // reading is a distinct timestamped fact). Lists are keyset/bounded.
-import { Controller, Get, Headers, Param, Patch, Post, Req, UseGuards, Query } from '@nestjs/common';
-import type { Request } from 'express';
+import { Controller, Get, Headers, Param, Patch, Post, Req, Res, UseGuards, Query } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
 import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
 import { OpsAlertService } from '../../services/ops-alert.service';
-import { ALERT_KINDS } from '../../domain/ops-alert.rules';
+import { ALERT_KINDS, ALERT_SEVERITIES } from '../../domain/ops-alert.rules';
 import { z } from 'zod';
 import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
@@ -97,6 +97,7 @@ export class RoutesController {
   }
 }
 
+const ALERT_REASON = z.string().max(500).optional();   // ≥ 10 characters (trimmed) is the SERVICE's refusal by name (REASON_REQUIRED, 422), not a bare 400
 const CreateAlertRuleSchema = z.object({
   kind: z.enum(ALERT_KINDS),
   ruleName: z.string().trim().min(3).max(150),
@@ -104,6 +105,7 @@ const CreateAlertRuleSchema = z.object({
   recipientUserIds: z.array(z.string().uuid()).min(1).max(50),
   channelHint: z.enum(['push', 'sms', 'whatsapp', 'email', 'inapp']).optional(),
   cooldownMinutes: z.number().int().min(5).max(10080).optional(),
+  reason: ALERT_REASON,                                  // PC-56 HOTFIX-14: every change is recorded with who made it and why
 }).strict();
 const UpdateAlertRuleSchema = z.object({
   ruleName: z.string().trim().min(3).max(150).optional(),
@@ -112,7 +114,17 @@ const UpdateAlertRuleSchema = z.object({
   channelHint: z.enum(['push', 'sms', 'whatsapp', 'email', 'inapp']).nullable().optional(),
   cooldownMinutes: z.number().int().min(5).max(10080).optional(),
   isActive: z.boolean().optional(),
-}).strict().refine((o) => Object.keys(o).length > 0, { message: 'at least one field' });
+  reason: ALERT_REASON,
+}).strict().refine((o) => Object.keys(o).some((k) => k !== 'reason'), { message: 'at least one field besides the reason' });
+/** PC-56 HOTFIX-14: confirm / withdraw carry nothing but the Idempotency-Key (the reason is the proposal's own). */
+const AlertRuleChangeActSchema = z.object({}).strict();
+/** PC-56 HOTFIX-14 (F-11): the feed's query through a strict DTO — `limit` bounded 1..200 (it was `Number(limit)`, unbounded at the edge). */
+const AlertFeedQuerySchema = z.object({
+  kind: z.enum(ALERT_KINDS).optional(),
+  severity: z.enum(ALERT_SEVERITIES).optional(),
+  unacknowledgedOnly: z.enum(['true', 'false']).optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(100),
+}).strict();
 
 @Controller({ path: 'logistics/cold-chain', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
@@ -120,6 +132,7 @@ const UpdateAlertRuleSchema = z.object({
 export class ColdChainController {
   constructor(private readonly coldChain: ColdChainService, private readonly alerts: OpsAlertService, private readonly exportsPlane: ExportPlaneService) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: canManageLogistics(ctx) }; }
+  private alertActor(ctx: RequestContext, r: Request) { return { userId: ctx.userId, canManage: canManageLogistics(ctx), ip: ipOf(r) }; }
   private coldActor(ctx: RequestContext, r: Request) { return { userId: ctx.userId, canManage: canManageLogistics(ctx), canManageDevices: canManageColdChainDevices(ctx), ip: ipOf(r) }; }
 
   /** A MANUAL reading — PC-56 TENANT-SW-e: no band, no time in the body (the strict DTO refuses `allowedMinC/MaxC/recordedAt`); the
@@ -179,21 +192,45 @@ export class ColdChainController {
   }
   // --- PC-55 A6 `ops-alert-rules`: rules CRUD + fired feed. Firing goes through the EXISTING notification
   // spine (one outbox event) — this module adds no delivery channel and cannot bypass quiet hours. ---
+  // PC-56 HOTFIX-14 (OPS5-B1/B2): create and edit are KEYED and RECORDED; an edit that could make an alert quieter answers 202 with a
+  // PROPOSAL (the rule untouched, alerting as before) and is applied only when a second person confirms it; a louder edit answers 200.
   @Post('alert-rules') @RequirePermissions(ShipmentPermissions.Manage)
-  createAlertRule(@CurrentContext() ctx: RequestContext, @ZodBody(CreateAlertRuleSchema) dto: z.infer<typeof CreateAlertRuleSchema>) {
-    return this.alerts.createRule(ctx.tenantId, this.actor(ctx), dto).then((data) => ({ data }));
+  createAlertRule(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string, @ZodBody(CreateAlertRuleSchema) dto: z.infer<typeof CreateAlertRuleSchema>) {
+    return this.alerts.createRule(ctx.tenantId, this.alertActor(ctx, r), reqKey(key), dto).then((data) => ({ data }));
   }
   @Get('alert-rules') @RequirePermissions(ShipmentPermissions.Manage)
   alertRules(@CurrentContext() ctx: RequestContext, @Query('kind') kind?: string, @Query('activeOnly') activeOnly?: string) {
     return this.alerts.rules(ctx.tenantId, this.actor(ctx), { kind, activeOnly: activeOnly === 'true' }).then((data) => ({ data }));
   }
   @Patch('alert-rules/:id') @RequirePermissions(ShipmentPermissions.Manage)
-  updateAlertRule(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(UpdateAlertRuleSchema) dto: z.infer<typeof UpdateAlertRuleSchema>) {
-    return this.alerts.updateRule(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data }));
+  updateAlertRule(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Res({ passthrough: true }) res: Response, @Headers('idempotency-key') key: string,
+                  @Param('id') id: string, @ZodBody(UpdateAlertRuleSchema) dto: z.infer<typeof UpdateAlertRuleSchema>) {
+    if (!UUID_RE.test(id)) throw new BadRequestError('id must be a uuid');
+    return this.alerts.updateRule(ctx.tenantId, this.alertActor(ctx, r), reqKey(key), id, dto).then((data) => {
+      if (data.status === 'proposed') res.status(202);
+      return { data };
+    });
+  }
+  @Get('alert-rules/:id/changes') @RequirePermissions(ShipmentPermissions.Manage)
+  alertRuleChanges(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
+    if (!UUID_RE.test(id)) throw new BadRequestError('id must be a uuid');
+    return this.alerts.changes(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data }));
+  }
+  @Post('alert-rules/changes/:id/confirm') @RequirePermissions(ShipmentPermissions.Manage)
+  confirmAlertRuleChange(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string, @Param('id') id: string,
+                         @ZodBody(AlertRuleChangeActSchema) _dto: z.infer<typeof AlertRuleChangeActSchema>) {
+    if (!UUID_RE.test(id)) throw new BadRequestError('id must be a uuid');
+    return this.alerts.confirmChange(ctx.tenantId, this.alertActor(ctx, r), reqKey(key), id).then((data) => ({ data }));
+  }
+  @Post('alert-rules/changes/:id/withdraw') @RequirePermissions(ShipmentPermissions.Manage)
+  withdrawAlertRuleChange(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Headers('idempotency-key') key: string, @Param('id') id: string,
+                          @ZodBody(AlertRuleChangeActSchema) _dto: z.infer<typeof AlertRuleChangeActSchema>) {
+    if (!UUID_RE.test(id)) throw new BadRequestError('id must be a uuid');
+    return this.alerts.withdrawChange(ctx.tenantId, this.alertActor(ctx, r), reqKey(key), id).then((data) => ({ data }));
   }
   @Get('alerts/feed') @RequirePermissions(ShipmentPermissions.Manage)
-  alertFeed(@CurrentContext() ctx: RequestContext, @Query('kind') kind?: string, @Query('severity') severity?: string, @Query('unacknowledgedOnly') un?: string, @Query('limit') limit?: string) {
-    return this.alerts.feed(ctx.tenantId, this.actor(ctx), { kind, severity, unacknowledgedOnly: un === 'true', limit: Number(limit) || 100 }).then((data) => ({ data }));
+  alertFeed(@CurrentContext() ctx: RequestContext, @ZodQuery(AlertFeedQuerySchema) q: z.infer<typeof AlertFeedQuerySchema>) {
+    return this.alerts.feed(ctx.tenantId, this.actor(ctx), { kind: q.kind, severity: q.severity, unacknowledgedOnly: q.unacknowledgedOnly === 'true', limit: q.limit }).then((data) => ({ data }));
   }
   @Post('alerts/:id/acknowledge') @RequirePermissions(ShipmentPermissions.Manage)
   acknowledgeAlert(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {

@@ -4,7 +4,7 @@
 import {
   ALERT_KINDS, ALERT_SEVERITIES, CHANNEL_HINTS, COOLDOWN_MAX, COOLDOWN_MIN, MAX_RECIPIENTS, THRESHOLD_KEYS,
   isAlertKind, isAlertSeverity, isChannelHint, defaultsFor, buildThreshold, parseRecipients, buildAlertRule,
-  buildRulePatch, needsAck, feedOrder,
+  buildRulePatch, needsAck, feedOrder, REASON_MIN,
 } from '../features/devices/alerting';
 
 const U1 = '00000000-0000-7000-8000-000000000001';
@@ -12,7 +12,7 @@ const U2 = '00000000-0000-7000-8000-000000000002';
 const T = { windowHours: '', minBreaches: '', subjectType: '', silentHours: '', maintenanceAlert: '' };
 const ruleForm = (over: Record<string, string> = {}) => ({
   kind: 'cold_chain_breach', ruleName: 'Vaccine van — any breach', recipients: U1,
-  channelHint: '', cooldownMinutes: '', ...T, ...over,
+  channelHint: '', cooldownMinutes: '', reason: 'Vaccine van needs breach alerts', ...T, ...over,   // NAMED UPDATE (HOTFIX-14): a reason
 });
 
 describe('vocabularies + thresholds mirror the API (ops-alert.rules.ts)', () => {
@@ -79,7 +79,7 @@ describe('buildAlertRule', () => {
     if (!r.ok) return;
     expect(r.value).toEqual({
       kind: 'cold_chain_breach', ruleName: 'Vaccine van — any breach',
-      threshold: { windowHours: 6, minBreaches: 1 }, recipientUserIds: [U1],
+      threshold: { windowHours: 6, minBreaches: 1 }, recipientUserIds: [U1], reason: 'Vaccine van needs breach alerts',
     });
     expect('cooldownMinutes' in r.value).toBe(false);   // absent, so the API applies its own default
   });
@@ -113,14 +113,30 @@ describe('buildRulePatch — an edit is not a back door around the create rules'
     expect(buildRulePatch({ ruleName: '   ' })).toEqual({ ok: false, error: 'empty' });
   });
   it('carries the pause switch in both directions', () => {
-    expect(buildRulePatch({ isActive: '0' })).toEqual({ ok: true, value: { isActive: false } });
-    expect(buildRulePatch({ isActive: '1' })).toEqual({ ok: true, value: { isActive: true } });
+    // NAMED UPDATE (PC-56 HOTFIX-14): every edit carries a reason; the SERVER decides whether a pause applies or waits for a second person.
+    expect(buildRulePatch({ isActive: '0', reason: 'Cooler sent for repair' })).toEqual({ ok: true, value: { isActive: false, reason: 'Cooler sent for repair' } });
+    expect(buildRulePatch({ isActive: '1', reason: 'Cooler back from repair' })).toEqual({ ok: true, value: { isActive: true, reason: 'Cooler back from repair' } });
   });
   it('re-validates every field it does carry', () => {
     expect(buildRulePatch({ ruleName: 'ab' })).toEqual({ ok: false, error: 'name' });
     expect(buildRulePatch({ cooldownMinutes: '1' })).toEqual({ ok: false, error: 'cooldown' });
     expect(buildRulePatch({ recipients: 'nope' })).toEqual({ ok: false, error: 'recipientId' });
-    expect(buildRulePatch({ recipients: `${U1},${U1}` })).toEqual({ ok: true, value: { recipientUserIds: [U1] } });
+    expect(buildRulePatch({ recipients: `${U1},${U1}`, reason: 'Duplicate person collapsed' })).toEqual({ ok: true, value: { recipientUserIds: [U1], reason: 'Duplicate person collapsed' } });
+  });
+});
+
+describe('PC-56 HOTFIX-14 · every change carries a reason (≥ 10 characters, the API\'s own floor)', () => {
+  it('refuses a pause, an edit or a new rule without a reason, or with fewer than 10 characters (trimmed)', () => {
+    expect(REASON_MIN).toBe(10);
+    expect(buildRulePatch({ isActive: '0' })).toEqual({ ok: false, error: 'reason' });
+    expect(buildRulePatch({ isActive: '0', reason: '   too short ' .slice(0, 12) })).toEqual({ ok: false, error: 'reason' });
+    expect(buildRulePatch({ isActive: '0', reason: 'x'.repeat(10) }).ok).toBe(true);
+    expect(buildRulePatch({ isActive: '0', reason: 'x'.repeat(501) })).toEqual({ ok: false, error: 'reason' });
+    expect(buildAlertRule(ruleForm({ reason: '' }))).toEqual({ ok: false, error: 'reason' });
+    expect(buildAlertRule(ruleForm({ reason: '  nine char ' }))).toEqual({ ok: false, error: 'reason' });
+  });
+  it('an empty edit is still "nothing was changed", whatever the reason says', () => {
+    expect(buildRulePatch({ reason: 'A good long reason' })).toEqual({ ok: false, error: 'empty' });
   });
 });
 

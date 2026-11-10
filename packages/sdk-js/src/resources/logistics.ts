@@ -14,6 +14,20 @@ import {
   CodBoard, CodShortfall, PodReview, PodBoard,
 } from '../types';
 
+/** PC-56 HOTFIX-14 · an alert rule edit (a reason is required; `channelHint: null` clears the hint). */
+export interface AlertRulePatch { ruleName?: string; threshold?: Record<string, unknown>; recipientUserIds?: string[]; channelHint?: 'push' | 'sms' | 'whatsapp' | 'email' | 'inapp' | null; cooldownMinutes?: number; isActive?: boolean; reason: string }
+export type AlertRuleChangeDirection = 'louder' | 'quieter' | 'neutral';
+export interface AlertRuleFieldChange { field: string; direction: AlertRuleChangeDirection }
+export type AlertRuleUpdateResult =
+  | { id: string; status: 'applied'; changes: AlertRuleFieldChange[] }
+  | { id: string; status: 'proposed'; changeId: string; changes: AlertRuleFieldChange[] };
+export interface AlertRuleState { ruleName: string; threshold: Record<string, unknown>; recipientUserIds: string[]; channelHint: string | null; cooldownMinutes: number; isActive: boolean }
+export interface AlertRuleChange {
+  id: string; ruleId: string; state: 'proposed' | 'confirmed' | 'withdrawn'; before: AlertRuleState; after: AlertRuleState; reason: string;
+  changes: AlertRuleFieldChange[]; proposedBy: string; proposedByYou: boolean; proposedAt: string;
+  confirmedBy: string | null; confirmedAt: string | null; withdrawnAt: string | null;
+}
+
 export interface RiderPayoutStatement {
   riderUserId: string;
   period: { from: string; to: string };
@@ -191,14 +205,29 @@ export class ShipmentsResource {
   // --- PC-55 A6 `ops-alert-rules` (Manage-gated). Firing rides the EXISTING notification spine: recipients
   // are platform users whose own preferences and QUIET HOURS still apply — channelHint is a preference, never
   // a bypass. Thresholds are validated per kind server-side, so a typo cannot silently disable a rule. ---
-  async createAlertRule(input: { kind: 'cold_chain_breach' | 'device_silent' | 'maintenance_due'; ruleName: string; threshold?: Record<string, unknown>; recipientUserIds: string[]; channelHint?: 'push' | 'sms' | 'whatsapp' | 'email' | 'inapp'; cooldownMinutes?: number }): Promise<{ id: string; kind: string; threshold: Record<string, unknown> }> {
-    return (await this.http.request<{ id: string; kind: string; threshold: Record<string, unknown> }>('POST', 'logistics/cold-chain/alert-rules', { body: input })).data;
+  // PC-56 HOTFIX-14 (OPS-5 Q3-A): create and edit are KEYED and carry a reason (≥ 10 characters). An edit that could make an alert
+  // quieter (a pause, a person removed, a threshold loosened, a longer cooldown) answers 202 `status: 'proposed'` — the rule is unchanged
+  // until ANOTHER person confirms it; a louder edit answers 200 `status: 'applied'`.
+  async createAlertRule(input: { kind: 'cold_chain_breach' | 'device_silent' | 'maintenance_due'; ruleName: string; threshold?: Record<string, unknown>; recipientUserIds: string[]; channelHint?: 'push' | 'sms' | 'whatsapp' | 'email' | 'inapp'; cooldownMinutes?: number; reason: string }, idempotencyKey: string): Promise<{ id: string; kind: string; threshold: Record<string, unknown>; status: 'applied' }> {
+    return (await this.http.request<{ id: string; kind: string; threshold: Record<string, unknown>; status: 'applied' }>('POST', 'logistics/cold-chain/alert-rules', { idempotencyKey, body: input })).data;
   }
   async alertRules(params: { kind?: string; activeOnly?: boolean } = {}, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
     return (await this.http.request<Array<Record<string, unknown>>>('GET', 'logistics/cold-chain/alert-rules', { query: { kind: params.kind, activeOnly: params.activeOnly }, signal })).data;
   }
-  async updateAlertRule(id: string, patch: Record<string, unknown>): Promise<{ id: string }> {
-    return (await this.http.request<{ id: string }>('PATCH', `logistics/cold-chain/alert-rules/${encodeURIComponent(id)}`, { body: patch })).data;
+  async updateAlertRule(id: string, patch: AlertRulePatch, idempotencyKey: string): Promise<AlertRuleUpdateResult> {
+    return (await this.http.request<AlertRuleUpdateResult>('PATCH', `logistics/cold-chain/alert-rules/${encodeURIComponent(id)}`, { idempotencyKey, body: patch })).data;
+  }
+  /** Every proposed change on one rule and how it ended. */
+  async alertRuleChanges(ruleId: string, signal?: AbortSignal): Promise<AlertRuleChange[]> {
+    return (await this.http.request<AlertRuleChange[]>('GET', `logistics/cold-chain/alert-rules/${encodeURIComponent(ruleId)}/changes`, { signal })).data;
+  }
+  /** A SECOND person confirms a proposed change (the proposer is refused: ALERT_RULE_CONFIRMER_IS_PROPOSER). */
+  async confirmAlertRuleChange(changeId: string, idempotencyKey: string): Promise<{ id: string; ruleId: string; state: 'confirmed' }> {
+    return (await this.http.request<{ id: string; ruleId: string; state: 'confirmed' }>('POST', `logistics/cold-chain/alert-rules/changes/${encodeURIComponent(changeId)}/confirm`, { idempotencyKey, body: {} })).data;
+  }
+  /** The proposer withdraws their own proposal (anyone else: ALERT_RULE_WITHDRAW_NOT_PROPOSER). */
+  async withdrawAlertRuleChange(changeId: string, idempotencyKey: string): Promise<{ id: string; ruleId: string; state: 'withdrawn' }> {
+    return (await this.http.request<{ id: string; ruleId: string; state: 'withdrawn' }>('POST', `logistics/cold-chain/alert-rules/changes/${encodeURIComponent(changeId)}/withdraw`, { idempotencyKey, body: {} })).data;
   }
   async alertFeed(params: { kind?: string; severity?: string; unacknowledgedOnly?: boolean; limit?: number } = {}, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
     return (await this.http.request<Array<Record<string, unknown>>>('GET', 'logistics/cold-chain/alerts/feed', { query: { kind: params.kind, severity: params.severity, unacknowledgedOnly: params.unacknowledgedOnly, limit: params.limit ?? 100 }, signal })).data;
