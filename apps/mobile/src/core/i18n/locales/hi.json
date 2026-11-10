@@ -1444,6 +1444,8 @@
   "equip.detail.advanceLabel": "कोट के लिए अग्रिम (₹)",
   "equip.detail.awaitingRenter": "किसान की पुष्टि और उनके फ़ोन से अग्रिम भुगतान की प्रतीक्षा।",
   "equip.detail.cancelConfirm": "यह किराया रद्द करें?",
+  "equip.detail.cancelReasonLabel": "रद्द करने का कारण (ज़रूरी)",
+  "equip.detail.cancelReasonNeeded": "यह किराया रद्द करने के लिए कारण लिखें। जो किराया आपने नहीं माँगा, वह केवल कारण के साथ रद्द होता है।",
   "equip.detail.notFound": "यह किराया नहीं मिला।",
   "equip.detail.otpHint": "किसान से उनका स्टार्ट OTP माँगें — यह साबित करता है कि आप और मशीन उनके खेत पर हैं।",
   "equip.detail.otpInvalid": "स्टार्ट OTP 4–8 अंकों का होता है।",

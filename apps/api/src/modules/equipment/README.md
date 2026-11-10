@@ -56,7 +56,19 @@ its JOIN to `equipment_assets`, from which the owner is resolved — there is no
   · `POST /:id/quote` (owner) · `POST /:id/confirm` (renter, idempotent, escrow) · `POST /:id/start` (owner, OTP)
   · `POST /:id/complete` (owner) · `POST /:id/confirm-usage` (renter, idempotent — HOTFIX-13)
   · `POST /:id/settle` (owner, idempotent, money; beyond the deposit only after `confirm-usage`) · `POST /:id/cancel`
-  (renter, owner or `booking.manage`; idempotent since OPS-4a, a strict body with an optional reason, audited).
+  (renter, owner or `booking.manage`; idempotent since OPS-4a, a strict body, audited; [PC-56 OPS-4b] the reason is optional for the
+  renter only — anyone else without one → 400 `CANCEL_REASON_REQUIRED`, before the idempotency record).
+- **Maintenance (PC-54 W54-12; [PC-56 OPS-4b · OPS4-B7 / E11] as now built):**
+  · `POST /v1/equipment/assets/:id/maintenance-logs` — `equipment.manage` AND the machine's OWNER only (`MAINTENANCE_NOT_YOUR_MACHINE`, 403;
+    no administrator escape); Idempotency-Key required (400 without); a strict body (`dto/create-maintenance-log.dto.ts`: the four log types,
+    a non-negative minor-unit cost string, engine hours with one decimal, notes 1–500 characters, a real calendar day); `performedOn` not
+    after the ORGANISATION's own today (`MAINTENANCE_DATE_IN_FUTURE`, 400 — `countries.timezone`, resolved in SQL); one audit row
+    (`equipment.maintenance.recorded`, the entry as typed). Both refusals before the idempotency record and any write. Returns the id and the entry.
+  · `GET /:id/maintenance-logs` — the machine's owner only; anyone else (an administrator too) → 404.
+  · `GET maintenance/alerts` — the caller's own machines; `booking.manage` keeps the organisation's view. `needs_attention` = the latest
+    entry is a breakdown; `service_due` = no service or inspection in 365 days (by the database's `CURRENT_DATE` — owed: the organisation's day).
+  · Every figure in an entry is TYPED by the owner (cost, engine hours): nothing is measured. **An entry does not change the machine's
+    status**: only the owner's status toggle does (`POST /:id/status`), and a machine in `maintenance` cannot be hired (`isBookable`).
 - `GET /:id/rates` needs `?assetId=` (the strict `QueryRatesSchema`); the SDK sends it since OPS-4a (survey C-13).
 - **Recorded (OPS-4a, survey F-7):** `POST /:id/rates` (before/after; a line that has already priced a hire is never
   overwritten — `RATE_ALREADY_PRICED_A_HIRE`), quote, cancel, confirm-usage and settle each write an audit row.

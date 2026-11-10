@@ -42,8 +42,10 @@ describe('PC-56 OPS-4a · the hire chains (PARITY-DECOR)', () => {
     for (const h of [c, e]) expect(/zero-sum|audit[- ]trail|on-call|reconcil/i.test(text(h))).toBe(false);
   });
   it('every state title and body exists ×3 and renders in hi / gu', () => {
-    for (const c of OPS4_CHAINS) for (const st of c.states) for (const cat of [hi, gu]) {
-      const h = r(c.id, st, '/chc/dashboard', cat);
+    // NAMED UPDATE (PC-56 OPS-4b): OPS4_CHAINS now also holds 4b's two chains (chc_form, eartag_act — rendered in ops4b-chains.render.test.tsx);
+    // this 4a spec keeps covering exactly its own two, every state, unchanged.
+    for (const c of OPS4_CHAINS.filter((x) => x.wave === '4a')) for (const st of c.states) for (const cat of [hi, gu]) {
+      const h = r(c.id as 'chc_act' | 'equipment_act', st, '/chc/dashboard', cat);
       expect(text(h)).toContain(cat[`${c.key(st)}.title`]);
     }
   });

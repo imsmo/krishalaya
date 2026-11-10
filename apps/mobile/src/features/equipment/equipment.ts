@@ -29,6 +29,19 @@ export function settleRefusalKey(e: unknown): string | null {
   const code = e && typeof e === 'object' && 'code' in e ? (e as { code?: unknown }).code : undefined;
   return code === 'SETTLE_HOURS_NOT_CONFIRMED' ? 'equip.detail.settleHoursNotConfirmed' : null;
 }
+/**
+ * PC-56 OPS-4b (lead-applied from OPS-2a "an operator's cancel needs a reason"): the API refuses an owner's cancel without a non-blank reason
+ * (`CANCEL_REASON_REQUIRED`, 400). The owner's typed reason, trimmed, 1–250 characters (the API's strict DTO) — or null (the screen asks for it).
+ */
+export function cancelReasonDraft(raw: string | null | undefined): string | null {
+  const v = (raw ?? '').trim();
+  return v.length >= 1 && v.length <= 250 ? v : null;
+}
+/** The API's refusal of a cancel with no reason → its own key; anything else → null. */
+export function cancelRefusalKey(e: unknown): string | null {
+  const code = e && typeof e === 'object' && 'code' in e ? (e as { code?: unknown }).code : undefined;
+  return code === 'CANCEL_REASON_REQUIRED' ? 'equip.detail.cancelReasonNeeded' : null;
+}
 export function rentalTone(status: string | undefined): 'success' | 'warning' | 'danger' | 'neutral' | 'info' {
   if (status === 'settled') return 'success';
   if (status === 'cancelled') return 'danger';

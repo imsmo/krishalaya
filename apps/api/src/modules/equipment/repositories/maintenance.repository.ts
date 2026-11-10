@@ -14,7 +14,17 @@ import { pgDate } from '../../../core/database/pg-date';
 export class MaintenanceRepository {
   constructor(@Inject(READ_REPLICA) private readonly replica: ReadReplicaProvider) {}
 
-  async insertLog(tx: TxContext, l: { id: string; tenantId: string; assetId: string; logType: string; costMinor?: string; notes?: string; engineHoursAt?: string; performedOn: string }): Promise<void> {
+  /**
+   * [PC-56 OPS-4b · E11] The ORGANISATION's calendar day of an instant (`tenants.country_code → countries.timezone`, the 6c-1 rule), as
+   * `YYYY-MM-DD` text — resolved in SQL, so neither the Node process's zone nor the UTC date decides what "today" is.
+   */
+  async tenantDay(tenantId: string, at: string): Promise<string> {
+    const r = await this.replica.forTenant(tenantId).query(
+      `SELECT (($1::timestamptz) AT TIME ZONE co.timezone)::date::text AS day FROM tenants t JOIN countries co ON co.code = t.country_code WHERE t.id = $2`, [at, tenantId]);
+    if (!r.rows[0]) throw new Error('tenant has no country timezone');
+    return r.rows[0].day as string;
+  }
+  async insertLog(tx: TxContext, l: { id: string; tenantId: string; assetId: string; logType: string; costMinor?: string | null; notes?: string | null; engineHoursAt?: string | null; performedOn: string }): Promise<void> {
     await tx.query(
       `INSERT INTO equipment_maintenance_logs (id, tenant_id, asset_id, log_type, cost_minor, notes, engine_hours_at, performed_on) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
       [l.id, l.tenantId, l.assetId, l.logType, l.costMinor ?? null, l.notes ?? null, l.engineHoursAt ?? null, l.performedOn]);
@@ -25,7 +35,8 @@ export class MaintenanceRepository {
         WHERE tenant_id=$1 AND asset_id=$2 AND deleted_at IS NULL ORDER BY performed_on DESC, created_at DESC LIMIT 100`, [tenantId, assetId]);
     return r.rows.map((x: any) => ({ id: x.id, logType: x.log_type, costMinor: x.cost_minor, notes: x.notes, engineHoursAt: x.engine_hours_at, performedOn: pgDate(x.performed_on) }));
   }
-  async alerts(tenantId: string): Promise<Array<Record<string, unknown>>> {
+  /** [PC-56 OPS-4b] `ownerUserId` null = the organisation's view (`booking.manage`); otherwise the caller's own machines only. */
+  async alerts(tenantId: string, ownerUserId: string | null): Promise<Array<Record<string, unknown>>> {
     const r = await this.replica.forTenant(tenantId).query(
       `WITH latest AS (
          SELECT DISTINCT ON (asset_id) asset_id, log_type, performed_on FROM equipment_maintenance_logs
@@ -39,9 +50,9 @@ export class MaintenanceRepository {
          FROM equipment_assets a
          LEFT JOIN latest l ON l.asset_id = a.id
          LEFT JOIN last_service s ON s.asset_id = a.id
-        WHERE a.tenant_id=$1 AND a.status != 'retired' AND a.deleted_at IS NULL
+        WHERE a.tenant_id=$1 AND a.status != 'retired' AND a.deleted_at IS NULL AND ($2::uuid IS NULL OR a.owner_user_id = $2::uuid)
           AND (l.log_type = 'breakdown' OR s.on_date IS NULL OR s.on_date < CURRENT_DATE - 365)
-        ORDER BY alert, latest_on DESC NULLS LAST LIMIT 200`, [tenantId]);
+        ORDER BY alert, latest_on DESC NULLS LAST LIMIT 200`, [tenantId, ownerUserId]);
     return r.rows.map((x: any) => ({ assetId: x.asset_id, status: x.status, latestLog: x.latest_log, latestOn: x.latest_on ? pgDate(x.latest_on) : null, lastServiceOn: x.last_service_on ? pgDate(x.last_service_on) : null, alert: x.alert }));
   }
 }

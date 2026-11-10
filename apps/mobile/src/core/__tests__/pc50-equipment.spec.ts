@@ -1,6 +1,6 @@
 // PC-50 W10-6 · pure equipment-owner logic. Pins owner-legal actions against the rental state machine
 // (CONFIRM is the renter's move — never offered to the owner) and the zod-mirror builders.
-import { ownerActionsFor, buildAssetDraft, buildRateDraft, settleRefusalKey } from '../../features/equipment/equipment';
+import { ownerActionsFor, buildAssetDraft, buildRateDraft, settleRefusalKey, cancelReasonDraft, cancelRefusalKey } from '../../features/equipment/equipment';
 import en from '../i18n/locales/en.json';
 import hi from '../i18n/locales/hi.json';
 import gu from '../i18n/locales/gu.json';
@@ -58,5 +58,27 @@ describe('OPS-4a · the settle question states only what settle does (×3)', () 
     expect((hi as Record<string, string>)[k]).toBe('यह काम निपटाएँ? निपटाने पर आपको किराये की जमा राशि से भुगतान होता है, और किराएदार के वॉलेट से केवल उन घंटों के लिए जिनकी उसने पुष्टि की है।');
     expect((gu as Record<string, string>)[k]).toBe('આ કામ પતાવવું? પતાવવાથી તમને ભાડાની જમા રકમમાંથી ચૂકવણી થાય છે, અને ભાડે લેનારના વૉલેટમાંથી ફક્ત એ કલાકો માટે જેની તેણે પુષ્ટિ કરી છે.');
     for (const cat of [en, hi, gu] as Array<Record<string, string>>) expect(/balance moves to your wallet now|बकाया अभी|બાકી રકમ હમણાં/.test(cat[k])).toBe(false);
+  });
+});
+
+// PC-56 OPS-4b (lead-applied from OPS-2a "an operator's cancel needs a reason"): the API refuses a cancel by anyone but the renter without a
+// non-blank reason (CANCEL_REASON_REQUIRED, 400). The owner's screen asks for one first, sends it, and names the refusal ×3.
+describe('OPS-4b · the owner\'s cancel carries a reason', () => {
+  it('a reason is the trimmed typed text, 1–250 characters, or null', () => {
+    expect([cancelReasonDraft('  rain  '), cancelReasonDraft('   '), cancelReasonDraft(''), cancelReasonDraft(undefined), cancelReasonDraft('x'.repeat(251))])
+      .toEqual(['rain', null, null, null, null]);
+  });
+  it('CANCEL_REASON_REQUIRED maps to its own key, present ×3; anything else → null', () => {
+    expect([cancelRefusalKey({ code: 'CANCEL_REASON_REQUIRED', status: 400 }), cancelRefusalKey({ code: 'X' }), cancelRefusalKey(undefined)]).toEqual(['equip.detail.cancelReasonNeeded', null, null]);
+    for (const k of ['equip.detail.cancelReasonNeeded', 'equip.detail.cancelReasonLabel']) for (const l of [en, hi, gu] as Record<string, string>[]) expect([k, typeof l[k] === 'string' && l[k].length > 0]).toEqual([k, true]);
+  });
+  it('the screen sends the reason: no caller cancels without one', () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const fs = require('node:fs') as typeof import('node:fs'); const path = require('node:path') as typeof import('node:path');
+    const scr = fs.readFileSync(path.join(__dirname, '..', '..', 'app', '(equipment)', 'rentals', '[id].tsx'), 'utf8');
+    expect(scr).toContain('cancelRental(id!, reason)');
+    expect(/cancelRental\(id!\)/.test(scr)).toBe(false);
+    const api = fs.readFileSync(path.join(__dirname, '..', '..', 'features', 'equipment', 'equipment.api.ts'), 'utf8');
+    expect(api).toContain('export function cancelRental(id: string, reason: string)');
   });
 });

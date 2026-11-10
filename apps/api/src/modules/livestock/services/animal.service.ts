@@ -96,7 +96,9 @@ export class AnimalService {
     return { items, nextCursor };
   }
 
-  private assertOwner(a: Animal, actor: AnimalActor) { if (a.ownerUserId !== actor.userId && !actor.isAdmin) throw new LivestockForbiddenError('only the owner may modify this animal'); }
+  // [PC-56 OPS-4b · lead-applied, "her animal, her word" — the HOTFIX-13 class] editing or retiring an animal is its OWNER's act only: the
+  // administrator escape (`&& !actor.isAdmin`) is gone. Reads are unchanged (getById / list keep the `booking.manage` view — recorded, OPS-4b §2).
+  private assertOwner(a: Animal, actor: AnimalActor) { if (a.ownerUserId !== actor.userId) throw new LivestockForbiddenError('only the owner may modify this animal'); }
   private serialize(a: Animal) {
     const v = a.toProps();
     return { id: v.id, ownerUserId: v.ownerUserId, speciesId: v.speciesId, breedId: v.breedId, pashuAadhaar: v.pashuAadhaar,

@@ -26,6 +26,10 @@ export interface EquipmentRental {
    *  settlement takes nothing beyond the deposit (`SETTLE_HOURS_NOT_CONFIRMED`). */
   usageConfirmedAt: string | null;
 }
+/** [PC-56 OPS-4b] one maintenance entry as `POST …/maintenance-logs` returns it (`maintenance.service.ts` record): every figure TYPED by the owner. */
+export interface MaintenanceEntry {
+  id: string; assetId: string; logType: string; costMinor: string | null; notes: string | null; engineHoursAt: string | null; performedOn: string;
+}
 /** The three lists of hires (`QueryBookingsSchema.box`). REQUIRED on `rentals()`: the API's default is `renter` (survey C-13). */
 export type RentalBox = 'renter' | 'owner' | 'all';
 const RENTAL_BOXES: readonly RentalBox[] = ['renter', 'owner', 'all'];
@@ -95,12 +99,18 @@ export class EquipmentResource {
   }
 
   // --- PC-54 W54-12 `equipment-maintenance-alerts` (canon 312) ---
+  /** [PC-56 OPS-4b] the caller's own machines (a `booking.manage` holder: the organisation's). */
   async maintenanceAlerts(signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
     return (await this.http.request<Array<Record<string, unknown>>>('GET', 'equipment/assets/maintenance/alerts', { signal })).data;
   }
-  async recordMaintenance(assetId: string, input: { logType: 'service' | 'repair' | 'breakdown' | 'inspection'; costMinor?: string; notes?: string; engineHoursAt?: string; performedOn: string }): Promise<{ id: string }> {
-    return (await this.http.request<{ id: string }>('POST', `equipment/assets/${encodeURIComponent(assetId)}/maintenance-logs`, { body: input })).data;
+  /**
+   * [PC-56 OPS-4b · OPS4-B7 / E11] Owner only (`MAINTENANCE_NOT_YOUR_MACHINE`, 403), Idempotency-Keyed (the API answers 400 without one), dated on or
+   * before the organisation's today (`MAINTENANCE_DATE_IN_FUTURE`, 400), recorded. Returns the server's id and the entry as stored.
+   */
+  async recordMaintenance(assetId: string, input: { logType: 'service' | 'repair' | 'breakdown' | 'inspection'; costMinor?: string; notes?: string; engineHoursAt?: string; performedOn: string }, idempotencyKey: string): Promise<MaintenanceEntry> {
+    return (await this.http.request<MaintenanceEntry>('POST', `equipment/assets/${encodeURIComponent(assetId)}/maintenance-logs`, { body: input, idempotencyKey })).data;
   }
+  /** [PC-56 OPS-4b] the machine's owner only; anyone else → 404. */
   async maintenanceLogs(assetId: string, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
     return (await this.http.request<Array<Record<string, unknown>>>('GET', `equipment/assets/${encodeURIComponent(assetId)}/maintenance-logs`, { signal })).data;
   }

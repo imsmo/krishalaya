@@ -27,8 +27,16 @@ on the vet fee is deferred — currently the full fee flows to the vet.)
   · `POST /:id/progress` (vet, `vet.manage`) · `POST /:id/cancel` (farmer) · `POST /:id/complete` (idempotent, `vet.book`).
 
 ## Security — threats considered
-- **No cross-owner/cross-party IDOR.** Animal reads 404 for non-owners; vet-booking reads 404 unless the
-  caller is the farmer or the assigned vet; `animalId` on a booking is ownership-checked (404 otherwise).
+- **No cross-owner/cross-party IDOR.** Animal reads 404 for non-owners (a `booking.manage` holder still reads any animal — recorded,
+  PC-56 OPS-4b); vet-booking reads 404 unless the caller is the farmer or the assigned vet; `animalId` on a booking is ownership-checked.
+- **[PC-56 OPS-4b] Her animal, her word.** Editing and retiring an animal are its OWNER's acts only — the administrator escape is gone.
+- **[PC-56 HOTFIX-13 — CORRECTED, survey C-11] The health file is party-only.** `GET/POST /animals/:id/health-events` open to the animal's
+  owner and to a vet who has accepted a booking on that animal; everyone else (every other farmer and vet) gets 404; every write recorded.
+  Prescriptions: the farmer and the vet of record only.
+- **[PC-56 OPS-4b · founder Q4-A applied] A tag reveals nothing.** Registering a Pashu Aadhaar that any organisation already holds answers
+  409 `PASHU_AADHAAR_EXISTS` with the same words everywhere — "This tag number cannot be registered." — and no tenant, owner or animal. The
+  409 still shows the number is taken somewhere (the tag is unique across all organisations, 0009); closing that needs ownership transfer
+  (OPS4-B13, a migration).
 - **Anti-mass-assignment.** All DTOs are zod `.strict()`. The fee and `service_type_id` are server-resolved
   (the latter from the platform `vet_service` lookup, `tenant_id IS NULL`) — never trusted from the client.
 - **AuthZ throws.** `animal.manage` (owner), `vet.book` (farmer/payer), `vet.manage` (the owning vet); the
@@ -43,7 +51,11 @@ on the vet fee is deferred — currently the full fee flows to the vet.)
 
 ## Scope & deferrals
 **In scope:** species/breeds (master data), animals (registry), vet profiles + service catalog, vet bookings + fee settlement.
-**Deferred (schema in 0009, not wired):** animal health events (partitioned lifetime file), ownership transfers
+**[PC-56 OPS-4b — CORRECTED, survey C-10/C-11]** animal health events ARE wired (PC-54 W54-4, `services/health.service.ts`; party-only
+since HOTFIX-13). **Ownership transfer does NOT exist:** `animal_ownership_transfers` (0009) has no writer, no route and no client — nothing
+changes who owns an animal, and a sold animal's tag can never be registered again (UNIQUE over all rows). No route looks an animal up by tag
+but the `booking.manage` list filter (`GET /animals?box=all&pashuAadhaar=`).
+**Deferred (schema in 0009, not wired):** ownership transfers
 (INAPH re-registration), animal attribute EAV, livestock-for-sale listings, prescriptions + items, semen
 catalog + insemination/AI records, disease-outbreak geofence alerts, vaccination/PD reminder + INAPH-sync jobs,
 vet-fee commission split. **All DAIRY tables (MCC/milk/coop/D2C) belong to module #16.**

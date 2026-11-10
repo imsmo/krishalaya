@@ -4,6 +4,7 @@
 // COMPLETE with actual usage; SETTLE idempotently (money moves server-side); cancel pre-start.
 // The renter's CONFIRM never appears here — it belongs to their device.
 // PC-56 OPS-4a: the settle question states only what `settle` does (equip.detail.settleConfirm, ×3); cancel is Idempotency-Keyed.
+// PC-56 OPS-4b: the owner's cancel asks for a reason first (the API refuses one without — CANCEL_REASON_REQUIRED, named ×3).
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams, useFocusEffect } from 'expo-router';
@@ -11,7 +12,7 @@ import type { EquipmentRental } from '@krishalaya/sdk-js';
 import { Button, Card, EmptyState, Input, MoneyText, ScreenScaffold, SkeletonCard, StatusPill, color, font, space } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { getRental, quoteRental, startRental, completeRental, settleRental, cancelRental } from '../../../features/equipment/equipment.api';
-import { ownerActionsFor, rentalTone, settleRefusalKey } from '../../../features/equipment/equipment';
+import { cancelReasonDraft, cancelRefusalKey, ownerActionsFor, rentalTone, settleRefusalKey } from '../../../features/equipment/equipment';
 import { rupeesToMinor } from '../../../features/vet/vet';
 
 export default function RentalDetail() {
@@ -21,6 +22,7 @@ export default function RentalDetail() {
   const [advance, setAdvance] = useState('');
   const [otp, setOtp] = useState('');
   const [actualQty, setActualQty] = useState('');
+  const [cancelReason, setCancelReason] = useState('');
   const [busy, setBusy] = useState(false);
   const load = useCallback(async () => { if (id) setRental(await getRental(id)); }, [id]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -28,7 +30,7 @@ export default function RentalDetail() {
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true);
     // PC-56 HOTFIX-13: a settle refused because the renter has not confirmed the hours is named, never a generic failure.
-    try { await fn(); load(); } catch (e) { Alert.alert(t('equip.detail.title'), t(settleRefusalKey(e) ?? 'equip.detail.actionFailed')); } finally { setBusy(false); }
+    try { await fn(); load(); } catch (e) { Alert.alert(t('equip.detail.title'), t(settleRefusalKey(e) ?? cancelRefusalKey(e) ?? 'equip.detail.actionFailed')); } finally { setBusy(false); }
   };
   const doQuote = () => {
     const minor = rupeesToMinor(advance);
@@ -50,9 +52,11 @@ export default function RentalDetail() {
     ]);
   };
   const doCancel = () => {
+    const reason = cancelReasonDraft(cancelReason);
+    if (!reason) { Alert.alert(t('equip.detail.title'), t('equip.detail.cancelReasonNeeded')); return; }
     Alert.alert(t('equip.detail.title'), t('equip.detail.cancelConfirm'), [
       { text: t('common.cancel'), style: 'cancel' },
-      { text: t('common.confirm'), onPress: () => run(() => cancelRental(id!)) },
+      { text: t('common.confirm'), onPress: () => run(() => cancelRental(id!, reason)) },
     ]);
   };
 
@@ -93,7 +97,12 @@ export default function RentalDetail() {
           </Card>
         )}
         {actions.includes('settle') && <Button title={t('equip.action.settle')} disabled={busy} onPress={doSettle} />}
-        {actions.includes('cancel') && <Button title={t('equip.action.cancel')} variant="outline" disabled={busy} onPress={doCancel} />}
+        {actions.includes('cancel') && (
+          <Card>
+            <Input label={t('equip.detail.cancelReasonLabel')} value={cancelReason} maxLength={250} onChangeText={setCancelReason} />
+            <Button title={t('equip.action.cancel')} variant="outline" disabled={busy || !cancelReasonDraft(cancelReason)} onPress={doCancel} />
+          </Card>
+        )}
       </ScrollView>
     </ScreenScaffold>
   );

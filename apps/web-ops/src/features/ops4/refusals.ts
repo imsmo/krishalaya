@@ -19,6 +19,19 @@
 //   • `chc_insights` (W409, `/chc/insights`) — HONEST: reads nothing; says what is not built.
 //   • `chc_act` (W3304–W3306) and `equipment_act` (W3318–W3320) — PARITY-DECOR: their only trigger is "Retry" on a read; the confirm state links a
 //     plain re-read of the page that opened it (W409's Retry is DECOR: that page reads nothing). Query states of their parent (`?act=`).
+//
+// OPS-4b · THE RECORDS: UPKEEP AND ANIMALS (founder Q4-A, Q5-A applied by the lead from HOTFIX-10 and OPS-1c Q8-A; the 4b first commit's API
+// fixes) builds:
+//   • `chc_maintenance` (W408, `/chc/maintenance`) — a READ of the signed-in person's machines' maintenance entries (type in words, day, cost "as
+//     entered", engine hours as typed — never the typed note) and the server's two alerts for HER machines, in words; and ONE REAL act, "Record
+//     a maintenance entry" (never "Log completion") on one of her machines, over `POST …/maintenance-logs` (owner only, keyed, not after the
+//     organisation's today, recorded — the first commit). No days down, no %, no "real rent", no odometer, no technician.
+//   • `chc_form` (W3300–W3303) — REAL: form-error = the refusal with the values kept; review = the entry as typed, "Recorded by you, as typed —
+//     not a measurement."; success = the SERVER's id and entry; failure = the named refusal. Back → `/chc/maintenance` (never W405).
+//   • `eartag` (W394), `animal_register` (W395), `animal_transfer` (W396) — HONEST in the OPS-1c kiosk chrome: read nothing, zero inputs; the Q4 /
+//     Q5 words. Q4's second sentence ("An owner sees her animals and their tags in her own app.") is NOT printed — its premise is false at
+//     merge: the owner's app shows only the last four digits of each tag (`(pashupalak)/animals/index.tsx`, `[id].tsx`) — reported, not reworded.
+//   • `eartag_act` (W3310–W3312) — DECOR: its trigger is "Retry" on a page that reads nothing.
 export interface Tr { t(key: string, vars?: Record<string, string | number>): string }
 
 export type Ops4Surface =
@@ -31,11 +44,13 @@ export interface Ops4Refusal { id: string; canon: string; surfaces: readonly Ops
 
 /** The surfaces OPS-4a builds. */
 export const SURFACES_4A: readonly Ops4Surface[] = ['chc_dashboard', 'chc_equipment', 'chc_bookings', 'chc_insights', 'chc_act', 'equipment_act'];
-/** The surfaces OPS-4b builds (pending). */
+/** The surfaces OPS-4b builds. */
 export const SURFACES_4B: readonly Ops4Surface[] = ['chc_maintenance', 'chc_form', 'eartag', 'animal_register', 'animal_transfer', 'eartag_act'];
 /** The surfaces OPS-4c builds (pending). */
 export const SURFACES_4C: readonly Ops4Surface[] = ['iot_dashboard', 'iot_device', 'iot_health', 'iot_act', 'device_act'];
-const CHC_PAGES: readonly Ops4Surface[] = ['chc_dashboard', 'chc_equipment', 'chc_bookings', 'chc_insights'];
+// NAMED UPDATE (PC-56 OPS-4b): the console chrome refusals also print on the maintenance page (W408 carries the same chrome).
+const CHC_PAGES: readonly Ops4Surface[] = ['chc_dashboard', 'chc_equipment', 'chc_bookings', 'chc_insights', 'chc_maintenance'];
+const ANIMAL_PAGES: readonly Ops4Surface[] = ['eartag', 'animal_register', 'animal_transfer', 'eartag_act'];
 
 export const OPS4_REFUSALS: readonly Ops4Refusal[] = Object.freeze([
   // ══ the console chrome on every hire page (W405–W409) ══
@@ -116,6 +131,67 @@ export const OPS4_REFUSALS: readonly Ops4Refusal[] = Object.freeze([
     key: 'ops4.refusal.eqZeroSum', why: 'FALSE on a re-read — refused BY NAME' },
   { id: 'eq_on_call', canon: 'W3320 "repeated failures page the on-call"', surfaces: ['equipment_act'],
     key: 'ops4.refusal.eqOnCall', why: 'no paging exists' },
+  // ══ OPS-4b · W408 · upkeep ══
+  { id: 'days_down', canon: 'W408 rows "[machine] … breakdown · ₹[n] repair · [n] days down"', surfaces: ['chc_maintenance'],
+    key: 'ops4.refusal.daysDown', why: 'FALSE: an entry has one day and no end; no downtime is recorded or worked out' },
+  { id: 'preventive_pct', canon: 'W408 "Preventive vs breakdown — [n]% … [n]%"', surfaces: ['chc_maintenance'],
+    key: 'ops4.refusal.preventivePct', why: 'a client percentage — refused (E3)' },
+  { id: 'real_rent', canon: 'W408 "Downtime is the real rent" · "every booking it could not take that week is the real rent"', surfaces: ['chc_maintenance'],
+    key: 'ops4.refusal.realRent', why: 'FALSE: no refused hire is recorded and no downtime is worked out' },
+  { id: 'off_calendar', canon: 'W408 state "Breakdown open — A breakdown log with no completed_at keeps the asset off the booking calendar — no new booking can be confirmed against it"', surfaces: ['chc_maintenance', 'chc_form'],
+    key: 'ops4.refusal.offCalendar', why: 'FALSE (pinned live, ops4b-records): an entry has no completion and does not change the machine\'s status; only the owner\'s status toggle does' },
+  { id: 'log_completion', canon: 'W408 "Log completion" (FM:123 → W3300–W3303)', surfaces: ['chc_maintenance', 'chc_form'],
+    key: 'ops4.refusal.logCompletion', why: 'no completion concept exists; the real act is "Record a maintenance entry"' },
+  { id: 'odometer_sync', canon: 'W408 state "next-service list stale — Engine-hours haven\'t synced from a booking\'s odometer step"', surfaces: ['chc_maintenance'],
+    key: 'ops4.refusal.odometerSync', why: 'FALSE: no odometer step, no sync; engine hours are typed' },
+  { id: 'technician_only', canon: 'W408 state "Logging completion is technician-restricted — Any operator can report a breakdown; only the maintenance technician can log its completion"', surfaces: ['chc_maintenance'],
+    key: 'ops4.refusal.technicianOnly', why: 'FALSE (C-15): no such role; after the first commit only the machine\'s owner records its maintenance' },
+  // ══ the chc form chain (W3300–W3303) ══
+  { id: 'form_maker_checker', canon: 'W3301 "Maker-checker friendly review step: everything you entered, shown read-only, with the diff against current values where applicable."', surfaces: ['chc_form'],
+    key: 'ops4.refusal.formMakerChecker', why: 'no second person checks an entry; the review echoes what was typed' },
+  { id: 'form_zero_sum', canon: 'W3302 "… Money-adjacent actions reconcile zero-sum before this page ever shows."', surfaces: ['chc_form'],
+    key: 'ops4.refusal.formZeroSum', why: 'FALSE: an entry moves no money — refused BY NAME (the entry IS recorded: one audit row)' },
+  { id: 'form_view_audit', canon: 'W3302 "View audit trail"', surfaces: ['chc_form'],
+    key: 'ops4.refusal.formViewAudit', why: 'no ops page shows the recorded changes' },
+  { id: 'form_on_call', canon: 'W3303 "repeated failures page the on-call"', surfaces: ['chc_form'],
+    key: 'ops4.refusal.formOnCall', why: 'no paging exists' },
+  // ══ the animal pages (W394–W396) and the eartag chain (W3310–W3312) — kiosk chrome ══
+  { id: 'kiosk_ambassador', canon: 'kiosk chrome "Ambassador: [name] · ✓ synced 2 min ago · Assisted session — every action recorded as assisted"', surfaces: ANIMAL_PAGES,
+    key: 'ops4.refusal.kioskAmbassador', why: 'OPS-1c: her own sign-in; no name; nothing syncs; no assisted-act record exists for animals' },
+  { id: 'tag_scanned', canon: 'W394 "Scanned · Pashu-Aadhaar [n] (12-digit INAPH) — [owner\'s name]\'s buffalo"', surfaces: ['eartag'],
+    key: 'ops4.refusal.tagScanned', why: 'no scanner (a tag number is typed); the owner\'s name — WALL; Q4-A' },
+  { id: 'tag_facts', canon: 'W394 "Breed [breed] · [n] years · lactation: mid · Yield [n] L/day · status: active"', surfaces: ['eartag'],
+    key: 'ops4.refusal.tagFacts', why: 'Q4-A: a tag reveals nothing at the desk' },
+  { id: 'tag_photo', canon: 'W394 state "Tag unreadable — manual 12-digit entry plus a photo"', surfaces: ['eartag'],
+    key: 'ops4.refusal.tagPhoto', why: 'FALSE: no animal photo field exists' },
+  { id: 'tag_query', canon: 'W394 states "tag-mismatch-species … opens a query" · "a query, not an accusation"', surfaces: ['eartag'],
+    key: 'ops4.refusal.tagQuery', why: 'FALSE: no query exists' },
+  { id: 'merge_desk', canon: 'W394 states "Duplicate tag … routed to the merge desk" · "Merge resolution is merge-desk-only"', surfaces: ['eartag', 'eartag_act'],
+    key: 'ops4.refusal.mergeDesk', why: 'FALSE: a duplicate is refused at registration (PASHU_AADHAAR_EXISTS, no longer saying an animal exists); no merge desk' },
+  { id: 'tag_new_registration', canon: 'W394 state "No tag yet — routes straight into new registration (W395)"', surfaces: ['eartag'],
+    key: 'ops4.refusal.tagNewRegistration', why: 'Q5-A: registration is the owner\'s, in her own app' },
+  { id: 'paravet', canon: 'W395 "Tag application · Applied by a licensed paravet (vet canon record)"', surfaces: ['animal_register'],
+    key: 'ops4.refusal.paravet', why: 'FALSE: no paravet, no tag-applied record; LEGAL (INAPH)' },
+  { id: 'photo_standard', canon: 'W395 "Photos MUST show the tag in the ear … the same photo standard the insurance desk trusts"', surfaces: ['animal_register'],
+    key: 'ops4.refusal.photoStandard', why: 'FALSE: no animal photo field' },
+  { id: 'inaph_linked', canon: 'W395 "Species, breed, approximate age, owner — captured once, straight into the INAPH-linked record; a new Pashu-Aadhaar issues from the registry, not from this kiosk"', surfaces: ['animal_register'],
+    key: 'ops4.refusal.inaphLinked', why: 'FALSE: no INAPH integration; the owner types the tag number' },
+  { id: 'register_drafts', canon: 'W395 states "Paravet unavailable … draft" · "Photo missing tag-in-ear" · "Breed uncertain … revisit flag"', surfaces: ['animal_register'],
+    key: 'ops4.refusal.registerDrafts', why: 'FALSE ×3: no draft, photo or flag' },
+  { id: 'transfer_order', canon: 'W396 "Via marketplace order [ref] · from [seller] to [buyer] · price ₹[n] (stored as price_minor, INR)"', surfaces: ['animal_transfer'],
+    key: 'ops4.refusal.transferOrder', why: 'GAP-BE (C-10): `animal_ownership_transfers` has no writer; names — WALL' },
+  { id: 'inaph_handshake', canon: 'W396 "inaph_synced: false — recorded here instantly; INAPH re-registration queues … ownership is real from the handshake"', surfaces: ['animal_transfer'],
+    key: 'ops4.refusal.inaphHandshake', why: 'FALSE: no record, no queue, no handshake' },
+  { id: 'insurance_follows', canon: 'W396 "Insurance follows ownership — a policy tied to [seller] prompts a re-assignment here"', surfaces: ['animal_transfer'],
+    key: 'ops4.refusal.insuranceFollows', why: 'FALSE: `animals.insurance_policy_id` has no writer' },
+  { id: 'transfer_states', canon: 'W396 states "INAPH sync delayed" · "Insurance not yet re-assigned" · "Price dispute … reopens the order" · "Buyer\'s first animal … owner profile created alongside"', surfaces: ['animal_transfer'],
+    key: 'ops4.refusal.transferStates', why: 'FALSE ×4; the last would create an account for another person at a desk (OPS-1c Q9-A)' },
+  { id: 'eartag_confirm_audit', canon: 'W3310 "Confirming writes an audit-trail entry with actor, time and reason."', surfaces: ['eartag_act'],
+    key: 'ops4.refusal.eartagConfirmAudit', why: 'the page reads nothing and writes nothing' },
+  { id: 'eartag_zero_sum', canon: 'W3311 "The change is applied and the audit trail has the entry (actor · time · reason). Money-adjacent actions reconcile zero-sum before this page ever shows."', surfaces: ['eartag_act'],
+    key: 'ops4.refusal.eartagZeroSum', why: 'FALSE: nothing was changed — refused BY NAME' },
+  { id: 'eartag_on_call', canon: 'W3312 "repeated failures page the on-call"', surfaces: ['eartag_act'],
+    key: 'ops4.refusal.eartagOnCall', why: 'no paging exists' },
 ]);
 export function ops4RefusalKeys(surface: Ops4Surface): string[] { return OPS4_REFUSALS.filter((r) => r.surfaces.includes(surface)).map((r) => r.key); }
 
@@ -124,10 +200,12 @@ export const OPS4_DELTAS: readonly { id: string; canon: string; built: string }[
   { id: 'route_chc', canon: 'W405 / W406 / W407 / W409 canon routes `chc/dashboard`, `chc/equipment-detail`, `chc/bookings`, `chc/insights`', built: 'the four at their canon addresses; W406 takes `?id=` (one machine)' },
   { id: 'equipment_redirect', canon: 'OW-3 `/equipment` (the hire queue, the asset table, the tag lookup) and `/equipment/[id]` (quote, start, complete, settle, cancel)', built: 'REAL 307s (next.config.js, permanent: false): `/equipment` → `/chc/dashboard`, `/equipment/:id` → `/chc/bookings`; both OW-3 pages and their server action are deleted' },
   { id: 'money_acts_removed', canon: 'OW-3 `/equipment/[id]` quote · start · complete · settle (a live owner money desk on this console, over the wrong list — survey F-5)', built: 'founder Q3-A: removed. The owner\'s mobile app has all four (`apps/mobile/src/app/(equipment)/rentals/[id].tsx`). No web-ops source calls settleRental, quoteRental, startRental, completeRental, confirmRental or confirmRentalUsage (source assertion)' },
-  { id: 'tag_lookup_removed', canon: 'OW-3 / PC-55 B5 ear-tag lookup on `/equipment` (`livestock.animals({ box: \'all\', pashuAadhaar })`)', built: 'gone with its route: `/equipment` is a 307 (survey Q4-A, applied by the lead: "This desk does not look up animals by tag"); its `tag.` keys are deleted; `features/equipment/ear-tag.ts` stays for OPS-4b' },
+  // NAMED UPDATE (PC-56 OPS-4b): the leftover normaliser is now deleted too.
+  { id: 'tag_lookup_removed', canon: 'OW-3 / PC-55 B5 ear-tag lookup on `/equipment` (`livestock.animals({ box: \'all\', pashuAadhaar })`)', built: 'gone with its route: `/equipment` is a 307 (survey Q4-A, applied by the lead: "This desk does not look up animals by tag"); its `tag.` keys are deleted; OPS-4b deleted `features/equipment/ear-tag.ts` and its tests (no caller remained)' },
   { id: 'owner_list_box', canon: 'survey C-13 — the SDK left `box` undefined, so `/equipment` listed the signed-in person\'s OWN hires as a renter', built: 'the SDK makes `box` required (typed and checked); `/chc/*` read `box=owner`; `/insights`\'s rentals snapshot reads `box=owner` too (a NAMED change: it had read the renter list)' },
   { id: 'w406_edges', canon: 'W406 is reached only by its own chain (survey §1B)', built: 'drawn: each machine row on W405 and each hire\'s machine on W407 links `/chc/equipment-detail?id=`' },
-  { id: 'sidebar_built_only', canon: 'console sidebar "Machinery (CHC) · CHC dashboard · Bookings · Maintenance" · "Insight · CHC insights"', built: 'a Machinery group of the BUILT routes only: hire dashboard, hires, hire insights (E2); Maintenance (W408) waits for OPS-4b' },
+  // NAMED UPDATE (PC-56 OPS-4b): Maintenance joined the group when W408 was built.
+  { id: 'sidebar_built_only', canon: 'console sidebar "Machinery (CHC) · CHC dashboard · Bookings · Maintenance" · "Insight · CHC insights"', built: 'a Machinery group of the BUILT routes only: hire dashboard, hires, maintenance (OPS-4b, W408), hire insights (E2)' },
   { id: 'fm_chain_ids_4', canon: 'FM :102-127 name W1838–W1859 as chain targets (survey C-14)', built: 'those files do not exist; the real chains are W3304–W3306 (chc mutate) and W3318–W3320 (equipment mutate) for 4a' },
   { id: 'chain_back', canon: 'W3305 / W3306 "Back to the screen" (no screen named)', built: 'Back → the page that opened the chain (`?act=` on W405, W407, W409 or W406)' },
   { id: 'insights_retry_decor', canon: 'FM:127 W409 "Retry" (`chain-mutate:chc`)', built: 'DECOR: W409 reads nothing, so its chain states say there is nothing to read again and offer no re-read' },
@@ -136,12 +214,24 @@ export const OPS4_DELTAS: readonly { id: string; canon: string; built: string }[
   { id: 'currency_inr', canon: 'survey E3 / brief §E2 "`formatMoneyMinor`, the tenant\'s currency"', built: 'the console\'s house shape (OPS-1a payout, OPS-2c billing, OPS-3c rates): `formatMoneyMinor(minor, \'INR\', lang)` — no read on these pages carries the organisation\'s currency' },
   { id: 'rate_days_text', canon: 'brief §E2 "its rate lines in words, with their dates"', built: 'FOUND ON THE WAY and fixed in the API: `equipment-rate.repository.ts` printed every line\'s day one day EARLY under an IST process (node-pg parses `date` at local midnight); the days are now read as text (pinned live, IST and UTC)' },
   { id: 'times_utc', canon: 'W407 "confirmed for [day]"', built: 'an instant is printed as the server\'s own date and minute, labelled UTC (the OPS-3b `atText`); a rate line\'s day as its own `YYYY-MM-DD`' },
+  // ── OPS-4b ──
+  { id: 'route_4b', canon: 'W408 `chc/maintenance`; W394 `animals/eartag-scan`, W395 `animals/register`, W396 `animals/transfer`', built: 'the four at their canon addresses' },
+  { id: 'record_entry', canon: 'W408 "Log completion" (FM:123, `chain-form:chc`)', built: 'REAL as "Record a maintenance entry": `POST /v1/equipment/assets/:id/maintenance-logs` — the owner only, keyed (a key minted when the review is shown, so a double submit replays), not after the organisation\'s today, one audit row (the 4b first commit)' },
+  { id: 'chc_form_back', canon: 'W3300 "Back to the form", W3303 "Retry — back to confirm" / "Back" → W405 (survey §1L canon defect)', built: 'every state\'s Back → `/chc/maintenance`, the page that opened the form' },
+  { id: 'form_fields', canon: 'survey §1L "log type, date, typed cost as a minor string, engine hours one decimal"', built: 'the form takes the machine (one of hers), the log type, the day, the cost in rupees as typed (turned into a minor-unit string by moving the decimal point — no arithmetic), engine hours to one decimal; the API\'s free-text note is NOT offered and NOT printed on this console (a typed note may carry a person\'s name)' },
+  { id: 'maint_scope', canon: 'W408 the fleet\'s entries', built: 'the entries of the first 20 of her machines (one read per machine; said so when she lists more); the alerts for her machines only (`GET maintenance/alerts`, the 4b API fix)' },
+  { id: 'maintenance_status_truth', canon: 'W408 "keeps the asset off the booking calendar"', built: 'the page prints what the code proves: an entry does not change the machine\'s status; while its status is "in maintenance" no hire can be requested for it (`isBookable`)' },
+  { id: 'animals_kiosk_chrome', canon: 'W394–W396 kiosk chrome "[org] · [kiosk] · Ambassador: [name] · ✓ synced …"', built: 'the OPS-1c kiosk statement (`KioskStatement`: the desk creates an account for a new number; everything after that she does herself) — no name, no sync, no assisted-act claim' },
+  { id: 'animals_edges', canon: 'W395 and W396 have 0 inbound links; W394 only its own chain (survey §0 header)', built: 'drawn: the kiosk home (W380) links all three animal pages; each animal page links the other two and the kiosk home' },
+  { id: 'eartag_decor', canon: 'FM:102 W394 "Retry" (`chain-mutate:eartag`)', built: 'DECOR: W394 reads nothing; `?act=` states say there is nothing to read again, offer no re-read, and go Back to W394' },
+  { id: 'q4_second_sentence', canon: 'brief §D Q4-A "An owner sees her animals and their tags in her own app."', built: 'PREMISE FALSE — NOT PRINTED: the owner\'s app lists her animals but shows only the last four digits of each tag ("••••" + 4). Only "This desk does not look up animals by tag." is printed; the lead / founder owns the replacement words' },
 ]);
 
 /** The verdict values. `pending_4b` / `pending_4c` are deleted from the type when the last of their files is decided (the 4c-7 rule). */
-export type Ops4Verdict = 'BUILT (read)' | 'BUILT (honest)' | 'REAL' | 'DECOR' | 'PARITY-DECOR' | 'pending_4b' | 'pending_4c';
+// NAMED UPDATE (PC-56 OPS-4b): `pending_4b` is deleted from the type — its last file is decided (the 4c-7 rule).
+export type Ops4Verdict = 'BUILT (read)' | 'BUILT (honest)' | 'REAL' | 'DECOR' | 'PARITY-DECOR' | 'pending_4c';
 export type Ops4Wave = '4a' | '4b' | '4c';
-/** Every canon file of OPS-4 (30), each with ONE verdict: 4a decides its 10; 4b's 11 and 4c's 9 are pending. */
+/** Every canon file of OPS-4 (30), each with ONE verdict: 4a decides its 10, 4b its 11; 4c's 9 are pending. */
 export const OPS4_CANON_FILES: readonly { file: string; wave: Ops4Wave; module: 'equipment' | 'livestock' | 'logistics'; verdict: Ops4Verdict; note: string }[] = Object.freeze([
   // ── 4a · THE HIRE (10) — decided (founder Q1-A via HOTFIX-13, Q2-A; Q3-A applied from OPS-1 Q2-A) ──
   { file: 'W405-ops-chc-dashboard.html', wave: '4a', module: 'equipment', verdict: 'BUILT (read)', note: '/chc/dashboard — a READ of your machines (GET /v1/equipment/assets?box=mine; category + registration number, never a person) linked to W406, and the hires on them counted by the server\'s status (GET /v1/equipment/rentals?box=owner, the latest 100, said so); no revenue, no %, no utilisation; the Q2 words; zero inputs' },
@@ -154,18 +244,18 @@ export const OPS4_CANON_FILES: readonly { file: string; wave: Ops4Wave; module: 
   { file: 'W3318-ops-equipment-mutate-confirm.html', wave: '4a', module: 'equipment', verdict: 'PARITY-DECOR', note: '/chc/equipment-detail?id=&act=confirm — "Retry": the link IS a re-read of the machine' },
   { file: 'W3319-ops-equipment-mutate-success.html', wave: '4a', module: 'equipment', verdict: 'PARITY-DECOR', note: '?act=success — nothing was changed; the zero-sum sentence refused BY NAME' },
   { file: 'W3320-ops-equipment-mutate-failure.html', wave: '4a', module: 'equipment', verdict: 'PARITY-DECOR', note: '?act=failure — nothing was changed; Back → the machine; nobody is paged' },
-  // ── 4b · THE RECORDS: UPKEEP AND ANIMALS (11) — pending (founder Q4-A, Q5-A applied by the lead) ──
-  { file: 'W408-ops-chc-maintenance.html', wave: '4b', module: 'equipment', verdict: 'pending_4b', note: 'survey §1D: READ of the owner\'s machines\' entries + "Record a maintenance entry" REAL (after OPS4-B7)' },
-  { file: 'W3300-ops-chc-form-form-error.html', wave: '4b', module: 'equipment', verdict: 'pending_4b', note: 'survey §1L: the maintenance entry\'s form-error state' },
-  { file: 'W3301-ops-chc-form-review.html', wave: '4b', module: 'equipment', verdict: 'pending_4b', note: 'survey §1L: review' },
-  { file: 'W3302-ops-chc-form-success.html', wave: '4b', module: 'equipment', verdict: 'pending_4b', note: 'survey §1L: success' },
-  { file: 'W3303-ops-chc-form-failure.html', wave: '4b', module: 'equipment', verdict: 'pending_4b', note: 'survey §1L: failure' },
-  { file: 'W394-ops-eartag-scan.html', wave: '4b', module: 'livestock', verdict: 'pending_4b', note: 'survey §1I: HONEST under Q4-A' },
-  { file: 'W395-ops-animal-register.html', wave: '4b', module: 'livestock', verdict: 'pending_4b', note: 'survey §1J: HONEST under Q5-A' },
-  { file: 'W396-ops-animal-transfer.html', wave: '4b', module: 'livestock', verdict: 'pending_4b', note: 'survey §1K: HONEST under Q5-A' },
-  { file: 'W3310-ops-eartag-mutate-confirm.html', wave: '4b', module: 'livestock', verdict: 'pending_4b', note: 'survey §1Q: DECOR' },
-  { file: 'W3311-ops-eartag-mutate-success.html', wave: '4b', module: 'livestock', verdict: 'pending_4b', note: 'survey §1Q: DECOR' },
-  { file: 'W3312-ops-eartag-mutate-failure.html', wave: '4b', module: 'livestock', verdict: 'pending_4b', note: 'survey §1Q: DECOR' },
+  // ── 4b · THE RECORDS: UPKEEP AND ANIMALS (11) — decided (founder Q4-A, Q5-A applied by the lead; the 4b first commit) ──
+  { file: 'W408-ops-chc-maintenance.html', wave: '4b', module: 'equipment', verdict: 'REAL', note: '/chc/maintenance — a READ of your machines\' maintenance entries (type in words, day, cost "as entered", engine hours as typed; never the note) and the server\'s two alerts for your machines in words; "Record a maintenance entry" REAL (owner only, keyed, not after the organisation\'s today, recorded); no days down, no %, no real rent, no odometer, no technician; Retry PARITY-DECOR; the form\'s five inputs are the only inputs' },
+  { file: 'W3300-ops-chc-form-form-error.html', wave: '4b', module: 'equipment', verdict: 'REAL', note: '?form=error — the refusal by name (a field rule, or the API\'s 422) with the values kept; Back → /chc/maintenance' },
+  { file: 'W3301-ops-chc-form-review.html', wave: '4b', module: 'equipment', verdict: 'REAL', note: '?form=review — the entry as typed: "Recorded by you, as typed — not a measurement."; one submit (the key minted here); Back → /chc/maintenance' },
+  { file: 'W3302-ops-chc-form-success.html', wave: '4b', module: 'equipment', verdict: 'REAL', note: '?form=success — the SERVER\'s id and the entry as it stored it; the zero-sum sentence refused BY NAME' },
+  { file: 'W3303-ops-chc-form-failure.html', wave: '4b', module: 'equipment', verdict: 'REAL', note: '?form=failure — the named refusal (MAINTENANCE_NOT_YOUR_MACHINE, MAINTENANCE_DATE_IN_FUTURE, …); nothing was recorded; Back → /chc/maintenance (never W405)' },
+  { file: 'W394-ops-eartag-scan.html', wave: '4b', module: 'livestock', verdict: 'BUILT (honest)', note: '/animals/eartag-scan — reads nothing, zero inputs, kiosk chrome; "This desk does not look up animals by tag." ×3 (Q4\'s second sentence NOT printed: premise false); Retry DECOR' },
+  { file: 'W395-ops-animal-register.html', wave: '4b', module: 'livestock', verdict: 'BUILT (honest)', note: '/animals/register — reads nothing, zero inputs, kiosk chrome; "An animal is registered by its owner in her own app. This desk does not register animals." ×3; reached from the kiosk home' },
+  { file: 'W396-ops-animal-transfer.html', wave: '4b', module: 'livestock', verdict: 'BUILT (honest)', note: '/animals/transfer — reads nothing, zero inputs, kiosk chrome; "Ownership transfer is not available on this platform yet. Nothing here changes who owns an animal." ×3; reached from the kiosk home' },
+  { file: 'W3310-ops-eartag-mutate-confirm.html', wave: '4b', module: 'livestock', verdict: 'DECOR', note: '/animals/eartag-scan?act=confirm — W394 reads nothing: there is nothing to read again; no re-read; Back → W394' },
+  { file: 'W3311-ops-eartag-mutate-success.html', wave: '4b', module: 'livestock', verdict: 'DECOR', note: '?act=success — nothing was changed; the zero-sum sentence refused BY NAME; Back → W394' },
+  { file: 'W3312-ops-eartag-mutate-failure.html', wave: '4b', module: 'livestock', verdict: 'DECOR', note: '?act=failure — nothing was changed; nobody is paged; Back → W394' },
   // ── 4c · THE SENSORS (9) — pending (founder Q6) ──
   { file: 'W400-ops-iot-dashboard.html', wave: '4c', module: 'logistics', verdict: 'pending_4c', note: 'survey §1F: READ of signed loggers and subjects (after OPS4-B8)' },
   { file: 'W401-ops-iot-device.html', wave: '4c', module: 'logistics', verdict: 'pending_4c', note: 'survey §1G: READ of one subject\'s trail' },
@@ -188,15 +278,18 @@ export const OPS4_CHAIN_GROUPS: readonly { id: string; donor: string; wave: Ops4
   { id: 'iot_mutate', donor: 'W400', wave: '4c', files: ['W3326', 'W3327', 'W3328'] },
 ]);
 
-// ── THE BUILT CHAINS: each is a query state (`?act=`) of the page that opened it (the Ops3Chain shape). ──
-export type Chain4Id = 'chc_act' | 'equipment_act';
-export interface Chain4Def { id: Chain4Id; wave: Ops4Wave; kind: 'PARITY-DECOR'; param: 'act'; surface: Ops4Surface; states: readonly string[]; key: (state: string) => string; files: readonly string[]; statement: string }
+// ── THE BUILT CHAINS: each is a query state of the page that opened it (the Ops3Chain shape): `?act=` for the mutate chains, `?form=` for the
+// chc form (OPS-4b, REAL — the maintenance entry). ──
+export type Chain4Id = 'chc_act' | 'equipment_act' | 'chc_form' | 'eartag_act';
+export interface Chain4Def { id: Chain4Id; wave: Ops4Wave; kind: 'PARITY-DECOR' | 'REAL' | 'DECOR'; param: 'act' | 'form'; surface: Ops4Surface; states: readonly string[]; key: (state: string) => string; files: readonly string[]; statement: string }
 export const OPS4_CHAINS: readonly Chain4Def[] = Object.freeze([
   { id: 'chc_act', wave: '4a', kind: 'PARITY-DECOR', param: 'act', surface: 'chc_act', states: ['confirm', 'success', 'failure'], key: (s: string) => `ops4.chain.chcAct.${s}`, files: ['W3304', 'W3305', 'W3306'], statement: 'ops4.readsOnly' },
   { id: 'equipment_act', wave: '4a', kind: 'PARITY-DECOR', param: 'act', surface: 'equipment_act', states: ['confirm', 'success', 'failure'], key: (s: string) => `ops4.chain.eqAct.${s}`, files: ['W3318', 'W3319', 'W3320'], statement: 'ops4.readsOnly' },
+  { id: 'chc_form', wave: '4b', kind: 'REAL', param: 'form', surface: 'chc_form', states: ['error', 'review', 'success', 'failure'], key: (s: string) => `ops4.chain.chcForm.${s}`, files: ['W3300', 'W3301', 'W3302', 'W3303'], statement: 'ops4.upkeep.ownerOnly' },
+  { id: 'eartag_act', wave: '4b', kind: 'DECOR', param: 'act', surface: 'eartag_act', states: ['confirm', 'success', 'failure'], key: (s: string) => `ops4.chain.eartagAct.${s}`, files: ['W3310', 'W3311', 'W3312'], statement: 'ops4.q4.words' },
 ]);
 export function chain4ById(id: Chain4Id): Chain4Def { return OPS4_CHAINS.find((c) => c.id === id) as Chain4Def; }
-/** The chain state a page was opened in (`?act=confirm` …), or null for the page itself / an unknown state. */
+/** The chain state a page was opened in (`?act=confirm`, `?form=review` …), or null for the page itself / an unknown state. */
 export function chain4State(id: Chain4Id, searchParams: Record<string, string | string[] | undefined> | undefined): string | null {
   const c = chain4ById(id);
   const raw = searchParams?.[c.param];

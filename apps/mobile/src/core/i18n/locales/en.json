@@ -1444,6 +1444,8 @@
   "equip.detail.advanceLabel": "Advance to quote (₹)",
   "equip.detail.awaitingRenter": "Waiting for the farmer to confirm and pay the advance from their own phone.",
   "equip.detail.cancelConfirm": "Cancel this rental?",
+  "equip.detail.cancelReasonLabel": "Reason for cancelling (needed)",
+  "equip.detail.cancelReasonNeeded": "Write a reason to cancel this hire. A hire you did not request is cancelled only with a reason.",
   "equip.detail.notFound": "This rental could not be found.",
   "equip.detail.otpHint": "Ask the farmer for their start OTP — it proves you and the machine are on their field.",
   "equip.detail.otpInvalid": "The start OTP is 4–8 digits.",

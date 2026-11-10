@@ -32,6 +32,7 @@
 //   • E10 — QUOTE writes an audit row (the deposit before and after); CANCEL takes an Idempotency-Key and a reason validated by a strict
 //     DTO and writes an audit row (status before / after, the refund, the reason). The party refusal of cancel sits BEFORE
 //     `idem.remember` and any write (E12; a pre-read of the row, then the same check on the locked row).
+// [PC-56 OPS-4b] CANCEL by anyone but the renter needs a non-blank reason (`CANCEL_REASON_REQUIRED`, 400), before `idem.remember`.
 import { Inject, Injectable } from '@nestjs/common';
 import { createHmac, randomInt } from 'node:crypto';
 import { UNIT_OF_WORK, UnitOfWork, TxContext } from '../../../core/database/unit-of-work';
@@ -51,7 +52,7 @@ import { EquipmentRateRepository } from '../repositories/equipment-rate.reposito
 import { RequestBookingDto, QuoteBookingDto, StartBookingDto, CompleteBookingDto, CancelBookingDto } from '../dto/create-equipment-booking.dto';
 import { parseScaled } from '../domain/scaled';
 import { BookingNotFoundError, AssetNotFoundError, AssetNotBookableError, NoActiveRateError, EquipmentForbiddenError, InvalidBookingError,
-  EqConfirmNotRenterError, EqNotMachineOwnerError, SettleHoursNotConfirmedError, UsageConfirmNotRenterError, UsageAlreadyConfirmedError } from '../domain/equipment.errors';
+  CancelReasonRequiredError, EqConfirmNotRenterError, EqNotMachineOwnerError, SettleHoursNotConfirmedError, UsageConfirmNotRenterError, UsageAlreadyConfirmedError } from '../domain/equipment.errors';
 import { EquipmentActor } from './equipment-asset.service';
 
 const bookingNo = (id: string) => `EQ-${Date.now().toString(36).toUpperCase()}-${id.slice(0, 8).toUpperCase()}`;
@@ -147,7 +148,11 @@ export class EquipmentBookingService {
     const pre = await this.bookings.getById(tenantId, id);
     if (!pre) throw new BookingNotFoundError(id);
     if (pre.renterUserId !== actor.userId && pre.ownerUserId !== actor.userId && !actor.isAdmin) throw new EquipmentForbiddenError('not a party to this booking');
+    // [PC-56 OPS-4b · lead-applied from OPS-2a "an operator's cancel needs a reason"] anyone but the RENTER (the machine's owner, an
+    // administrator) cancels only with a reason — refused by name BEFORE the idempotency record and any write. The renter's stays optional.
+    // (A blank reason never reaches here: the strict DTO refuses it, 422.)
     const reason = dto.reason;
+    if (pre.renterUserId !== actor.userId && !(reason && reason.trim())) throw new CancelReasonRequiredError();
     return this.idem.remember(idemKey, actor.userId, 'equipment.booking.cancel', () => this.uow.run(tenantId, async (tx) => {
       const booking = await this.bookings.getForUpdate(tx, tenantId, id);
       if (!booking) throw new BookingNotFoundError(id);

@@ -17,6 +17,7 @@ import { formatDate, formatMoneyMinor } from '@krishalaya/i18n';
 import type { Ops1Surface, Tr } from '../../features/ops1/refusals';
 import { parseKioskReason, KIOSK_BANK, KIOSK_EARNINGS, KIOSK_HOME, KIOSK_KYC, KIOSK_LAND, KIOSK_LISTING, KIOSK_PROFILE, KIOSK_SCHEMES, KIOSK_START, KIOSK_STEPS, KIOSK_SUMMARY, earningPaid, type KioskReadState } from '../../features/ops1/kiosk';
 import { Ops1Chain, Ops1Refusals } from './Ops1Chain';
+import { AnimalLinks } from '../ops4/AnimalLinks';
 
 /** The profile fields this console prints, as `GET /v1/ambassadors/me` returns them. */
 export interface KioskProfileView { tierId?: string | null; kioskEnabled?: boolean; trainingCompletedAt?: string | null; isActive?: boolean }
@@ -101,6 +102,12 @@ export function KioskHomeView({ t, lang, state, profile, earnings }: { t: Tr; la
         <ol className="kv-steps">
           {KIOSK_STEPS.map((s) => <li key={s.id}><Link href={s.href} className="kv-link" data-kv-step={s.id}>{t.t(`ops1.kiosk.step.${s.id}`)}</Link></li>)}
         </ol>
+      </div>
+      {/* PC-56 OPS-4b (survey E2): the animal pages (W394–W396) are drawn from here — the canon never linked W395 or W396 at all. */}
+      <div className="kv-card" data-kv-animals="kiosk_home">
+        <h2 className="kv-card__title">{t.t('ops4.animals.homeTitle')}</h2>
+        <p className="kv-field__hint">{t.t('ops4.animals.homeLead')}</p>
+        <AnimalLinks t={t} />
       </div>
       <Ops1Refusals t={t} surface="kiosk_home" />
     </section>

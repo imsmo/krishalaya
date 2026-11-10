@@ -1444,6 +1444,8 @@
   "equip.detail.advanceLabel": "ભાવ માટે એડવાન્સ (₹)",
   "equip.detail.awaitingRenter": "ખેડૂતની પુષ્ટિ અને તેમના ફોનથી એડવાન્સ ચુકવણીની રાહ.",
   "equip.detail.cancelConfirm": "આ ભાડું રદ કરવું?",
+  "equip.detail.cancelReasonLabel": "રદ કરવાનું કારણ (જરૂરી)",
+  "equip.detail.cancelReasonNeeded": "આ ભાડું રદ કરવા માટે કારણ લખો. જે ભાડું તમે માગ્યું નથી, તે ફક્ત કારણ સાથે રદ થાય છે.",
   "equip.detail.notFound": "આ ભાડું મળ્યું નહીં.",
   "equip.detail.otpHint": "ખેડૂત પાસેથી તેમનો સ્ટાર્ટ OTP માગો — તે સાબિત કરે છે કે તમે અને મશીન તેમના ખેતરે છો.",
   "equip.detail.otpInvalid": "સ્ટાર્ટ OTP 4–8 અંકનો હોય છે.",

@@ -10,8 +10,13 @@ export class VetBookingNotFoundError extends NotFoundError { constructor(id: str
 
 /** A user may register only ONE vet profile (vet_profiles.user_id is UNIQUE). */
 export class VetAlreadyRegisteredError extends AppError { constructor() { super('VET_ALREADY_REGISTERED', 'You already have a vet profile', 409); } }
-/** Pashu Aadhaar (INAPH 12-digit) collides with an existing animal (UNIQUE). */
-export class PashuAadhaarExistsError extends AppError { constructor() { super('PASHU_AADHAAR_EXISTS', 'An animal with this Pashu Aadhaar already exists', 409); } }
+/**
+ * Pashu Aadhaar (INAPH 12-digit) collides with an existing animal (UNIQUE over every organisation — 0009).
+ * [PC-56 OPS-4b · founder Q4-A applied by the lead, OPS4-B14's no-migration half] the message no longer says an animal EXISTS: same 409, same
+ * code, the same words whichever organisation holds the tag, no tenant / owner / animal in the body. The 409 itself still shows that the number is
+ * taken somewhere (the tag stays globally unique); closing that needs the transfer design (OPS4-B13, a migration).
+ */
+export class PashuAadhaarExistsError extends AppError { constructor() { super('PASHU_AADHAAR_EXISTS', 'This tag number cannot be registered.', 409); } }
 /** Service price below zero / invalid. */
 export class InvalidVetServiceError extends DomainError { constructor(message: string) { super('VET_SERVICE_INVALID', message, 422); } }
 /** Unknown vet_service lookup code. */

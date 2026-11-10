@@ -720,7 +720,8 @@ describe('PC-56 OPS-4a · the claims guard (ops4. scope, the hire)', () => {
     for (const [re, phrase] of BRAND_4A) expect([String(re), re.test(phrase)]).toEqual([String(re), true]);
   });
   it.each(Object.entries(CATS))('%s: no ops4. value (or hire nav label) trips a 4a guard or a brand regex', (_lang, cat) => {
-    expect(scoped4(cat).length).toBe(171);
+    // NAMED UPDATE (PC-56 OPS-4b): 4b's 96 `ops4.` values join the scope (a widening: every 4a guard now also runs over them) — 171 → 267.
+    expect(scoped4(cat).length).toBe(267);
     for (const [k, v] of scoped4(cat)) {
       for (const [name, hit] of GUARDS_4A) expect([k, name, hit(v)]).toEqual([k, name, false]);
       for (const [re] of BRAND_4A) expect([k, String(re), re.test(v)]).toEqual([k, String(re), false]);
@@ -755,6 +756,81 @@ describe('PC-56 OPS-4a · the claims guard (ops4. scope, the hire)', () => {
     for (const rel of SOURCES_4A) {
       const src = fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
       for (const [re] of BRAND_4A) expect([rel, String(re), re.test(src)]).toEqual([rel, String(re), false]);
+    }
+  });
+});
+
+// ── PC-56 OPS-4b (brief §E "Registry, guards, rest"): THE RECORDS guards — the animals and upkeep regexes, each proven on its OWN canon phrase
+// (W394–W396, W408 and their chains; persons, places and figures anonymised) and narrowed to the affirmative (a sentence that carries a negation
+// passes, the canon's claim is caught; each proven to let its negated form through) — then run over every `ops4.` value and the hire nav labels
+// (Maintenance among them) in en, hi and gu. The `%` guard is PLAIN. Then the founder's words (Q4-A's first sentence, Q5-A ×2) are PINNED verbatim
+// in English and by their key words in hi / gu; Q4-A's second sentence is pinned ABSENT (its premise is false at merge); and the brand guard
+// (survey F-16) runs over every 4b source and fixture.
+const NAV_4B = [...NAV_4A, 'nav.chcMaintenance'];
+const scoped4b = (cat: Record<string, string>) => Object.entries(cat).filter(([k]) => k.startsWith('ops4.') || NAV_4B.includes(k));
+const GUARDS_4B: ReadonlyArray<[name: string, hit: (v: string) => boolean, canon: string, negated?: string]> = [
+  // animals
+  ['scan(ned)?', affirmative3(/\bscan(ned)?\b/i), 'Scanned · Pashu-Aadhaar [n] (12-digit INAPH) — [owner]\'s buffalo', 'No tag is scanned here.'],
+  ['paravet', affirmative3(/paravet/i), 'Tag application · Applied by a licensed paravet (vet canon record)', 'No paravet applies a tag.'],
+  ['photo', affirmative3(/photo/i), 'Photos MUST show the tag in the ear — the same photo standard the insurance desk trusts', 'No photo is taken.'],
+  ['INAPH', affirmative3(/INAPH/), 'captured once, straight into the INAPH-linked record', 'This platform is not linked to INAPH.'],
+  ['merge desk', affirmative3(/merge desk/i), 'Duplicate tag — routed to the merge desk', 'There is no merge desk.'],
+  ['handshake', affirmative3(/handshake/i), 'ownership is real from the handshake', 'No handshake changes an owner.'],
+  ['insurance follows', affirmative3(/insurance follows/i), 'Insurance follows ownership — a policy tied to [seller] prompts a re-assignment here', 'It is not true that insurance follows ownership here.'],
+  // upkeep
+  ['days down', affirmative3(/days? down/i), '[machine] · breakdown · ₹[n] repair · 9 days down', 'No count of days down is shown.'],
+  ['real rent', affirmative3(/real rent/i), 'Downtime is the real rent', 'There is no real rent figure.'],
+  // the canon's own line carries "haven't", so it is proven on its affirmative fragment (as 4a's guard is): the claim that an odometer step syncs
+  ['odometer', affirmative3(/odometer/i), 'next-service list stale — engine-hours sync from a booking\'s odometer step', 'No odometer is read.'],
+  ['technician', affirmative3(/technician/i), 'only the maintenance technician can log its completion', 'There is no technician role.'],
+  ['completion', affirmative3(/completion|completed_at/i), 'Log completion', 'There is no completion to log.'],
+  ['% (plain)', plain(/%/), 'Preventive vs breakdown — 71% … 29%'],
+];
+const SOURCES_4B = ['components/ops4/UpkeepViews.tsx', 'components/ops4/AnimalViews.tsx', 'components/ops4/AnimalLinks.tsx', 'features/ops4/upkeep.ts', 'app/chc/maintenance/page.tsx',
+  'app/chc/maintenance/actions.ts', 'app/animals/eartag-scan/page.tsx', 'app/animals/register/page.tsx', 'app/animals/transfer/page.tsx', 'test-render/ops4b-fixtures.ts'];
+
+describe('PC-56 OPS-4b · the claims guard (ops4. scope, upkeep and animals)', () => {
+  it('each guard is proven on its own canon phrase and lets its negated form through', () => {
+    for (const [name, hit, canon, negated] of GUARDS_4B) {
+      expect([name, hit(canon)]).toEqual([name, true]);
+      if (negated) expect([name, 'negated', hit(negated)]).toEqual([name, 'negated', false]);
+    }
+  });
+  it.each(Object.entries(CATS))('%s: no ops4. value (or hire nav label) trips a 4b guard, a 4a guard or a brand regex', (_lang, cat) => {
+    expect(scoped4b(cat).length).toBe(268);
+    for (const [k, v] of scoped4b(cat)) {
+      for (const [name, hit] of [...GUARDS_4B, ...GUARDS_4A]) expect([k, name, hit(v)]).toEqual([k, name, false]);
+      for (const [re] of BRAND_4A) expect([k, String(re), re.test(v)]).toEqual([k, String(re), false]);
+    }
+  });
+  it('the founder\'s words (Q4-A first sentence, Q5-A ×2) PINNED verbatim (en) and by their key words in hi / gu; Q4-A\'s second sentence ABSENT', () => {
+    const PIN: Record<string, string> = {
+      'ops4.q4.words': 'This desk does not look up animals by tag.',
+      'ops4.q5.register': 'An animal is registered by its owner in her own app. This desk does not register animals.',
+      'ops4.q5.transfer': 'Ownership transfer is not available on this platform yet. Nothing here changes who owns an animal.',
+      'ops4.upkeep.ownerOnly': 'Only the machine\'s owner records its maintenance. Each entry is recorded.',
+      'ops4.upkeep.notOffHire': 'A maintenance entry does not take a machine off hire: it does not change the machine\'s status.',
+      'ops4.upkeep.asTyped': 'Recorded by you, as typed — not a measurement.',
+      'ops4.upkeep.record': 'Record a maintenance entry',
+    };
+    for (const [k, v] of Object.entries(PIN)) expect([k, en[k]]).toEqual([k, v]);
+    for (const k of Object.keys(PIN)) for (const cat of [hi, gu]) expect([k, typeof cat[k] === 'string' && cat[k] !== en[k]]).toEqual([k, true]);
+    // Q4's sentence in every language (a mutant drops it from one)
+    expect([/टैग से पशुओं को नहीं खोजता/.test(hi['ops4.q4.words']), /ટૅગથી પશુઓ શોધતું નથી/.test(gu['ops4.q4.words'])]).toEqual([true, true]);
+    // Q5's two sentences: "does not register" / "not available … yet", in hi / gu
+    expect([/पंजीकरण नहीं करता/.test(hi['ops4.q5.register']), /નોંધણી કરતું નથી/.test(gu['ops4.q5.register'])]).toEqual([true, true]);
+    expect([/अभी इस प्लेटफ़ॉर्म पर उपलब्ध नहीं/.test(hi['ops4.q5.transfer']), /હજી આ પ્લેટફોર્મ પર ઉપલબ્ધ નથી/.test(gu['ops4.q5.transfer'])]).toEqual([true, true]);
+    // the second Q4 sentence is NOT printed (premise false: her app shows the last four digits of a tag — test/ops4b-pages.spec.ts)
+    for (const cat of [en, hi, gu]) for (const v of Object.values(cat)) expect(/sees her animals and their tags/i.test(v)).toBe(false);
+    // "Record a maintenance entry" — never "Log completion"
+    for (const [k, v] of scoped4b(en)) expect([k, /log completion/i.test(v) && !NEG3.test(v)]).toEqual([k, false]);
+  });
+  it('brand guard over every 4b source and fixture (no F-16 literal: "Jashoda", "Jaffarabadi", "8802", "ORD-0713", "₹18,400", "9 days" …)', () => {
+    const MORE: ReadonlyArray<RegExp> = [/\b8802\b/, /ORD-0713/, /18,400/, /\b9 days\b/, /Kisan Mitra/i, /Kiran Ben/i];
+    for (const rel of SOURCES_4B) {
+      const src = fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
+      for (const [re] of BRAND_4A) expect([rel, String(re), re.test(src)]).toEqual([rel, String(re), false]);
+      for (const re of MORE) expect([rel, String(re), re.test(src)]).toEqual([rel, String(re), false]);
     }
   });
 });

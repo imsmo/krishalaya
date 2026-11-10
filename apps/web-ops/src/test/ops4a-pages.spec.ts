@@ -43,11 +43,17 @@ describe('PC-56 OPS-4a · E11 · the readless assertion (positive control first)
 
 describe('PC-56 OPS-4a · Q3-A · this console only reads machine hire', () => {
   it('no web-ops source calls an owner or renter hire act; no server action exists for the hire pages', () => {
+    // NAMED UPDATE (PC-56 OPS-4b): `recordMaintenance` is now called by EXACTLY ONE source — the W408 server action (the REAL "Record a maintenance
+    // entry", owner-only and recorded in the API since the 4b first commit) — and that is the only server action under app/chc. Every hire act,
+    // rate, status and asset write stays absent everywhere; recordMaintenance stays absent everywhere else (pinned again in ops4b-pages.spec.ts).
+    const MAINT_ACTION = path.join('app', 'chc', 'maintenance', 'actions.ts');
     for (const f of SRC_FILES) {
       const src = code(fs.readFileSync(f, 'utf8'));
-      expect([path.relative(SRC, f), /\.(settleRental|quoteRental|startRental|completeRental|confirmRental|confirmRentalUsage|cancelRental|setRate|recordMaintenance|setAssetStatus|registerAsset)\(/.test(src)]).toEqual([path.relative(SRC, f), false]);
+      expect([path.relative(SRC, f), /\.(settleRental|quoteRental|startRental|completeRental|confirmRental|confirmRentalUsage|cancelRental|setRate|setAssetStatus|registerAsset)\(/.test(src)]).toEqual([path.relative(SRC, f), false]);
+      if (path.relative(SRC, f) !== MAINT_ACTION) expect([path.relative(SRC, f), /\.recordMaintenance\(/.test(src)]).toEqual([path.relative(SRC, f), false]);
     }
-    expect(SRC_FILES.filter((f) => /[\\/]app[\\/]chc[\\/]/.test(f) && /^\s*['"]use server['"]/m.test(fs.readFileSync(f, 'utf8')))).toEqual([]);
+    expect(/\.recordMaintenance\(/.test(code(read(MAINT_ACTION)))).toBe(true);
+    expect(SRC_FILES.filter((f) => /[\\/]app[\\/]chc[\\/]/.test(f) && /^\s*['"]use server['"]/m.test(fs.readFileSync(f, 'utf8'))).map((f) => path.relative(SRC, f))).toEqual([MAINT_ACTION]);
     expect(fs.existsSync(path.join(SRC, 'app', 'chc', 'actions.ts'))).toBe(false);
   });
   it('THE NO-RENTER-APP FACT: no client in the monorepo calls confirmRentalUsage (or the confirm-usage route) — positive control: the SDK defines it', () => {
@@ -92,11 +98,13 @@ describe('PC-56 OPS-4a · E2 · the 307s, the sidebar, the edges, the chain orde
     expect(r).toEqual(OPS4A_REDIRECTS.map((x) => ({ ...x, permanent: false })));
     for (const p of Object.values(P)) expect([p, fs.existsSync(path.join(SRC, p))]).toEqual([p, true]);
   });
-  it('the sidebar: a Machinery group of the three built routes; never /equipment, never the unbuilt /chc/maintenance', () => {
+  // NAMED UPDATE (PC-56 OPS-4b): /chc/maintenance is BUILT now (W408), so it joins the group — the rule "built routes only" is unchanged.
+  it('the sidebar: a Machinery group of the four built routes; never /equipment', () => {
     const nav = read('components/Sidebar.tsx');
     const hrefs = Array.from(nav.matchAll(/href: '([^']+)'/g)).map((m) => m[1]);
-    expect(hrefs.filter((h) => h.startsWith('/chc'))).toEqual([CHC.dashboard, CHC.bookings, CHC.insights]);
-    expect(hrefs).not.toContain('/equipment'); expect(hrefs).not.toContain('/chc/maintenance');
+    expect(hrefs.filter((h) => h.startsWith('/chc'))).toEqual([CHC.dashboard, CHC.bookings, '/chc/maintenance', CHC.insights]);
+    expect(hrefs).not.toContain('/equipment');
+    expect(fs.existsSync(path.join(SRC, 'app', 'chc', 'maintenance', 'page.tsx'))).toBe(true);
     expect(nav).toMatch(/href: '\/chc\/dashboard', labelKey: 'nav\.chcDashboard', group: 'nav\.chcGroup'/);
   });
   it('W406 is drawn from each machine row (W405) and each hire\'s machine (W407); the dashboard tile points at the hire dashboard', () => {

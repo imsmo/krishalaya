@@ -1832,8 +1832,10 @@ describe('iot fleet + maintenance', () => {
     expect(calls[0].url).toBe('https://api.test/v1/logistics/cold-chain/devices');
     await c.shipments.coldChainBreaches({ hours: 48 });
     expect(calls[1].url).toContain('breaches?hours=48');
-    await c.equipment.recordMaintenance('a1', { logType: 'service', performedOn: '2026-08-05', costMinor: '250000' });
+    // NAMED UPDATE (PC-56 OPS-4b · OPS4-B7): recording is Idempotency-Keyed (the API answers 400 without a key) — the key is now sent and pinned.
+    await c.equipment.recordMaintenance('a1', { logType: 'service', performedOn: '2026-08-05', costMinor: '250000' }, 'idem-maint-1');
     expect(calls[2].url).toContain('assets/a1/maintenance-logs');
+    expect((calls[2].init.headers as Record<string, string>)['idempotency-key']).toBe('idem-maint-1');
     await c.equipment.maintenanceAlerts();
     expect(calls[3].url).toContain('maintenance/alerts');
   });

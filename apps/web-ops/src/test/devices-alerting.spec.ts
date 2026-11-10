@@ -6,7 +6,6 @@ import {
   isAlertKind, isAlertSeverity, isChannelHint, defaultsFor, buildThreshold, parseRecipients, buildAlertRule,
   buildRulePatch, hoursSince, deviceHealth, fleetSummary, needsAck, feedOrder,
 } from '../features/devices/alerting';
-import { normaliseEarTag } from '../features/equipment/ear-tag';
 
 const U1 = '00000000-0000-7000-8000-000000000001';
 const U2 = '00000000-0000-7000-8000-000000000002';
@@ -180,21 +179,6 @@ describe('the fired feed puts the thing that is still on fire on top', () => {
   });
 });
 
-// --- PC-55 B5: the ear-tag lookup that replaced OW-3's stale "API gap" note ---
-describe('ear-tag normalisation (ops livestock lookup)', () => {
-  it('accepts a 12-digit tag however it is printed on the tag', () => {
-    expect(normaliseEarTag('123456789012')).toBe('123456789012');
-    expect(normaliseEarTag(' 1234 5678 9012 ')).toBe('123456789012');
-    expect(normaliseEarTag('1234-5678-9012')).toBe('123456789012');
-  });
-  it('refuses anything else locally, so a mistyped tag never costs a round trip', () => {
-    expect(normaliseEarTag('12345678901')).toBeNull();
-    expect(normaliseEarTag('1234567890123')).toBeNull();
-    expect(normaliseEarTag('12345678901A')).toBeNull();
-    expect(normaliseEarTag('')).toBeNull();
-    expect(normaliseEarTag(undefined)).toBeNull();
-  });
-  it('does NOT trim leading zeros — a tag’s zeros are part of it', () => {
-    expect(normaliseEarTag('000000000001')).toBe('000000000001');
-  });
-});
+// NAMED UPDATE (PC-56 OPS-4b · founder Q4-A applied by the lead, "a tag reveals nothing at the desk"): the PC-55 B5 ear-tag normaliser and its
+// three tests are DELETED with the desk tag lookup they served (the lookup left with `/equipment` in OPS-4a; no caller remained). Its absence is
+// pinned in test/ops4b-pages.spec.ts.

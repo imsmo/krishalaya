@@ -34,3 +34,12 @@ export class UsageAlreadyConfirmedError extends DomainError { constructor() { su
 // [PC-56 OPS-4a · E10] a rate line that a hire has already snapshotted is never overwritten in place (the hire's price is the record of
 // what that line said). Refused before any write.
 export class RateAlreadyPricedAHireError extends DomainError { constructor() { super('RATE_ALREADY_PRICED_A_HIRE', 'This rate line has already priced a hire, so it is not overwritten. A rate can be set from a different day.', 409); } }
+
+// [PC-56 OPS-4b · OPS4-B7 / E11, survey C-9 / F-8] A MACHINE'S MAINTENANCE IS ITS OWNER'S RECORD. Each refusal is by name, after the permission and
+// key checks and BEFORE the idempotency record and any write (the service pre-reads the machine; an ordering spy pins it).
+/** Only the machine's owner records its maintenance — no administrator escape. */
+export class MaintenanceNotYourMachineError extends AppError { constructor() { super('MAINTENANCE_NOT_YOUR_MACHINE', 'Only the owner of this machine can record its maintenance.', 403); } }
+/** A maintenance entry is dated on or before the organisation's own today (the tenant-day rule, `tenantDay`). */
+export class MaintenanceDateInFutureError extends AppError { constructor(today: string) { super('MAINTENANCE_DATE_IN_FUTURE', 'A maintenance entry cannot be dated after today.', 400, { today }); } }
+// [PC-56 OPS-4b · lead-applied from OPS-2a "an operator's cancel needs a reason"] a hire cancelled by anyone other than its renter needs a reason.
+export class CancelReasonRequiredError extends AppError { constructor() { super('CANCEL_REASON_REQUIRED', 'A reason is needed to cancel a hire you did not request.', 400); } }

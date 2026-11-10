@@ -19,10 +19,11 @@ const NAV: ReadonlyArray<{ href: string; labelKey: string; sub?: boolean; group?
   { href: '/warehouse/withdrawal', labelKey: 'nav.withdrawal', sub: true }, // PC-56 OPS-1a · W377 (the warehouse section)
   { href: '/warehouse/billing', labelKey: 'nav.whBilling', sub: true, group: 'nav.whGroupMoney' }, // PC-56 OPS-2c · W378 (the rate on file; nothing is billed)
   { href: '/warehouse/insights', labelKey: 'nav.whInsights', sub: true }, // PC-56 OPS-2c · W379 (honest; reads nothing)
-  // PC-56 OPS-4a (survey E2): a Machinery group of the BUILT hire routes only (`/equipment` answers a 307 to the dashboard). The maintenance page
-  // (W408) joins with OPS-4b — never linked before it exists.
+  // PC-56 OPS-4a (survey E2): a Machinery group of the BUILT hire routes only (`/equipment` answers a 307 to the dashboard). PC-56 OPS-4b: the
+  // maintenance page (W408) joins it now that it is built. The animal pages (W394–W396) are kiosk pages: reached from the kiosk home, not here.
   { href: '/chc/dashboard', labelKey: 'nav.chcDashboard', group: 'nav.chcGroup' }, // PC-56 OPS-4a · W405 (your machines and their hires; read)
   { href: '/chc/bookings', labelKey: 'nav.chcBookings', sub: true }, // PC-56 OPS-4a · W407 (the hires on your machines; read)
+  { href: '/chc/maintenance', labelKey: 'nav.chcMaintenance', sub: true }, // PC-56 OPS-4b · W408 (your machines' maintenance; read + record an entry)
   { href: '/chc/insights', labelKey: 'nav.chcInsights', sub: true }, // PC-56 OPS-4a · W409 (honest; reads nothing)
   // PC-56 OPS-3c (survey E2): a Dairy group of BUILT routes only. OPS-3a adds the counter's four pages a person opens (`/pos/quality` and
   // `/pos/slip` are steps of the record act, reached from them); OPS-3b adds the cooler (`/bmc`).
