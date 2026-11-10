@@ -1,18 +1,17 @@
-// apps/web-gov/src/lib/api-client.ts · the tenant SDK, wired with the console's session token (read
-// server-side only). The API enforces tenant scoping + RBAC from the token, so the console can't see another
-// tenant's data even if asked (Law 1/4 server-side). Anonymous client is used only for the OTP login flow.
+// apps/web-gov/src/lib/api-client.ts · the SDK, wired with the console's GOVERNMENT session token (read server-side only). PC-56 GOV-1a
+// (GOV-1 Q2-A): this console calls ONLY the government realm (`client.gov.*` → `/v1/gov/*`) and the public flag map; it sends no tenant
+// header and holds no tenant id — the API answers a tenant or partner route with 401 for a gov token anyway (GOV-0). The anonymous client is
+// used only for the sign-in steps, the refresh and the flag map.
 import 'server-only';
 import { createClient, KrishalayaClient } from '@krishalaya/sdk-js';
 import { env } from './env';
 import { getAccessToken } from './auth';
 
-export function govClient(): KrishalayaClient {
+/** The signed-in client. `token` overrides the cookie (the gate asks the API about the exact token it judged). */
+export function govClient(token?: string): KrishalayaClient {
   return createClient({
     baseUrl: env.serverApiUrl,
-    getToken: () => getAccessToken(),
-    // The API scopes tenant-data reads/writes by tenant context. Send the console's tenant on every authed call
-    // (the API still enforces the caller's RBAC + RLS membership from the token). Locally this is NEXT_PUBLIC_TENANT_ID.
-    ...(env.tenantId ? { getHeaders: () => ({ 'x-tenant-id': env.tenantId as string }) } : {}),
+    getToken: () => token ?? getAccessToken(),
     userAgent: 'kv-web-gov',
     timeoutMs: 8000,
   });

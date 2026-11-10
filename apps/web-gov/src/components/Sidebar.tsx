@@ -1,34 +1,12 @@
-// apps/web-gov/src/components/Sidebar.tsx · gov-console nav (PC-40 GW-0). Links ONLY to built routes; GW waves
-// (GW-1 schemes · GW-2 DBT · GW-3 regulator · GW-4 verification · GW-5 MGNREGA[gated]) append entries as built.
+// apps/web-gov/src/components/Sidebar.tsx · the government console's nav (PC-56 GOV-1a). A server wrapper: it binds the request's translator
+// and language and the locale switcher to the presentational `GovSidebar` (components/gov1/GovShell.tsx, render-tested), which names the
+// AUTHORITY the API says this session is in and links only to the routes GOV-1a builds. Drawn by the layout ONLY for a verified gov session.
+import type { GovMe } from '@krishalaya/sdk-js';
 import { getTranslator, getLang } from '../lib/i18n';
 import { LocaleSwitcher } from './LocaleSwitcher';
+import { GovSidebar } from './gov1/GovShell';
 
-const NAV: ReadonlyArray<{ href: string; labelKey: string }> = [
-  { href: '/dashboard', labelKey: 'nav.dashboard' },
-  { href: '/schemes', labelKey: 'nav.schemes' }, // GW-1
-  { href: '/registers', labelKey: 'nav.registers' }, // GW-3
-  { href: '/verification', labelKey: 'nav.verification' }, // GW-4 (PC-55 B1)
-  { href: '/mgnrega', labelKey: 'nav.mgnrega' }, // GW-5 (PC-55 B2) — the console is now complete
-];
-
-export function Sidebar() {
+export function Sidebar({ me }: { me: GovMe }) {
   const t = getTranslator();
-  const lang = getLang();
-  return (
-    <nav className="kv-sidebar" aria-label={t.t('nav.primary')}>
-      <a href="/dashboard" className="kv-brand">{t.t('nav.brand')}</a>
-      <ul className="kv-sidebar__nav">
-        {NAV.map((n) => (
-          <li key={n.href}><a href={n.href} className="kv-sidebar__link">{t.t(n.labelKey)}</a></li>
-        ))}
-      </ul>
-      <div className="kv-sidebar__footer">
-        <LocaleSwitcher active={lang} label={t.t('lang.label')} />
-        <form action="/api/session" method="post">
-          <input type="hidden" name="_action" value="logout" />
-          <button type="submit" className="kv-btn kv-btn--muted">{t.t('nav.signOut')}</button>
-        </form>
-      </div>
-    </nav>
-  );
+  return <GovSidebar t={t} me={me} switcher={<LocaleSwitcher active={getLang()} label={t.t('lang.label')} />} />;
 }

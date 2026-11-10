@@ -1,70 +1,64 @@
-// apps/web-gov/src/app/login/page.tsx · phone-OTP login (two steps via Server Actions). Step 1 requests an
-// OTP (enumeration-safe by the API). Step 2 verifies → the API returns tokens → stored in httpOnly cookies (never
-// exposed to JS) → redirect into the console (honouring a same-origin `next`). Errors surface as a query flag,
-// never leaking whether the phone exists. All copy via i18n; no secrets in the client; noindex.
+// apps/web-gov/src/app/login/page.tsx · PC-56 GOV-1a — W355 (`/login`) and the login chain (W3229–W3232 as `?act=` states): sign-in TO A
+// GOVERNMENT AUTHORITY (GOV-1 Q2-A + Q5-A). The steps and their markup live in components/gov1/LoginViews.tsx (render-tested); this page reads
+// the step and the chain state from the query, the MASKED pending phone, the chooser's authorities, the set-up key and the recovery codes from
+// their httpOnly cookies (set by ./actions.ts — never the URL), and the platform switch `gov_console` from the public flag map: OFF prints the
+// switched-off sentence instead of a form that would 404. The success state names the authority from `GET /v1/gov/me`. noindex.
 import type { Metadata } from 'next';
-import { randomUUID } from 'node:crypto';
-import { redirect } from 'next/navigation';
-import { anonClient } from '../../lib/api-client';
-import { env } from '../../lib/env';
-import { setSession } from '../../lib/auth';
-import { safeNext } from '../../features/nav/safe-next';
+import { cookies } from 'next/headers';
 import { getTranslator } from '../../lib/i18n';
-import { SdkError } from '@krishalaya/sdk-js';
+import { anonClient } from '../../lib/api-client';
+import { govGate } from '../../lib/session';
+import { LoginView } from '../../components/gov1/LoginViews';
+import { chain1State } from '../../features/gov1/refusals';
+import { loginErrorCode, loginStep } from '../../features/gov1/login';
+import { requestOtpAction, verifyOtpAction, chooseAction, twoFactorAction, enrolAction, confirmEnrolAction, startOverAction } from './actions';
+
+export const dynamic = 'force-dynamic';
 
 export function generateMetadata(): Metadata {
-  const t = getTranslator();
-  return { title: t.t('login.title'), robots: { index: false, follow: false } };
+  return { title: getTranslator().t('login.title'), robots: { index: false, follow: false } };
 }
 
-async function requestOtp(formData: FormData) {
-  'use server';
-  const phone = String(formData.get('phone') ?? '').trim();
-  const next = safeNext(String(formData.get('next') ?? '/dashboard'));
-  try { await anonClient().auth.requestOtp(phone, randomUUID()); } catch { /* enumeration-safe */ }
-  redirect(`/login?step=verify&phone=${encodeURIComponent(phone)}&next=${encodeURIComponent(next)}`);
-}
-async function verifyOtp(formData: FormData) {
-  'use server';
-  const phone = String(formData.get('phone') ?? '').trim();
-  const code = String(formData.get('code') ?? '').trim();
-  const next = safeNext(String(formData.get('next') ?? '/dashboard'));
+async function consoleSwitch(): Promise<'on' | 'off' | 'unknown'> {
   try {
-    const tk = await anonClient().auth.verifyOtp(phone, code, randomUUID(), env.tenantId);
-    setSession(tk.accessToken, tk.refreshToken, tk.expiresInSec);
-  } catch (e) {
-    const msg = e instanceof SdkError ? e.code : 'LOGIN_FAILED';
-    redirect(`/login?step=verify&phone=${encodeURIComponent(phone)}&next=${encodeURIComponent(next)}&error=${encodeURIComponent(msg)}`);
-  }
-  redirect(next);
+    const r = await anonClient().request<Record<string, boolean>>('GET', 'config/flags', { anonymous: true });
+    const v = r.data?.gov_console;
+    return v === true ? 'on' : v === false ? 'off' : 'unknown';
+  } catch { return 'unknown'; }
 }
+/** `••••••318` — six bullets and the last 3 digits (GOV-0's mask). */
+function maskPhone(raw: string | undefined): string | null {
+  const digits = String(raw ?? '').replace(/[^0-9]/g, '');
+  return digits.length < 4 ? null : `${'•'.repeat(6)}${digits.slice(-3)}`;
+}
+function json<T>(name: string, fallback: T): T {
+  try { return JSON.parse(cookies().get(name)?.value ?? '') as T; } catch { return fallback; }
+}
+const num = (v: string | undefined) => (v !== undefined && /^\d{1,4}$/.test(v) ? Number(v) : null);
 
-export default function LoginPage({ searchParams }: { searchParams: { step?: string; phone?: string; error?: string; next?: string } }) {
+export default async function LoginPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
   const t = getTranslator();
-  const verifying = searchParams.step === 'verify';
-  const next = safeNext(searchParams.next);
+  const act = chain1State('login_form', searchParams) as 'form-error' | 'review' | 'success' | 'failure' | null;
+  const off = !act && (await consoleSwitch()) === 'off';
+  let signedInTo: string | null = null;
+  if (act === 'success') {
+    const g = await govGate();
+    signedInTo = g.kind === 'gov' ? g.me.authority?.name ?? null : null;
+  }
   return (
-    <section className="kv-auth">
-      <h1>{t.t('login.title')}</h1>
-      {searchParams.error && <p className="kv-error" role="alert">{t.t('login.error')}</p>}
-      {!verifying ? (
-        <form action={requestOtp} className="kv-form">
-          <input type="hidden" name="next" value={next} />
-          <label htmlFor="phone" className="kv-field__label">{t.t('login.phoneLabel')}</label>
-          <input id="phone" className="kv-input" name="phone" type="tel" inputMode="tel" autoComplete="tel" placeholder={t.t('login.phonePlaceholder')} required />
-          <p className="kv-field__hint">{t.t('login.phoneHint')}</p>
-          <button className="kv-btn" type="submit">{t.t('login.sendOtp')}</button>
-        </form>
-      ) : (
-        <form action={verifyOtp} className="kv-form">
-          <input type="hidden" name="phone" value={searchParams.phone ?? ''} />
-          <input type="hidden" name="next" value={next} />
-          <label htmlFor="code" className="kv-field__label">{t.t('login.otpLabel', { phone: searchParams.phone ?? '' })}</label>
-          <input id="code" className="kv-input" name="code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="\d{4,8}" required autoFocus />
-          <button className="kv-btn" type="submit">{t.t('login.verify')}</button>
-          <a href={`/login?next=${encodeURIComponent(next)}`} className="kv-btn--link">{t.t('login.changeNumber')}</a>
-        </form>
-      )}
-    </section>
+    <LoginView
+      t={t}
+      step={off ? 'off' : loginStep(searchParams.step)}
+      act={act}
+      error={loginErrorCode(searchParams.error)}
+      left={num(searchParams.left)}
+      wait={num(searchParams.wait)}
+      phoneMasked={maskPhone(cookies().get('kvg_pending_phone')?.value)}
+      choices={json<{ authorities?: Array<{ id: string; name: string }> }>('kvg_choice', {}).authorities ?? []}
+      enrolKey={json<{ secret: string; otpauthUri: string } | null>('kvg_enrol_key', null)}
+      recoveryCodes={json<string[] | null>('kvg_recovery', null)}
+      signedInTo={signedInTo}
+      actions={{ requestOtp: requestOtpAction, verifyOtp: verifyOtpAction, choose: chooseAction, twoFactor: twoFactorAction, enrol: enrolAction, confirmEnrol: confirmEnrolAction, startOver: startOverAction }}
+    />
   );
 }

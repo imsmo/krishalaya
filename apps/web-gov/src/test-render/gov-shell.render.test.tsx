@@ -1,0 +1,33 @@
+// apps/web-gov/src/test-render/gov-shell.render.test.tsx · PC-56 GOV-1a · E2 — the persona gate as a person sees it: the sidebar is drawn ONLY
+// with the API's answer for this session (`me`); with none (anonymous, a farmer's or an organisation's session, a partner's, an ended one) the
+// page is bare. The sidebar names the AUTHORITY first, the platform after it, and links only to /dashboard and /access.
+import * as React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { GovShell, GovSidebar, RebuiltLater } from '../components/gov1/GovShell';
+import { en } from '../i18n/en';
+import { text, tr, ME_HEAD } from './gov1a-fixtures';
+
+const shell = (me: typeof ME_HEAD | null) => renderToStaticMarkup(
+  <GovShell me={me} sidebar={me ? <GovSidebar t={tr(en)} me={me} /> : <nav className="kv-sidebar">SHOULD NOT SHOW</nav>} skipLabel="Skip"><p>page</p></GovShell>);
+
+describe('PC-56 GOV-1a · the shell and the persona gate', () => {
+  it('no verified gov session → no sidebar at all (even if one is handed in)', () => {
+    const h = shell(null);
+    expect(h).toContain('data-kv-shell="bare"'); expect(h).not.toContain('kv-sidebar'); expect(h).not.toContain('SHOULD NOT SHOW');
+  });
+  it('a verified gov session → the sidebar, the authority\'s name first, the platform after; Dashboard and Access only; sign out', () => {
+    const h = shell(ME_HEAD);
+    expect(h).toContain('data-kv-shell="gov"'); expect(h).toContain(`data-kv-sidebar="${ME_HEAD.authority!.id}"`);
+    expect(h.indexOf('Test Authority One')).toBeLessThan(h.indexOf('Krishalaya government console'));
+    expect((h.match(/class="kv-sidebar__link"/g) ?? []).length).toBe(2);
+    expect(h).toContain('href="/access"'); expect(h).toContain('href="/dashboard"');
+    expect(h).not.toMatch(/href="\/(schemes|registers|verification|mgnrega)/);
+    expect(h).toContain('name="_action" value="logout"');
+  });
+  it('/dashboard until GOV-1b: one true sentence, it reads nothing', () => {
+    const h = renderToStaticMarkup(<RebuiltLater t={tr(en)} />);
+    expect(h).toContain('data-kv-reads="nothing"');
+    expect(text(h)).toContain('This page is being rebuilt for government authorities in a later wave. It reads nothing.');
+    expect(text(h)).not.toMatch(/Live|DBT|PFMS|MGNREGA|GOV_BUILD_BACKLOG|Ledger/);
+  });
+});

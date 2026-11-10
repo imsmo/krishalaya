@@ -1,4 +1,4 @@
-// apps/web-gov/next.config.js · seller/tenant console. The workspace packages it imports (@krishalaya/*) ship
+// apps/web-gov/next.config.js · the GOVERNMENT console (PC-56 GOV-1a; the header used to say "seller/tenant console" — copy residue, C-8). The workspace packages it imports (@krishalaya/*) ship
 // PRE-COMPILED CommonJS in their dist/, so Next consumes them directly. transpilePackages is intentionally NOT set:
 // listing a pre-compiled CJS package there makes Next apply Fast-Refresh (injecting `import.meta.webpackHot`) to a
 // module webpack treats as CommonJS → "Cannot use 'import.meta' outside a module".
@@ -43,6 +43,15 @@ const nextConfig = {
   // `import.meta.webpackHot`) to their pre-compiled CJS dist → "Cannot use 'import.meta' outside a module".
   // symlinks:false keeps the node_modules identity so they're consumed as ordinary (pre-built) deps.
   webpack: (config) => { config.resolve.symlinks = false; return config; },
+  // PC-56 GOV-1a (brief §E, survey GOV1_DELTAS `old_pages`): the pre-canon GW-1…GW-5 pages read ONE ORGANISATION through the tenant sign-in;
+  // under a government authority's session they cannot work. Their pages, actions and the evidence route are deleted; their addresses answer
+  // a TEMPORARY redirect (307, permanent: false) to /dashboard, which says it is being rebuilt for authorities and reads nothing.
+  async redirects() {
+    return ['/schemes', '/registers', '/verification', '/mgnrega'].flatMap((p) => [
+      { source: p, destination: '/dashboard', permanent: false },
+      { source: `${p}/:path*`, destination: '/dashboard', permanent: false },
+    ]);
+  },
   async headers() {
     return [{
       source: '/:path*',

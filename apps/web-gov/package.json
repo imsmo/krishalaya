@@ -2,14 +2,15 @@
   "name": "@krishalaya/web-gov",
   "version": "0.1.0",
   "private": true,
-  "description": "Gov console: schemes, DBT, regulator reads, verification — gov-persona scoped tokens on the main platform API; read + audit-stamped-export heavy. NEVER god-mode.",
+  "description": "Government console: a person signs in to a government AUTHORITY through the API's gov realm (/v1/gov/*, PC-56 GOV-0/GOV-1a) — phone code then authenticator code; the authority's people and role requests. NEVER god-mode.",
   "scripts": {
     "dev": "next dev -p 3007",
     "build": "next build",
     "start": "next start -p 3007",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "test:render": "jest -c jest.render.config.js"
   },
   "dependencies": {
     "next": "^14.2.13", "react": "^18.3.1", "react-dom": "^18.3.1",
