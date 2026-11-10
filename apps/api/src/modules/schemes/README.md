@@ -15,13 +15,22 @@ credit (`pfms_ref`) for the dashboard.
 `Scheme.evaluate(profile)` is a pure, deterministic check of the applicant's attributes against the scheme's
 machine-readable `eligibility_rules` (roles / landholding_max_acres / gender / age), returning
 `{ eligible, reasons[] }`. Unknown rule keys are ignored (forward-safe). The AI confidence score + a richer
-rule DSL are deferred.
+rule DSL are deferred. **C-4 (PC-56 GOV-2a):** there is no AI checker and no confidence on this platform today —
+`scheme_applications.eligibility_check` is never written by any code (always NULL); 0011's column comment "AI checker
+output + confidence" is false and is corrected in 0240's header and column comment.
 
 ## Lifecycle (Law 5 — `domain/scheme-application.state.ts`)
 `draft → submitted → under_verification → (clarification_needed ↔ under_verification) → approved → disbursed
 → closed`; `under_verification → rejected → appealed → under_verification`. The application snapshots the
 scheme's **rule version** at filing (integrity, PRD R18). Every transition appends a row to the partitioned
 `scheme_application_events` audit trail. No version columns on the rows → mutations lock **FOR UPDATE**.
+
+**Who checks and decides (PC-56 GOV-2a, GOV-2 Q2-A):** the government AUTHORITY that runs the scheme —
+`POST /v1/gov/applications/:id/act` (modules/gov-console; 0240's `gov_application_act`): verify / clarify by an officer
+or head, approve / reject by a head who did not check it, never by the applicant or the assister (CHECKs on the row);
+a rejection needs a listed code and a sentence; approval carries no amount. The organisation's own
+`verify` / `approve` / `reject` / `close` here are CLOSED (`SCHEME_DECISIONS_ARE_THE_AUTHORITYS`, 403, every caller).
+`clarify`, the field visits and the DBT record are unchanged (GOV-3 / GOV-4 own the last two).
 
 ## Endpoints
 - `GET /v1/schemes/authorities` · `GET /v1/schemes[?categoryId&activeOnly]` · `GET /v1/schemes/:id` — read-only catalogue.
@@ -49,7 +58,7 @@ scheme's **rule version** at filing (integrity, PRD R18). Every transition appen
 ## Scope & deferrals
 **In scope:** scheme + authority browse, eligibility checker, applications (apply→submit→verify→clarify→approve/reject→disburse→close, +appeal) with audit trail + processing-fee collection, observed DBT-credit recording.
 **Deferred (schema in 0011 / admin & platform surface):** authoring schemes + authorities (admin, Law 11),
-PFMS sync + rule-refresh + stuck-escalation + window-open-alert jobs, AI eligibility confidence, the full
+PFMS sync + rule-refresh + stuck-escalation + window-open-alert jobs, AI eligibility confidence (none exists — C-4), the full
 rule DSL, deeper ambassador-assisted attribution.
 
 ## Tests

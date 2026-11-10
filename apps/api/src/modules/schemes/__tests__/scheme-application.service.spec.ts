@@ -43,3 +43,23 @@ describe('submit — processing-fee money path', () => {
     expect(wallet.post).not.toHaveBeenCalled(); expect(repo.appendEvent).toHaveBeenCalledTimes(1);
   });
 });
+
+// PC-56 GOV-2a (GOV-2 Q2-A): the organisation's verify / approve / reject / close are CLOSED — refused by name for EVERY caller (an officer
+// holding scheme.process included), before any transaction is opened or any row read. clarify is unchanged (the brief names four acts).
+describe('GOV-2a — the organisation\'s decision acts are the authority\'s', () => {
+  const officer = { userId: 'o1', canApply: false, canProcess: true };
+  it('verify / approve / reject / close → SCHEME_DECISIONS_ARE_THE_AUTHORITYS (403), nothing read, nothing written', async () => {
+    const { svc, repo } = harness(0n);
+    const calls: Array<[string, () => Promise<unknown>]> = [
+      ['verify', () => svc.startVerification('t1', officer, 'a1')],
+      ['approve', () => svc.approve('t1', officer, 'a1', { govtAppRef: 'GOV-1' } as any, null)],
+      ['reject', () => svc.reject('t1', officer, 'a1', { reason: 'not eligible at all', reasonCode: 'other' } as any, null)],
+      ['close', () => svc.close('t1', officer, 'a1')],
+    ];
+    for (const [act, call] of calls) {
+      const e: any = await call().then(() => null, (x) => x);
+      expect([act, e?.code, e?.httpStatus, e?.details?.act]).toEqual([act, 'SCHEME_DECISIONS_ARE_THE_AUTHORITYS', 403, act]);
+    }
+    expect(repo.getForUpdate).not.toHaveBeenCalled(); expect(repo.update).not.toHaveBeenCalled(); expect(repo.appendEvent).not.toHaveBeenCalled();
+  });
+});

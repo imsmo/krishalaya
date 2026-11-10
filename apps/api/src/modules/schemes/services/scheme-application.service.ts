@@ -22,7 +22,7 @@ import { feeForSubmission, feeDivergedFromLive } from '../domain/snapshot-fee';
 import { SchemeApplicationRepository } from '../repositories/scheme-application.repository';
 import { SchemeRepository } from '../repositories/scheme.repository';
 import { ApplySchemeDto, ClarifyDto, ApproveDto, RejectDto } from '../dto/create-scheme-application.dto';
-import { ApplicationNotFoundError, SchemeNotFoundError, SchemeInactiveError, SchemesForbiddenError } from '../domain/schemes.errors';
+import { ApplicationNotFoundError, SchemeNotFoundError, SchemeInactiveError, SchemesForbiddenError, SchemeDecisionsAreTheAuthoritysError } from '../domain/schemes.errors';
 import { SchemesActor } from './dbt-transfer.service';
 
 const QUOTA_METRIC = 'scheme_applications';
@@ -105,13 +105,16 @@ export class SchemeApplicationService {
         }, { userId: actor.userId })));
   }
 
-  async startVerification(tenantId: string, actor: SchemesActor, id: string) { return this.transition(tenantId, actor, id, (a) => a.startVerification(), { officer: true }); }
+  // PC-56 GOV-2a (GOV-2 Q2-A): the organisation's verify / approve / reject / close are CLOSED — refused by name before anything is read, for
+  // every caller (web-tenant, SDK; mobile has none). The authority checks and decides (`/v1/gov/applications/:id/act`, a second person).
+  // clarify / resubmit / appeal and the field visits / DBT record are unchanged (the brief names only these four; GOV-3 / GOV-4 own the rest).
+  async startVerification(_tenantId: string, _actor: SchemesActor, _id: string): Promise<never> { throw new SchemeDecisionsAreTheAuthoritysError('verify'); }
   async requestClarification(tenantId: string, actor: SchemesActor, id: string, dto: ClarifyDto) { return this.transition(tenantId, actor, id, (a) => a.requestClarification(dto.note ?? null), { officer: true, note: dto.note ?? null }); }
   async resubmit(tenantId: string, actor: SchemesActor, id: string) { return this.transition(tenantId, actor, id, (a) => a.resubmit(), { applicant: true }); }
-  async approve(tenantId: string, actor: SchemesActor, id: string, dto: ApproveDto, ip: string | null) { return this.transition(tenantId, actor, id, (a) => a.approve(dto.govtAppRef ?? null, new Date()), { officer: true, audit: { action: 'schemes.approved', ip, value: { govtAppRef: dto.govtAppRef ?? null } } }); }
-  async reject(tenantId: string, actor: SchemesActor, id: string, dto: RejectDto, ip: string | null) { return this.transition(tenantId, actor, id, (a) => a.reject(dto.reason ?? null, new Date(), dto.reasonCode ?? null), { officer: true, note: dto.reason ?? null, audit: { action: 'schemes.rejected', ip, value: { reason: dto.reason ?? null, reasonCode: dto.reasonCode ?? null } } }); }
+  async approve(_tenantId: string, _actor: SchemesActor, _id: string, _dto: ApproveDto, _ip: string | null): Promise<never> { throw new SchemeDecisionsAreTheAuthoritysError('approve'); }
+  async reject(_tenantId: string, _actor: SchemesActor, _id: string, _dto: RejectDto, _ip: string | null): Promise<never> { throw new SchemeDecisionsAreTheAuthoritysError('reject'); }
   async appeal(tenantId: string, actor: SchemesActor, id: string) { return this.transition(tenantId, actor, id, (a) => a.appeal(), { applicant: true }); }
-  async close(tenantId: string, actor: SchemesActor, id: string) { return this.transition(tenantId, actor, id, (a) => a.close(), { officer: true }); }
+  async close(_tenantId: string, _actor: SchemesActor, _id: string): Promise<never> { throw new SchemeDecisionsAreTheAuthoritysError('close'); }
 
   async getById(tenantId: string, actor: SchemesActor, id: string) {
     const a = await this.repo.getById(tenantId, id);

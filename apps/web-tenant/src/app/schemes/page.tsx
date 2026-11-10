@@ -27,6 +27,8 @@ export function generateMetadata(): Metadata {
 }
 
 const OK = new Set(['verify', 'clarify', 'approve', 'reject', 'close', 'dbt']);
+/** PC-56 GOV-2a — refusals the API names that this page states in words (×3 languages), not as a bare code. */
+const NAMED_REFUSALS = new Set(['SCHEME_DECISIONS_ARE_THE_AUTHORITYS']);
 
 function decodeElig(raw?: string): { e: boolean; r: string[] } | null {
   if (!raw) return null;
@@ -69,7 +71,9 @@ export default async function SchemesPage({ searchParams }: { searchParams: { ok
       <h1>{t.t('scm.title')}</h1>
       <p className="kv-muted">{t.t('scm.subtitle')}</p>
       {okKey && <p className="kv-success" role="status">{t.t(`scm.ok.${okKey}`)}</p>}
-      {errorKey && <p className="kv-error" role="alert">{t.t('scm.error')}: {errorKey}</p>}
+      {errorKey && (NAMED_REFUSALS.has(errorKey)
+        ? <p className="kv-error" role="alert" data-kv-refusal={errorKey}>{t.t(`scm.err.${errorKey}`)}</p>
+        : <p className="kv-error" role="alert">{t.t('scm.error')}: {errorKey}</p>)}
 
       {/* ---- verification queue ---- */}
       <h2 className="kv-section-title">{t.t('scm.queue.title')}</h2>

@@ -2,8 +2,8 @@
 // REAL end-to-end proof of the schemes spine against a live Postgres:
 //   1. eligibility check against the seeded PM-KISAN rules (eligible farmer, ineligible large-holding);
 //   2. apply to the seeded SMAM scheme (₹50 processing fee) → submit collects the fee (applicant → tenant
-//      'main', zero-sum, service_fee) → officer verifies → approves → records an observed DBT credit
-//      (no wallet movement) which moves the application to disbursed;
+//      'main', zero-sum, service_fee) → (PC-56 GOV-2a: the officer's verify/approve are refused by name — the authority decides; the
+//      approval is written by hand) → records an observed DBT credit (no wallet movement) which moves the application to disbursed;
 //   3. ROW-LEVEL SECURITY: tenant B cannot see tenant A's application.
 // Schema/seeds come from the REAL db/migrations + db/seeds (incl. 0209 scheme catalogue + ensure_partitions).
 import { randomUUID } from 'node:crypto';
@@ -96,9 +96,15 @@ run('schemes spine (integration, real Postgres + RLS + eligibility + processing 
     expect((await balTenant(tenantA)) - tBefore).toBe(5000n);   // tenant pool credited
   });
 
-  it('officer verifies → approves → records the observed DBT credit → application disbursed', async () => {
-    await appsSvc.startVerification(tenantA, officerActor, appId);
-    expect((await appsSvc.approve(tenantA, officerActor, appId, { govtAppRef: 'GOV-77' } as any, null)).status).toBe('approved');
+  // NAMED UPDATE — PC-56 GOV-2a (GOV-2 Q2-A, brief_gov2a §C "a NAMED UPDATE asserting the new refusal, never weakened"): the organisation's
+  // officer can no longer verify or approve — both are refused by name; the authority checks and decides (`/v1/gov/applications/:id/act`,
+  // proven live in gov2a-decide.integration). The authority's approval is therefore written HERE BY HAND (the owner), so the DBT half of this
+  // spine — an observed credit moves an approved application to disbursed, with no wallet movement — is still proven as before.
+  it('officer verify/approve are the authority\'s (refused by name) → the approval written by hand → records the observed DBT credit → application disbursed', async () => {
+    await expect(appsSvc.startVerification(tenantA, officerActor, appId)).rejects.toMatchObject({ code: 'SCHEME_DECISIONS_ARE_THE_AUTHORITYS' });
+    await expect(appsSvc.approve(tenantA, officerActor, appId, { govtAppRef: 'GOV-77' } as any, null)).rejects.toMatchObject({ code: 'SCHEME_DECISIONS_ARE_THE_AUTHORITYS' });
+    expect((await appsSvc.getById(tenantA, officerActor, appId)).status).toBe('submitted');   // nothing moved
+    await admin.query(`UPDATE scheme_applications SET status = 'approved', decided_at = now(), govt_app_ref = 'GOV-77' WHERE id = $1`, [appId]);
     const t = await dbt.record(tenantA, officerActor, appId, { amountMinor: '600000', instalmentNo: 1, creditedOn: new Date().toISOString().slice(0, 10), pfmsRef: 'PFMS-ABC' } as any, null);
     expect(t.amountMinor).toBe('600000');
     expect((await appsSvc.getById(tenantA, officerActor, appId)).status).toBe('disbursed');   // DBT moved it to disbursed

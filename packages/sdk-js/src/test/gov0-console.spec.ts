@@ -57,7 +57,9 @@ describe('PC-56 GOV-0 · SDK gov resource', () => {
     expect(page).toEqual({ items: [{ id: 'x1' }], nextCursor: 'cur', limit: 25, asOf: '2026-11-10T00:00:00.000Z' });
     expect(calls[1].url).toBe('https://api.test/v1/gov/applications/x1');
     const apps = Object.getOwnPropertyNames(Object.getPrototypeOf(c.gov.applications)).sort();
-    expect(apps).toEqual(['constructor', 'get', 'list']);
+    // NAMED UPDATE — PC-56 GOV-2a (GOV-2 Q2-A, brief_gov2a §E "SDK: gov.applications.act"): the ONE write on an application is `act`
+    // (verify / clarify / approve / reject, a second person decides). Still no review-desk, bulk or SSO method.
+    expect(apps).toEqual(['act', 'constructor', 'get', 'list']);
     const auth = Object.getOwnPropertyNames(Object.getPrototypeOf(c.gov.auth));
     for (const m of ['sso', 'departmental', 'hardwareKey', 'webauthn']) expect(auth).not.toContain(m);
   });

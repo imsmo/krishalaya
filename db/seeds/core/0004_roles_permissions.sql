@@ -388,7 +388,7 @@ END $$;
 
 -- [PC-56 GOV-0] THE GOVERNMENT REALM'S ROLES AS DATA (GOV-1 Q2-A/Q4-A, lead-applied 2026-11-10; migration 0239 inserts the same rows where
 -- missing). Two roles of scope 'authority', five permissions, the matrix: authority_head = every authority.* permission · authority_officer =
--- applications.read + members.read + members.request. GUARDED on 0239 having run (the 0225 reason: before it, `roles.scope` refuses 'authority').
+-- applications.read + members.read + members.request (+ GOV-2a, 0240: applications.verify; the head also applications.decide). GUARDED on 0239 having run (the 0225 reason: before it, `roles.scope` refuses 'authority').
 DO $$
 BEGIN
   IF to_regclass('public.authority_memberships') IS NOT NULL THEN
@@ -401,12 +401,16 @@ BEGIN
       ('authority.members.read',      'Government console: read this authority''s people and their roles', 'M17'),
       ('authority.members.request',   'Government console: request a role for a person (a second person approves)', 'M17'),
       ('authority.members.approve',   'Government console: approve a requested role (never your own request, never for yourself)', 'M17'),
-      ('authority.members.remove',    'Government console: remove a role at once, with a reason', 'M17')
+      ('authority.members.remove',    'Government console: remove a role at once, with a reason', 'M17'),
+      -- [PC-56 GOV-2a] (GOV-2 Q2-A, lead-applied 2026-11-10; migration 0240 inserts the same rows): checking and deciding. The head holds both;
+      -- the officer checks only. The decider is never the checker, the applicant or the assister (0240's CHECKs).
+      ('authority.applications.verify', 'Government console: check an application to this authority''s schemes, or ask the farmer for a clarification', 'M17'),
+      ('authority.applications.decide', 'Government console: approve or reject an application (never one you checked, made or helped make)', 'M17')
     ON CONFLICT (code) DO NOTHING;
     INSERT INTO role_permissions (role_id, permission_code)
     SELECT r.id, p.code FROM roles r JOIN permissions p ON
            (r.code = 'authority_head'    AND p.code LIKE 'authority.%')
-        OR (r.code = 'authority_officer' AND p.code IN ('authority.applications.read', 'authority.members.read', 'authority.members.request'))
+        OR (r.code = 'authority_officer' AND p.code IN ('authority.applications.read', 'authority.members.read', 'authority.members.request', 'authority.applications.verify'))
      WHERE r.scope = 'authority'
     ON CONFLICT DO NOTHING;
   END IF;

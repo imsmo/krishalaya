@@ -158,7 +158,8 @@ export class SchemeCrudService {
       // that is correct rather than inconvenient: the first version of a scheme is the one nobody has ever read.
       const v1 = await this.repo.insertVersion(client, {
         schemeId: ins.id, version: 1,
-        rules: { benefitSummary, eligibilityRules, requiredDocTypeIds, applicationWindow, applicableRegionIds, processingFeeMinor },
+        // GOV-2a (0240): v1 declares no form field; the maker adds them with a draft edit before the checker publishes
+        rules: { benefitSummary, eligibilityRules, requiredDocTypeIds, applicationWindow, applicableRegionIds, processingFeeMinor, formFields: [] },
         changeReason: dto.reason, draftedBy: actor.userId,
       });
       const newValue = { id: ins.id, code, defaultName, authorityId, categoryId, version: 1, isActive: false, processingFeeMinor, draftVersionId: v1.id };

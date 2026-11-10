@@ -69,7 +69,12 @@ export class SchemesResource {
     const r = await this.http.request<SchemeApplication[]>('GET', 'schemes/applications', { query: { box: params.box ?? 'queue', status: params.status, cursor: params.cursor, limit: params.limit ?? 50 }, signal });
     return { items: r.data, nextCursor: (r.meta?.nextCursor as string | null) ?? null };
   }
-  /** Move a submitted application into verification. */
+  /**
+   * Move a submitted application into verification.
+   * @deprecated PC-56 GOV-2a (GOV-2 Q2-A): CLOSED — the API refuses it by name for every caller: `SdkError` code
+   * `SCHEME_DECISIONS_ARE_THE_AUTHORITYS` (403). The government authority that runs the scheme checks and decides
+   * (`gov.applications.act`, a second person decides). Kept so existing callers compile and surface the refusal.
+   */
   async verifyApplication(id: string): Promise<SchemeApplication> {
     return (await this.http.request<SchemeApplication>('POST', `schemes/applications/${encodeURIComponent(id)}/verify`, {})).data;
   }
@@ -77,7 +82,12 @@ export class SchemesResource {
   async requestClarification(id: string, note?: string): Promise<SchemeApplication> {
     return (await this.http.request<SchemeApplication>('POST', `schemes/applications/${encodeURIComponent(id)}/clarify`, { body: { note } })).data;
   }
-  /** Approve an application (optionally stamping the government application reference). */
+  /**
+   * Approve an application (optionally stamping the government application reference).
+   * @deprecated PC-56 GOV-2a (GOV-2 Q2-A): CLOSED — the API refuses it by name for every caller: `SdkError` code
+   * `SCHEME_DECISIONS_ARE_THE_AUTHORITYS` (403). The government authority that runs the scheme checks and decides
+   * (`gov.applications.act`, a second person decides). Kept so existing callers compile and surface the refusal.
+   */
   async approveApplication(id: string, govtAppRef?: string): Promise<SchemeApplication> {
     return (await this.http.request<SchemeApplication>('POST', `schemes/applications/${encodeURIComponent(id)}/approve`, { body: { govtAppRef } })).data;
   }
@@ -92,6 +102,9 @@ export class SchemesResource {
    *
    * The parameter is added as an options object rather than a third positional argument so that adding the next field
    * does not shuffle a caller's arguments — and existing `rejectApplication(id, reason)` calls keep working unchanged.
+   * @deprecated PC-56 GOV-2a (GOV-2 Q2-A): CLOSED — the API refuses it by name for every caller: `SdkError` code
+   * `SCHEME_DECISIONS_ARE_THE_AUTHORITYS` (403). The government authority that runs the scheme checks and decides
+   * (`gov.applications.act`, a second person decides). Kept so existing callers compile and surface the refusal.
    */
   async rejectApplication(id: string, reason?: string, opts?: { reasonCode?: SchemeRejectionCode }): Promise<SchemeApplication> {
     const body: Record<string, unknown> = {};
@@ -101,7 +114,12 @@ export class SchemesResource {
     if (opts?.reasonCode !== undefined) body.reasonCode = opts.reasonCode;
     return (await this.http.request<SchemeApplication>('POST', `schemes/applications/${encodeURIComponent(id)}/reject`, { body })).data;
   }
-  /** Close a decided application. */
+  /**
+   * Close a decided application.
+   * @deprecated PC-56 GOV-2a (GOV-2 Q2-A): CLOSED — the API refuses it by name for every caller: `SdkError` code
+   * `SCHEME_DECISIONS_ARE_THE_AUTHORITYS` (403). The government authority that runs the scheme checks and decides
+   * (`gov.applications.act`, a second person decides). Kept so existing callers compile and surface the refusal.
+   */
   async closeApplication(id: string): Promise<SchemeApplication> {
     return (await this.http.request<SchemeApplication>('POST', `schemes/applications/${encodeURIComponent(id)}/close`, {})).data;
   }

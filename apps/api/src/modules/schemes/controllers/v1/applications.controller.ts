@@ -1,6 +1,7 @@
 // modules/schemes/controllers/v1/applications.controller.ts · scheme application lifecycle + DBT records. `schemes` flag.
-// apply/submit/resubmit/appeal = applicant (scheme.apply); verify/clarify/approve/reject/close + DBT record
-// = officer (scheme.process). Money route (submit, collects the processing fee) requires an Idempotency-Key.
+// apply/submit/resubmit/appeal = applicant (scheme.apply); clarify + DBT record + field visits = officer (scheme.process);
+// verify/approve/reject/close are CLOSED here (PC-56 GOV-2a — the authority checks and decides: SCHEME_DECISIONS_ARE_THE_AUTHORITYS).
+// Money route (submit, collects the processing fee) requires an Idempotency-Key.
 import { Controller, Delete, Get, Headers, Param, Post, Req, UseGuards, Query } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
@@ -89,15 +90,17 @@ export class ApplicationsController {
   @Post(':id/appeal') @RequirePermissions(SchemesPermissions.Apply)
   appeal(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.appeal(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
 
-  @Post(':id/verify') @RequirePermissions(SchemesPermissions.Process)
+  // PC-56 GOV-2a (GOV-2 Q2-A): verify / approve / reject / close are the AUTHORITY's — refused by name (SCHEME_DECISIONS_ARE_THE_AUTHORITYS) for
+  // every signed-in caller, so no permission is asked first (a permission refusal would hide the name). clarify keeps its permission.
+  @Post(':id/verify')
   verify(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.startVerification(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
   @Post(':id/clarify') @RequirePermissions(SchemesPermissions.Process)
   clarify(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(ClarifySchema) dto: ClarifyDto) { return this.svc.requestClarification(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data })); }
-  @Post(':id/approve') @RequirePermissions(SchemesPermissions.Process)
+  @Post(':id/approve')
   approve(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(ApproveSchema) dto: ApproveDto) { return this.svc.approve(ctx.tenantId, this.actor(ctx), id, dto, ipOf(r)).then((data) => ({ data })); }
-  @Post(':id/reject') @RequirePermissions(SchemesPermissions.Process)
+  @Post(':id/reject')
   reject(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(RejectSchema) dto: RejectDto) { return this.svc.reject(ctx.tenantId, this.actor(ctx), id, dto, ipOf(r)).then((data) => ({ data })); }
-  @Post(':id/close') @RequirePermissions(SchemesPermissions.Process)
+  @Post(':id/close')
   close(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.close(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
 
   // DBT (observed PFMS credit) — officer records; applicant/officer reads

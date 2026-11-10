@@ -12,3 +12,9 @@ export class SchemesForbiddenError extends AppError { constructor(message = 'Not
 export class DocumentsNotEditableError extends DomainError { constructor(status: string) { super('SCHEME_DOCS_NOT_EDITABLE', `Documents cannot be changed while the application is '${status}'`, 409, { status }); } }
 export class DocumentMediaInvalidError extends DomainError { constructor(message = 'Media not found, not yours, or not clean — cannot attach') { super('SCHEME_DOC_MEDIA_INVALID', message, 422); } }
 export class DocumentNotFoundError extends NotFoundError { constructor(id: string) { super('Scheme application document not found'); (this as any).code = 'SCHEME_APPLICATION_DOCUMENT_NOT_FOUND'; (this as any).details = { id }; } }
+/** PC-56 GOV-2a (GOV-2 Q2-A, lead-applied 2026-11-10 — the founder may reopen): checking and deciding an application belong to the government
+ *  authority that runs the scheme (`POST /v1/gov/applications/:id/act`, a second person decides). The organisation's own verify / approve /
+ *  reject / close acts are CLOSED, refused by name for every caller. Field visits and the DBT record stay (GOV-3 / GOV-4 own them). */
+export class SchemeDecisionsAreTheAuthoritysError extends DomainError {
+  constructor(act: string) { super('SCHEME_DECISIONS_ARE_THE_AUTHORITYS', 'Applications are checked and decided by the government authority that runs the scheme, not by the organisation.', 403, { act }); }
+}

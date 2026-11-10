@@ -979,6 +979,7 @@ export const gu: Messages = {
   'scm.subtitle': 'યોજના અરજીઓ પ્રોસેસ કરો, DBT ક્રેડિટ નોંધો અને વતી પાત્રતા તપાસો.',
   'scm.loadError': 'અમે અત્યારે આ વિભાગ લોડ કરી શક્યા નહીં.',
   'scm.error': 'અમે તે સાચવી શક્યા નહીં',
+  'scm.err.SCHEME_DECISIONS_ARE_THE_AUTHORITYS': 'અરજીઓની ચકાસણી અને નિર્ણય યોજના ચલાવતી સરકારી સત્તા કરે છે, સંસ્થા નહીં.',
   'scm.status': 'સ્થિતિ',
   'scm.minor': 'પૈસા',
   'scm.ok.verify': 'અરજી ચકાસણીમાં ખસેડી.',

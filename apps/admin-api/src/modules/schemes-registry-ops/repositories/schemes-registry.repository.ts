@@ -29,7 +29,7 @@ function toScheme(r: any): Scheme {
 
 const VERSION_COLS = `id, scheme_id, version, status, benefit_summary, eligibility_rules, required_doc_type_ids,
   application_window, applicable_region_ids, processing_fee_minor::text AS processing_fee_minor, change_reason,
-  drafted_by, drafted_at, published_by, published_at, checker_note, is_backfilled`;
+  drafted_by, drafted_at, published_by, published_at, checker_note, is_backfilled, form_fields`;
 function toVersion(r: any): VersionRow {
   return {
     id: r.id, schemeId: r.scheme_id, version: r.version, status: r.status as VersionStatus,
@@ -38,6 +38,7 @@ function toVersion(r: any): VersionRow {
     applicableRegionIds: r.applicable_region_ids ?? [],
     // TEXT in, string out. A bigint that touches a JS number is a bigint that may have lost its last digits.
     processingFeeMinor: String(r.processing_fee_minor ?? '0'),
+    formFields: Array.isArray(r.form_fields) ? r.form_fields : [],
     changeReason: r.change_reason, draftedBy: r.drafted_by ?? null,
     draftedAt: r.drafted_at ? new Date(r.drafted_at).toISOString() : null,
     publishedBy: r.published_by ?? null,
@@ -196,22 +197,22 @@ export class SchemesRegistryRepository {
   async insertVersion(client: PoolClient, v: { schemeId: string; version: number; rules: VersionRules; changeReason: string; draftedBy: string }): Promise<{ id: string }> {
     const r = await client.query(
       `INSERT INTO scheme_versions (scheme_id, version, status, benefit_summary, eligibility_rules, required_doc_type_ids,
-                                    application_window, applicable_region_ids, processing_fee_minor, change_reason, drafted_by, created_by, updated_by)
-       VALUES ($1,$2,'draft',$3::jsonb,$4::jsonb,$5::jsonb,$6::jsonb,$7::jsonb,$8,$9,$10,$10,$10) RETURNING id`,
+                                    application_window, applicable_region_ids, processing_fee_minor, change_reason, drafted_by, created_by, updated_by, form_fields)
+       VALUES ($1,$2,'draft',$3::jsonb,$4::jsonb,$5::jsonb,$6::jsonb,$7::jsonb,$8,$9,$10,$10,$10,$11::jsonb) RETURNING id`,
       [v.schemeId, v.version, JSON.stringify(v.rules.benefitSummary), JSON.stringify(v.rules.eligibilityRules), JSON.stringify(v.rules.requiredDocTypeIds),
        v.rules.applicationWindow != null ? JSON.stringify(v.rules.applicationWindow) : null, JSON.stringify(v.rules.applicableRegionIds),
-       v.rules.processingFeeMinor, v.changeReason, v.draftedBy]);
+       v.rules.processingFeeMinor, v.changeReason, v.draftedBy, JSON.stringify(v.rules.formFields ?? [])]);
     return { id: r.rows[0].id };
   }
   async updateDraft(client: PoolClient, id: string, rules: VersionRules, changeReason: string, actorUserId: string): Promise<void> {
     await client.query(
       `UPDATE scheme_versions SET benefit_summary=$2::jsonb, eligibility_rules=$3::jsonb, required_doc_type_ids=$4::jsonb,
               application_window=$5::jsonb, applicable_region_ids=$6::jsonb, processing_fee_minor=$7, change_reason=$8,
-              updated_by=$9, updated_at=now()
+              updated_by=$9, updated_at=now(), form_fields=$10::jsonb
         WHERE id=$1 AND status='draft' AND deleted_at IS NULL`,
       [id, JSON.stringify(rules.benefitSummary), JSON.stringify(rules.eligibilityRules), JSON.stringify(rules.requiredDocTypeIds),
        rules.applicationWindow != null ? JSON.stringify(rules.applicationWindow) : null, JSON.stringify(rules.applicableRegionIds),
-       rules.processingFeeMinor, changeReason, actorUserId]);
+       rules.processingFeeMinor, changeReason, actorUserId, JSON.stringify(rules.formFields ?? [])]);
   }
   /** Discard = soft delete. The row stays for the audit trail and its version NUMBER stays burned (see
    *  maxVersionEverUsed); only the unique partial indexes are freed so the next draft can open. */

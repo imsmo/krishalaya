@@ -32,7 +32,7 @@ function toJson(v: VersionRow, applicationCount: number | null) {
     id: v.id, schemeId: v.schemeId, version: v.version, status: v.status,
     benefitSummary: v.benefitSummary, eligibilityRules: v.eligibilityRules,
     requiredDocTypeIds: v.requiredDocTypeIds, applicationWindow: v.applicationWindow,
-    applicableRegionIds: v.applicableRegionIds, processingFeeMinor: v.processingFeeMinor,
+    applicableRegionIds: v.applicableRegionIds, processingFeeMinor: v.processingFeeMinor, formFields: v.formFields,
     changeReason: v.changeReason, draftedBy: v.draftedBy, draftedAt: v.draftedAt,
     publishedBy: v.publishedBy, publishedAt: v.publishedAt, checkerNote: v.checkerNote,
     isBackfilled: v.isBackfilled, isSigned: isSignedVersion(v),
@@ -45,6 +45,7 @@ function toJson(v: VersionRow, applicationCount: number | null) {
 const rulesOf = (v: VersionRow): VersionRules => ({
   benefitSummary: v.benefitSummary, eligibilityRules: v.eligibilityRules, requiredDocTypeIds: v.requiredDocTypeIds,
   applicationWindow: v.applicationWindow, applicableRegionIds: v.applicableRegionIds, processingFeeMinor: v.processingFeeMinor,
+  formFields: v.formFields,
 });
 
 @Injectable()

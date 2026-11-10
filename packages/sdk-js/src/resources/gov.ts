@@ -10,13 +10,21 @@
 //   • several authorities → `GOV_CHOICE_REQUIRED`, `details: { choiceToken, authorities: [{ id, name }] }`; finish with `auth.choose`;
 //   • members: `request` (any member; a person by phone, a role, 1–12 months, a reason), `approve` (a head who is neither the requester nor
 //     the grantee — the second person), `remove` (one head, at once, with a reason) — each needs an Idempotency-Key;
-//   • applications: read only, to the authority's own schemes; every `get` is recorded server-side and the organisation can see it; the
-//     form arrives masked (phone / Aadhaar / bank → ••••••xyz) with location fields removed. There is no review or decision method.
+//   • applications: to the authority's own schemes, NEVER a farmer's unsent draft (PC-56 GOV-2a); every `get` is recorded server-side and the
+//     organisation can see it; the form is the DECLARED fields of the version it was filed under, personal ones masked (••••••xyz) — an
+//     undeclared field never arrives (GOV-2 Q3-A);
+//   • `applications.act` (PC-56 GOV-2a, GOV-2 Q2-A): verify / clarify (authority.applications.verify) and approve / reject
+//     (authority.applications.decide — the head only). A decision follows a check BY ANOTHER PERSON: never the checker, never the applicant,
+//     never the assister (`GOV_DECIDER_IS_VERIFIER` / `_APPLICANT` / `_ASSISTER`, `GOV_NOT_VERIFIED`); a rejection names a listed
+//     `reasonCode` and a `note` of 10–500 characters; approval carries NO amount (Q1-A). Needs an Idempotency-Key;
+//   • `schemes` (PC-56 GOV-2a, Q5-A): the authority's own schemes read-only — published fields only, never an amount, never a draft's
+//     content, never an operator id. There is no scheme write in this realm.
 import { HttpClient } from '../http';
 import { AuthTokens } from '../types';
 
 export type GovRoleCode = 'authority_head' | 'authority_officer';
-export type GovPermission = 'authority.applications.read' | 'authority.members.read' | 'authority.members.request' | 'authority.members.approve' | 'authority.members.remove';
+export type GovPermission = 'authority.applications.read' | 'authority.members.read' | 'authority.members.request' | 'authority.members.approve' | 'authority.members.remove'
+  | 'authority.applications.verify' | 'authority.applications.decide';
 export interface GovMe {
   authority: { id: string; name: string; level: 'central' | 'state' | 'district' | 'body' | string } | null;
   person: { userId: string; roles: string[]; permissions: string[]; phoneMasked: string | null; accessEndsAt: string | null };
@@ -31,6 +39,7 @@ export interface GovMembership {
   approvedBy: string | null; approvedAt: string | null; expiresAt: string | null;
   removedBy: string | null; removedAt: string | null; removedReason: string | null;
 }
+/** `draft` never arrives (PC-56 GOV-2a) — kept in the union for older callers. */
 export type GovApplicationStatus = 'draft' | 'submitted' | 'under_verification' | 'clarification_needed' | 'approved' | 'rejected' | 'disbursed' | 'closed' | 'appealed';
 export interface GovApplication {
   id: string;
@@ -39,12 +48,40 @@ export interface GovApplication {
   scheme: { id: string; code: string; name: string }; schemeVersion: number; status: GovApplicationStatus | string;
   submittedAt: string | null; decidedAt: string | null; createdAt: string;
 }
+/** PC-56 GOV-2a · one DECLARED form field (the scheme version declares it); a personal value arrives as ••••••xyz. */
+export interface GovFormField { key: string; label: string; kind: 'text' | 'number' | 'date' | 'boolean' | 'choice' | string; personal: boolean; value: unknown }
 export interface GovApplicationOpened extends GovApplication {
-  /** The stored form, masked by the database; location fields removed. */
-  form: Record<string, unknown> | null;
+  /** The DECLARED fields only, in declared order; `[]` when the version declares none. */
+  form: GovFormField[];
+  /** false → the version this application was filed under declares no form field, so none is shown. */
+  formDeclared: boolean;
   /** Always true: this opening was recorded for the application's organisation. */
   recorded: true;
 }
+export type GovAct = 'verify' | 'clarify' | 'approve' | 'reject';
+/** The 11 listed rejection reasons (0106). */
+export type GovRejectionCode = 'aadhaar_seeding_mismatch' | 'land_record_name_variance' | 'duplicate_application' | 'window_missed' | 'documents_missing'
+  | 'ineligible_landholding' | 'ineligible_category' | 'ineligible_region' | 'portal_rejected' | 'withdrawn_by_applicant' | 'other';
+export interface GovActInput { act: GovAct; reasonCode?: GovRejectionCode; note?: string }
+export interface GovActResult { id: string; act: GovAct; status: GovApplicationStatus | string; from: string; decidedAt: string | null; recorded: true }
+/** PC-56 GOV-2a · B3 — the authority's own scheme, from its PUBLISHED version. No amount, no fee, no draft content, no operator id. */
+export interface GovScheme {
+  id: string; code: string; name: string; category: { code: string; name: string } | null; isActive: boolean;
+  version: number | null; publishedAt: string | null; publishedBySecondPerson: boolean; isBackfilled: boolean; newerDraftExists: boolean;
+  /** Versions below this number were not recorded (rewritten in place before versioning existed). */
+  unrecordedBelow: number | null;
+  published: {
+    benefitType: string | null; instalments: number | null;
+    /** The evaluator's five fields only: roles, landholding_max_acres, gender, age_min, age_max. */
+    rules: Record<string, unknown>;
+    /** As stored in the rules (not enforced at apply today). */
+    applicationWindow: unknown;
+    regions: Array<{ id: string; name: string }>; requiredDocuments: Array<{ id: string; code: string; name: string }>;
+    formFields: Array<{ key: string; label: string; kind: string; personal: boolean }>;
+  } | null;
+}
+export interface GovSchemeVersion { version: number; status: 'published' | 'superseded' | string; publishedAt: string | null; publishedBySecondPerson: boolean; isBackfilled: boolean }
+export interface GovSchemeVersionDiff { version: number; comparedWith: number | null; changes: Array<{ field: string; from: unknown; to: unknown }> }
 /** PC-56 GOV-1b · the statuses the overview counts (every application status except `draft`). */
 export type GovOverviewStatus = 'submitted' | 'under_verification' | 'clarification_needed' | 'approved' | 'rejected' | 'disbursed' | 'closed' | 'appealed';
 /** PC-56 GOV-1b · GOV1-B5 — the authority's overview: COUNTS ONLY, computed by the server in SQL over every application ever submitted to the
@@ -106,8 +143,8 @@ class GovMembers {
 
 class GovApplications {
   constructor(private readonly http: HttpClient) {}
-  async list(q: { status?: GovApplicationStatus; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<GovApplicationsPage> {
-    const r = await this.http.request<GovApplication[]>('GET', 'gov/applications', { query: { status: q.status, cursor: q.cursor, limit: q.limit }, signal });
+  async list(q: { status?: Exclude<GovApplicationStatus, 'draft'>; schemeId?: string; cursor?: string; limit?: number } = {}, signal?: AbortSignal): Promise<GovApplicationsPage> {
+    const r = await this.http.request<GovApplication[]>('GET', 'gov/applications', { query: { status: q.status, schemeId: q.schemeId, cursor: q.cursor, limit: q.limit }, signal });
     const m = (r.meta ?? {}) as { nextCursor?: string | null; limit?: number; asOf?: string };
     return { items: r.data, nextCursor: m.nextCursor ?? null, limit: m.limit ?? r.data.length, asOf: m.asOf ?? null };
   }
@@ -115,14 +152,32 @@ class GovApplications {
   async get(id: string, signal?: AbortSignal): Promise<GovApplicationOpened> {
     return (await this.http.request<GovApplicationOpened>('GET', `gov/applications/${encodeURIComponent(id)}`, { signal })).data;
   }
+  /** PC-56 GOV-2a — one act (verify / clarify / approve / reject), recorded for the organisation. Approval carries no amount. */
+  async act(id: string, input: GovActInput, idempotencyKey: string): Promise<GovActResult> {
+    return (await this.http.request<GovActResult>('POST', `gov/applications/${encodeURIComponent(id)}/act`, { idempotencyKey, body: input })).data;
+  }
+}
+
+/** PC-56 GOV-2a · the authority's own schemes — read only. */
+class GovSchemes {
+  constructor(private readonly http: HttpClient) {}
+  async list(signal?: AbortSignal): Promise<GovScheme[]> { return (await this.http.request<GovScheme[]>('GET', 'gov/schemes', { signal })).data; }
+  async get(id: string, signal?: AbortSignal): Promise<GovScheme> { return (await this.http.request<GovScheme>('GET', `gov/schemes/${encodeURIComponent(id)}`, { signal })).data; }
+  async versions(id: string, signal?: AbortSignal): Promise<GovSchemeVersion[]> {
+    return (await this.http.request<GovSchemeVersion[]>('GET', `gov/schemes/${encodeURIComponent(id)}/versions`, { signal })).data;
+  }
+  async diff(id: string, version: number, signal?: AbortSignal): Promise<GovSchemeVersionDiff> {
+    return (await this.http.request<GovSchemeVersionDiff>('GET', `gov/schemes/${encodeURIComponent(id)}/versions/${encodeURIComponent(String(version))}/diff`, { signal })).data;
+  }
 }
 
 export class GovResource {
   readonly auth: GovAuth;
   readonly members: GovMembers;
   readonly applications: GovApplications;
+  readonly schemes: GovSchemes;
   constructor(private readonly http: HttpClient) {
-    this.auth = new GovAuth(http); this.members = new GovMembers(http); this.applications = new GovApplications(http);
+    this.auth = new GovAuth(http); this.members = new GovMembers(http); this.applications = new GovApplications(http); this.schemes = new GovSchemes(http);
   }
   /** The authority and the signed-in person (roles, permissions, phone by its last 3, when their access ends). */
   async me(signal?: AbortSignal): Promise<GovMe> { return (await this.http.request<GovMe>('GET', 'gov/me', { signal })).data; }

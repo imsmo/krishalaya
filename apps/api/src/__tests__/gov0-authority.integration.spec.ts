@@ -223,7 +223,8 @@ run('PC-56 GOV-0 · a government authority is an organisation (integration, real
     const c = claimsOf(tok.F.accessToken);
     expect(c).toMatchObject({ sub: people.F.id, aid: AUTH1, realm: 'gov', typ: 'gov_access' });
     expect(c).not.toHaveProperty('tid'); expect(c).not.toHaveProperty('pid');
-    expect(c.perms).toEqual(['authority.applications.read', 'authority.members.read', 'authority.members.request']);
+    // NAMED UPDATE — PC-56 GOV-2a (0240, GOV-2 Q2-A): the officer also CHECKS applications (authority.applications.verify); deciding is the head's
+    expect(c.perms).toEqual(['authority.applications.read', 'authority.applications.verify', 'authority.members.read', 'authority.members.request']);
     expect((await admin.query(`SELECT realm, authority_id, partner_id FROM sessions WHERE id = $1`, [c.sid])).rows[0]).toEqual({ realm: 'gov', authority_id: AUTH1, partner_id: null });
     const me = await request(http).get('/v1/gov/me').set(as('F'));
     expect(me.status).toBe(200);
@@ -275,7 +276,8 @@ run('PC-56 GOV-0 · a government authority is an organisation (integration, real
   // ─────────────────────────────────────────────────────────────────────────────────────────────────────────── (4)
   it('(4) B requests, B approves → refused; the grantee approving → refused; C approves → active with expires_at; the CHECKs hold for the owner', async () => {
     await enrolAndSignIn('B'); await enrolAndSignIn('C');
-    expect(claimsOf(tok.B.accessToken).perms).toEqual(['authority.applications.read', 'authority.members.approve', 'authority.members.read', 'authority.members.remove', 'authority.members.request']);
+    // NAMED UPDATE — PC-56 GOV-2a (0240, GOV-2 Q2-A): the head also checks (verify) and decides (decide) applications
+    expect(claimsOf(tok.B.accessToken).perms).toEqual(['authority.applications.decide', 'authority.applications.read', 'authority.applications.verify', 'authority.members.approve', 'authority.members.read', 'authority.members.remove', 'authority.members.request']);
     // B asks for D as an officer for 6 months
     const rq = await request(http).post('/v1/gov/members/requests').set({ ...as('B'), 'idempotency-key': key() })
       .send({ phone: people.D.phone, roleCode: 'authority_officer', termMonths: 6, reason: 'district scheme officer for the kharif desk' });
@@ -339,11 +341,12 @@ run('PC-56 GOV-0 · a government authority is an organisation (integration, real
     const o = await request(http).get(`/v1/gov/applications/${ids.appX1}`).set(as('D'));
     expect(o.status).toBe(200);
     expect(o.body.data).toMatchObject({ id: ids.appX1, organisationId: X, scheme: { id: ids.s1, name: 'Gov Zero Scheme One' }, status: 'submitted', recorded: true });
-    // (the bank block is one PII key: its whole value is masked to the last 3 characters of its text — jsonb orders the keys, so '455')
-    expect(o.body.data.form).toEqual({ landholdingAcres: 2.5, crop: 'groundnut', mobileNumber: `••••••${people.farmerX.phone.slice(-3)}`, aadhaar: '••••••234',
-      bankAccount: '••••••455', village: 'Test village' });
+    // NAMED UPDATE — PC-56 GOV-2a (0240, GOV-2 Q3-A): the masking-by-key-name form GOV-0 returned is REPLACED by the DECLARED fields of the
+    // version the application was filed under. This fixture names no version (scheme_version_id NULL), so NOTHING of the form is returned —
+    // stricter than before: the village and the crop, which GOV-0 passed through, are gone too. Declared-field masking is proven in gov2a-decide.
+    expect([o.body.data.form, o.body.data.formDeclared]).toEqual([[], false]);
     const text = JSON.stringify(o.body);
-    for (const leak of [people.farmerX.phone, people.farmerX.id, '123412341234', '001122334455', 'SBIN0001234', 'farmLocation', 'gpsLat', 'free text that names']) expect([leak, text.includes(leak)]).toEqual([leak, false]);
+    for (const leak of [people.farmerX.phone, people.farmerX.id, '123412341234', '001122334455', 'SBIN0001234', 'farmLocation', 'gpsLat', 'free text that names', 'Test village', 'groundnut']) expect([leak, text.includes(leak)]).toEqual([leak, false]);
     // ONE recorded-read row per opening, a TENANT row of the application's organisation — X sees it, Y does not
     expect(await recorded(X, 'gov_application_open', ids.appX1)).toBe(1);
     await request(http).get(`/v1/gov/applications/${ids.appX1}`).set(as('D'));

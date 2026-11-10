@@ -45,9 +45,23 @@ export type GovMemberRequestDto = z.infer<typeof GovMemberRequestSchema>;
 export const GovReasonSchema = z.object({ reason: z.string().max(2000) }).strict();
 export type GovReasonDto = z.infer<typeof GovReasonSchema>;
 
+/** PC-56 GOV-2a · B1 (GOV-2 Q3-A): a farmer's DRAFT never reaches the authority — `draft` is not a status this realm can ask for (the
+ *  repository and 0240's policy exclude it too; the policy is the wall). B4: the scheme filter (one of the authority's schemes; another
+ *  authority's id simply matches nothing). The keyset is unchanged. */
+export const GOV_VISIBLE_STATUSES = ['submitted', 'under_verification', 'clarification_needed', 'approved', 'rejected', 'disbursed', 'closed', 'appealed'] as const;
 export const GovApplicationsQuerySchema = z.object({
-  status: z.enum(['draft', 'submitted', 'under_verification', 'clarification_needed', 'approved', 'rejected', 'disbursed', 'closed', 'appealed']).optional(),
+  status: z.enum(GOV_VISIBLE_STATUSES).optional(),
+  schemeId: z.string().uuid().optional(),
   cursor: z.string().max(200).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
 }).strict();
 export type GovApplicationsQueryDto = z.infer<typeof GovApplicationsQuerySchema>;
+
+/** PC-56 GOV-2a · B2 (GOV-2 Q2-A, Q1-A): one act on one application. `approve` carries NO amount (an unknown key is refused by .strict());
+ *  `reject` needs a listed `reasonCode` AND a `note` (the sentence the farmer reads); `clarify` needs a `note`. The domain names each refusal. */
+export const GovApplicationActSchema = z.object({
+  act: z.enum(['verify', 'clarify', 'approve', 'reject']),
+  reasonCode: z.string().max(40).optional(),
+  note: z.string().max(2000).optional(),
+}).strict();
+export type GovApplicationActDto = z.infer<typeof GovApplicationActSchema>;

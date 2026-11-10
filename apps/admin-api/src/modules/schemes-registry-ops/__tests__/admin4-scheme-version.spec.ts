@@ -18,6 +18,7 @@ const rules = (over: Partial<VersionRules> = {}): VersionRules => ({
   applicationWindow: { opens: '06-01', closes: '07-31', season: 'kharif' },
   applicableRegionIds: [],
   processingFeeMinor: '0',
+  formFields: [],   // PC-56 GOV-2a (0240): the seventh versioned field
   ...over,
 });
 

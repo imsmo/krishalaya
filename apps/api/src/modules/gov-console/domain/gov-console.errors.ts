@@ -43,6 +43,19 @@ export const GOV_CODES: Readonly<Record<string, { status: number; message: strin
   GOV_ROLE_NOT_TENANT: { status: 422, message: 'An authority role is held inside an authority, never inside an organisation.' },
   // applications (Q3-A)
   GOV_APPLICATION_NOT_FOUND: { status: 404, message: 'This application was not found.' },
+  // GOV-2a · the act (GOV-2 Q2-A; Q1-A: approval carries no amount) — 0240's DEFINER raises the same codes
+  GOV_ACT_UNKNOWN: { status: 422, message: 'The act is one of verify, clarify, approve or reject.' },
+  GOV_ACT_NOT_NOW: { status: 409, message: 'This application\'s status does not allow this step.' },
+  GOV_NOTE_REQUIRED: { status: 422, message: 'A clarification asks its question in a sentence of 10 to 500 characters. A note is at most 500 characters.' },
+  GOV_REASON_CODE_REQUIRED: { status: 422, message: 'A rejection names one reason from the published list.' },
+  GOV_REASON_CODE_ONLY_ON_REJECT: { status: 422, message: 'Only a rejection carries a reason code.' },
+  GOV_NOT_VERIFIED: { status: 409, message: 'This application has not been checked. A decision follows a check by another person.' },
+  GOV_DECIDER_IS_VERIFIER: { status: 403, message: 'The person who checked this application does not decide it. Another person decides.' },
+  GOV_DECIDER_IS_APPLICANT: { status: 403, message: 'Nobody decides their own application.' },
+  GOV_DECIDER_IS_ASSISTER: { status: 403, message: 'Nobody decides an application they helped make.' },
+  // GOV-2a · the authority's schemes (Q5-A)
+  GOV_SCHEME_NOT_FOUND: { status: 404, message: 'This scheme was not found.' },
+  GOV_SCHEME_VERSION_NOT_FOUND: { status: 404, message: 'This version of the scheme was not found.' },
 });
 
 export function govRefused(code: string, details: Record<string, unknown> = {}): GovRefusedError {

@@ -3,8 +3,10 @@
 // Every controller runs GovConsoleFlagGuard (flag `gov_console`, platform-scoped, OFF → 404 on every route) → GovSessionGuard (a GOV token:
 // realm 'gov' + aid, no tid, no pid; a tenant or partner token is 401 GOV_SESSION_REQUIRED) → GovPermissionsGuard (every route DECLARES what
 // it needs). None uses the tenant AuthGuard / PermissionsGuard: an organisation's administrator holds NOTHING here.
-// NOT HERE, by GOV-1 Q5-A: government SSO, a departmental ID, a hardware key — no such route exists (a call answers 404). NOT HERE, by the
-// brief: any write on an application (GOV-2's doors). The first head is appointed in the ADMIN realm (apps/admin-api, FIDO2 + step-up).
+// NOT HERE, by GOV-1 Q5-A: government SSO, a departmental ID, a hardware key — no such route exists (a call answers 404). The first head is
+// appointed in the ADMIN realm (apps/admin-api, FIDO2 + step-up). PC-56 GOV-2a (GOV-2 Q2-A): ONE write on an application — `POST
+// applications/:id/act` (keyed) — and the authority's own schemes read-only (Q5-A: NO write on a scheme exists in this realm; authoring is
+// the platform's, in the admin realm, two people).
 import { Controller, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { clientIpOf } from '../../../../core/http/client-ip';
@@ -17,7 +19,7 @@ import { GovAuthService } from '../../services/gov-auth.service';
 import { GovMembersService } from '../../services/gov-members.service';
 import { GovApplicationsService } from '../../services/gov-applications.service';
 import {
-  GovApplicationsQueryDto, GovApplicationsQuerySchema, GovEnrolConfirmDto, GovEnrolConfirmSchema, GovEnrolDto, GovEnrolSchema,
+  GovApplicationActDto, GovApplicationActSchema, GovApplicationsQueryDto, GovApplicationsQuerySchema, GovEnrolConfirmDto, GovEnrolConfirmSchema, GovEnrolDto, GovEnrolSchema,
   GovMemberRequestDto, GovMemberRequestSchema, GovOtpDto, GovOtpSchema, GovReasonDto, GovReasonSchema, GovRefreshDto, GovRefreshSchema,
   GovTwoFactorDto, GovTwoFactorSchema, GovVerifyDto, GovVerifySchema,
 } from '../../dto/gov-console.dto';
@@ -87,7 +89,7 @@ export class GovMembersController {
   }
 }
 
-/** Applications to the authority's schemes — read only; every opening recorded. */
+/** Applications to the authority's schemes — every opening recorded; never a draft (GOV-2a B1); one act route (GOV-2a B2). */
 @Controller({ path: 'gov/applications', version: '1' })
 @UseGuards(GovConsoleFlagGuard, GovSessionGuard, GovPermissionsGuard)
 export class GovApplicationsController {
@@ -100,6 +102,35 @@ export class GovApplicationsController {
 
   @GovPermissions('authority.applications.read') @Get(':id')
   open(@CurrentGovSession() s: GovSession, @Param('id') id: string) { return this.apps.open(s, id).then((data) => ({ data })); }
+
+  /** GOV-2a · B2: verify / clarify (authority.applications.verify — the guard) and approve / reject (authority.applications.decide — the
+   *  service, before any key is reserved). Approval carries no amount. */
+  @GovPermissions('authority.applications.read', 'authority.applications.verify') @RateLimit({ limit: 60, windowSec: 60, by: 'ip' }) @Post(':id/act')
+  act(@CurrentGovSession() s: GovSession, @Param('id') id: string, @Headers('idempotency-key') key: string, @ZodBody(GovApplicationActSchema) dto: GovApplicationActDto) {
+    return this.apps.act(s, id, dto, key).then((data) => ({ data }));
+  }
+}
+
+/** PC-56 GOV-2a · B3 (GOV-2 Q5-A, Q1-A): the authority's OWN schemes — published fields only, never an amount, never a draft's content,
+ *  never an operator id; another authority's scheme answers the same 404 as an unknown one. Read only: no write on a scheme exists here. */
+@Controller({ path: 'gov/schemes', version: '1' })
+@UseGuards(GovConsoleFlagGuard, GovSessionGuard, GovPermissionsGuard)
+export class GovSchemesController {
+  constructor(private readonly apps: GovApplicationsService) {}
+
+  @GovPermissions('authority.applications.read') @Get()
+  list(@CurrentGovSession() s: GovSession) { return this.apps.schemes(s).then((data) => ({ data })); }
+
+  @GovPermissions('authority.applications.read') @Get(':id')
+  get(@CurrentGovSession() s: GovSession, @Param('id') id: string) { return this.apps.scheme(s, id).then((data) => ({ data })); }
+
+  @GovPermissions('authority.applications.read') @Get(':id/versions')
+  versions(@CurrentGovSession() s: GovSession, @Param('id') id: string) { return this.apps.schemeVersions(s, id).then((data) => ({ data })); }
+
+  @GovPermissions('authority.applications.read') @Get(':id/versions/:version/diff')
+  diff(@CurrentGovSession() s: GovSession, @Param('id') id: string, @Param('version') version: string) {
+    return this.apps.schemeVersionDiff(s, id, version).then((data) => ({ data }));
+  }
 }
 
 /** PC-56 GOV-1b · GOV1-B5 — the authority's overview (W325): counts over applications to the schemes it runs, across organisations; no
@@ -113,4 +144,4 @@ export class GovOverviewController {
   overview(@CurrentGovSession() s: GovSession) { return this.apps.overview(s).then((data) => ({ data })); }
 }
 
-export const GOV_CONSOLE_CONTROLLERS = [GovAuthController, GovMeController, GovMembersController, GovApplicationsController, GovOverviewController];
+export const GOV_CONSOLE_CONTROLLERS = [GovAuthController, GovMeController, GovMembersController, GovApplicationsController, GovOverviewController, GovSchemesController];

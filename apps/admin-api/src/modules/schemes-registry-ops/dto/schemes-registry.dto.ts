@@ -4,6 +4,7 @@
 // float, Law 2). The JSON blobs are passed through (domain bounds + validates them).
 import { z } from 'zod';
 import { AUTHORITY_LEVELS } from '../domain/scheme-rules';
+import { FORM_FIELD_KINDS, MAX_FORM_FIELDS, isLocationKey, mustBePersonal } from '../domain/scheme-form-fields';
 
 const Reason = z.string().min(3).max(1000);
 const Cursor = z.string().max(200).optional();
@@ -110,6 +111,19 @@ export type QueryChangesDto = z.infer<typeof QueryChangesSchema>;
 
 /* ============================ the version plane (PC-56 ADMIN-4 / migration 0105) ============================ */
 
+/** PC-56 GOV-2a · B2f (GOV-2 Q3-A): the form fields a version asks for. Validated here (unique keys, the kind enum, `personal` a boolean, a
+ *  name / village / caste key personal, no location key) AND in the domain AND by 0240's CHECK. */
+export const FormFieldSchema = z.object({
+  key: z.string().regex(/^[A-Za-z][A-Za-z0-9_]{0,59}$/),
+  label: z.string().trim().min(1).max(120),
+  kind: z.enum(FORM_FIELD_KINDS),
+  personal: z.boolean(),
+}).strict()
+  .refine((f) => !isLocationKey(f.key), { message: 'a location key is never declared', path: ['key'] })
+  .refine((f) => !mustBePersonal(f.key) || f.personal === true, { message: 'a key naming personal data (name, village, caste, phone, Aadhaar, bank…) must be personal', path: ['personal'] });
+export const FormFieldsSchema = z.array(FormFieldSchema).max(MAX_FORM_FIELDS)
+  .refine((a) => new Set(a.map((f) => f.key)).size === a.length, { message: 'form field keys must be unique' });
+
 /** A draft edit. Every field optional (a draft is edited a field at a time) but `reason` is always required, and the
  *  refine below refuses a body that changes nothing — an empty patch would open a version whose only content is a
  *  reason, and a version history padded with those is a history nobody reads. */
@@ -121,10 +135,12 @@ export const SaveDraftSchema = z.object({
   // NULLABLE and optional are different requests: `null` clears the window (an always-open scheme), absent leaves it.
   applicationWindow: Window.nullable().optional(),
   processingFeeMinor: FeeMinor.optional(),
+  formFields: FormFieldsSchema.optional(),   // PC-56 GOV-2a (0240)
   reason: Reason,
 }).strict().refine(
   (v) => v.benefitSummary !== undefined || v.eligibilityRules !== undefined || v.requiredDocTypeIds !== undefined
-      || v.applicableRegionIds !== undefined || v.applicationWindow !== undefined || v.processingFeeMinor !== undefined,
+      || v.applicableRegionIds !== undefined || v.applicationWindow !== undefined || v.processingFeeMinor !== undefined
+      || v.formFields !== undefined,
   { message: 'a draft edit must change at least one versioned field' },
 );
 export type SaveDraftDto = z.infer<typeof SaveDraftSchema>;

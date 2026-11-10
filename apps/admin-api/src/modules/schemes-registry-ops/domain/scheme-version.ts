@@ -18,6 +18,7 @@
 // UPDATE on the live row, no version, no history of what the date used to be.
 import { assertJsonObject, assertUuidArray, assertWindow, assertFeeMinor, assertPlainText } from './scheme-rules';
 import { InvalidSchemeInputError, SelfPublishError, VersionNotDraftError } from './schemes-registry.errors';
+import { FormField, assertFormFields } from './scheme-form-fields';
 
 export type VersionStatus = 'draft' | 'published' | 'superseded';
 
@@ -29,6 +30,8 @@ export interface VersionRules {
   applicationWindow: Record<string, unknown> | null;
   applicableRegionIds: string[];
   processingFeeMinor: string;          // minor units as a STRING, always (Law 2 — never parsed here, never a float)
+  /** PC-56 GOV-2a · B2f (0240): the form fields this version asks for. Versioned like the rules: a published list is frozen. */
+  formFields: FormField[];
 }
 
 export interface VersionRow extends VersionRules {
@@ -47,6 +50,7 @@ export interface VersionRow extends VersionRules {
 
 export const VERSIONED_FIELDS = [
   'benefitSummary', 'eligibilityRules', 'requiredDocTypeIds', 'applicationWindow', 'applicableRegionIds', 'processingFeeMinor',
+  'formFields',   // PC-56 GOV-2a (0240)
 ] as const;
 export type VersionedField = (typeof VERSIONED_FIELDS)[number];
 
@@ -107,6 +111,7 @@ export function applyRulesPatch(base: VersionRules, patch: RulesPatch): VersionR
   if (patch.applicableRegionIds !== undefined) next.applicableRegionIds = assertUuidArray(patch.applicableRegionIds, 'applicable_region_ids', 2000);
   if (patch.applicationWindow !== undefined) next.applicationWindow = assertWindow(patch.applicationWindow);
   if (patch.processingFeeMinor !== undefined) next.processingFeeMinor = assertFeeMinor(str(patch.processingFeeMinor, 'processingFeeMinor')).toString();
+  if (patch.formFields !== undefined) next.formFields = assertFormFields(patch.formFields);
   return next;
 }
 

@@ -27,10 +27,29 @@ export interface GovApplicationRow {
   /** µs instant of created_at (the keyset), not part of the read model. */
   cursorTs: string;
 }
+/** PC-56 GOV-2a · B2f (GOV-2 Q3-A): one DECLARED field of the version the application was filed under, as 0240's `gov_application_form`
+ *  returns it — a personal value is ••••••xyz; an undeclared key is never returned. */
+export interface GovFormField { key: string; label: string; kind: string; personal: boolean; value: unknown }
 export interface GovApplicationDetail extends GovApplicationRow {
-  /** The stored form, masked by 0239 (phone/Aadhaar/bank/account/IFSC/UPI/PAN → ••••••xyz; location keys dropped). */
-  form: Record<string, unknown> | null;
+  /** The DECLARED fields only, in declared order (0240). `[]` when the version declares none (or no version is recorded). */
+  form: GovFormField[];
 }
+/** PC-56 GOV-2a · B2: what the refusal order reads before any key is reserved — booleans about the session person, never an id. */
+export interface GovActFacts { status: string; verified: boolean; actorIsVerifier: boolean; actorIsApplicant: boolean; actorIsAssister: boolean }
+export interface GovActResult { tenantId: string; fromStatus: string; toStatus: string; schemeId: string; decidedAt: string | null }
+/** PC-56 GOV-2a · B3: the authority's own scheme, from its PUBLISHED version — never an amount, a draft's content or an operator id. */
+export interface GovSchemeRow {
+  id: string; code: string; name: string; category: { code: string; name: string } | null; isActive: boolean;
+  version: number | null; publishedAt: string | null; publishedBySecondPerson: boolean; isBackfilled: boolean; newerDraftExists: boolean;
+  unrecordedBelow: number | null;
+  published: {
+    benefitType: string | null; instalments: number | null; rules: Record<string, unknown>; applicationWindow: unknown;
+    regions: Array<{ id: string; name: string }>; requiredDocuments: Array<{ id: string; code: string; name: string }>;
+    formFields: Array<{ key: string; label: string; kind: string; personal: boolean }>;
+  } | null;
+}
+export interface GovSchemeVersionRow { version: number; status: string; publishedAt: string | null; publishedBySecondPerson: boolean; isBackfilled: boolean }
+export interface GovSchemeDiffRow { comparedWith: number | null; field: string | null; from: unknown; to: unknown }
 /** PC-56 GOV-1b · one (scheme, status) cell of the overview: a count, and the oldest row's whole days since its last change. */
 export interface GovOverviewCell { schemeId: string; status: string; count: number; oldestDays: number | null }
 export interface MembershipFactsRow { id: string; userId: string; roleCode: string; status: 'requested' | 'active' | 'removed'; requestedBy: string | null; expiresAt: string | null }
@@ -88,15 +107,17 @@ export class GovConsoleRepository {
   /** Applications to this authority's schemes, newest first, µs keyset; scattered over the shards, merged, cut to `limit`. Then ONE recorded
    *  row per organisation on the page (on that organisation's shard), written BEFORE the page is returned: if a record cannot be written,
    *  the caller gets the error and no page. */
-  async listApplications(authorityId: string, q: { status?: string; cursor?: KeysetCursor; limit: number }, who: RecordedRead): Promise<GovApplicationRow[]> {
+  async listApplications(authorityId: string, q: { status?: string; schemeId?: string; cursor?: KeysetCursor; limit: number }, who: RecordedRead): Promise<GovApplicationRow[]> {
     const shards = Array.from({ length: this.shardCount }, (_, i) => i);
     const perShard = await Promise.all(shards.map((s) => this.withAxis(s, authorityId, async (c) => {
+      // GOV-2a B1: never a draft (0240's policy is the wall; this is the second line). B4: the scheme filter.
       const r = await c.query(`${APP_SELECT}
-         WHERE a.deleted_at IS NULL
+         WHERE a.deleted_at IS NULL AND a.status <> 'draft'
            AND ($1::text IS NULL OR a.status::text = $1::text)
+           AND ($5::uuid IS NULL OR a.scheme_id = $5::uuid)
            AND ($2::timestamptz IS NULL OR (a.created_at, a.id) < ($2::timestamptz, $3::uuid))
          ORDER BY a.created_at DESC, a.id DESC LIMIT $4`,
-        [q.status ?? null, q.cursor?.ts ?? null, q.cursor?.id ?? null, q.limit]);
+        [q.status ?? null, q.cursor?.ts ?? null, q.cursor?.id ?? null, q.limit, q.schemeId ?? null]);
       return r.rows.map(toApp);
     })));
     const page = perShard.flat()
@@ -123,10 +144,10 @@ export class GovConsoleRepository {
   async openApplication(authorityId: string, id: string, who: RecordedRead): Promise<GovApplicationDetail | null> {
     for (let s = 0; s < this.shardCount; s++) {
       const row = await this.withAxis<GovApplicationDetail | null>(s, authorityId, async (c) => {
-        const r = await c.query(`${APP_SELECT} WHERE a.id = $1 AND a.deleted_at IS NULL`, [id]);
+        const r = await c.query(`${APP_SELECT} WHERE a.id = $1 AND a.deleted_at IS NULL AND a.status <> 'draft'`, [id]);
         if (!r.rows[0]) return null;
-        const f = await c.query<{ f: Record<string, unknown> | null }>(`SELECT gov_application_form($1) AS f`, [id]);
-        return { ...toApp(r.rows[0]), form: f.rows[0]?.f ?? null };
+        const f = await c.query<{ f: GovFormField[] | null }>(`SELECT gov_application_form($1) AS f`, [id]);
+        return { ...toApp(r.rows[0]), form: Array.isArray(f.rows[0]?.f) ? f.rows[0].f : [] };
       }, async (c, out) => {
         if (!out) return;
         await this.recordRead(c, out.organisationId, who, 'gov_application_open', [out.id]);
@@ -161,6 +182,83 @@ export class GovConsoleRepository {
         : { schemeId: r.scheme_id, status: r.status, count: Number(r.n), oldestDays: oldest });
     }
     return { schemes, cells: [...merged.values()] };
+  }
+
+  // ═════════════════════════════════════ GOV-2a · the act (B2) — 0240's DEFINERs on the kv_gov axis
+  /** The facts of ONE application for the session person, on whichever shard holds it (null when not admitted: unknown, foreign, draft). */
+  async actFacts(authorityId: string, actorUserId: string, id: string): Promise<{ shard: number; facts: GovActFacts } | null> {
+    for (let s = 0; s < this.shardCount; s++) {
+      const facts = await this.withAxis(s, authorityId, async (c) => {
+        await c.query(`SELECT set_config('app.user_id', $1, true)`, [actorUserId]);
+        const r = await c.query<any>(`SELECT * FROM gov_application_act_facts($1)`, [id]);
+        const x = r.rows[0];
+        return x ? { status: x.status, verified: x.verified === true, actorIsVerifier: x.actor_is_verifier === true,
+          actorIsApplicant: x.actor_is_applicant === true, actorIsAssister: x.actor_is_assister === true } : null;
+      });
+      if (facts) return { shard: s, facts };
+    }
+    return null;
+  }
+
+  /** THE ACT, in ONE transaction on the application's shard: wear kv_gov → `gov_application_act` (the definer moves the row and writes the
+   *  event row, re-checking everything) → RESET ROLE → `then` writes, as kv_app in the application's ORGANISATION, the audit row and the outbox
+   *  event (Law 4). Any error rolls all of it back. */
+  async act(shard: number, authorityId: string, actorUserId: string, id: string, act: string, reasonCode: string | null, note: string | null,
+    then: (tx: TxContext, out: GovActResult) => Promise<void>): Promise<GovActResult> {
+    const client = await this.pools.writer(shard).connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(`SELECT set_config('app.tenant_id', '', true), set_config('app.partner_id', '', true), set_config('app.user_id', $1, true)`, [actorUserId]);
+      await client.query('SET LOCAL ROLE kv_gov');
+      await client.query(`SELECT set_config('app.authority_id', $1, true)`, [authorityId]);
+      const r = await client.query<any>(`SELECT * FROM gov_application_act($1, $2, $3, $4)`, [id, act, reasonCode, note]);
+      const x = r.rows[0];
+      const out: GovActResult = { tenantId: x.tenant_id, fromStatus: x.from_status, toStatus: x.to_status, schemeId: x.scheme_id, decidedAt: iso(x.decided_at) };
+      await client.query('RESET ROLE');
+      await client.query(`SELECT set_config('app.tenant_id', $1, true)`, [out.tenantId]);
+      const tx: TxContext = {
+        tenantId: out.tenantId, userId: actorUserId,
+        query: async <R = any>(sql: string, params?: readonly unknown[]) => {
+          const q = await client.query(sql, params as unknown[]);
+          return { rows: q.rows as R[], rowCount: q.rowCount ?? 0 };
+        },
+      };
+      await then(tx, out);
+      await client.query('COMMIT');
+      return out;
+    } catch (e) {
+      await client.query('ROLLBACK').catch(() => undefined);
+      throw e;
+    } finally {
+      await client.query('RESET ROLE').catch(() => undefined);
+      client.release();
+    }
+  }
+
+  // ═════════════════════════════════════ GOV-2a · the authority's schemes (B3) — 0240's DEFINERs, reference rows on shard 0
+  async schemes(authorityId: string, schemeId: string | null): Promise<GovSchemeRow[]> {
+    return this.withAxis(0, authorityId, async (c) => (await c.query<any>(`SELECT * FROM gov_scheme_read($1)`, [schemeId])).rows.map((x) => ({
+      id: x.id, code: x.code, name: x.name, category: x.category_code ? { code: x.category_code, name: x.category_name } : null, isActive: x.is_active === true,
+      version: x.version === null ? null : Number(x.version), publishedAt: iso(x.published_at), publishedBySecondPerson: x.published_by_second_person === true,
+      isBackfilled: x.is_backfilled === true, newerDraftExists: x.newer_draft_exists === true,
+      unrecordedBelow: x.unrecorded_below === null ? null : Number(x.unrecorded_below),
+      published: x.public ? {
+        benefitType: x.public.benefitType ?? null, instalments: x.public.instalments ?? null, rules: x.public.rules ?? {},
+        applicationWindow: x.public.applicationWindow ?? null, regions: x.public.regions ?? [], requiredDocuments: x.public.requiredDocuments ?? [],
+        formFields: x.public.formFields ?? [],
+      } : null,
+    })));
+  }
+  async schemeVersions(authorityId: string, schemeId: string): Promise<GovSchemeVersionRow[]> {
+    return this.withAxis(0, authorityId, async (c) => (await c.query<any>(`SELECT * FROM gov_scheme_versions($1)`, [schemeId])).rows.map((x) => ({
+      version: Number(x.version), status: x.status, publishedAt: iso(x.published_at), publishedBySecondPerson: x.published_by_second_person === true,
+      isBackfilled: x.is_backfilled === true,
+    })));
+  }
+  async schemeVersionDiff(authorityId: string, schemeId: string, version: number): Promise<GovSchemeDiffRow[]> {
+    return this.withAxis(0, authorityId, async (c) => (await c.query<any>(`SELECT * FROM gov_scheme_version_diff($1, $2)`, [schemeId, version])).rows.map((x) => ({
+      comparedWith: x.compared_with === null ? null : Number(x.compared_with), field: x.field ?? null, from: x.from_value ?? null, to: x.to_value ?? null,
+    })));
   }
 
   // ═════════════════════════════════════ the control plane (GovRealmUnitOfWork, kv_app, 0239's DEFINER functions)

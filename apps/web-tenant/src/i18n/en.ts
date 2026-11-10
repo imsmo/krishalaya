@@ -980,6 +980,8 @@ export const en: Messages = {
   'scm.subtitle': 'Process scheme applications, record DBT credits, and run on-behalf eligibility checks.',
   'scm.loadError': 'We couldn’t load this section just now.',
   'scm.error': 'We couldn’t save that',
+  // PC-56 GOV-2a (GOV-2 Q2-A): the API refuses the organisation's verify / approve / reject / close by name
+  'scm.err.SCHEME_DECISIONS_ARE_THE_AUTHORITYS': 'Applications are checked and decided by the government authority that runs the scheme, not by the organisation.',
   'scm.status': 'Status',
   'scm.minor': 'paise',
   'scm.ok.verify': 'Application moved to verification.',
