@@ -3,7 +3,7 @@
 // page is bare. The sidebar names the AUTHORITY first, the platform after it, and links only to /dashboard and /access.
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { GovShell, GovSidebar, RebuiltLater } from '../components/gov1/GovShell';
+import { GovFooter, GovShell, GovSidebar } from '../components/gov1/GovShell';
 import { en } from '../i18n/en';
 import { text, tr, ME_HEAD } from './gov1a-fixtures';
 
@@ -24,10 +24,11 @@ describe('PC-56 GOV-1a · the shell and the persona gate', () => {
     expect(h).not.toMatch(/href="\/(schemes|registers|verification|mgnrega)/);
     expect(h).toContain('name="_action" value="logout"');
   });
-  it('/dashboard until GOV-1b: one true sentence, it reads nothing', () => {
-    const h = renderToStaticMarkup(<RebuiltLater t={tr(en)} />);
-    expect(h).toContain('data-kv-reads="nothing"');
-    expect(text(h)).toContain('This page is being rebuilt for government authorities in a later wave. It reads nothing.');
-    expect(text(h)).not.toMatch(/Live|DBT|PFMS|MGNREGA|GOV_BUILD_BACKLOG|Ledger/);
+  it('GOV-1b: the footer (W358 link) is drawn only with a verified session, and never names the old wave table or internal files', () => {
+    const on = renderToStaticMarkup(<GovShell me={ME_HEAD} sidebar={<GovSidebar t={tr(en)} me={ME_HEAD} />} footer={<GovFooter t={tr(en)} />} skipLabel="Skip"><p>page</p></GovShell>);
+    expect(on).toContain('data-kv-footer-link="chrome"'); expect(on).toContain('data-kv-pill="gov"');
+    const off = renderToStaticMarkup(<GovShell me={null} sidebar={null} footer={<GovFooter t={tr(en)} />} skipLabel="Skip"><p>page</p></GovShell>);
+    expect(off).not.toContain('data-kv-footer'); expect(off).not.toContain('data-kv-pill');
+    expect(text(on)).not.toMatch(/Live|DBT|PFMS|MGNREGA|GOV_BUILD_BACKLOG|Ledger/);
   });
 });

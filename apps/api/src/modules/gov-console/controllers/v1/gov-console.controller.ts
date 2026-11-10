@@ -102,4 +102,15 @@ export class GovApplicationsController {
   open(@CurrentGovSession() s: GovSession, @Param('id') id: string) { return this.apps.open(s, id).then((data) => ({ data })); }
 }
 
-export const GOV_CONSOLE_CONTROLLERS = [GovAuthController, GovMeController, GovMembersController, GovApplicationsController];
+/** PC-56 GOV-1b · GOV1-B5 — the authority's overview (W325): counts over applications to the schemes it runs, across organisations; no
+ *  application id, organisation, applicant, form field or money figure; `computedAt` the server's. Same gate as the list it summarises. */
+@Controller({ path: 'gov/overview', version: '1' })
+@UseGuards(GovConsoleFlagGuard, GovSessionGuard, GovPermissionsGuard)
+export class GovOverviewController {
+  constructor(private readonly apps: GovApplicationsService) {}
+
+  @GovPermissions('authority.applications.read') @Get()
+  overview(@CurrentGovSession() s: GovSession) { return this.apps.overview(s).then((data) => ({ data })); }
+}
+
+export const GOV_CONSOLE_CONTROLLERS = [GovAuthController, GovMeController, GovMembersController, GovApplicationsController, GovOverviewController];

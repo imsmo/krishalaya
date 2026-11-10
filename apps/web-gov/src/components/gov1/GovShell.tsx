@@ -3,6 +3,9 @@
 // `govGate`) — never from a cookie's presence: an anonymous visitor, an organisation's or a partner's session, a lapsed or ended session all
 // see the bare page. The sidebar names the AUTHORITY first (the API's name for it) and the platform small after it; it links only to the
 // routes GOV-1a builds (Dashboard — rebuilt in GOV-1b — and Access). All copy via i18n; no inline styles; no physical direction.
+// PC-56 GOV-1b · E12 (W358): beside the authority's name, the GOV mark; a signed-in shell carries the blue top edge (globals.css,
+// `.kv-shell[data-kv-shell="gov"]`); a footer links to the console's rules (`/canon/chrome`) — from the footer, never the sidebar. No emblem,
+// no glyph, no image: the authority's name is text.
 import type { ReactNode } from 'react';
 import type { GovMe } from '@krishalaya/sdk-js';
 import type { Tr } from '../../features/gov1/refusals';
@@ -16,6 +19,7 @@ export function GovSidebar({ t, me, switcher }: { t: Tr; me: GovMe; switcher?: R
   return (
     <nav className="kv-sidebar" aria-label={t.t('nav.primary')} data-kv-sidebar={me.authority?.id ?? 'authority'}>
       <a href="/dashboard" className="kv-brand" data-kv-authority="">{me.authority?.name ?? t.t('gov1.nav.authority')}</a>
+      <span className="kv-gov-pill" data-kv-pill="gov">{t.t('gov1.chrome.pill')}</span>
       <p className="kv-fine">{t.t('nav.brand')}</p>
       <ul className="kv-sidebar__nav">
         {GOV_NAV.map((n) => <li key={n.href}><a href={n.href} className="kv-sidebar__link">{t.t(n.labelKey)}</a></li>)}
@@ -31,24 +35,26 @@ export function GovSidebar({ t, me, switcher }: { t: Tr; me: GovMe; switcher?: R
   );
 }
 
-export function GovShell({ me, sidebar, skipLabel, children }: { me: GovMe | null; sidebar: ReactNode; skipLabel: string; children: ReactNode }) {
+/** The signed-in footer: the console's rules (W358), linked from here and never from the sidebar. */
+export function GovFooter({ t }: { t: Tr }) {
+  return (
+    <footer className="kv-footer" data-kv-footer="">
+      <a className="kv-link" href="/canon/chrome" data-kv-footer-link="chrome">{t.t('gov1.footer.chrome')}</a>
+    </footer>
+  );
+}
+
+export function GovShell({ me, sidebar, footer, skipLabel, children }: { me: GovMe | null; sidebar: ReactNode; footer?: ReactNode; skipLabel: string; children: ReactNode }) {
   return (
     <>
       <a href="#main" className="kv-skip">{skipLabel}</a>
       <div className="kv-shell" data-kv-shell={me ? 'gov' : 'bare'}>
         {me ? sidebar : null}
-        <main className="kv-content" id="main">{children}</main>
+        <main className="kv-content" id="main">
+          {children}
+          {me ? footer : null}
+        </main>
       </div>
     </>
-  );
-}
-
-/** /dashboard until GOV-1b builds W325: one true sentence; it reads nothing. */
-export function RebuiltLater({ t }: { t: Tr }) {
-  return (
-    <section className="kv-empty-state" data-kv-reads="nothing">
-      <h1>{t.t('dash.title')}</h1>
-      <p>{t.t('gov1.dash.rebuilt')}</p>
-    </section>
   );
 }

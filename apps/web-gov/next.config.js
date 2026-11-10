@@ -45,7 +45,7 @@ const nextConfig = {
   webpack: (config) => { config.resolve.symlinks = false; return config; },
   // PC-56 GOV-1a (brief §E, survey GOV1_DELTAS `old_pages`): the pre-canon GW-1…GW-5 pages read ONE ORGANISATION through the tenant sign-in;
   // under a government authority's session they cannot work. Their pages, actions and the evidence route are deleted; their addresses answer
-  // a TEMPORARY redirect (307, permanent: false) to /dashboard, which says it is being rebuilt for authorities and reads nothing.
+  // a TEMPORARY redirect (307, permanent: false) to /dashboard (since GOV-1b: the authority's overview, counts only — W325).
   async redirects() {
     return ['/schemes', '/registers', '/verification', '/mgnrega'].flatMap((p) => [
       { source: p, destination: '/dashboard', permanent: false },

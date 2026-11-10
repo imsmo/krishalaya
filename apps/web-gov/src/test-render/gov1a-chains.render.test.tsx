@@ -108,9 +108,10 @@ describe('PC-56 GOV-1a · the access chain (W3198–W3200)', () => {
     expect(h).toContain('data-kv-chain-kind="PARITY-DECOR"'); expect(h).toContain('href="/access" data-kv-real="reread"');
     expect(text(h)).toContain('Reading the list again writes nothing.'); expect(h).toContain('data-kv-back="/access"'); expect(h).not.toContain('<form');
   });
-  it('the registry\'s chains are exactly these three, and each state renders its own title and body in en/hi/gu', () => {
-    expect(GOV1_CHAINS.map((c) => c.id)).toEqual(['login_form', 'access_act', 'access_reread']);
-    for (const cat of [en, hi, gu]) for (const c of GOV1_CHAINS) for (const s of c.states) {
+  it('the registry\'s 1a chains are exactly these three, and each state renders its own title and body in en/hi/gu', () => {
+    const ONE_A = GOV1_CHAINS.filter((c) => c.wave === '1a');
+    expect(ONE_A.map((c) => c.id)).toEqual(['login_form', 'access_act', 'access_reread']);
+    for (const cat of [en, hi, gu]) for (const c of ONE_A) for (const s of c.states) {
       for (const part of ['title', 'body']) expect([c.id, s, part, typeof cat[`${c.key(s)}.${part}`]]).toEqual([c.id, s, part, 'string']);
     }
   });

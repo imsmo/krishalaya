@@ -8,7 +8,7 @@ import '../styles/globals.css';
 import { env } from '../lib/env';
 import { getLanguageDef, getTranslator } from '../lib/i18n';
 import { govGate } from '../lib/session';
-import { GovShell } from '../components/gov1/GovShell';
+import { GovFooter, GovShell } from '../components/gov1/GovShell';
 import { Sidebar } from '../components/Sidebar';
 
 export const metadata: Metadata = {
@@ -24,7 +24,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={lang.code} dir={lang.dir}>
       <body>
-        <GovShell me={me} sidebar={me ? <Sidebar me={me} /> : null} skipLabel={t.t('common.skipToContent')}>{children}</GovShell>
+        <GovShell me={me} sidebar={me ? <Sidebar me={me} /> : null} footer={me ? <GovFooter t={t} /> : null} skipLabel={t.t('common.skipToContent')}>{children}</GovShell>
       </body>
     </html>
   );

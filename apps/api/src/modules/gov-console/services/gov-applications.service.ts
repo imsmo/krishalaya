@@ -17,6 +17,7 @@ import { clampGovLimit } from '../domain/gov-membership.rules';
 import { govRefused } from '../domain/gov-console.errors';
 import { GovSession } from '../guards/gov-session.guard';
 import { govActorRole } from './gov-members.service';
+import { GovOverview, shapeOverview } from '../domain/gov-overview';
 
 const strip = <T extends { cursorTs: string }>(r: T): Omit<T, 'cursorTs'> => { const { cursorTs: _c, ...rest } = r; return rest; };
 const who = (s: GovSession) => ({ actorUserId: s.userId, actorRole: govActorRole(s), authorityId: s.authorityId, requestId: s.requestId });
@@ -30,6 +31,13 @@ export class GovApplicationsService {
     const rows = await this.repo.listApplications(s.authorityId, { status: q.status, cursor: decodeKeyset(q.cursor, UUID_RE), limit }, who(s));
     const last = rows[rows.length - 1];
     return { items: rows.map(strip), nextCursor: rows.length === limit && last ? encodeKeyset(last.cursorTs, last.id) : null, asOf: new Date().toISOString(), limit };
+  }
+
+  /** PC-56 GOV-1b · GOV1-B5 — the overview: counts only, computed in SQL over the whole set on the kv_gov axis; `computedAt` is the server's.
+   *  No recorded-read row: no application is opened and no application row leaves the server (the brief's recommendation, applied). */
+  async overview(s: GovSession): Promise<GovOverview> {
+    const { schemes, cells } = await this.repo.overview(s.authorityId);
+    return shapeOverview(schemes, cells, new Date().toISOString());
   }
 
   async open(s: GovSession, id: string) {

@@ -31,6 +31,8 @@ export interface GovApplicationDetail extends GovApplicationRow {
   /** The stored form, masked by 0239 (phone/Aadhaar/bank/account/IFSC/UPI/PAN → ••••••xyz; location keys dropped). */
   form: Record<string, unknown> | null;
 }
+/** PC-56 GOV-1b · one (scheme, status) cell of the overview: a count, and the oldest row's whole days since its last change. */
+export interface GovOverviewCell { schemeId: string; status: string; count: number; oldestDays: number | null }
 export interface MembershipFactsRow { id: string; userId: string; roleCode: string; status: 'requested' | 'active' | 'removed'; requestedBy: string | null; expiresAt: string | null }
 export interface RecordedRead { actorUserId: string; actorRole: string; authorityId: string; requestId: string | null }
 
@@ -132,6 +134,33 @@ export class GovConsoleRepository {
       if (row) return row;
     }
     return null;
+  }
+
+  /** PC-56 GOV-1b · GOV1-B5 — THE OVERVIEW: counts over the WHOLE set of applications to this authority's schemes, computed in SQL on the
+   *  kv_gov axis (only columns 0239 grants it: scheme_id, status, updated_at, deleted_at), on every shard, summed here. Drafts (not yet
+   *  submitted) and deleted rows are not counted. `oldestDays` = whole 24-hour days since the row's last change (`updated_at`), the largest
+   *  on each (scheme, status). No application id, no organisation, no applicant, no form leaves this method. No recorded-read row: no
+   *  application is opened and no row is returned. Credits: `kv_gov` holds no grant on `dbt_transfers` (0239), so none are counted. */
+  async overview(authorityId: string): Promise<{ schemes: Array<{ id: string; code: string; name: string }>; cells: GovOverviewCell[] }> {
+    const schemes = await this.withAxis(0, authorityId, async (c) => (await c.query<{ id: string; code: string; name: string }>(
+      `SELECT id, code, name FROM gov_authority_schemes() ORDER BY code, id`)).rows);
+    const shards = Array.from({ length: this.shardCount }, (_, i) => i);
+    const perShard = await Promise.all(shards.map((s) => this.withAxis(s, authorityId, async (c) => (await c.query<{ scheme_id: string; status: string; n: number; oldest_days: number | null }>(
+      `SELECT a.scheme_id, a.status::text AS status, count(*)::int AS n,
+              max(floor(extract(epoch FROM (now() - a.updated_at)) / 86400))::int AS oldest_days
+         FROM scheme_applications a JOIN gov_authority_schemes() s ON s.id = a.scheme_id
+        WHERE a.deleted_at IS NULL AND a.status <> 'draft'
+        GROUP BY a.scheme_id, a.status`)).rows)));
+    const merged = new Map<string, GovOverviewCell>();
+    for (const r of perShard.flat()) {
+      const k = `${r.scheme_id}|${r.status}`;
+      const prev = merged.get(k);
+      const oldest = r.oldest_days === null ? null : Math.max(0, Number(r.oldest_days));
+      merged.set(k, prev
+        ? { schemeId: r.scheme_id, status: r.status, count: prev.count + Number(r.n), oldestDays: oldest === null ? prev.oldestDays : Math.max(prev.oldestDays ?? 0, oldest) }
+        : { schemeId: r.scheme_id, status: r.status, count: Number(r.n), oldestDays: oldest });
+    }
+    return { schemes, cells: [...merged.values()] };
   }
 
   // ═════════════════════════════════════ the control plane (GovRealmUnitOfWork, kv_app, 0239's DEFINER functions)

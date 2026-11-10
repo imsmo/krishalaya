@@ -5,6 +5,8 @@ government realm `/v1/gov/*` (PC-56 GOV-0, behind the platform switch `gov_conso
 their own authenticator app (an account without one sets it up first). The gov token carries the authority and no tenant; the API refuses
 it on every organisation and partner route. (Survey GOV-1 C-1: this file used to say "gov-persona scoped tokens"; before GOV-0 the
 console signed a phone into ONE organisation with an ordinary tenant token.) Never admin-api, never god-mode.
-Built so far: `/login` (W355 + its chain) and `/access` (W359 + its chain). `/dashboard` is rebuilt in GOV-1b; the pre-canon `/schemes`,
-`/registers`, `/verification`, `/mgnrega` pages read an organisation and are gone (307 → /dashboard) until their GOV waves.
+Built so far: `/login` (W355 + its chain), `/access` (W359 + its chain), `/dashboard` (W325, GOV-1b — the authority's overview: counts the
+server computed over applications to its schemes, all time; no money, no credit) and `/canon/chrome` (W358, GOV-1b — the console's rules,
+linked from the footer). The pre-canon `/schemes`, `/registers`, `/verification`, `/mgnrega` pages read an organisation and are gone
+(307 → /dashboard) until their GOV waves.
 Dev: `pnpm dev` (port 3007) · test: `pnpm test` · render: `pnpm test:render`.

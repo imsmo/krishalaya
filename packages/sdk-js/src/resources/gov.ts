@@ -45,6 +45,20 @@ export interface GovApplicationOpened extends GovApplication {
   /** Always true: this opening was recorded for the application's organisation. */
   recorded: true;
 }
+/** PC-56 GOV-1b · the statuses the overview counts (every application status except `draft`). */
+export type GovOverviewStatus = 'submitted' | 'under_verification' | 'clarification_needed' | 'approved' | 'rejected' | 'disbursed' | 'closed' | 'appealed';
+/** PC-56 GOV-1b · GOV1-B5 — the authority's overview: COUNTS ONLY, computed by the server in SQL over every application ever submitted to the
+ *  schemes the authority runs (all organisations; drafts not counted). No application id, organisation, applicant, form field, share or money
+ *  figure; no credit (the government axis cannot read credits). `computedAt` is the server's time. */
+export interface GovOverview {
+  window: { kind: 'all_time'; draftsCounted: false };
+  computedAt: string;
+  schemes: { count: number };
+  byScheme: Array<{ scheme: { id: string; code: string; name: string }; total: number; byStatus: Record<GovOverviewStatus, number> }>;
+  totals: { total: number; byStatus: Record<GovOverviewStatus, number> };
+  /** The queues only a person clears; `oldestDays` = whole 24-hour days since the oldest one last changed (null when the queue is empty). */
+  queues: Array<{ status: 'clarification_needed' | 'appealed'; count: number; oldestDays: number | null }>;
+}
 export interface GovApplicationsPage { items: GovApplication[]; nextCursor: string | null; limit: number; asOf: string | null }
 
 class GovAuth {
@@ -112,4 +126,6 @@ export class GovResource {
   }
   /** The authority and the signed-in person (roles, permissions, phone by its last 3, when their access ends). */
   async me(signal?: AbortSignal): Promise<GovMe> { return (await this.http.request<GovMe>('GET', 'gov/me', { signal })).data; }
+  /** PC-56 GOV-1b · the authority's overview (counts only; nothing recorded — no application is opened). */
+  async overview(signal?: AbortSignal): Promise<GovOverview> { return (await this.http.request<GovOverview>('GET', 'gov/overview', { signal })).data; }
 }

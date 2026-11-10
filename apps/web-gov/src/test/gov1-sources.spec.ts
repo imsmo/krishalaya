@@ -81,3 +81,41 @@ describe('PC-56 GOV-1a · what these pages never hold', () => {
     expect(LANG_COOKIE_FOR_TEST(read('lib/i18n.ts'))).toBe('kvg_lang');
   });
 });
+
+describe('PC-56 GOV-1b · the desk and its chrome — sources (E7, E12)', () => {
+  const GOV1_FILES = ALL.filter((r) => /gov1|app\/(login|access|dashboard|canon)|layout|Sidebar/.test(r));
+  it('E7: no money helper in ANY gov1 file (formatMoneyMinor, the money module), and no rupee sign in their code', () => {
+    expect(GOV1_FILES.length).toBeGreaterThan(15);
+    for (const rel of GOV1_FILES) expect([rel, /formatMoneyMinor|from '[^']*\/money'|₹/.test(code(read(rel)))]).toEqual([rel, false]);
+  });
+  it('/dashboard is gated and reads ONE thing — the overview; it never lists or opens an application', () => {
+    const src = code(read('app/dashboard/page.tsx'));
+    expect(src).toMatch(/await requireGov\('\/dashboard'\)/); expect(src).toMatch(/govClient\(\)\.gov\.overview\(\)/);
+    expect((src.match(/govClient\(/g) ?? []).length).toBe(1); expect(src).not.toMatch(/\.applications\.|\.members\./);
+  });
+  it('/canon/chrome is gated and reads nothing else', () => {
+    const src = code(read('app/canon/chrome/page.tsx'));
+    expect(src).toMatch(/await requireGov\('\/canon\/chrome'\)/); expect(src).not.toMatch(/govClient|anonClient|fetch\(/);
+  });
+  it('the dashboard view and its pure module compute nothing: no division, no percentage, no sum, no rounding of a count', () => {
+    for (const rel of ['components/gov1/DashboardViews.tsx', 'features/gov1/dashboard.ts']) {
+      const src = code(read(rel)).replace(/<\/?[a-z][^>]*>/g, '').replace(/'[^']*'|`[^`]*`/g, "''");
+      expect([rel, /[^/*]\/\s*[A-Za-z0-9_(.]|\*\s*100|\.reduce\(|toFixed|Math\.(round|floor|ceil)|percent/i.test(src)]).toEqual([rel, false]);
+    }
+  });
+  it('no image of any kind in a gov1 component (no emblem can be drawn), and none shipped in public/', () => {
+    for (const rel of ALL.filter((r) => r.startsWith('components/gov1/'))) expect([rel, /<img|<svg|<Image|emblem\.(svg|png)/i.test(code(read(rel)))]).toEqual([rel, false]);
+    const pub = path.join(SRC, '..', 'public');
+    const files = fs.existsSync(pub) ? fs.readdirSync(pub) : [];
+    expect(files.filter((f) => /emblem|ashoka|lion|seal/i.test(f))).toEqual([]);
+  });
+  it('E12: the signed-in shell carries the blue top edge and the GOV mark (logical properties only); W358 is linked from the footer, not the sidebar', () => {
+    const css = fs.readFileSync(path.join(SRC, 'styles', 'globals.css'), 'utf8');
+    expect(css).toMatch(/\.kv-shell\[data-kv-shell="gov"\]\s*\{\s*border-block-start:\s*4px solid var\(--kv-info\)/);
+    expect(css).toMatch(/\.kv-gov-pill\s*\{/);
+    const shell = code(read('components/gov1/GovShell.tsx'));
+    expect(shell).toMatch(/href="\/canon\/chrome"/);
+    expect(shell.slice(shell.indexOf('GOV_NAV'), shell.indexOf(']);'))).not.toMatch(/canon/);
+    expect(code(read('app/layout.tsx'))).toMatch(/footer=\{me \? <GovFooter t=\{t\} \/> : null\}/);
+  });
+});

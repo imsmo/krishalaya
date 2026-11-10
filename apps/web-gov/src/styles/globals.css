@@ -183,3 +183,10 @@ details.kv-card > summary { cursor: pointer; }
 .kv-tab { padding: 8px 12px; min-height: 40px; display: inline-flex; align-items: center; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); color: var(--kv-neutral-900); text-decoration: none; }
 .kv-tab:hover { border-color: var(--kv-brand-700); }
 .kv-tab--active { background: var(--kv-neutral-100); border-color: var(--kv-brand-700); font-weight: 600; }
+
+/* --- PC-56 GOV-1b · E12 (W358, founder-ratified DELTA-039): the GOV mark beside the authority's name and an info-blue top edge on every
+   signed-in page, so the console is never mistaken for an organisation's. No emblem, no glyph, no image. Logical properties only. --- */
+:root { --kv-info: #1565c0; }
+.kv-shell[data-kv-shell="gov"] { border-block-start: 4px solid var(--kv-info); }
+.kv-gov-pill { display: inline-block; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px; background: var(--kv-info); color: #fff; margin-block-end: 8px; }
+.kv-footer { margin-block-start: 48px; padding-block-start: var(--kv-space); border-block-start: 1px solid var(--kv-neutral-200); }

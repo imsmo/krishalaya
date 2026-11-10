@@ -1,6 +1,7 @@
 // apps/web-gov/src/test/gov1-refusals.spec.ts · PC-56 GOV-1a · E5 — the GOV-1 registry (features/gov1/refusals.ts): ALL 21 canon files, one
-// verdict each (1a decides its 9, 1b's 12 pending); the 17 chain files in exactly one group each; every refusal / chain key in en, hi and gu;
-// the login chain's Back is /login. Plus the pure sign-in landing (features/gov1/login.ts) and the access offers (features/gov1/access.ts).
+// verdict each (GOV-1b: 21 decided, 0 pending — 1a's 9, 1b's 12); the 17 chain files in exactly one group each, every group built by a chain;
+// every refusal / chain key in en, hi and gu; the login chain's Back is /login, the dashboard chains' /dashboard, the chrome chain's
+// /canon/chrome. Plus the pure sign-in landing (features/gov1/login.ts) and the access offers (features/gov1/access.ts).
 import { CHAIN_BACK, GOV1_CANON_FILES, GOV1_CHAIN_GROUPS, GOV1_CHAINS, GOV1_REFUSALS, GOV1_DELTAS, SURFACES_1A, SURFACES_1B, chain1State } from '../features/gov1/refusals';
 import { landing, landingHref, LOGIN_ERRORS, loginErrorCode, loginStep, secondFactorInput, waitMinutes } from '../features/gov1/login';
 import { ACCESS_ERRORS, approverFact, atUtc, canOfferApprove, canOfferRemove, canRequest, rowStatus, whoOf } from '../features/gov1/access';
@@ -12,13 +13,20 @@ import { gu } from '../i18n/gu';
 const CATS = { en, hi, gu } as const;
 
 describe('PC-56 GOV-1 · the registry', () => {
-  it('21 canon files, each once, one verdict; 1a decides 9, 1b holds 12 pending', () => {
+  it('21 canon files, each once, one verdict; 21 decided, 0 pending (1a 9, 1b 12)', () => {
     expect(GOV1_CANON_FILES).toHaveLength(21);
     expect(new Set(GOV1_CANON_FILES.map((f) => f.file)).size).toBe(21);
     const a = GOV1_CANON_FILES.filter((f) => f.wave === '1a');
-    expect(a).toHaveLength(9); expect(a.every((f) => f.verdict !== 'pending_1b')).toBe(true);
+    expect(a).toHaveLength(9); expect(a.every((f) => (f.verdict as string) !== 'pending_1b')).toBe(true);
     const b = GOV1_CANON_FILES.filter((f) => f.wave === '1b');
-    expect(b).toHaveLength(12); expect(b.every((f) => f.verdict === 'pending_1b')).toBe(true);
+    expect(b).toHaveLength(12);
+    const VERDICTS = ['BUILT (honest)', 'BUILT (read)', 'REAL', 'PARITY-DECOR', 'DECOR'];
+    expect(GOV1_CANON_FILES.filter((f) => VERDICTS.includes(f.verdict))).toHaveLength(21);
+    expect(GOV1_CANON_FILES.filter((f) => !VERDICTS.includes(f.verdict))).toEqual([]);
+    expect(Object.fromEntries(b.map((f) => [f.file.split('-')[0], f.verdict]))).toEqual({
+      W325: 'BUILT (read)', W358: 'BUILT (honest)', W3214: 'PARITY-DECOR', W3215: 'PARITY-DECOR', W3216: 'PARITY-DECOR',
+      W3217: 'DECOR', W3218: 'DECOR', W3219: 'DECOR', W3220: 'DECOR', W3221: 'PARITY-DECOR', W3222: 'PARITY-DECOR', W3223: 'PARITY-DECOR',
+    });
     expect(a.map((f) => f.file.split('-')[0]).sort()).toEqual(['W3198', 'W3199', 'W3200', 'W3229', 'W3230', 'W3231', 'W3232', 'W355', 'W359']);
   });
   it('17 chain files, each in exactly one group; each group\'s files are canon files of the same wave', () => {
@@ -30,13 +38,17 @@ describe('PC-56 GOV-1 · the registry', () => {
     }
     expect(GOV1_CANON_FILES.length - all.length).toBe(4);   // the four real screens
   });
-  it('the built chains belong to 1a groups, and the login chain\'s Back is /login — never the dashboard', () => {
-    for (const c of GOV1_CHAINS) expect(GOV1_CHAIN_GROUPS.find((g) => g.id === c.group)?.wave).toBe('1a');
-    expect(CHAIN_BACK).toEqual({ login_form: '/login', access_act: '/access', access_reread: '/access' });
+  it('each built chain belongs to a group of its own wave, every group is built; Backs: /login, /access, /dashboard, /canon/chrome', () => {
+    for (const c of GOV1_CHAINS) expect([c.id, GOV1_CHAIN_GROUPS.find((g) => g.id === c.group)?.wave]).toEqual([c.id, c.wave]);
+    expect(GOV1_CHAIN_GROUPS.every((g) => GOV1_CHAINS.some((c) => c.group === g.id))).toBe(true);
+    expect(CHAIN_BACK).toEqual({ login_form: '/login', access_act: '/access', access_reread: '/access', dashboard_form: '/dashboard', dashboard_reread: '/dashboard', chrome_reread: '/canon/chrome' });
+    expect(GOV1_CHAINS.filter((c) => c.wave === '1b').map((c) => [c.id, c.kind])).toEqual([['dashboard_form', 'DECOR'], ['dashboard_reread', 'PARITY-DECOR'], ['chrome_reread', 'PARITY-DECOR']]);
+    expect(chain1State('dashboard_form', { act: 'confirm' })).toBeNull(); expect(chain1State('dashboard_form', { act: 'review' })).toBe('review');
+    expect(chain1State('chrome_reread', { act: 'failure' })).toBe('failure');
     expect(chain1State('login_form', { act: 'review' })).toBe('review'); expect(chain1State('login_form', { act: 'confirm' })).toBeNull();
     expect(chain1State('access_act', { act: ['success'] })).toBe('success');
   });
-  it('every refusal id once, every refusal and chain key in en/hi/gu; 1a surfaces cover only 1a', () => {
+  it('every refusal id once, every refusal and chain key in en/hi/gu; every surface of both waves prints at least one refusal', () => {
     expect(new Set(GOV1_REFUSALS.map((r) => r.id)).size).toBe(GOV1_REFUSALS.length);
     expect(new Set(GOV1_DELTAS.map((d) => d.id)).size).toBe(GOV1_DELTAS.length);
     for (const [l, cat] of Object.entries(CATS)) {
@@ -46,7 +58,9 @@ describe('PC-56 GOV-1 · the registry', () => {
       for (const k of Object.values(ACCESS_ERRORS)) expect([l, k, typeof cat[k]]).toEqual([l, k, 'string']);
     }
     for (const r of GOV1_REFUSALS) for (const s of r.surfaces) expect([r.id, SURFACES_1A.includes(s) || SURFACES_1B.includes(s)]).toEqual([r.id, true]);
-    expect(GOV1_REFUSALS.every((r) => r.surfaces.every((s) => SURFACES_1A.includes(s)))).toBe(true);   // 1b adds its own
+    for (const s of [...SURFACES_1A, ...SURFACES_1B]) expect([s, GOV1_REFUSALS.some((r) => r.surfaces.includes(s))]).toEqual([s, true]);
+    for (const [l, cat] of Object.entries(CATS)) for (const c of GOV1_CHAINS) for (const st of c.states) for (const part of ['title', 'body'])
+      expect([l, c.id, st, part, typeof cat[`${c.key(st)}.${part}`]]).toEqual([l, c.id, st, part, 'string']);
   });
   it('every English refusal says no (the negative-word rule)', () => {
     const NEG = /\b(no|not|never|nobody|nothing|cannot|only)\b|n't\b/i;

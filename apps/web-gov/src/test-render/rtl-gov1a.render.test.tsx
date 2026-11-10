@@ -8,7 +8,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { LoginView, type LoginActions } from '../components/gov1/LoginViews';
 import { AccessDoneNote, AccessFailureNote, AccessView, ApproveConfirm, RemoveForm, RequestForm } from '../components/gov1/AccessViews';
 import { Gov1Chain } from '../components/gov1/Gov1Chain';
-import { GovShell, GovSidebar, RebuiltLater } from '../components/gov1/GovShell';
+import { GovFooter, GovShell, GovSidebar } from '../components/gov1/GovShell';
 import { en } from '../i18n/en';
 import { hi } from '../i18n/hi';
 import { gu } from '../i18n/gu';
@@ -41,7 +41,7 @@ const pages = (cat: Record<string, string>) => {
     rtl(<Gov1Chain t={t} chain="access_act" state="success"><AccessDoneNote t={t} done="approved" expiresAt="2027-11-10T06:30:00.000Z" /></Gov1Chain>),
     rtl(<Gov1Chain t={t} chain="access_act" state="failure"><AccessFailureNote t={t} error="GOV_APPROVER_IS_REQUESTER" /></Gov1Chain>),
     ...(['confirm', 'success', 'failure'] as const).map((s) => rtl(<Gov1Chain t={t} chain="access_reread" state={s} />)),
-    rtl(<GovShell me={ME_HEAD} sidebar={<GovSidebar t={t} me={ME_HEAD} />} skipLabel={t.t('common.skipToContent')}><RebuiltLater t={t} /></GovShell>),
+    rtl(<GovShell me={ME_HEAD} sidebar={<GovSidebar t={t} me={ME_HEAD} />} footer={<GovFooter t={t} />} skipLabel={t.t('common.skipToContent')}><p>{t.t('gov1.dash.title')}</p></GovShell>),
   ];
 };
 const SRC_1A = ['components/gov1/LoginViews.tsx', 'components/gov1/AccessViews.tsx', 'components/gov1/Gov1Chain.tsx', 'components/gov1/GovShell.tsx', 'components/Sidebar.tsx',
