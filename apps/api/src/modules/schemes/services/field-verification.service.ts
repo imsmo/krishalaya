@@ -7,12 +7,14 @@ import { UNIT_OF_WORK, UnitOfWork } from '../../../core/database/unit-of-work';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { ConflictError, ForbiddenError, NotFoundError } from '../../../shared/errors/app-error';
 import { FieldVerificationRepository, FieldVisit } from '../repositories/field-verification.repository';
+import { SchemeApplicationRepository } from '../repositories/scheme-application.repository';
+import { ApplicationNotFoundError } from '../domain/schemes.errors';
 
 export interface VisitActor { userId: string; canProcess: boolean }
 
 @Injectable()
 export class FieldVerificationService {
-  constructor(@Inject(UNIT_OF_WORK) private readonly uow: UnitOfWork, private readonly repo: FieldVerificationRepository) {}
+  constructor(@Inject(UNIT_OF_WORK) private readonly uow: UnitOfWork, private readonly repo: FieldVerificationRepository, private readonly applications: SchemeApplicationRepository) {}
 
   async schedule(tenantId: string, actor: VisitActor, applicationId: string, scheduledFor?: string) {
     if (!actor.canProcess) throw new ForbiddenError('requires scheme.process');
@@ -24,7 +26,16 @@ export class FieldVerificationService {
     return { id, status: 'scheduled' as const };
   }
 
-  async list(tenantId: string, applicationId: string): Promise<FieldVisit[]> {
+  /**
+   * PC-56 HOTFIX-15 (survey GOV-1 F-3 / C-11): a visit carries the farm's GPS points, measurements and walk trace (PII / location), so
+   * it is read ONLY by the application's applicant or a `scheme.process` holder of this organisation — anyone else, and an unknown id,
+   * gets the same 404 with no body (`ApplicationNotFoundError`, exactly as `SchemeApplicationService.getById`) — no existence oracle.
+   * The refusal comes BEFORE any visit is read. Until this wave the route had no permission and passed no actor.
+   */
+  async list(tenantId: string, actor: VisitActor, applicationId: string): Promise<FieldVisit[]> {
+    const app = await this.applications.getById(tenantId, applicationId);
+    if (!app) throw new ApplicationNotFoundError(applicationId);
+    if (app.applicantUserId !== actor.userId && !actor.canProcess) throw new ApplicationNotFoundError(applicationId); // 404, no IDOR
     return this.repo.listForApplication(tenantId, applicationId);
   }
 

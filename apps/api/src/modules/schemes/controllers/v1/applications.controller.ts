@@ -103,14 +103,14 @@ export class ApplicationsController {
   // DBT (observed PFMS credit) — officer records; applicant/officer reads
   @Post(':id/dbt') @RequirePermissions(SchemesPermissions.Process)
   recordDbt(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(RecordDbtSchema) dto: RecordDbtDto) { return this.dbt.record(ctx.tenantId, this.actor(ctx), id, dto, ipOf(r)).then((data) => ({ data })); }
-  // --- PC-54 W54-3 field visits (0066) — Process-gated writes; party-or-Process read via the app read itself ---
+  // --- PC-54 W54-3 field visits (0066) — Process-gated writes; the read is the applicant's or a Process holder's, else 404 (HOTFIX-15) ---
   @Post(':id/field-visits') @RequirePermissions(SchemesPermissions.Process)
   scheduleVisit(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(ScheduleVisitSchema) dto: { scheduledFor?: string }) {
     return this.visits.schedule(ctx.tenantId, this.actor(ctx), id, dto.scheduledFor).then((data) => ({ data }));
   }
   @Get(':id/field-visits')
   listVisits(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
-    return this.visits.list(ctx.tenantId, id).then((data) => ({ data }));
+    return this.visits.list(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data }));
   }
   @Post('field-visits/:visitId/submit') @RequirePermissions(SchemesPermissions.Process)
   submitVisit(@CurrentContext() ctx: RequestContext, @Param('visitId') visitId: string, @ZodBody(SubmitVisitSchema) dto: { geotag: Array<{ mediaId: string; lat: number; lng: number; capturedAt: string }>; measuredValues: Record<string, unknown>; walkTraceMediaId?: string }) {

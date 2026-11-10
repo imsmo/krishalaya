@@ -11,6 +11,7 @@ import { DataTable } from '../../../components/DataTable';
 import { getTranslator } from '../../../lib/i18n';
 import { assignableRoles, canGrantPermission } from '../../../features/team/permissions';
 import { assignRoleAction, revokeRoleAction, setOverrideAction } from './actions';
+import { GOV_ROLE_REFUSAL, swcCodeKey } from '../../../features/swc/console';
 import type { RoleDef, PermissionDef, RoleAssignment } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
@@ -48,7 +49,7 @@ export default async function RolesPage({ searchParams }: { searchParams: { ok?:
       <h1>{t.t('roles.title')}</h1>
       <p className="kv-muted">{t.t('roles.subtitle')} · <Link href="/team">{t.t('roles.backToTeam')}</Link></p>
       {okKey && <p className="kv-success" role="status">{t.t(`roles.ok.${okKey}`)}</p>}
-      {errorKey && <p className="kv-error" role="alert">{errorKey === 'escalation' ? t.t('roles.error.escalation') : `${t.t('roles.error.generic')}: ${errorKey}`}</p>}
+      {errorKey && <p className="kv-error" role="alert">{errorKey === 'escalation' ? t.t('roles.error.escalation') : errorKey === GOV_ROLE_REFUSAL ? t.t(swcCodeKey(GOV_ROLE_REFUSAL)) : `${t.t('roles.error.generic')}: ${errorKey}`}</p>}
 
       <h2 className="kv-section-title">{t.t('roles.assign.title')}</h2>
       {rolesFailed ? <p className="kv-error" role="alert">{t.t('roles.loadError')}</p> : (

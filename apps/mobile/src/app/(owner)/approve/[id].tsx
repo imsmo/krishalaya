@@ -60,7 +60,8 @@ export default function ReviewFarmer() {
       if (kind === 'approve') await approveAssignment(id); else await rejectAssignment(id);
       router.replace({ pathname: '/(owner)/approvals', params: { notice: t(kind === 'approve' ? 'owner.approve.done' : 'owner.approvals.reject.done') } });
     } catch (e) {
-      const msg = e instanceof SdkError && e.isForbidden ? t('owner.notAllowed') : e instanceof SdkError && e.isConflict ? t('owner.approve.illegal') : t('owner.approve.failed');
+      // PC-56 HOTFIX-15: the frozen gov_officer is refused by name (0238), never as a generic "can't be approved right now".
+      const msg = e instanceof SdkError && e.code === 'GOV_ROLE_LIVES_IN_AN_AUTHORITY' ? t('owner.approve.govRoleFrozen') : e instanceof SdkError && e.isForbidden ? t('owner.notAllowed') : e instanceof SdkError && e.isConflict ? t('owner.approve.illegal') : t('owner.approve.failed');
       Alert.alert(t('owner.approve.reviewTitle'), msg);
     } finally { setBusy(false); }
   }, [id, router, t]);

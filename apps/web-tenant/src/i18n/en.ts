@@ -12404,6 +12404,8 @@ export const en: Messages = {
   'swc.code.OVERRIDE_NOT_FOUND': "This override was not found (or is already revoked).",
   'swc.code.NEEDS_SECOND_ADMIN': "This needs a second tenant administrator to confirm it — your organisation has only one.",
   'swc.code.ROLE_NOT_FOUND': "This role assignment was not found.",
+  // PC-56 HOTFIX-15 (GOV-1 Q2-A): the tenant gov_officer is frozen (0238).
+  'swc.code.GOV_ROLE_LIVES_IN_AN_AUTHORITY': "The government officer role cannot be given or approved inside an organisation. Nothing was changed.",
   'swc.code.LAST_ADMIN': "This is the last tenant administrator — appoint another before removing them.",
   'swc.code.REMOVE_SELF': "You cannot remove yourself from the team — another tenant administrator must.",
   'swc.code.TEAM_RESTRICTED': "Team restricted — only a tenant administrator manages staff.",

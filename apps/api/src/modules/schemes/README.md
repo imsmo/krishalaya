@@ -31,7 +31,9 @@ scheme's **rule version** at filing (integrity, PRD R18). Every transition appen
   · `POST /:id/{verify,clarify,approve,reject,close}` (`scheme.process`) · `POST /:id/dbt` (record) · `GET /:id/dbt`.
 
 ## Threats considered
-- **No cross-party IDOR**: applications + DBT records 404 for non-applicants; `box=queue|all` requires `scheme.process`.
+- **No cross-party IDOR**: applications, DBT records and (since PC-56 HOTFIX-15 — survey GOV-1 C-11/F-3; until then this line was false of
+  them: `GET /:id/field-visits` had no permission and no party check) field visits 404 for anyone but the applicant or a `scheme.process`
+  holder; `box=queue|all` requires `scheme.process`.
 - **Schemes/authorities are read-only here**: GLOBAL reference data authored on the admin/platform surface (Law 11).
 - **Anti-mass-assignment**: zod `.strict()`; the scheme version + processing fee are server-derived; the
   applicant is `ctx.userId` (never client-supplied).

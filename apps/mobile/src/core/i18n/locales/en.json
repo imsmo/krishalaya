@@ -2576,6 +2576,7 @@
   "owner.approve.fullReviewNote": "Aadhaar, bank and land verification are reviewed in detail on the web console.",
   "owner.approve.heading": "Approve this request?",
   "owner.approve.illegal": "This request can't be approved right now.",
+  "owner.approve.govRoleFrozen": "The government officer role cannot be given or approved inside an organisation. Nothing was changed.",
   "owner.approve.kycLabel": "KYC status",
   "owner.approve.language": "Language",
   "owner.approve.note": "Approving lets this member act in your tenant. The server records the approval.",

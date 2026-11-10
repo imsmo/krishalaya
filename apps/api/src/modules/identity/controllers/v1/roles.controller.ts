@@ -51,6 +51,8 @@ export class RolesController {
   @RequirePermissions(IdentityPermissions.Approve)
   async assign(@CurrentContext() ctx: RequestContext, @Req() req: Request, @Headers('idempotency-key') key: string, @ZodBody(AssignRoleSchema) dto: AssignRoleDto) {
     if (!key) throw new BadRequestError('Idempotency-Key header required');
+    // PC-56 HOTFIX-15 (GOV-1 Q2-A): the frozen gov_officer is refused AFTER the permission and key checks and BEFORE the idempotency record.
+    this.utr.refuseGovRole(dto.roleCode);
     const data = await this.idem.remember(key, ctx.userId, 'identity.role.assign', () => this.utr.assign(ctx.tenantId, ctx.userId, dto, ipOf(req)));
     return { data };
   }

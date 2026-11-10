@@ -2576,6 +2576,7 @@
   "owner.approve.fullReviewNote": "આધાર, બેંક અને જમીન ચકાસણીની વિગતવાર સમીક્ષા વેબ કન્સોલ પર થાય છે.",
   "owner.approve.heading": "આ વિનંતી મંજૂર કરો?",
   "owner.approve.illegal": "આ વિનંતી અત્યારે મંજૂર કરી શકાતી નથી.",
+  "owner.approve.govRoleFrozen": "સરકારી અધિકારીની ભૂમિકા કોઈ સંસ્થાની અંદર આપી કે મંજૂર કરી શકાતી નથી. કંઈ બદલાયું નથી.",
   "owner.approve.kycLabel": "કેવાયસી સ્થિતિ",
   "owner.approve.language": "ભાષા",
   "owner.approve.note": "મંજૂરીથી આ સભ્ય તમારા ટેનન્ટમાં કાર્ય કરી શકશે. સર્વર મંજૂરી નોંધે છે.",

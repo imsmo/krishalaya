@@ -46,6 +46,12 @@ export class UserTenantRoleRepository {
     const r = await tx.query<Row>(`SELECT ${COLS} FROM user_tenant_roles WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL FOR UPDATE`, [id, tenantId]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;
   }
+  /** PC-56 HOTFIX-15: the role code of one assignment (null when not found) — read before an approval writes anything. */
+  async roleCodeOf(tenantId: string, id: string): Promise<string | null> {
+    const r = await this.replica.forTenant(tenantId).query<{ code: string }>(
+      `SELECT r.code FROM user_tenant_roles utr JOIN roles r ON r.id = utr.role_id WHERE utr.id=$1 AND utr.tenant_id=$2 AND utr.deleted_at IS NULL`, [id, tenantId]);
+    return r.rows[0]?.code ?? null;
+  }
   async findExisting(tenantId: string, userId: string, roleId: string): Promise<UserTenantRole | null> {
     const r = await this.replica.forTenant(tenantId).query<Row>(
       `SELECT ${COLS} FROM user_tenant_roles WHERE tenant_id=$1 AND user_id=$2 AND role_id=$3 AND deleted_at IS NULL`, [tenantId, userId, roleId]);

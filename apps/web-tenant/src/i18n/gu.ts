@@ -12400,6 +12400,8 @@ export const gu: Messages = {
   'swc.code.OVERRIDE_NOT_FOUND': "આ ઓવરરાઇડ મળ્યું નથી (અથવા પહેલેથી રદ છે).",
   'swc.code.NEEDS_SECOND_ADMIN': "આની પુષ્ટિ માટે બીજા ટેનન્ટ એડમિન જોઈએ — તમારી સંસ્થામાં માત્ર એક છે.",
   'swc.code.ROLE_NOT_FOUND': "આ ભૂમિકા સોંપણી મળી નથી.",
+  // PC-56 HOTFIX-15 (GOV-1 Q2-A): the tenant gov_officer is frozen (0238).
+  'swc.code.GOV_ROLE_LIVES_IN_AN_AUTHORITY': "સરકારી અધિકારીની ભૂમિકા કોઈ સંસ્થાની અંદર આપી કે મંજૂર કરી શકાતી નથી. કંઈ બદલાયું નથી.",
   'swc.code.LAST_ADMIN': "આ છેલ્લા ટેનન્ટ એડમિન છે — દૂર કરતાં પહેલાં બીજા કોઈની નિમણૂક કરો.",
   'swc.code.REMOVE_SELF': "તમે પોતાને ટીમમાંથી દૂર કરી શકતા નથી — બીજા ટેનન્ટ એડમિને કરવું પડશે.",
   'swc.code.TEAM_RESTRICTED': "ટીમ પ્રતિબંધિત — માત્ર ટેનન્ટ એડમિન સ્ટાફનું સંચાલન કરે છે.",

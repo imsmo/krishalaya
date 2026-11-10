@@ -56,7 +56,8 @@ export default function Approvals() {
       if (kind === 'approve') await approveAssignment(id); else await rejectAssignment(id);
       await load();
     } catch (e) {
-      const msg = e instanceof SdkError && e.isForbidden ? t('owner.notAllowed') : e instanceof SdkError && e.isConflict ? t('owner.approve.illegal') : t('owner.approve.failed');
+      // PC-56 HOTFIX-15: the frozen gov_officer is refused by name (0238), never as a generic "can't be approved right now".
+      const msg = e instanceof SdkError && e.code === 'GOV_ROLE_LIVES_IN_AN_AUTHORITY' ? t('owner.approve.govRoleFrozen') : e instanceof SdkError && e.isForbidden ? t('owner.notAllowed') : e instanceof SdkError && e.isConflict ? t('owner.approve.illegal') : t('owner.approve.failed');
       Alert.alert(t('owner.tabs.approvals'), msg);
     } finally { setBusyId(null); }
   }, [load, t]);

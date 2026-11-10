@@ -34,6 +34,7 @@ import { VerificationTeamRepository } from '../repositories/verification-team.re
 import { AssignRoleDto, StaffOverrideDto } from '../dto/create-user-tenant-role.dto';
 import { cleanReason, reasonRefusal, removeRefusals, seatState } from '../domain/verification-team';
 import { namedSwcRefusal, swcRefused, SwcRefusedError } from '../domain/swc.errors';
+import { refuseFrozenGovRole } from '../domain/gov-role';
 
 const ADULT_ROLES = new Set(['worker', 'sardar', 'vet', 'banker', 'insurance_agent', 'gov_officer', 'farmer', 'vyapari', 'equipment_owner']);
 
@@ -66,7 +67,13 @@ export class UserTenantRoleService {
     if (st.kind === 'limited' && st.full) throw swcRefused('STAFF_SEATS_EXHAUSTED', { used: st.used, seats: st.seats, plan: st.planName });
   }
 
+  /** PC-56 HOTFIX-15 (GOV-1 Q2-A): the tenant `gov_officer` is frozen. The CONTROLLER calls this before `idem.remember` (so a refused
+   *  assignment never writes an idempotency record); `assign` calls it again first thing (defence in depth — before any read or write).
+   *  0238's `trg_utr_no_gov_role` is the wall. */
+  refuseGovRole(roleCode: string): void { refuseFrozenGovRole(roleCode); }
+
   async assign(tenantId: string, actorUserId: string, dto: AssignRoleDto, ip: string | null) {
+    this.refuseGovRole(dto.roleCode);
     const role = await this.roles.findByCode(tenantId, dto.roleCode);
     if (!role) throw new RoleNotFoundError(dto.roleCode);
     // SECURITY (Law 11): platform/owner roles (super_admin, platform_*) are NEVER
@@ -107,6 +114,9 @@ export class UserTenantRoleService {
   }
 
   async approve(tenantId: string, approverUserId: string, utrId: string, ip: string | null) {
+    // PC-56 HOTFIX-15 (GOV-1 Q2-A): approving (or re-opening) a `gov_officer` row is refused by name BEFORE the unit of work — a read of
+    // the row's role, nothing written. A race past this read is refused by 0238's trigger, named by namedSwcRefusal below.
+    refuseFrozenGovRole(await this.utr.roleCodeOf(tenantId, utrId));
     let userId = '';
     try {
       await this.uow.run(tenantId, async (tx) => {

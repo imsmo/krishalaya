@@ -83,6 +83,9 @@ export const SWC_CODES: Readonly<Record<string, { status: number; message: strin
   OVERRIDE_NOT_FOUND: { status: 404, message: 'This override was not found (or is already revoked).' },
   NEEDS_SECOND_ADMIN: { status: 409, message: 'This needs a second tenant administrator to confirm it — your organisation has one.' },
   ROLE_NOT_FOUND: { status: 404, message: 'This role assignment was not found.' },
+  // PC-56 HOTFIX-15 (GOV-1 Q2-A, lead-applied 2026-11-10): the tenant gov_officer is frozen — 0238's trg_utr_no_gov_role is the wall; the
+  // service refuses before the idempotency record and before any write (identity/domain/gov-role.ts).
+  GOV_ROLE_LIVES_IN_AN_AUTHORITY: { status: 409, message: 'The government officer role cannot be given or approved inside an organisation. Nothing was changed.' },
   // removal (C2)
   LAST_ADMIN: { status: 409, message: 'This is the last tenant administrator — appoint another before removing them.' },
   REMOVE_SELF: { status: 409, message: 'You cannot remove yourself from the team — another tenant administrator must.' },

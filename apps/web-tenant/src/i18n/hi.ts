@@ -12400,6 +12400,8 @@ export const hi: Messages = {
   'swc.code.OVERRIDE_NOT_FOUND': "यह ओवरराइड नहीं मिला (या पहले ही रद्द है)।",
   'swc.code.NEEDS_SECOND_ADMIN': "इसकी पुष्टि के लिए दूसरा टेनेंट एडमिन चाहिए — आपके संगठन में केवल एक है।",
   'swc.code.ROLE_NOT_FOUND': "यह भूमिका असाइनमेंट नहीं मिला।",
+  // PC-56 HOTFIX-15 (GOV-1 Q2-A): the tenant gov_officer is frozen (0238).
+  'swc.code.GOV_ROLE_LIVES_IN_AN_AUTHORITY': "सरकारी अधिकारी की भूमिका किसी संगठन के भीतर न दी जा सकती है, न स्वीकृत की जा सकती है। कुछ भी नहीं बदला गया।",
   'swc.code.LAST_ADMIN': "यह अंतिम टेनेंट एडमिन है — हटाने से पहले किसी और को नियुक्त करें।",
   'swc.code.REMOVE_SELF': "आप स्वयं को टीम से नहीं हटा सकते — किसी दूसरे टेनेंट एडमिन को करना होगा।",
   'swc.code.TEAM_RESTRICTED': "टीम प्रतिबंधित — केवल टेनेंट एडमिन स्टाफ़ का प्रबंधन करता है।",

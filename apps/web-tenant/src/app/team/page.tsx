@@ -14,6 +14,7 @@ import { tenantClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator } from '../../lib/i18n';
 import { isPending } from '../../features/team/form';
+import { GOV_ROLE_REFUSAL, swcCodeKey } from '../../features/swc/console';
 import { approveAssignmentAction, addUserAction } from './actions';
 import type { RoleAssignment } from '@krishalaya/sdk-js';
 
@@ -23,7 +24,7 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('team.title'), robots: { index: false, follow: false } };
 }
 
-const ERR = new Set(['approve', 'add', 'phone', 'illegal']);
+const ERR = new Set(['approve', 'add', 'phone', 'illegal', GOV_ROLE_REFUSAL]);
 
 export default async function TeamPage({ searchParams }: { searchParams: { pending?: string; ok?: string; error?: string } }) {
   await requireSession('/team');
@@ -42,7 +43,7 @@ export default async function TeamPage({ searchParams }: { searchParams: { pendi
       <h1>{t.t('team.title')}</h1>
       <p className="kv-muted"><Link href="/team/roles">{t.t('team.manageRoles')}</Link></p>
       {okKey && <p className="kv-success" role="status">{t.t(`team.ok.${okKey}`)}</p>}
-      {errorKey && <p className="kv-error" role="alert">{t.t(`team.error.${errorKey}`)}</p>}
+      {errorKey && <p className="kv-error" role="alert">{errorKey === GOV_ROLE_REFUSAL ? t.t(swcCodeKey(GOV_ROLE_REFUSAL)) : t.t(`team.error.${errorKey}`)}</p>}
 
       <nav className="kv-notif-filters" aria-label={t.t('team.filters')}>
         <Link href="/team" className={`kv-btn--link${!pendingOnly ? ' is-active' : ''}`} aria-current={!pendingOnly ? 'page' : undefined}>{t.t('team.all')}</Link>

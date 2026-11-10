@@ -100,10 +100,13 @@ export const SWC_CODES = [
   'TOTP_REPLAY', 'TOTP_INVALID', 'TOTP_NOT_ENROLLED', 'TOTP_NOT_CONFIRMED', 'RECOVERY_CODE_USED', 'RECOVERY_CODE_INVALID', 'RECOVERY_CODE_FINAL', 'RECOVERY_CODE_BORN_LIVE', 'TWO_FACTOR_CHALLENGE_INVALID',
   'OVERRIDE_NEEDS_CHECKER', 'OVERRIDE_CHECKER_IS_MAKER', 'OVERRIDE_CHECKER_IS_GRANTEE', 'OVERRIDE_NOT_ADMIN', 'OVERRIDE_PROPOSAL_FINAL', 'OVERRIDE_PROPOSAL_BORN',
   'OVERRIDE_PROPOSAL_EXPIRED', 'OVERRIDE_PROPOSAL_NOT_STALE', 'OVERRIDE_PROPOSAL_NOT_FOUND', 'OVERRIDE_PROPOSAL_LIVE', 'OVERRIDE_FINAL', 'OVERRIDE_NOT_FOUND',
-  'NEEDS_SECOND_ADMIN', 'ROLE_NOT_FOUND', 'LAST_ADMIN', 'REMOVE_SELF', 'TEAM_RESTRICTED', 'STAFF_NOT_FOUND', 'REASON_REQUIRED', 'TWO_FACTOR_REQUIRED', 'SESSION_REVOKED',
+  'NEEDS_SECOND_ADMIN', 'ROLE_NOT_FOUND', 'GOV_ROLE_LIVES_IN_AN_AUTHORITY', 'LAST_ADMIN', 'REMOVE_SELF', 'TEAM_RESTRICTED', 'STAFF_NOT_FOUND', 'REASON_REQUIRED', 'TWO_FACTOR_REQUIRED', 'SESSION_REVOKED',
   // shared / transport
   'VALIDATION_FAILED', 'FORBIDDEN', 'IDEMPOTENCY_CONFLICT', 'NOT_FOUND', 'TWO_FACTOR_PENDING', 'unknown',
 ] as const;
+/** PC-56 HOTFIX-15 (GOV-1 Q2-A): the API refuses assigning or approving the tenant `gov_officer` by this name (0238 is the wall); the team
+ *  pages that offer the role (/team/roles) or approve a pending row (/team) print its sentence, never the raw code. */
+export const GOV_ROLE_REFUSAL = 'GOV_ROLE_LIVES_IN_AN_AUTHORITY' as const;
 export const swcCodeKey = (code: string) => ((SWC_CODES as readonly string[]).includes(code) ? `swc.code.${code}` : 'swc.code.unknown');
 export function codesFrom(code: string | undefined, status?: number, details?: unknown): string[] {
   const refusals = (details as { refusals?: Array<{ code?: unknown } | string> } | null)?.refusals;

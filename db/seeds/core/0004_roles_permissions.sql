@@ -209,7 +209,10 @@ WHERE (r.code='farmer'        AND p.code IN ('listing.create','listing.update','
    OR (r.code='tenant_admin'  AND p.code IN ('audit.read'))
    OR (r.code='ai_ops'        AND p.code IN ('ai.review','listing.moderate'))
    OR (r.code='super_admin'   AND p.code IN ('plan.manage','tenant.manage','user.impersonate','flag.toggle'))
-   OR (r.code='gov_officer'   AND p.code IN ('scheme.process','report.view'))
+   -- [PC-56 HOTFIX-15 · GOV-1 Q3-A (lead-applied 2026-11-10)] `report.view` REMOVED from gov_officer: it opened the organisation's member
+   -- roster, member files, user records, role assignments, console home and finance scope — none of it a scheme's (survey GOV-1 F-1).
+   -- Migration 0238 deletes the row for an existing database (this list is ON CONFLICT DO NOTHING) and freezes the tenant role (Q2-A).
+   OR (r.code='gov_officer'   AND p.code IN ('scheme.process'))
    OR (r.code='tenant_admin'  AND p.code IN ('product.manage','catalogue.configure'))
    OR (r.code IN ('farmer','pharma_store','organic_store','vyapari') AND p.code IN ('product.manage','order.manage'))
    OR (r.code IN ('farmer','vyapari','pharma_store','organic_store') AND p.code IN ('requirement.quote'))
