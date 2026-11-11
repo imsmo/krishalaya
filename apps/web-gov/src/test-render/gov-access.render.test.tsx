@@ -3,10 +3,13 @@
 // when it ends, labelled UTC; status), Q4-A verbatim with the first-head fact beside it; APPROVE offered only to a head who is neither the
 // requester nor the grantee; REMOVE offered only to a head, never on their own row; the lone-head and no-head facts; no request or removal
 // reason printed; the refusals BY NAME; the forbidden, switched-off and error states (Retry = a re-read).
+// PC-56 GOV-4b (W356, Q4-A): the "Sign-ins" section — Q4's sentence exact, the lock without "never locked", the download sentence, the
+// refusals BY NAME; no sign-in list, address, device or colleague's sign-in — even when a SENTINEL fixture carries them (×3 languages).
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { AccessView } from '../components/gov1/AccessViews';
 import { gov1RefusalKeys } from '../features/gov1/refusals';
+import { gov4RefusalKeys } from '../features/gov4/refusals';
 import { en } from '../i18n/en';
 import { hi } from '../i18n/hi';
 import { gu } from '../i18n/gu';
@@ -82,5 +85,51 @@ describe('PC-56 GOV-1a · W359 /access — the people as the API gives them', ()
     expect(text(h)).toContain(cat['gov1.access.q4']);
     expect(/gov1\.|common\./.test(text(h))).toBe(false);
     expect((h.match(/data-kv-[a-z-]+="[^"]*"/g) ?? []).join('|')).toBe((view(ME_HEAD).match(/data-kv-[a-z-]+="[^"]*"/g) ?? []).join('|'));
+  });
+});
+
+const Q4B = 'Each sign-in to this console is recorded by the platform. This console does not list sign-ins, and it never shows where anyone signed in from.';
+/** The SENTINEL: what Q4-A says this console never shows — sign-in rows, addresses, devices, a colleague's attempts — loaded into every prop. */
+const SIG = { ip: '203.0.113.77', ip6: '2001:db8::77', device: 'Sentinel-Phone-Model-X', ua: 'SentinelAgent/9.1', fp: 'fp-sentinel-4411', city: 'Sentinelpur', when: '2026-11-09T04:41:00.000Z', who: 'Sentinel Colleague' };
+const SIG_STRINGS = Object.values(SIG);
+const signIn = { at: SIG.when, ip: SIG.ip, ipAddress: SIG.ip6, device: SIG.device, userAgent: SIG.ua, fingerprint: SIG.fp, location: SIG.city, succeeded: false, who: SIG.who };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const loadedMe = (me: typeof ME_HEAD): any => ({ ...me, lastSignIn: signIn, signIns: [signIn], sessions: [signIn], person: { ...me.person, lastSignIn: signIn, device: SIG.device, ip: SIG.ip } });
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const loadedRows = (): any[] => ROWS.map((m) => ({ ...m, lastSignIn: signIn, signIns: [signIn], ip: SIG.ip, device: SIG.device, location: SIG.city }));
+const signinsOf = (h: string) => (h.match(/<section class="kv-card" data-kv-signins=""[\s\S]*?<\/section>\s*<\/section>/) ?? [''])[0];
+
+describe('PC-56 GOV-4b · W356 — the "Sign-ins" section of /access', () => {
+  it('Q4-A exact, once; the lock as the code proves it; the download sentence; heading "Sign-ins"; in every state', () => {
+    for (const st of ['ok', 'forbidden', 'error', 'off'] as const) {
+      const h = view(ME_HEAD, st === 'ok' ? ROWS : [], en, st); const t = text(h);
+      expect([st, t.split(Q4B).length - 1]).toEqual([st, 1]);
+      expect(h).toContain('data-kv-signins=""'); expect(h).toContain('data-kv-statement="gov4.q4"');
+      expect(t).toContain('After too many wrong codes, no code is taken for a while; the sign-in page says how many minutes to wait.');
+      expect(t).toContain('Sign-ins cannot be downloaded from this console.');
+      expect(t).toContain('Sign-ins');
+    }
+  });
+  it('never "never locked"; no sign-in list, table, count, link, form or button inside the section; no digit in it', () => {
+    const sec = signinsOf(view(ME_HEAD));
+    expect(sec.length).toBeGreaterThan(100);
+    expect(sec).not.toMatch(/<table|<tr|<td|<form|<input|<button|<select|<a |<img|<ol|<time/i);
+    expect(/\d/.test(text(sec))).toBe(false);
+    expect(text(view(ME_HEAD))).not.toMatch(/never locked/i);
+    expect(visible(view(ME_HEAD))).not.toMatch(/\bIP\b|SSO|hardware key|security key|step-up|regulator|RTI|export|throttl|append-only|watching the watchers|who got in|access events|out-of-state|security desk/i);
+  });
+  it('the refusals BY NAME (en): no rows, no device or address, no one sees sign-ins, one way in, wrong codes unlinked, same wait, reads not listed, no file', () => {
+    const t = text(view(ME_HEAD));
+    for (const k of gov4RefusalKeys('access_signins')) expect([k, t.includes(en[k])]).toEqual([k, true]);
+    expect(gov4RefusalKeys('access_signins')).toHaveLength(8);
+  });
+  it.each([['en', en], ['hi', hi], ['gu', gu]] as const)('%s: the SENTINEL (sign-in rows, addresses, devices, a colleague\'s attempts) never reaches the markup', (_l, cat) => {
+    for (const h of [view(loadedMe(ME_HEAD), loadedRows(), cat), view(loadedMe(ME_OFFICER), loadedRows(), cat), view(loadedMe(ME_HEAD), [], cat, 'error')]) {
+      for (const s of SIG_STRINGS) expect([s, h.includes(s)]).toEqual([s, false]);
+      expect(h).not.toMatch(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b|[0-9a-f]{1,4}::[0-9a-f]{1,4}/i);   // no address-shaped string
+      expect(text(h)).toContain(cat['gov4.q4']);
+      for (const k of gov4RefusalKeys('access_signins')) expect([k, text(h).includes(cat[k])]).toEqual([k, true]);
+      expect(/gov4\.|gov1\.|common\./.test(text(h))).toBe(false);
+    }
   });
 });

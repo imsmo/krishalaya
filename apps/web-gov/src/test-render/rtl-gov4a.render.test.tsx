@@ -21,7 +21,7 @@ const pages = (cat: Record<string, string>) => {
   const t = tr(cat);
   return [
     rtl(<VerificationView t={t} me={ME_OFFICER} />), rtl(<VerificationView t={t} me={ME_HEAD} />), rtl(<VerificationView t={t} me={null} />),
-    ...GOV4_CHAINS.flatMap((c) => c.states.map((s) => rtl(<Gov4Chain t={t} chain={c.id} state={s} />))),
+    ...GOV4_CHAINS.filter((c) => c.wave === '4a').flatMap((c) => c.states.map((s) => rtl(<Gov4Chain t={t} chain={c.id} state={s} />))),   // (4b's chains: rtl-gov4b)
   ];
 };
 const SRC_4A = ['components/gov4/VerificationViews.tsx', 'app/verification/page.tsx'];   // (refusals.ts quotes the canon's own arrows in its `canon` strings; none is printed)

@@ -7,6 +7,9 @@
 //     video / phone / document) in any gov4 file's code;
 //   • E3: the old organisation verification logic (features/verification/review.ts) and its spec are gone; nothing names them;
 //   • the gate; GOV_NAV carries /verification.
+//   GOV-4b (W356 → /access "Sign-ins"): the section takes only `t` and reads nothing; /access makes NO SDK call beyond GOV-1a's
+//   gov.members.list() (and its three act methods in actions.ts); app/access holds page.tsx and actions.ts only (no /access/sign-ins);
+//   no app/audit route (W356's canon address /audit/access answers not found); no sign-in, IP, device or session field read.
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -23,8 +26,8 @@ function walk(dir: string): string[] {
 const GOV4_FILES = [...walk(path.join(SRC, 'features', 'gov4')), ...walk(path.join(SRC, 'components', 'gov4')), ...walk(path.join(SRC, 'app', 'verification'))];
 
 describe('PC-56 GOV-4a · E1 — one route', () => {
-  it('the gov4 files are the ones this wave built; app/verification holds page.tsx only', () => {
-    expect([...GOV4_FILES].sort()).toEqual(['app/verification/page.tsx', 'components/gov4/VerificationViews.tsx', 'features/gov4/refusals.ts']);
+  it('the gov4 files are the ones GOV-4a and GOV-4b built; app/verification holds page.tsx only', () => {
+    expect([...GOV4_FILES].sort()).toEqual(['app/verification/page.tsx', 'components/gov4/SignInsViews.tsx', 'components/gov4/VerificationViews.tsx', 'features/gov4/refusals.ts']);
     expect(walk(path.join(SRC, 'app', 'verification'))).toEqual(['app/verification/page.tsx']);
   });
 });
@@ -70,5 +73,34 @@ describe('PC-56 GOV-4a · E3 — the old organisation verification logic is gone
   it('GOV_NAV carries /verification ("Field visits")', () => {
     const shell = code(read('components/gov1/GovShell.tsx'));
     expect(shell.slice(shell.indexOf('GOV_NAV'), shell.indexOf(']);'))).toMatch(/\{ href: '\/verification', labelKey: 'gov4\.nav\.verification' \}/);
+  });
+});
+
+describe('PC-56 GOV-4b · W356 is a section of /access that reads nothing', () => {
+  it('no route for sign-ins: app/access holds page.tsx and actions.ts only; no app/audit; no route named for sign-ins or sessions anywhere', () => {
+    expect(walk(path.join(SRC, 'app', 'access')).sort()).toEqual(['app/access/actions.ts', 'app/access/page.tsx']);
+    expect(fs.existsSync(path.join(SRC, 'app', 'audit'))).toBe(false);
+    for (const rel of walk(path.join(SRC, 'app'))) expect([rel, /sign-?ins?\b|signins|sessions|audit|login-?events/i.test(rel)]).toEqual([rel, false]);
+  });
+  it('/access makes no SDK call beyond GOV-1a\'s: the page reads gov.members.list() only; the actions call request / approve / remove only', () => {
+    const page = code(read('app/access/page.tsx'));
+    expect([...page.matchAll(/govClient\(\)\.([\w.]+)\(/g)].map((m) => m[1])).toEqual(['gov.members.list']);
+    expect(page).not.toMatch(/fetch\(|\.request\(|tenantClient|\bsessions\b|loginEvents|login_events|signIns/);
+    const acts = code(read('app/access/actions.ts'));
+    expect([...new Set([...acts.matchAll(/\.gov\.([\w.]+)\(/g)].map((m) => m[1]))].sort()).toEqual(['members.approve', 'members.remove', 'members.request']);
+  });
+  it('the section takes only `t`; it imports no SDK, client or session helper; no sign-in, address, device or session field is read', () => {
+    const v = code(read('components/gov4/SignInsViews.tsx'));
+    expect(v).toMatch(/export function SignInsSection\(\{ t \}: \{ t: Tr \}\)/);
+    expect(v).not.toMatch(/@krishalaya\/sdk-js|api-client|lib\/session|govClient|fetch\(/);
+    expect(v).not.toMatch(/\.(ip|ipAddress|device\w*|userAgent|fingerprint|lastSignIn\w*|signIns?|sessions?|loginEvents|location|city)\b/);
+    const a = code(read('components/gov1/AccessViews.tsx'));
+    expect([...a.matchAll(/<SignInsSection ([^/]*)\/>/g)].map((m) => m[1].trim())).toEqual(['t={t}']);
+    expect(a).not.toMatch(/\.(ip|ipAddress|device\w*|userAgent|fingerprint|lastSignIn\w*|signIns?|sessions|loginEvents|location|city)\b/);
+  });
+  it('the sign-ins chains are answered on /access before anything is read, with Back → /access', () => {
+    const page = code(read('app/access/page.tsx'));
+    const at = page.indexOf("chain4For(searchParams, 'access')");
+    expect(at).toBeGreaterThan(0); expect(at).toBeLessThan(page.indexOf('govClient()'));
   });
 });

@@ -1,7 +1,8 @@
 // apps/web-gov/src/app/access/page.tsx · PC-56 GOV-1a — W359 (`/access`) and the access chain (W3198–W3200 as `?act=` states). Gated by
 // requireGov (E2). Reads `GET /v1/gov/members` (GOV-0 — `authority.members.read`, held by every live member of THIS authority) and renders
 // components/gov1/AccessViews.tsx: the authority's people, Q4-A's sentence, the acts as offers. `?act=confirm&do=request|approve|remove`
-// shows the act's form (a key minted here); `&do=reread` is the PARITY-DECOR chain opened by the error state's Retry. noindex.
+// shows the act's form (a key minted here); `&do=reread` is the PARITY-DECOR chain opened by the error state's Retry. PC-56 GOV-4b: the
+// "Sign-ins" section (W356) is inside AccessView and reads nothing; `?do=signins-file|signins-reread&act=` are W3262–W3266. noindex.
 import type { Metadata } from 'next';
 import { randomUUID } from 'node:crypto';
 import { SdkError, type GovMembership } from '@krishalaya/sdk-js';
@@ -13,6 +14,8 @@ import { Gov1Chain } from '../../components/gov1/Gov1Chain';
 import { chain1State } from '../../features/gov1/refusals';
 import { accessDo, accessDone, accessErrorCode } from '../../features/gov1/access';
 import { approveRoleAction, removeRoleAction, requestRoleAction } from './actions';
+import { Gov4Chain } from '../../components/gov4/VerificationViews';
+import { chain4For, chain4State } from '../../features/gov4/refusals';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +28,10 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 export default async function AccessPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
   const me = await requireGov('/access');
   const t = getTranslator();
+  // PC-56 GOV-4b · W3262–W3266: the sign-ins chains (`?do=signins-file|signins-reread&act=`) read nothing; they are answered first.
+  const chain4 = chain4For(searchParams, 'access');
+  const state4 = chain4 ? chain4State(chain4, searchParams) : null;
+  if (chain4 && state4) return <Gov4Chain t={t} chain={chain4} state={state4} />;
   const doing = accessDo(searchParams.do);
   const chain = doing === 'reread' ? 'access_reread' : 'access_act';
   const act = chain1State(chain, searchParams);

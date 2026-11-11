@@ -1,12 +1,12 @@
 // apps/web-gov/src/components/gov4/VerificationViews.tsx · PC-56 GOV-4a — W335 (`/verification`, "Field visits") and its chains, presentational
-// (rendered by app/verification/page.tsx and by the render tests). GOV-4 Q1-A, Q2-A, Q3-A and Q5-A (lead-applied; the founder may reopen).
+// (rendered by app/verification/page.tsx and by the render tests). Gov4Chain also renders GOV-4b's /access chains (Back → /access). GOV-4 Q1-A, Q2-A, Q3-A and Q5-A (lead-applied; the founder may reopen).
 //
 // THE PAGE takes NO data but the signed-in authority's name (`me`, the shell's own read): there is nothing about a field visit, a farm, a
 // farmer, an officer or a payment that it could print. Q2's, Q1's, Q3's and Q5's sentences verbatim and the download sentence; "What this
 // console does not do" names W335's acts and W336, W337 and W338's features once each, in plain words; the refusals BY NAME. No list, table,
 // count, form, button or write; the chains are reached by address only (all DECOR). All copy via i18n; no inline styles; no physical direction.
 import type { GovMe } from '@krishalaya/sdk-js';
-import { chain4ById, GOV4_NOT_DONE, GOV4_REFUSALS, VERIFICATION_BACK, type Chain4Id, type Gov4Surface, type Tr } from '../../features/gov4/refusals';
+import { chain4ById, GOV4_NOT_DONE, GOV4_REFUSALS, type Chain4Id, type Gov4Surface, type Tr } from '../../features/gov4/refusals';
 
 /** The page's sentences, in the order printed (Q2 first: what this page is about). */
 export const GOV4_STATEMENTS = ['gov4.q2', 'gov4.q1', 'gov4.q3', 'gov4.q5'] as const;
@@ -30,8 +30,11 @@ export function Gov4Chain({ t, chain, state }: { t: Tr; chain: Chain4Id; state: 
       <h1>{t.t(`${k}.title`)}</h1>
       <p className="kv-statement" data-kv-statement={c.statement}>{t.t(c.statement)}</p>
       <p>{t.t(`${k}.body`)}</p>
+      {/* GOV-4b · PARITY-DECOR: the re-read chain's confirm state has ONE more link, and it IS the re-read of the page that opened it. */}
+      {c.kind === 'PARITY-DECOR' && state === 'confirm'
+        ? <p className="kv-pager"><a className="kv-btn" href={c.back} data-kv-real="reread">{t.t('gov4.chain.reread')}</a></p> : null}
       <Gov4Refusals t={t} surface={c.surface} />
-      <p className="kv-pager"><a className="kv-btn kv-btn--muted" href={VERIFICATION_BACK} data-kv-back={VERIFICATION_BACK}>{t.t('gov4.chain.back')}</a></p>
+      <p className="kv-pager"><a className="kv-btn kv-btn--muted" href={c.back} data-kv-back={c.back}>{t.t(c.backKey)}</a></p>
     </section>
   );
 }

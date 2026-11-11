@@ -5,7 +5,8 @@
 // words out of every `gov4.` value.
 //
 // GOV-4 is GOV-4a → GOV-4b (survey §4; GOV-4 Q1-A, Q2-A, Q3-A and Q5-A applied by the lead under the founder's instructions — 06_GOV.md "GOV-4
-// SPLIT"; his to reopen). This registry carries ALL 19 canon files: GOV-4a decides its 13; GOV-4b's 6 stay `pending_4b` until it decides them.
+// SPLIT"; his to reopen). This registry carries ALL 19 canon files: GOV-4a decided its 13; GOV-4b decides its 6 (Q4-A) — 19 decided, 0 pending
+// (`pending_4b` is deleted from the verdict type: the 4c-7 rule).
 //
 // GOV-4a · FIELD VISITS builds ONE route (E1), `/verification` ("Field visits"):
 //   • W335 (the queue) — BUILT (honest): it READS NOTHING (E2: the shell's `gov.me()` only). Q2's, Q1's, Q3's and Q5's sentences and the
@@ -16,18 +17,27 @@
 //   • the chains (`?do=…&act=`; Back → `/verification`): the file chain (W3189–W3190), the form chain (W3191–W3194) and the act chain
 //     (W3195–W3197) — all DECOR: nothing is made, entered, given, sent or submitted. The page reads nothing, so it has no load-error state and no
 //     Retry (the canon's Retry → W3195 has nothing to re-read — DELTA `no_retry`).
+//
+// GOV-4b · SIGN-INS (GOV-4 Q4-A, lead-applied) builds NO route: W356 is a section "Sign-ins" of `/access` (W359's page, GOV-1a):
+//   • W356 — BUILT (honest): the section READS NOTHING (SignInsSection takes only `t`; /access makes no SDK call beyond GOV-1a's
+//     `gov.members.list()`). Q4's sentence verbatim; the lock stated as the code proves it (OtpService.verifyDetailed: wrong codes past the
+//     cap lock the code for a while; the sign-in page states the minutes from the API's `retryAfterSec`) — never "never locked"; the download
+//     sentence; the refusals BY NAME. No row, count, person, time, address or device. Its canon address `/audit/access` has NO route and
+//     answers not found (no route was ever built there — the smaller honest change than a 307; W334's `/audit` is GOV-6's).
+//   • the chains (`/access?do=signins-file|signins-reread&act=`; Back → `/access`): the file chain (W3262–W3263) DECOR — no file of
+//     sign-ins is made; the re-read chain (W3264–W3266) PARITY-DECOR — its confirm state's one link IS a re-read of /access.
 export interface Tr { t(key: string, vars?: Record<string, string | number>): string }
 
 export type Gov4Surface =
   // GOV-4a · the page and its chains
   | 'verification' | 'visit_file' | 'visit_draft' | 'visit_act'
-  // GOV-4b · named now so the registry is whole; nothing is built or printed for them until GOV-4b
+  // GOV-4b · the "Sign-ins" section of /access and its chains
   | 'access_signins' | 'session_file' | 'session_reread';
 export interface Gov4Refusal { id: string; canon: string; surfaces: readonly Gov4Surface[]; key: string; why: string }
 
 /** The surfaces GOV-4a builds. */
 export const SURFACES_4A: readonly Gov4Surface[] = ['verification', 'visit_file', 'visit_draft', 'visit_act'];
-/** The surfaces GOV-4b will build (pending). */
+/** The surfaces GOV-4b builds. */
 export const SURFACES_4B: readonly Gov4Surface[] = ['access_signins', 'session_file', 'session_reread'];
 const WRITE_CHAINS_4A: readonly Gov4Surface[] = ['visit_draft', 'visit_act'];
 
@@ -80,6 +90,34 @@ export const GOV4_REFUSALS: readonly Gov4Refusal[] = Object.freeze([
     key: 'gov4.refusal.chainReview', why: 'no form exists, so there is nothing to review or compare' },
   { id: 'chain_back_form', canon: 'W3191 "Back to the form" (→ W335, not W337)', surfaces: ['visit_draft'],
     key: 'gov4.refusal.chainBackForm', why: 'canon defect (survey §1): no form exists; Back returns to the page' },
+  // ══ GOV-4b · W356 (the "Sign-ins" section of /access) — Q4-A ══
+  { id: 'signin_rows', canon: 'W356 table When · Who · Event · Method / origin · Outcome ("[time] · [official] · sign-in · [method] · success" ×5, an "unknown … sign-in attempt ×3 … failed · throttled" row) · "Showing 1–25 of [n] access events ([n] days) · Page size · Page 1 of [n]" · state "No events yet — The trail starts with the console\'s first sign-in"', surfaces: ['access_signins'],
+    key: 'gov4.refusal.noSignInRows', why: 'Q4-A: no sign-in list in the console; kv_gov holds nothing on sessions or login_events (survey §1 W356); no count, no paging' },
+  { id: 'signin_origin', canon: 'W356 "[office] IP range" · "out-of-state IP" · "security key" (the Method / origin column)', surfaces: ['access_signins'],
+    key: 'gov4.refusal.noSignInDevice', why: 'TRUST · PII: the address recorded is web-gov\'s own server (wave_gov1a_report.md §2); a device is a person\'s; never shown (Q4-A, Q3-A spirit)' },
+  { id: 'signin_readers', canon: 'W356 "Officials see their own trail on their profile" · state "Readable by all officials — Access audit is deliberately open to every signed-in official of this authority — watching the watchers is the design"', surfaces: ['access_signins'],
+    key: 'gov4.refusal.noOneSees', why: 'FALSE: no gov profile page or read exists; a colleague\'s sign-ins are their personal data (Q4-A; no surveillance board)' },
+  { id: 'signin_methods', canon: 'W356 "step-up: hardware key at [money release]" · "government SSO" · "fallback credentials (ID pattern: dept fallback)" · "[regulator] (dual grant) · signed extract requested ([data room]) · logged to both sides"', surfaces: ['access_signins'],
+    key: 'gov4.refusal.oneWayIn', why: 'FALSE (GOV-1 Q5-A): the phone code then the authenticator code is the only way in; no SSO, hardware key, departmental fallback or outside body exists' },
+  { id: 'signin_failures', canon: 'W356 "Failed attempts are first-class rows, not a hidden counter — the pattern of who KNOCKS is often the finding"', surfaces: ['access_signins'],
+    key: 'gov4.refusal.wrongCodesUnlinked', why: 'PARTLY FALSE: a wrong code writes a login_events row with user_id NULL and no realm or authority column (auth.service.ts recordFailedLoginIn; 0003) — it cannot be an authority\'s row' },
+  { id: 'signin_lock', canon: 'W356 "account never locked (lockout is a denial-of-service gift), but each retry waits longer than the last; security desk paged independently of throttling"', surfaces: ['access_signins'],
+    key: 'gov4.refusal.sameWait', why: 'FALSE: the code DOES lock (otp.service.ts verifyDetailed → reason "locked", retryAfterSec = the OTP time-to-live, the same each time); no escalating wait; no paging rule exists — the lock is stated in gov4.signins.lock' },
+  { id: 'signin_reads', canon: 'W356 "[official] · dry-run viewed (draft v3) — logged per [rule]" · "sign-ins, grants, exports, and the attempts that failed. Both are append-only."', surfaces: ['access_signins'],
+    key: 'gov4.refusal.readsNotListed', why: 'FALSE: an official\'s reads are not the authority\'s record (GOV-2 Q5-A); no export exists; "append-only" not verified (survey §7) and not printed' },
+  { id: 'signin_file', canon: 'W356 "Signed export (RTI-ready)" (→ W3262)', surfaces: ['access_signins', 'session_file'],
+    key: 'gov4.refusal.noSignInFile', why: 'applied from GOV-2/3 Q4-A: no gov file plane; "RTI-ready" is a legal claim; the sign-ins download sentence is printed' },
+  // ══ GOV-4b · the session chains' shared sentences (W3262–W3266) — refused BY NAME ══
+  { id: 'chain_file_4b', canon: 'W3262 / W3263 "queued with a position and [time to ready] … [stamped], [checked], delivered by [time-limited link]" · "file name, row count, [file hash] … [n]-min [link], every fetch logged"', surfaces: ['session_file'],
+    key: 'gov4.refusal.chainFile', why: 'no file is queued, made or handed out in this realm (GOV-2 Q4-A)' },
+  { id: 'reread_writes_4b', canon: 'W3264 "confirming writes an [record] entry with actor, time and reason" (opened by "Retry")', surfaces: ['session_reread'],
+    key: 'gov4.refusal.rereadWrites', why: 'a re-read writes nothing' },
+  { id: 'chain_record_4b', canon: 'W3265 "the [record] has the entry (actor · time · reason · before/after)" · "View [the record]"', surfaces: ['session_reread'],
+    key: 'gov4.refusal.chainRecord', why: 'nothing is written from these pages, so there is no entry to view' },
+  { id: 'chain_money_4b', canon: 'W3265 "Money-adjacent actions reconcile [to zero] before this page ever shows"', surfaces: ['session_reread'],
+    key: 'gov4.refusal.chainMoney', why: 'no money moves on this console' },
+  { id: 'chain_paging_4b', canon: 'W3266 "repeated failures page the [duty person]" · "Retry — back to confirm"', surfaces: ['session_reread'],
+    key: 'gov4.refusal.chainPaging', why: 'no paging exists; Back returns to /access' },
 ]);
 export function gov4RefusalKeys(surface: Gov4Surface): string[] { return GOV4_REFUSALS.filter((r) => r.surfaces.includes(surface)).map((r) => r.key); }
 
@@ -102,12 +140,18 @@ export const GOV4_DELTAS: readonly { id: string; canon: string; built: string }[
   { id: 'no_retry', canon: 'load-error "Retry" on W335 / W336 / W337 / W338 → the mutate-confirm page W3195', built: 'the page reads nothing, so it has no load-error state and no Retry; the act chain (W3195–W3197) is DECOR only' },
   { id: 'field_visit_word', canon: '"verification", "verified", "Site visit"', built: 'F-12: every sentence says "field visit"; the authority\'s own check is called a desk check (Q2-A) — never "verified"' },
   { id: 'closed_tenant', canon: 'the organisation\'s schedule / submit routes (scheme.process, no live holder)', built: 'Q2-A: refused by name FIELD_VISITS_ARE_NOT_RECORDED_HERE for every caller; the applicant\'s own read of visits recorded before is kept' },
+  // GOV-4b
+  { id: 'signins_section', canon: 'W356 /audit/access "Access & session audit — who got in, who tried"', built: 'Q4-A: a "Sign-ins" section of /access (W359\'s page); /audit/access has no route (not found — nothing was ever built there)' },
+  { id: 'signins_reads_nothing', canon: 'W356 rows, totals, paging, "Readable by all officials"', built: 'the section reads nothing (it takes only `t`); /access still makes only GOV-1a\'s gov.members.list(); no row, count, person, time, address or device' },
+  { id: 'signins_lock', canon: 'W356 "account never locked"', built: 'the lock is stated as the code proves it, without a number (OTP_MAX_VERIFY_ATTEMPTS / OTP_TTL_SEC are deploy configuration): too many wrong codes → no code taken for a while; the sign-in page gives the minutes' },
+  { id: 'signins_chrome', canon: 'W356 "Search access events… ⌘K" · "[initials]" avatar · bell · state "Flagged off — Access & Session Audit disabled"', built: 'not printed again in the section: /access already refuses the console chrome by name (gov1.refusal.consoleChrome); no per-page switch exists (gov_console OFF → the sign-in page)' },
+  { id: 'signins_no_retry_opener', canon: 'W356 "Trail reader failed … Retry" (→ W3264)', built: 'the section reads nothing, so it has no load-error state; the re-read chain (W3264–W3266, PARITY-DECOR) is reached by address; its confirm state\'s link re-reads /access' },
 ]);
 
-/** The verdict values (GOV-4b deletes `pending_4b` from the type when it decides its 6 — the 4c-7 rule). */
-export type Gov4Verdict = 'BUILT (honest)' | 'BUILT (read)' | 'REAL' | 'PARITY-DECOR' | 'DECOR' | 'pending_4b';
+/** The verdict values (GOV-4b deleted `pending_4b`: all 19 are decided — the 4c-7 rule). */
+export type Gov4Verdict = 'BUILT (honest)' | 'BUILT (read)' | 'REAL' | 'PARITY-DECOR' | 'DECOR';
 export type Gov4Wave = '4a' | '4b';
-/** Every canon file of GOV-4 (19), each with ONE verdict: 4a decides its 13; 4b's 6 are pending. */
+/** Every canon file of GOV-4 (19), each with ONE verdict: 4a decided its 13; 4b decides its 6. */
 export const GOV4_CANON_FILES: readonly { file: string; wave: Gov4Wave; verdict: Gov4Verdict; note: string }[] = Object.freeze([
   // ── 4a · FIELD VISITS (13) — decided (Q1-A, Q2-A, Q3-A, Q5-A lead-applied) ──
   { file: 'W335-gov-verification-queue.html', wave: '4a', verdict: 'BUILT (honest)', note: '/verification — reads nothing; Q2, Q1, Q3, Q5 and the download sentence verbatim; no row, count, person, place or figure' },
@@ -123,13 +167,13 @@ export const GOV4_CANON_FILES: readonly { file: string; wave: Gov4Wave; verdict:
   { file: 'W3195-gov-verification-mutate-confirm.html', wave: '4a', verdict: 'DECOR', note: '/verification?do=act&act=confirm — assigning, a code to a farmer and submitting refused BY NAME (Q2-A)' },
   { file: 'W3196-gov-verification-mutate-success.html', wave: '4a', verdict: 'DECOR', note: '/verification?do=act&act=success — nothing was done' },
   { file: 'W3197-gov-verification-mutate-failure.html', wave: '4a', verdict: 'DECOR', note: '/verification?do=act&act=failure — nothing was sent; Back → /verification' },
-  // ── 4b · SIGN-INS (6) — pending GOV-4b (Q4) ──
-  { file: 'W356-gov-session-audit.html', wave: '4b', verdict: 'pending_4b', note: 'GOV-4b' },
-  { file: 'W3262-gov-session-export-queued.html', wave: '4b', verdict: 'pending_4b', note: 'GOV-4b' },
-  { file: 'W3263-gov-session-export-ready.html', wave: '4b', verdict: 'pending_4b', note: 'GOV-4b' },
-  { file: 'W3264-gov-session-mutate-confirm.html', wave: '4b', verdict: 'pending_4b', note: 'GOV-4b' },
-  { file: 'W3265-gov-session-mutate-success.html', wave: '4b', verdict: 'pending_4b', note: 'GOV-4b' },
-  { file: 'W3266-gov-session-mutate-failure.html', wave: '4b', verdict: 'pending_4b', note: 'GOV-4b' },
+  // ── 4b · SIGN-INS (6) — decided (Q4-A lead-applied) ──
+  { file: 'W356-gov-session-audit.html', wave: '4b', verdict: 'BUILT (honest)', note: '/access "Sign-ins" — reads nothing; Q4 verbatim, the lock as the code proves it, the download sentence; no row, count, person, address or device; /audit/access has no route' },
+  { file: 'W3262-gov-session-export-queued.html', wave: '4b', verdict: 'DECOR', note: '/access?do=signins-file&act=queued — no file is made; reached by address only' },
+  { file: 'W3263-gov-session-export-ready.html', wave: '4b', verdict: 'DECOR', note: '/access?do=signins-file&act=ready — no file exists to hand out' },
+  { file: 'W3264-gov-session-mutate-confirm.html', wave: '4b', verdict: 'PARITY-DECOR', note: '/access?do=signins-reread&act=confirm — the one link IS a re-read of /access' },
+  { file: 'W3265-gov-session-mutate-success.html', wave: '4b', verdict: 'PARITY-DECOR', note: '/access?do=signins-reread&act=success — nothing changed' },
+  { file: 'W3266-gov-session-mutate-failure.html', wave: '4b', verdict: 'PARITY-DECOR', note: '/access?do=signins-reread&act=failure — nothing changed; Back → /access' },
 ]);
 
 /** The canon chain groups (survey §1F–§1K; the canon's route comments "B2 shared chain: <m> × chain-<x>"), 14 files, each exactly once. */
@@ -141,30 +185,40 @@ export const GOV4_CHAIN_GROUPS: readonly { id: string; donor: string; wave: Gov4
   { id: 'session_mutate', donor: 'W356', wave: '4b', files: ['W3264', 'W3265', 'W3266'] },
 ]);
 
-// ── THE BUILT CHAINS (GOV-4a): each is a query state (`?do=…&act=`) of /verification; Back → /verification. All DECOR. ──
-export type Chain4Id = 'visit_file' | 'visit_draft' | 'visit_act';
-export interface Chain4Def {
-  id: Chain4Id; wave: Gov4Wave; kind: 'PARITY-DECOR' | 'DECOR'; group: string; surface: Gov4Surface; states: readonly string[];
-  doing: string; key: (state: string) => string; statement: string;
-}
-export const GOV4_CHAINS: readonly Chain4Def[] = Object.freeze([
-  { id: 'visit_file', wave: '4a', kind: 'DECOR', group: 'verification_export', surface: 'visit_file', states: ['queued', 'ready'], doing: 'file',
-    key: (s: string) => `gov4.chain.file.${s}`, statement: 'gov4.download' },
-  { id: 'visit_draft', wave: '4a', kind: 'DECOR', group: 'verification_form', surface: 'visit_draft', states: ['form-error', 'review', 'success', 'failure'], doing: 'draft',
-    key: (s: string) => `gov4.chain.draft.${s}`, statement: 'gov4.q2' },
-  { id: 'visit_act', wave: '4a', kind: 'DECOR', group: 'verification_mutate', surface: 'visit_act', states: ['confirm', 'success', 'failure'], doing: 'act',
-    key: (s: string) => `gov4.chain.act.${s}`, statement: 'gov4.q2' },
-]);
-export function chain4ById(id: Chain4Id): Chain4Def { return GOV4_CHAINS.find((c) => c.id === id) as Chain4Def; }
 /** Every gov4a chain returns to the one page that opens it. */
 export const VERIFICATION_BACK = '/verification';
+/** Every gov4b chain returns to /access (never the dashboard). */
+export const ACCESS_BACK = '/access';
+
+// ── THE BUILT CHAINS: each is a query state (`?do=…&act=`) of the page that opens it — GOV-4a's of /verification (all DECOR; Back →
+// /verification), GOV-4b's of /access (the file chain DECOR; the re-read chain PARITY-DECOR; Back → /access). ──
+export type Chain4Id = 'visit_file' | 'visit_draft' | 'visit_act' | 'signins_file' | 'signins_reread';
+export type Chain4Page = 'verification' | 'access';
+export interface Chain4Def {
+  id: Chain4Id; wave: Gov4Wave; kind: 'PARITY-DECOR' | 'DECOR'; group: string; surface: Gov4Surface; states: readonly string[];
+  page: Chain4Page; back: string; backKey: string; doing: string; key: (state: string) => string; statement: string;
+}
+export const GOV4_CHAINS: readonly Chain4Def[] = Object.freeze([
+  { id: 'visit_file', wave: '4a', kind: 'DECOR', group: 'verification_export', surface: 'visit_file', states: ['queued', 'ready'], page: 'verification', back: VERIFICATION_BACK, backKey: 'gov4.chain.back', doing: 'file',
+    key: (s: string) => `gov4.chain.file.${s}`, statement: 'gov4.download' },
+  { id: 'visit_draft', wave: '4a', kind: 'DECOR', group: 'verification_form', surface: 'visit_draft', states: ['form-error', 'review', 'success', 'failure'], page: 'verification', back: VERIFICATION_BACK, backKey: 'gov4.chain.back', doing: 'draft',
+    key: (s: string) => `gov4.chain.draft.${s}`, statement: 'gov4.q2' },
+  { id: 'visit_act', wave: '4a', kind: 'DECOR', group: 'verification_mutate', surface: 'visit_act', states: ['confirm', 'success', 'failure'], page: 'verification', back: VERIFICATION_BACK, backKey: 'gov4.chain.back', doing: 'act',
+    key: (s: string) => `gov4.chain.act.${s}`, statement: 'gov4.q2' },
+  { id: 'signins_file', wave: '4b', kind: 'DECOR', group: 'session_export', surface: 'session_file', states: ['queued', 'ready'], page: 'access', back: ACCESS_BACK, backKey: 'gov4.chain.backAccess', doing: 'signins-file',
+    key: (s: string) => `gov4.chain.signinsFile.${s}`, statement: 'gov4.signins.download' },
+  { id: 'signins_reread', wave: '4b', kind: 'PARITY-DECOR', group: 'session_mutate', surface: 'session_reread', states: ['confirm', 'success', 'failure'], page: 'access', back: ACCESS_BACK, backKey: 'gov4.chain.backAccess', doing: 'signins-reread',
+    key: (s: string) => `gov4.chain.signinsReread.${s}`, statement: 'gov4.q4' },
+]);
+export function chain4ById(id: Chain4Id): Chain4Def { return GOV4_CHAINS.find((c) => c.id === id) as Chain4Def; }
 
 type Params = Record<string, string | string[] | undefined> | undefined;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
-/** Which chain a query opens: `do=file` / `do=draft` / `do=act`; anything else → null (the page itself). */
-export function chain4For(searchParams: Params): Chain4Id | null {
+/** Which chain a query opens ON THAT PAGE: /verification `do=file` / `draft` / `act`; /access `do=signins-file` / `signins-reread`;
+ *  anything else → null (the page itself — on /access, GOV-1a's own `do=` values are left to GOV-1a). */
+export function chain4For(searchParams: Params, page: Chain4Page = 'verification'): Chain4Id | null {
   const d = one(searchParams?.do);
-  const c = GOV4_CHAINS.find((x) => x.doing === d);
+  const c = GOV4_CHAINS.find((x) => x.page === page && x.doing === d);
   return c ? c.id : null;
 }
 /** The chain state (`?act=`), or null for the page itself / a state the chain does not have. */
