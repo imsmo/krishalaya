@@ -15,7 +15,13 @@
 // symbol/grouping/decimal-separator LITERALS it returns don't change with amount magnitude, only the numeric
 // parts do, and those are substituted with our own bigint-computed grouped digits, never Intl's own arithmetic
 // on the real amount).
-import { resolveLanguage, isRegistered } from './languages';
+import { resolveServable, isRegistered } from './languages';
+
+// PC-56 RTL-1a: every formatter resolves its `langCode` through `resolveServable(…, 'explicit')`. The code a caller
+// passes here is the app's already-resolved active language, so a preview language (`ar`) formats in its own locale
+// (`ar-AE-u-nu-latn`: Western digits, founder Q4) — before, `resolveLanguage('ar')` silently formatted it as en-IN.
+// Every live code and every other non-live code resolves exactly as before (`resolveServable` = `resolveLanguage` there).
+const intlFor = (langCode: string): string => resolveServable(langCode, 'explicit').intlLocale;
 
 export interface FormatMoneyOptions {
   /** BRAND-024 symbol-vs-code disambiguation (e.g. "AED 1,250.00" vs the locale-default symbol). Defaults to
@@ -39,7 +45,7 @@ export function formatMoneyMinor(minor: string | bigint, currencyCode = 'INR', l
   // through the registry (unchanged behavior for every existing caller); an unrecognized code is treated as
   // already being a raw Intl tag (never silently collapsed to 'en' — a caller passing a real locale, registered
   // or not, gets that locale honored).
-  const intlLocale = opts.intlLocale ?? (isRegistered(langCode) ? resolveLanguage(langCode).intlLocale : langCode);
+  const intlLocale = opts.intlLocale ?? (isRegistered(langCode) ? intlFor(langCode) : langCode);
   const currencyDisplay = opts.currencyDisplay === 'code' ? 'code' : 'symbol';
 
   const nf = new Intl.NumberFormat(intlLocale, { style: 'currency', currency: currencyCode, currencyDisplay });
@@ -74,14 +80,14 @@ export function formatMoneyMinor(minor: string | bigint, currencyCode = 'INR', l
 
 /** Plain number (counts, quantities — NOT money) localized. */
 export function formatNumber(n: number, langCode = 'en'): string {
-  return new Intl.NumberFormat(resolveLanguage(langCode).intlLocale).format(n);
+  return new Intl.NumberFormat(intlFor(langCode)).format(n);
 }
 export function formatDate(value: string | number | Date, langCode = 'en', opts: Intl.DateTimeFormatOptions = { dateStyle: 'medium' }): string {
-  return new Intl.DateTimeFormat(resolveLanguage(langCode).intlLocale, opts).format(new Date(value));
+  return new Intl.DateTimeFormat(intlFor(langCode), opts).format(new Date(value));
 }
 /** "3 days ago" / "in 2 hours" in the active language. */
 export function formatRelative(value: string | number | Date, langCode = 'en', now: Date = new Date()): string {
-  const rtf = new Intl.RelativeTimeFormat(resolveLanguage(langCode).intlLocale, { numeric: 'auto' });
+  const rtf = new Intl.RelativeTimeFormat(intlFor(langCode), { numeric: 'auto' });
   const diffSec = Math.round((new Date(value).getTime() - now.getTime()) / 1000);
   const units: Array<[Intl.RelativeTimeFormatUnit, number]> = [['year', 31536000], ['month', 2592000], ['day', 86400], ['hour', 3600], ['minute', 60]];
   for (const [unit, secs] of units) if (Math.abs(diffSec) >= secs) return rtf.format(Math.round(diffSec / secs), unit);

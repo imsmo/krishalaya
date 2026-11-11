@@ -50,7 +50,10 @@ export const LANGUAGE_REGISTRY: readonly LanguageRegistryEntry[] = Object.freeze
   { code: 'kn', nameNative: 'ಕನ್ನಡ', nameEnglish: 'Kannada', intlLocale: 'kn-IN', dir: 'ltr', script: 'Kannada', fontPack: 'balooTamma2', status: 'machine-draft-pending-review' },
   { code: 'ml', nameNative: 'മലയാളം', nameEnglish: 'Malayalam', intlLocale: 'ml-IN', dir: 'ltr', script: 'Malayalam', fontPack: 'balooChettan2', status: 'machine-draft-pending-review' },
   { code: 'or', nameNative: 'ଓଡ଼ିଆ', nameEnglish: 'Odia', intlLocale: 'or-IN', dir: 'ltr', script: 'Odia', fontPack: 'balooBhaina2', status: 'machine-draft-pending-review' },
-  { code: 'ar', nameNative: 'العربية', nameEnglish: 'Arabic', intlLocale: 'ar-AE', dir: 'rtl', script: 'Arabic', fontPack: 'notoNaskhArabic', status: 'machine-draft-pending-review' },
+  // PC-56 RTL-1a (founder Q4 "Western digits"): `-u-nu-latn` pins Western (Latin) digits — canon Q51 — on every ICU,
+  // whatever a browser's default numbering system for Arabic is. Still NOT live (founder Q1): served only by an
+  // explicit choice, through `resolveServable` below.
+  { code: 'ar', nameNative: 'العربية', nameEnglish: 'Arabic', intlLocale: 'ar-AE-u-nu-latn', dir: 'rtl', script: 'Arabic', fontPack: 'notoNaskhArabic', status: 'machine-draft-pending-review' },
   { code: 'ur', nameNative: 'اردو', nameEnglish: 'Urdu', intlLocale: 'ur-PK', dir: 'rtl', script: 'Arabic', fontPack: 'notoNastaliqUrdu', status: 'machine-draft-pending-review', codeCatalogAbsent: true },
 ]);
 
@@ -95,3 +98,31 @@ export function isRegistered(code: string): boolean { return REGISTRY_BY_CODE.ha
 export const COMING_SOON_LANGUAGES: readonly LanguageRegistryEntry[] = Object.freeze(
   LANGUAGE_REGISTRY.filter((l) => l.status !== 'live'),
 );
+
+// --- PC-56 RTL-1a · PREVIEW (servable, NOT live) — founder Q1 "Draft all, opt-in only" ------------------------------
+// A preview language keeps its `machine-draft-pending-review` status: it is NOT in `LANGUAGES`, `resolveLanguage` and
+// `isSupported` still refuse it (so mobile, the storefront's languages-drift spec and every existing caller are
+// unchanged), and it has no DB `languages` row. It can be served ONLY when a person chose it on purpose (the language
+// cookie, `?lang=`, a switcher) — never from a browser/device language (Accept-Language), never by default.
+
+/** The codes servable on an explicit choice while still `machine-draft-pending-review` — Arabic only. */
+export const PREVIEW_LANGUAGES: readonly string[] = Object.freeze(['ar']);
+
+/** How the code reached us: `'explicit'` = a person chose it (cookie, `?lang=`, switcher); `'implicit'` = inferred
+ *  (Accept-Language, device locale, a default). Required, so no caller can reach a preview language by omission. */
+export type LanguageChoice = 'explicit' | 'implicit';
+
+const PREVIEW_BY_CODE = new Map<string, LanguageDef>(
+  LANGUAGE_REGISTRY.filter((l) => PREVIEW_LANGUAGES.includes(l.code)).map(({ code, nameNative, nameEnglish, intlLocale, dir }) => [code, Object.freeze({ code, nameNative, nameEnglish, intlLocale, dir })]),
+);
+
+/** The language to SERVE for a code. A live code resolves exactly as `resolveLanguage` does (same object). A preview
+ *  code (`ar`, or 'ar-AE') resolves to its own definition ONLY when `choice === 'explicit'`; an implicit preference
+ *  for it, every other non-live code and every unknown code fall back exactly as `resolveLanguage` does (→ en). */
+export function resolveServable(code: string | undefined | null, choice: LanguageChoice): LanguageDef {
+  if (code && choice === 'explicit') {
+    const preview = PREVIEW_BY_CODE.get(code) ?? PREVIEW_BY_CODE.get(code.split('-')[0] ?? '');
+    if (preview && !isSupported(code)) return preview;
+  }
+  return resolveLanguage(code);
+}

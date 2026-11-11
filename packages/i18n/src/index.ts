@@ -2,8 +2,9 @@
 export {
   LANGUAGES, LANGUAGE_REGISTRY, COMING_SOON_LANGUAGES, DEFAULT_LANGUAGE,
   resolveLanguage, isSupported, getRegistryEntry, isRegistered,
+  PREVIEW_LANGUAGES, resolveServable,
 } from './languages';
-export type { LanguageDef, LanguageRegistryEntry, LanguageDir, LanguageStatus } from './languages';
+export type { LanguageDef, LanguageRegistryEntry, LanguageDir, LanguageStatus, LanguageChoice } from './languages';
 export { FONT_PACKS, getFontPack } from './fontPacks';
 export type { FontPackDef, FontPackStatus } from './fontPacks';
 export { formatMoneyMinor, formatNumber, formatDate, formatRelative } from './format';
