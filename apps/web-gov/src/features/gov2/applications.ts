@@ -26,8 +26,11 @@ export function statusFilter(raw: string | string[] | undefined): GovListedStatu
 export const schemeFilter = (raw: string | string[] | undefined): string | undefined => { const v = one(raw); return isApplicationId(v) ? v : undefined; };
 /** `?cursor=` gives passed through as the API minted it (the API validates it), bounded in length. */
 export const cursorParam = (raw: string | string[] | undefined): string | undefined => { const v = one(raw); return v && v.length <= 200 ? v : undefined; };
-/** The status in words; an unknown status gives the dash. */
-export const statusKey = (s: string): string => ((GOV_LISTED_STATUSES as readonly string[]).includes(s) ? `gov2.status.${s}` : 'common.dash');
+/** The key that words `disbursed` on EVERY gov page (PC-56 GOV-3a · B4 / E6 — one key): GOV-1b's "Marked disbursed by an officer". The status means
+ *  only that a person typed a first credit record (dbt-transfer.service before GOV-3a) — never that a payment was made or seen. */
+export const DISBURSED_KEY = 'gov1.dash.status.disbursed';
+/** The status in words; an unknown status gives the dash; `disbursed` is GOV-1b's words (DISBURSED_KEY), never "Disbursed". */
+export const statusKey = (s: string): string => (s === 'disbursed' ? DISBURSED_KEY : (GOV_LISTED_STATUSES as readonly string[]).includes(s) ? `gov2.status.${s}` : 'common.dash');
 /** The application's number as printed: the first 8 characters of its id, upper case. */
 export const shortId = (id: string): string => id.replace(/-/g, '').slice(0, 8).toUpperCase();
 

@@ -100,14 +100,18 @@ run('schemes spine (integration, real Postgres + RLS + eligibility + processing 
   // officer can no longer verify or approve — both are refused by name; the authority checks and decides (`/v1/gov/applications/:id/act`,
   // proven live in gov2a-decide.integration). The authority's approval is therefore written HERE BY HAND (the owner), so the DBT half of this
   // spine — an observed credit moves an approved application to disbursed, with no wallet movement — is still proven as before.
-  it('officer verify/approve are the authority\'s (refused by name) → the approval written by hand → records the observed DBT credit → application disbursed', async () => {
+  it('officer verify/approve are the authority\'s (refused by name) → the approval written by hand → the DBT record is refused by name (GOV-3a) → application stays approved', async () => {
     await expect(appsSvc.startVerification(tenantA, officerActor, appId)).rejects.toMatchObject({ code: 'SCHEME_DECISIONS_ARE_THE_AUTHORITYS' });
     await expect(appsSvc.approve(tenantA, officerActor, appId, { govtAppRef: 'GOV-77' } as any, null)).rejects.toMatchObject({ code: 'SCHEME_DECISIONS_ARE_THE_AUTHORITYS' });
     expect((await appsSvc.getById(tenantA, officerActor, appId)).status).toBe('submitted');   // nothing moved
     await admin.query(`UPDATE scheme_applications SET status = 'approved', decided_at = now(), govt_app_ref = 'GOV-77' WHERE id = $1`, [appId]);
-    const t = await dbt.record(tenantA, officerActor, appId, { amountMinor: '600000', instalmentNo: 1, creditedOn: new Date().toISOString().slice(0, 10), pfmsRef: 'PFMS-ABC' } as any, null);
-    expect(t.amountMinor).toBe('600000');
-    expect((await appsSvc.getById(tenantA, officerActor, appId)).status).toBe('disbursed');   // DBT moved it to disbursed
+    // NAMED UPDATE — PC-56 GOV-3a (GOV-3 Q2-A, lead-applied; brief_gov3a §E B3): nobody records a payment on this platform. The officer's
+    // credit record is refused by name, nothing is written, and the approved application STAYS approved (it was "disbursed" before GOV-3a).
+    const before = (await admin.query(`SELECT count(*)::int AS n FROM dbt_transfers WHERE application_id = $1`, [appId])).rows[0].n;
+    await expect(dbt.record(tenantA, officerActor, appId, { amountMinor: '600000', instalmentNo: 1, creditedOn: new Date().toISOString().slice(0, 10), pfmsRef: 'PFMS-ABC' } as any, null))
+      .rejects.toMatchObject({ code: 'DBT_IS_NOT_RECORDED_HERE' });
+    expect((await admin.query(`SELECT count(*)::int AS n FROM dbt_transfers WHERE application_id = $1`, [appId])).rows[0].n).toBe(before);
+    expect((await appsSvc.getById(tenantA, officerActor, appId)).status).toBe('approved');   // stays approved: the payment happens outside this platform
   });
 
   it('RLS: tenant B cannot see tenant A\'s application', async () => {

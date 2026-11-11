@@ -128,7 +128,12 @@ export class SchemesResource {
   async closeApplication(id: string): Promise<SchemeApplication> {
     return (await this.http.request<SchemeApplication>('POST', `schemes/applications/${encodeURIComponent(id)}/close`, {})).data;
   }
-  /** Record an observed DBT/PFMS credit against an application. amountMinor is bigint minor (Law 2). */
+  /**
+   * Record a DBT credit against an application.
+   * @deprecated PC-56 GOV-3a (GOV-3 Q2-A): CLOSED — the API refuses it by name for every caller: `SdkError` code `DBT_IS_NOT_RECORDED_HERE`
+   * (403). Payments and returned payments are not recorded on this platform; benefits are paid by PFMS and the banks, outside it. Kept so
+   * existing callers compile and surface the refusal.
+   */
   async recordDbt(id: string, input: { amountMinor: string; creditedOn: string; instalmentNo?: number; pfmsRef?: string }): Promise<DbtTransfer> {
     return (await this.http.request<DbtTransfer>('POST', `schemes/applications/${encodeURIComponent(id)}/dbt`, { body: input })).data;
   }
@@ -145,34 +150,78 @@ export class SchemesResource {
     return (await this.http.request<{ id: string; status: string }>('POST', `schemes/applications/field-visits/${encodeURIComponent(visitId)}/submit`, { body: { measuredValues: {}, ...dto } })).data;
   }
 
-  // --- PC-54 W54-10: cross-application DBT read-models + audit-stamped exports (Process-gated) ---
+  // --- PC-54 W54-10: cross-application DBT read-models + exports — CLOSED (PC-56 GOV-3a) ---
+  /**
+   * The per-scheme DBT monitor.
+   * @deprecated PC-56 GOV-3a (GOV-3 Q2-A): CLOSED — the API refuses it by name for every caller: `SdkError` code `DBT_IS_NOT_RECORDED_HERE`
+   * (403). Payments and returned payments are not recorded on this platform; benefits are paid by PFMS and the banks, outside it. Kept so
+   * existing callers compile and surface the refusal.
+   */
   async dbtMonitor(signal?: AbortSignal): Promise<Array<{ schemeId: string; transfers: number; amountMinor: string; lastCreditedOn: string | null }>> {
     return (await this.http.request<Array<{ schemeId: string; transfers: number; amountMinor: string; lastCreditedOn: string | null }>>('GET', 'schemes/applications/dbt/monitor', { signal })).data;
   }
+  /**
+   * The recent DBT credit records.
+   * @deprecated PC-56 GOV-3a (GOV-3 Q2-A): CLOSED — the API refuses it by name for every caller: `SdkError` code `DBT_IS_NOT_RECORDED_HERE`
+   * (403). Payments and returned payments are not recorded on this platform; benefits are paid by PFMS and the banks, outside it. Kept so
+   * existing callers compile and surface the refusal.
+   */
   async dbtRecent(params: { schemeId?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
     return (await this.http.request<Array<Record<string, unknown>>>('GET', 'schemes/applications/dbt/recent', { query: { schemeId: params.schemeId, limit: params.limit ?? 100 }, signal })).data;
   }
-  /** The Appendix-5 law: every export returns an AUDIT-STAMPED receipt with its rows. */
+  /**
+   * A DBT report export (Q4-A: payment records cannot be downloaded).
+   * @deprecated PC-56 GOV-3a (GOV-3 Q2-A): CLOSED — the API refuses it by name for every caller: `SdkError` code `DBT_IS_NOT_RECORDED_HERE`
+   * (403). Payments and returned payments are not recorded on this platform; benefits are paid by PFMS and the banks, outside it. Kept so
+   * existing callers compile and surface the refusal.
+   */
   async exportReport(input: { report: 'dbt_monitor' | 'dbt_recent'; schemeId?: string; limit?: number }): Promise<{ receipt: { id: string; report: string; generatedAt: string; generatedBy: string; rowCount: number }; rows: unknown[] }> {
     return (await this.http.request<{ receipt: { id: string; report: string; generatedAt: string; generatedBy: string; rowCount: number }; rows: unknown[] }>('POST', 'schemes/applications/exports', { body: input })).data;
   }
 
-  // --- PC-55 A3 `dbt-bounce-ledger` (Process-gated). A returned credit is recorded as a NEW observation;
-  // the original transfer is never rewritten. The amount is the transfer's own — never sent by a client. ---
+  // --- PC-55 A3 `dbt-bounce-ledger` — CLOSED (PC-56 GOV-3a, Q2-A: returned payments are not recorded on this platform) ---
+  /**
+   * Record a returned DBT credit.
+   * @deprecated PC-56 GOV-3a (GOV-3 Q2-A): CLOSED — the API refuses it by name for every caller: `SdkError` code `DBT_IS_NOT_RECORDED_HERE`
+   * (403). Payments and returned payments are not recorded on this platform; benefits are paid by PFMS and the banks, outside it. Kept so
+   * existing callers compile and surface the refusal.
+   */
   async recordDbtBounce(transferId: string, input: { reasonCode: string; reasonNote?: string; bouncedOn: string; bankRef?: string }, idempotencyKey: string): Promise<{ id: string; transferId: string; amountMinor: string; resolution: string }> {
     return (await this.http.request<{ id: string; transferId: string; amountMinor: string; resolution: string }>('POST', `schemes/applications/dbt/${encodeURIComponent(transferId)}/bounce`, { body: input, idempotencyKey })).data;
   }
-  /** recredited REQUIRES recreditTransferId (name the replacement); abandoned REQUIRES a written note. */
+  /**
+   * Resolve a returned DBT credit.
+   * @deprecated PC-56 GOV-3a (GOV-3 Q2-A): CLOSED — the API refuses it by name for every caller: `SdkError` code `DBT_IS_NOT_RECORDED_HERE`
+   * (403). Payments and returned payments are not recorded on this platform; benefits are paid by PFMS and the banks, outside it. Kept so
+   * existing callers compile and surface the refusal.
+   */
   async resolveDbtBounce(id: string, input: { resolution: 'recredited' | 'abandoned'; note?: string; recreditTransferId?: string }): Promise<{ id: string; resolution: string }> {
     return (await this.http.request<{ id: string; resolution: string }>('POST', `schemes/applications/dbt/bounces/${encodeURIComponent(id)}/resolve`, { body: input })).data;
   }
+  /**
+   * List returned DBT credits.
+   * @deprecated PC-56 GOV-3a (GOV-3 Q2-A): CLOSED — the API refuses it by name for every caller: `SdkError` code `DBT_IS_NOT_RECORDED_HERE`
+   * (403). Payments and returned payments are not recorded on this platform; benefits are paid by PFMS and the banks, outside it. Kept so
+   * existing callers compile and surface the refusal.
+   */
   async dbtBounces(params: { resolution?: string; schemeId?: string; reasonCode?: string; limit?: number } = {}, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
     return (await this.http.request<Array<Record<string, unknown>>>('GET', 'schemes/applications/dbt/bounces', { query: { resolution: params.resolution, schemeId: params.schemeId, reasonCode: params.reasonCode, limit: params.limit ?? 100 }, signal })).data;
   }
-  /** The desk header: per-scheme bounce stats + the HONEST PFMS provider state (available:false until onboarded). */
+  /**
+   * The returns desk header.
+   * @deprecated PC-56 GOV-3a (GOV-3 Q2-A): CLOSED — the API refuses it by name for every caller: `SdkError` code `DBT_IS_NOT_RECORDED_HERE`
+   * (403). Payments and returned payments are not recorded on this platform; benefits are paid by PFMS and the banks, outside it. Kept so
+   * existing callers compile and surface the refusal.
+   */
   async dbtBounceDesk(signal?: AbortSignal): Promise<{ byScheme: Array<Record<string, unknown>>; pfms: { provider: string; available: boolean; note: string; fetchedAt: string; pulledRecords: number } }> {
     return (await this.http.request<{ byScheme: Array<Record<string, unknown>>; pfms: { provider: string; available: boolean; note: string; fetchedAt: string; pulledRecords: number } }>('GET', 'schemes/applications/dbt/bounce-desk', { signal })).data;
   }
+  /**
+   * One application's returned DBT credits.
+   * @deprecated PC-56 GOV-3a (GOV-3 Q2-A): CLOSED — the API refuses it by name for every caller: `SdkError` code `DBT_IS_NOT_RECORDED_HERE`
+   * (403). Payments and returned payments are not recorded on this platform; benefits are paid by PFMS and the banks, outside it. Kept so
+   * existing callers compile and surface the refusal.
+   */
   async applicationDbtBounces(applicationId: string, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
     return (await this.http.request<Array<Record<string, unknown>>>('GET', `schemes/applications/${encodeURIComponent(applicationId)}/dbt-bounces`, { signal })).data;
   }

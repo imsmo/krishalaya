@@ -21,7 +21,8 @@ describe('PC-56 GOV-2a · web-tenant states the authority\'s refusal ×3', () =>
 
   it('the page maps the code to the sentence; every closed act\'s Server Action forwards the SdkError code', () => {
     const page = src('app/schemes/page.tsx');
-    expect(page).toMatch(/NAMED_REFUSALS = new Set\(\['SCHEME_DECISIONS_ARE_THE_AUTHORITYS'\]\)/);
+    // NAMED UPDATE, PC-56 GOV-3a: the set gains DBT_IS_NOT_RECORDED_HERE after this code (gov3a-dbt-closed.spec pins it); this one still leads.
+    expect(page).toMatch(/NAMED_REFUSALS = new Set\(\['SCHEME_DECISIONS_ARE_THE_AUTHORITYS', 'DBT_IS_NOT_RECORDED_HERE'\]\)/);
     expect(page).toMatch(/t\.t\(`scm\.err\.\$\{errorKey\}`\)/);
     const actions = src('app/schemes/actions.ts');
     expect(actions).toMatch(/e instanceof SdkError \? \(e\.code \|\| 'save'\)/);

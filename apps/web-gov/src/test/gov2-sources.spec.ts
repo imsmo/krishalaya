@@ -72,10 +72,10 @@ describe('PC-56 GOV-2b · the gate and the nav', () => {
     expect(code(read('app/schemes/page.tsx'))).toMatch(/await requireGov\('\/schemes'\)/);
     expect(code(read('app/schemes/[id]/page.tsx'))).toMatch(/await requireGov\(/);
   });
-  it('GOV_NAV gains /schemes and, since GOV-2c, /applications (NAMED UPDATE); "Define a scheme" is not a nav link', () => {
+  it('GOV_NAV gains /schemes and, since GOV-2c, /applications (NAMED UPDATE); since GOV-3a, /dbt (NAMED UPDATE); "Define a scheme" is not a nav link', () => {
     const shell = code(read('components/gov1/GovShell.tsx'));
     const nav = shell.slice(shell.indexOf('GOV_NAV'), shell.indexOf(']);'));
-    expect([...nav.matchAll(/href: '([^']+)'/g)].map((m) => m[1])).toEqual(['/dashboard', '/schemes', '/applications', '/access']);
+    expect([...nav.matchAll(/href: '([^']+)'/g)].map((m) => m[1])).toEqual(['/dashboard', '/schemes', '/applications', '/dbt', '/access']);
     expect(nav).not.toMatch(/define/i);
   });
 });

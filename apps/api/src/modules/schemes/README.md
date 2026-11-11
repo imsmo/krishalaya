@@ -32,13 +32,19 @@ a rejection needs a listed code and a sentence; approval carries no amount. The 
 `verify` / `approve` / `reject` / `close` here are CLOSED (`SCHEME_DECISIONS_ARE_THE_AUTHORITYS`, 403, every caller).
 **PC-56 GOV-2c:** the organisation's `clarify` is CLOSED the same way (the lead's conservative call carried from GOV-2a; the
 authority asks for a clarification through its own act). The field visits and the DBT record are unchanged (GOV-3 / GOV-4 own them).
+**PC-56 GOV-3a (GOV-3 Q2-A / Q4-A, lead-applied 2026-11-11; the founder may reopen): nobody records payments here.** Every DBT act and read
+of this module but one is refused by name `DBT_IS_NOT_RECORDED_HERE` (403) for every caller, before anything is read or written: `POST /:id/dbt`,
+`GET dbt/monitor`, `GET dbt/recent`, `POST exports`, `POST dbt/:transferId/bounce`, `POST dbt/bounces/:id/resolve`, `GET dbt/bounces`,
+`GET dbt/bounce-desk`, `GET /:id/dbt-bounces`. Kept: `GET /:id/dbt` (the applicant's own read). An approved application therefore stays
+`approved` — benefits are paid by PFMS and the banks, outside this platform. The lines below that describe recording a credit describe the
+module before GOV-3a.
 
 ## Endpoints
 - `GET /v1/schemes/authorities` · `GET /v1/schemes[?categoryId&activeOnly]` · `GET /v1/schemes/:id` — read-only catalogue.
 - `POST /v1/schemes/:id/eligibility` — explainable eligibility check (any authenticated user).
 - `POST /v1/schemes/applications` (apply, idempotent, `scheme.apply`) · `GET` (?box=mine|queue|all) · `GET /:id`
   · `POST /:id/submit` (idempotent — collects fee) · `POST /:id/{resubmit,appeal}` (applicant)
-  · `POST /:id/{verify,clarify,approve,reject,close}` (CLOSED — `SCHEME_DECISIONS_ARE_THE_AUTHORITYS`, PC-56 GOV-2a/2c) · `POST /:id/dbt` (record, `scheme.process`) · `GET /:id/dbt`.
+  · `POST /:id/{verify,clarify,approve,reject,close}` (CLOSED — `SCHEME_DECISIONS_ARE_THE_AUTHORITYS`, PC-56 GOV-2a/2c) · `POST /:id/dbt` (CLOSED — `DBT_IS_NOT_RECORDED_HERE`, PC-56 GOV-3a) · `GET /:id/dbt` (kept: the applicant's read of credit records typed before GOV-3a).
 
 ## Threats considered
 - **No cross-party IDOR**: applications, DBT records and (since PC-56 HOTFIX-15 — survey GOV-1 C-11/F-3; until then this line was false of

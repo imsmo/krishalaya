@@ -27,8 +27,8 @@ export function generateMetadata(): Metadata {
 }
 
 const OK = new Set(['verify', 'clarify', 'approve', 'reject', 'close', 'dbt']);
-/** PC-56 GOV-2a — refusals the API names that this page states in words (×3 languages), not as a bare code. */
-const NAMED_REFUSALS = new Set(['SCHEME_DECISIONS_ARE_THE_AUTHORITYS']);
+/** PC-56 GOV-2a — refusals the API names that this page states in words (×3 languages), not as a bare code. PC-56 GOV-3a: the DBT record too. */
+const NAMED_REFUSALS = new Set(['SCHEME_DECISIONS_ARE_THE_AUTHORITYS', 'DBT_IS_NOT_RECORDED_HERE']);
 
 function decodeElig(raw?: string): { e: boolean; r: string[] } | null {
   if (!raw) return null;

@@ -1,7 +1,8 @@
 // apps/web-gov/src/test-render/gov-shell.render.test.tsx · PC-56 GOV-1a · E2 — the persona gate as a person sees it: the sidebar is drawn ONLY
 // with the API's answer for this session (`me`); with none (anonymous, a farmer's or an organisation's session, a partner's, an ended one) the
 // page is bare. The sidebar names the AUTHORITY first, the platform after it, and links only to /dashboard and /access — and, since PC-56
-// GOV-2b (brief §E first commit), /schemes; NAMED UPDATE, PC-56 GOV-2c (brief §E first commit): /applications.
+// GOV-2b (brief §E first commit), /schemes; NAMED UPDATE, PC-56 GOV-2c (brief §E first commit): /applications; NAMED UPDATE, PC-56 GOV-3a
+// (brief §E first commit): /dbt.
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { GovFooter, GovShell, GovSidebar } from '../components/gov1/GovShell';
@@ -16,11 +17,12 @@ describe('PC-56 GOV-1a · the shell and the persona gate', () => {
     const h = shell(null);
     expect(h).toContain('data-kv-shell="bare"'); expect(h).not.toContain('kv-sidebar'); expect(h).not.toContain('SHOULD NOT SHOW');
   });
-  it('a verified gov session → the sidebar, the authority\'s name first, the platform after; Dashboard, Schemes (GOV-2b), Applications (GOV-2c) and Access only; sign out', () => {
+  it('a verified gov session → the sidebar, the authority\'s name first, the platform after; Dashboard, Schemes (GOV-2b), Applications (GOV-2c), Benefit payments (GOV-3a) and Access only; sign out', () => {
     const h = shell(ME_HEAD);
     expect(h).toContain('data-kv-shell="gov"'); expect(h).toContain(`data-kv-sidebar="${ME_HEAD.authority!.id}"`);
     expect(h.indexOf('Test Authority One')).toBeLessThan(h.indexOf('Krishalaya government console'));
-    expect((h.match(/class="kv-sidebar__link"/g) ?? []).length).toBe(4);
+    expect((h.match(/class="kv-sidebar__link"/g) ?? []).length).toBe(5);   // NAMED UPDATE, PC-56 GOV-3a: + /dbt
+    expect(h).toContain('href="/dbt"'); expect(text(h)).toContain('Benefit payments');
     expect(h).toContain('href="/access"'); expect(h).toContain('href="/dashboard"'); expect(h).toContain('href="/schemes"'); expect(h).toContain('href="/applications"');
     expect(h).not.toMatch(/href="\/(registers|verification|mgnrega)/);
     expect(h).toContain('name="_action" value="logout"');

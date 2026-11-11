@@ -90,7 +90,7 @@ describe('PC-56 GOV-2b · the claims guard (gov2. scope)', () => {
   });
   it.each(Object.entries(CATS))('%s: no gov2. value trips a guard or a brand regex', (_l, cat) => {
     const vals = scoped(cat);
-    expect(vals.length).toBe(320);   // NAMED UPDATE, PC-56 GOV-2c: 183 (2b) + 137 (2c)
+    expect(vals.length).toBe(319);   // NAMED UPDATE, PC-56 GOV-2c: 183 (2b) + 137 (2c); NAMED UPDATE, PC-56 GOV-3a (B4): − gov2.status.disbursed (one key, GOV-1b's)
     for (const [k, v] of vals) {
       for (const [name, re] of GUARDS) expect([k, name, re.test(v)]).toEqual([k, name, false]);
       for (const [re] of BRAND) expect([k, String(re), re.test(v)]).toEqual([k, String(re), false]);

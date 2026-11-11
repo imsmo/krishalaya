@@ -980,6 +980,7 @@ export const gu: Messages = {
   'scm.loadError': 'અમે અત્યારે આ વિભાગ લોડ કરી શક્યા નહીં.',
   'scm.error': 'અમે તે સાચવી શક્યા નહીં',
   'scm.err.SCHEME_DECISIONS_ARE_THE_AUTHORITYS': 'અરજીઓની ચકાસણી અને નિર્ણય યોજના ચલાવતી સરકારી સત્તા કરે છે, સંસ્થા નહીં.',
+  'scm.err.DBT_IS_NOT_RECORDED_HERE': 'આ પ્લેટફોર્મ પર ચુકવણીઓ અને પરત આવેલી ચુકવણીઓ નોંધાતી નથી. લાભની ચુકવણી PFMS અને બેંકો આ પ્લેટફોર્મની બહાર કરે છે.',
   'scm.status': 'સ્થિતિ',
   'scm.minor': 'પૈસા',
   'scm.ok.verify': 'અરજી ચકાસણીમાં ખસેડી.',

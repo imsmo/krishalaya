@@ -1,8 +1,11 @@
 // modules/schemes/controllers/v1/applications.controller.ts · scheme application lifecycle + DBT records. `schemes` flag.
-// apply/submit/resubmit/appeal = applicant (scheme.apply); clarify + DBT record + field visits = officer (scheme.process);
+// apply/submit/resubmit/appeal = applicant (scheme.apply); field visits = officer (scheme.process);
 // verify/approve/reject/close are CLOSED here (PC-56 GOV-2a — the authority checks and decides: SCHEME_DECISIONS_ARE_THE_AUTHORITYS); clarify too (PC-56 GOV-2c).
+// Every DBT act and read but one is CLOSED (PC-56 GOV-3a, GOV-3 Q2-A / Q4-A — nobody records payments here: DBT_IS_NOT_RECORDED_HERE): record a
+// credit, record / resolve / list a returned payment, one application's returns, the returns desk, the monitor, the recent list and the
+// exports. KEPT: GET :id/dbt — the applicant's (or a scheme.process holder's) read of the credit records typed before GOV-3a.
 // Money route (submit, collects the processing fee) requires an Idempotency-Key.
-import { Controller, Delete, Get, Headers, Param, Post, Req, UseGuards, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Headers, Param, Post, Req, UseGuards, Query } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
@@ -15,28 +18,10 @@ import { SchemeApplicationService } from '../../services/scheme-application.serv
 import { FieldVerificationService } from '../../services/field-verification.service';
 import { GovExportService } from '../../services/gov-export.service';
 import { DbtBounceService } from '../../services/dbt-bounce.service';
-import { BOUNCE_REASON_CODES } from '../../domain/dbt-bounce.rules';
 import { z } from 'zod';
 
 // PC-54 W54-3 `scheme-field-visits` DTOs (zod .strict(); evidence = media ids, never blobs).
 const ScheduleVisitSchema = z.object({ scheduledFor: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }).strict();
-// PC-55 A3 · bounce DTOs (zod .strict()).
-const RecordBounceSchema = z.object({
-  reasonCode: z.enum(BOUNCE_REASON_CODES),
-  reasonNote: z.string().trim().max(2000).optional(),          // REQUIRED by the service when reasonCode='other'
-  bouncedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  bankRef: z.string().trim().max(120).optional(),
-}).strict();
-const ResolveBounceSchema = z.object({
-  resolution: z.enum(['recredited', 'abandoned']),
-  note: z.string().trim().max(2000).optional(),                // REQUIRED for abandon
-  recreditTransferId: z.string().uuid().optional(),            // REQUIRED for recredit
-}).strict();
-const ExportSchema = z.object({
-  report: z.enum(['dbt_monitor', 'dbt_recent']),
-  schemeId: z.string().uuid().optional(),
-  limit: z.number().int().min(1).max(500).optional(),
-}).strict();
 const SubmitVisitSchema = z.object({
   geotag: z.array(z.object({ mediaId: z.string().uuid(), lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180), capturedAt: z.string().datetime() }).strict()).min(1).max(50),
   measuredValues: z.record(z.unknown()).default({}),
@@ -46,7 +31,6 @@ import { DbtTransferService } from '../../services/dbt-transfer.service';
 import { SchemeDocumentService } from '../../services/scheme-document.service';
 import { ApplySchemeSchema, ApplySchemeDto, ClarifySchema, ClarifyDto, ApproveSchema, ApproveDto, RejectSchema, RejectDto } from '../../dto/create-scheme-application.dto';
 import { QueryApplicationsSchema, QueryApplicationsDto } from '../../dto/query-scheme-application.dto';
-import { RecordDbtSchema, RecordDbtDto } from '../../dto/create-dbt-transfer.dto';
 import { AttachDocumentSchema, AttachDocumentDto } from '../../dto/attach-document.dto';
 import { SchemesPermissions, canApply, canProcess } from '../../policies/schemes.policies';
 
@@ -104,9 +88,11 @@ export class ApplicationsController {
   @Post(':id/close')
   close(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.close(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
 
-  // DBT (observed PFMS credit) — officer records; applicant/officer reads
-  @Post(':id/dbt') @RequirePermissions(SchemesPermissions.Process)
-  recordDbt(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(RecordDbtSchema) dto: RecordDbtDto) { return this.dbt.record(ctx.tenantId, this.actor(ctx), id, dto, ipOf(r)).then((data) => ({ data })); }
+  // PC-56 GOV-3a (GOV-3 Q2-A): the DBT routes below are CLOSED — refused by name (DBT_IS_NOT_RECORDED_HERE) for EVERY signed-in caller, so no
+  // permission, no Idempotency-Key and no body shape is asked first (any of those would hide the name). The services refuse before anything
+  // is read or written. Their addresses stay so an old caller hears the name instead of a 404.
+  @Post(':id/dbt')
+  recordDbt(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @Body() dto: unknown) { return this.dbt.record(ctx.tenantId, this.actor(ctx), id, dto as never, ipOf(r)).then((data) => ({ data })); }
   // --- PC-54 W54-3 field visits (0066) — Process-gated writes; the read is the applicant's or a Process holder's, else 404 (HOTFIX-15) ---
   @Post(':id/field-visits') @RequirePermissions(SchemesPermissions.Process)
   scheduleVisit(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(ScheduleVisitSchema) dto: { scheduledFor?: string }) {
@@ -121,39 +107,39 @@ export class ApplicationsController {
     return this.visits.submit(ctx.tenantId, this.actor(ctx), visitId, dto).then((data) => ({ data }));
   }
 
-  // --- PC-54 W54-10: cross-application DBT read-models + audit-stamped exports (Process-gated) ---
-  @Get('dbt/monitor') @RequirePermissions(SchemesPermissions.Process)
+  // --- PC-54 W54-10: cross-application DBT read-models + exports — CLOSED (PC-56 GOV-3a, Q2-A / Q4-A) ---
+  @Get('dbt/monitor')
   dbtMonitor(@CurrentContext() ctx: RequestContext) { return this.gov.monitor(ctx.tenantId, this.actor(ctx)).then((data) => ({ data })); }
-  @Get('dbt/recent') @RequirePermissions(SchemesPermissions.Process)
+  @Get('dbt/recent')
   dbtRecent(@CurrentContext() ctx: RequestContext, @Query('schemeId') schemeId?: string, @Query('limit') limit?: string) {
     return this.gov.recent(ctx.tenantId, this.actor(ctx), schemeId, Number(limit) || 100).then((data) => ({ data }));
   }
-  // --- PC-55 A3 `dbt-bounce-ledger` (0083): a returned credit is a NEW observation, never a rewrite ---
-  @Post('dbt/:transferId/bounce') @RequirePermissions(SchemesPermissions.Process)
-  recordBounce(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('transferId') transferId: string, @Headers('idempotency-key') key: string, @ZodBody(RecordBounceSchema) dto: z.infer<typeof RecordBounceSchema>) {
-    if (!key) throw new BadRequestError('Idempotency-Key header required');
+  // --- PC-55 A3 `dbt-bounce-ledger` (0083) — CLOSED (PC-56 GOV-3a, Q2-A: returned payments are not recorded on this platform) ---
+  @Post('dbt/:transferId/bounce')
+  recordBounce(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('transferId') transferId: string, @Headers('idempotency-key') key: string, @Body() dto: unknown) {
     return this.bounces.record(ctx.tenantId, this.actor(ctx), transferId, key, dto, ipOf(r)).then((data) => ({ data }));
   }
-  @Post('dbt/bounces/:id/resolve') @RequirePermissions(SchemesPermissions.Process)
-  resolveBounce(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(ResolveBounceSchema) dto: z.infer<typeof ResolveBounceSchema>) {
+  @Post('dbt/bounces/:id/resolve')
+  resolveBounce(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @Body() dto: unknown) {
     return this.bounces.resolve(ctx.tenantId, this.actor(ctx), id, dto, ipOf(r)).then((data) => ({ data }));
   }
-  @Get('dbt/bounces') @RequirePermissions(SchemesPermissions.Process)
+  @Get('dbt/bounces')
   listBounces(@CurrentContext() ctx: RequestContext, @Query('resolution') resolution?: string, @Query('schemeId') schemeId?: string, @Query('reasonCode') reasonCode?: string, @Query('limit') limit?: string) {
     return this.bounces.list(ctx.tenantId, this.actor(ctx), { resolution, schemeId, reasonCode, limit: Number(limit) || 100 }).then((data) => ({ data }));
   }
-  @Get('dbt/bounce-desk') @RequirePermissions(SchemesPermissions.Process)
+  @Get('dbt/bounce-desk')
   bounceDesk(@CurrentContext() ctx: RequestContext) { return this.bounces.desk(ctx.tenantId, this.actor(ctx)).then((data) => ({ data })); }
   @Get(':id/dbt-bounces')
   bouncesForApplication(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
     return this.bounces.forApplication(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data }));
   }
 
-  @Post('exports') @RequirePermissions(SchemesPermissions.Process)
-  exportReport(@CurrentContext() ctx: RequestContext, @Req() r: Request, @ZodBody(ExportSchema) dto: { report: string; schemeId?: string; limit?: number }) {
+  @Post('exports')
+  exportReport(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Body() dto: unknown) {
     return this.gov.export(ctx.tenantId, this.actor(ctx), ipOf(r), dto).then((data) => ({ data }));
   }
 
+  // KEPT (GOV-3a): the applicant's own read of the credit records typed before GOV-3a (404 to anyone else but a scheme.process holder).
   @Get(':id/dbt')
   listDbt(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.dbt.listForApplication(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
 }

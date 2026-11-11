@@ -118,6 +118,9 @@ run('PC-56 HOTFIX-15 · a government officer is not the organisation\'s reader (
   }, 240_000);
 
   afterAll(async () => {
+    // [lead QA, GOV-3a] the legacy officer written in the F-3 test stayed ACTIVE in the shared test database and turned GOV-2a's
+    // "(P4) … by no live row" red whenever jest ran it after this spec; every gov_officer row of THIS organisation is now retired here.
+    await admin?.query(`UPDATE user_tenant_roles SET is_active = false, deleted_at = now() WHERE tenant_id = $1 AND role_id = (SELECT id FROM roles WHERE code = 'gov_officer')`, [T]).catch(() => undefined);
     await admin?.query(`UPDATE outbox_events SET status='published', published_at=now() WHERE status='pending' AND tenant_id = $1`, [T]).catch(() => undefined);
     for (const b of backups) await admin?.query(`UPDATE feature_flags SET is_enabled=$2, rollout_pct=$3, rules=$4::jsonb WHERE key=$1`, [b.key, b.is_enabled, b.rollout_pct, JSON.stringify(b.rules ?? {})]).catch(() => undefined);
     for (const f of FLAGS) for (const c of [`flag:${f}`, `flagstale:${f}`]) await cache?.del(c).catch(() => undefined);

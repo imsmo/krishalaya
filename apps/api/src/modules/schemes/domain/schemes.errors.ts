@@ -18,3 +18,9 @@ export class DocumentNotFoundError extends NotFoundError { constructor(id: strin
 export class SchemeDecisionsAreTheAuthoritysError extends DomainError {
   constructor(act: string) { super('SCHEME_DECISIONS_ARE_THE_AUTHORITYS', 'Applications are checked and decided by the government authority that runs the scheme, not by the organisation.', 403, { act }); }
 }
+/** PC-56 GOV-3a (GOV-3 Q2-A, lead-applied 2026-11-11 — the founder may reopen): nobody records payments here. The tenant DBT acts and reads —
+ *  record a credit, record / resolve / list a returned payment, the returns desk, the monitor, the recent list and the exports — are CLOSED,
+ *  refused by name for every caller, before anything is read or written. A farmer's own read of her application's past credit records stays. */
+export class DbtIsNotRecordedHereError extends DomainError {
+  constructor(act: string) { super('DBT_IS_NOT_RECORDED_HERE', 'Payments and returned payments are not recorded on this platform. Benefits are paid by PFMS and the banks, outside this platform.', 403, { act }); }
+}
