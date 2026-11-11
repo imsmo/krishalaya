@@ -27,6 +27,8 @@ import { ownerOfAccessToken } from '../offline/owner';
 import { setCrashUser, track, EVENTS } from '../observability';
 import { revokePushToken } from '../push/fcm';
 import { i18n } from '../i18n/i18n';
+import { restoreSavedLanguage, chooseLanguage } from '../i18n/languageChoice';
+import { applyRtlForDirection } from '../mechanisms/rtlBoot';
 import { config } from '../config';
 
 interface AuthApi {
@@ -35,7 +37,9 @@ interface AuthApi {
   signIn: (tokens: AuthTokens) => Promise<void>;
   signOut: () => Promise<void>;
   selectRole: (role: string) => Promise<void>;
-  setLanguage: (code: string) => Promise<void>;
+  /** Save a tapped language on this phone. Resolves true when it only takes over after the app is closed and reopened
+   *  (a switch into or out of Arabic — PC-56 RTL-1h-1, Q1 → A); the shell then shows the restart notice. */
+  setLanguage: (code: string) => Promise<boolean>;
   /** Fetch the profile for the bottom-tab greeting etc.; degrades silently on failure. */
   loadProfile: () => Promise<void>;
 }
@@ -77,8 +81,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     (async () => {
       const [lang, role, tokens] = await Promise.all([tokenStore.readLanguage(), tokenStore.readRole(), tokenStore.readTokens()]);
-      const language = lang ?? i18n.lang;
-      i18n.setLanguage(language);
+      // PC-56 RTL-1h-1: the saved choice is restored FIRST, and the layout direction is set from it (never from the phone's
+      // language; right-to-left only for a chosen Arabic) — the root layout no longer guesses it before this read.
+      const language = await restoreSavedLanguage(async () => lang, applyRtlForDirection);
       if (cancelled) return;
       // S6-prep BOOT-RACE FIX: BOOT_RESTORED used to dispatch BEFORE the proactive refresh, so screens
       // mounted immediately and fired authed requests (users/me) with the about-to-be-rotated token —
@@ -144,9 +149,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'ROLE_SELECTED', role });
     },
     async setLanguage(code: string) {
-      await tokenStore.saveLanguage(code);
-      i18n.setLanguage(code);
+      const { restartRequired } = await chooseLanguage(code, (c) => tokenStore.saveLanguage(c), applyRtlForDirection);
       dispatch({ type: 'LANGUAGE_SET', language: i18n.lang });
+      return restartRequired;
     },
     async loadProfile() {
       try {

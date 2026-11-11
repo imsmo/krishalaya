@@ -15,6 +15,7 @@ import type { AmbassadorProfile, AmbassadorEarning, Referral, Enrollment, BankAc
 import { formatMoneyMinor, LANGUAGES } from '@krishalaya/i18n';
 import { Button, Card, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
+import { chosenLanguageName } from '../../core/i18n/languageChoice';
 import { useFlag } from '../../core/flags/useFlag';
 import { useAuth } from '../../core/auth/auth.store';
 import { config } from '../../core/config';
@@ -50,7 +51,7 @@ export default function AmbassadorProfileScreen() {
   const available = formatMoneyMinor(withdrawableMinor(earnings), 'INR', lang);
   const primaryBank = useMemo(() => banks.find((b) => b.isPrimary) ?? banks[0] ?? null, [banks]);
   const trainingPct = enrollments.length ? Math.round(enrollments.reduce((s, e) => s + (e.progressPct ?? 0), 0) / enrollments.length) : null;
-  const currentLang = LANGUAGES.find((l) => l.code === lang)?.nameNative ?? lang;
+  const currentLang = chosenLanguageName(lang) ?? lang;   // PC-56 RTL-1h-1: Arabic shows its name, not the raw code
 
   if (!enabled) return <ScreenScaffold title={t('amb.profile.title')}><EmptyState title={t('common.unavailable')} /></ScreenScaffold>;
 

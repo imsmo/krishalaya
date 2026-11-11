@@ -17,10 +17,16 @@
 // every locale). Dropped the previous Marathi row's invented "Coming Q1 2027" date claim (no rollout date is
 // known/verified for ANY of the 11 target languages — Golden Law 12, "no fabricated metric presented as current
 // fact") in favor of one honest, generic "Coming soon" sub-label shared by all 11 rows.
-import React, { useState } from 'react';
+//
+// PC-56 RTL-1h-1 (Q2 → A): Arabic — a PREVIEW language (`PREVIEW_LANGUAGES`, machine draft, not reviewed) — is a real,
+// selectable row here, "العربية (machine draft)", and no longer a coming-soon row. It is offered ONLY on this screen (not the
+// first-run screen, not the profile chips, never a picker that saves to the account). Choosing it, or choosing back, saves the
+// choice on this phone and the app shell shows "Close and reopen Krishalaya to switch to …" (Q1 → A); the ✓ follows the choice.
+import React, { useState, useSyncExternalStore } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { LANGUAGES, COMING_SOON_LANGUAGES } from '@krishalaya/i18n';
+import { LANGUAGES, COMING_SOON_LANGUAGES, PREVIEW_LANGUAGES, getRegistryEntry } from '@krishalaya/i18n';
+import { i18n } from '../../core/i18n/i18n';
 import { Button, Card, StatusPill, Toggle, ScreenScaffold, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useAuth } from '../../core/auth/auth.store';
@@ -36,6 +42,11 @@ export default function LanguageSwitcher() {
 
   const byCode = new Map(LANGUAGES.map((l) => [l.code, l]));
   const ordered = orderedLanguageCodes(LANGUAGES.map((l) => l.code));
+  // The ✓ marks the person's CHOICE: a language waiting for the next open (into/out of Arabic) once chosen, else the one on screen.
+  const pending = useSyncExternalStore((cb) => i18n.subscribe(cb), () => i18n.pending, () => i18n.pending);
+  const chosen = pending ?? lang;
+  const previews = PREVIEW_LANGUAGES.map((code) => getRegistryEntry(code)!).filter(Boolean);
+  const comingSoon = COMING_SOON_LANGUAGES.filter((l) => !PREVIEW_LANGUAGES.includes(l.code));
 
   return (
     <ScreenScaffold
@@ -54,7 +65,7 @@ export default function LanguageSwitcher() {
       <View style={{ gap: space[2], marginTop: space[2] }}>
         {ordered.map((code) => {
           const l = byCode.get(code)!;
-          const on = code === lang;
+          const on = code === chosen;
           return (
             <Pressable key={code} onPress={() => setLanguage(code)} accessibilityRole="button" accessibilityState={{ selected: on }}>
               <Card style={[styles.card, on && styles.cardOn]}>
@@ -70,9 +81,30 @@ export default function LanguageSwitcher() {
           );
         })}
 
-        {/* Coming soon (disabled) — the full 11-language target set, straight from the shared registry. Native
+        {/* PC-56 RTL-1h-1: the preview (machine-draft) languages — Arabic — as their own selectable rows. */}
+        {previews.map((l) => {
+          const on = l.code === chosen;
+          return (
+            <Pressable key={l.code} onPress={() => setLanguage(l.code)} accessibilityRole="button" accessibilityState={{ selected: on }} testID={`language-row-${l.code}`}>
+              <Card style={on ? { ...styles.card, ...styles.cardOn } : styles.card}>
+                <View style={styles.row}>
+                  <View style={{ flex: 1 }}>
+                    <View style={styles.nameRow}>
+                      <Text style={styles.name}>{l.nameNative}</Text>
+                      <Text style={styles.draftTag}>{t('system.language.draftTag')}</Text>
+                    </View>
+                    <Text style={styles.sub}>{t(languageSubKey(l.code))}</Text>
+                  </View>
+                  {on ? <Text style={styles.check}>✓</Text> : null}
+                </View>
+              </Card>
+            </Pressable>
+          );
+        })}
+
+        {/* Coming soon (disabled) — the target set minus the preview rows above, straight from the shared registry. Native
             name/script are DATA (same string in every locale), never a per-language translated key. */}
-        {COMING_SOON_LANGUAGES.map((l) => (
+        {comingSoon.map((l) => (
           <Card key={l.code} style={styles.card}>
             <View style={styles.row}>
               <View style={{ flex: 1 }}>
@@ -106,6 +138,8 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[3] },
   name: { fontFamily: font.body, fontSize: font.size.lg, fontWeight: font.weight.semibold, color: color.ink800 },
   soonName: { color: color.ink500 },
+  nameRow: { flexDirection: 'row', alignItems: 'baseline', gap: space[2] },
+  draftTag: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink500 },
   sub: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink500, marginTop: 2 },
   check: { fontFamily: font.body, fontSize: font.size.lg, color: color.primary700 },
   section: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink500, fontWeight: font.weight.bold, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: space[5], marginBottom: space[2] },

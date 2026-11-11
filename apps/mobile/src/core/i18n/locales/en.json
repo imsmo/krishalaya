@@ -5157,5 +5157,10 @@
   "yourAuction.title": "Your Auction",
   "yourAuction.topBids": "Top Bids",
   "yourAuction.unavailable": "This auction is unavailable.",
-  "yourAuction.viewers": "Viewers"
+  "yourAuction.viewers": "Viewers",
+  "shell.draftBanner": "This Arabic text is a machine draft and has not been reviewed.",
+  "system.language.draftTag": "(machine draft)",
+  "system.language.restart.toArabic": "Close and reopen Krishalaya to switch to Arabic.",
+  "system.language.restart.toOther": "Close and reopen Krishalaya to switch to {language}.",
+  "system.language.sub.ar": "Arabic · not yet reviewed"
 }

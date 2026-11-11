@@ -5157,5 +5157,10 @@
   "yourAuction.title": "તમારી હરાજી",
   "yourAuction.topBids": "ટોચની બોલીઓ",
   "yourAuction.unavailable": "આ હરાજી ઉપલબ્ધ નથી.",
-  "yourAuction.viewers": "દર્શકો"
+  "yourAuction.viewers": "દર્શકો",
+  "shell.draftBanner": "આ અરબી લખાણ મશીન ડ્રાફ્ટ છે અને તેની સમીક્ષા થઈ નથી.",
+  "system.language.draftTag": "(મશીન ડ્રાફ્ટ)",
+  "system.language.restart.toArabic": "અરબીમાં બદલવા માટે Krishalaya બંધ કરીને ફરી ખોલો.",
+  "system.language.restart.toOther": "{language}માં બદલવા માટે Krishalaya બંધ કરીને ફરી ખોલો.",
+  "system.language.sub.ar": "અરબી · હજી સમીક્ષા થઈ નથી"
 }

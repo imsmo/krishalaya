@@ -25,7 +25,7 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import type { KycDocument, BankAccount } from '@krishalaya/sdk-js';
-import { LANGUAGES } from '@krishalaya/i18n';
+import { chosenLanguageName } from '../../core/i18n/languageChoice';
 import { Button, Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, Toggle, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
@@ -69,7 +69,7 @@ export default function Settings() {
 
   const name = state.profile?.displayName ?? t('home.defaultName');
   const kycVerified = hasVerifiedKyc(docs);
-  const langLabel = LANGUAGES.find((l) => l.code === (state.profile?.locale ?? state.language))?.nameNative ?? '';
+  const langLabel = chosenLanguageName(state.profile?.locale ?? state.language) ?? '';   // PC-56 RTL-1h-1: Arabic shows its name, not a blank
 
   const bankAccts = banks.filter((a) => a.accountKind === 'bank');
   const primaryBank = bankAccts.find((a) => a.isPrimary) ?? bankAccts[0];

@@ -22,11 +22,11 @@ import { createListing, getListing } from '../../../features/listings/listings.a
 import { captureFromCamera, pickFromGallery, uploadPickedImage, type PickedImage } from '../../../core/media';
 import { useVoiceDictation } from '../../../core/voice';
 import { CREATE_MODES, STT_LANGS, QUALITY_GRADES, buildCreateDraft, rupeesToPaise, parseQty, resolveModeParam, shouldShowVoiceComingSoon, shouldShowPriceSummary, type CreateMode, type QualityGrade } from '../../../features/listings/create-listing';
-import { LANGUAGES } from '@krishalaya/i18n';
+import { chosenLanguageName } from '../../../core/i18n/languageChoice';
 
 interface Photo { key: string; uri: string; status: UploadStatus; progress: number; mediaId?: string }
 const MAX_PHOTOS = 6;
-const nativeName = (code: string) => LANGUAGES.find((l) => l.code === code)?.nameNative ?? code;
+const nativeName = (code: string) => chosenLanguageName(code) ?? code;   // PC-56 RTL-1h-1 (STT_LANGS are hi/en/gu, so never 'ar' today)
 
 export default function CreateListing() {
   const router = useRouter();

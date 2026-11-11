@@ -5157,5 +5157,10 @@
   "yourAuction.title": "आपकी नीलामी",
   "yourAuction.topBids": "शीर्ष बोलियाँ",
   "yourAuction.unavailable": "यह नीलामी उपलब्ध नहीं है।",
-  "yourAuction.viewers": "दर्शक"
+  "yourAuction.viewers": "दर्शक",
+  "shell.draftBanner": "यह अरबी पाठ मशीन ड्राफ़्ट है और इसकी समीक्षा नहीं हुई है।",
+  "system.language.draftTag": "(मशीन ड्राफ़्ट)",
+  "system.language.restart.toArabic": "अरबी में बदलने के लिए Krishalaya को बंद करके फिर से खोलें।",
+  "system.language.restart.toOther": "{language} में बदलने के लिए Krishalaya को बंद करके फिर से खोलें।",
+  "system.language.sub.ar": "अरबी · अभी समीक्षा नहीं हुई"
 }
