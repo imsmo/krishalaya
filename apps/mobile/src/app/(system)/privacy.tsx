@@ -19,6 +19,7 @@ import { useFlag } from '../../core/flags/useFlag';
 import { config } from '../../core/config';
 import { getConsents, setConsent } from '../../features/system/system.api';
 import { CONSENT_TOGGLES, consentLabelKey, consentHintKey, consentGranted } from '../../features/system/system';
+import { chevFwd } from '../../core/i18n/bidi';
 
 const DATA_RIGHTS = [
   { key: 'download', icon: '📥', route: '/(system)/data-download' as const },
@@ -27,7 +28,7 @@ const DATA_RIGHTS = [
 ] as const;
 
 export default function Privacy() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('system_screens');
   const [granted, setGranted] = useState<Record<string, boolean>>({});
@@ -95,7 +96,7 @@ export default function Privacy() {
                 <Text style={styles.rightTitle}>{t(`privacySettings.rights.${r.key}.title`)}</Text>
                 <Text style={styles.rightSub}>{t(`privacySettings.rights.${r.key}.sub`)}</Text>
               </View>
-              <Text style={styles.chev}>›</Text>
+              <Text style={styles.chev}>{chevFwd(lang)}</Text>
             </View>
           </Card>
         ))}

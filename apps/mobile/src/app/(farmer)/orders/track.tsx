@@ -11,10 +11,11 @@ import { useFlag } from '../../../core/flags/useFlag';
 import { getOrderShipment } from '../../../features/orders/orders.api';
 import { trackingSteps, orderStatusTone } from '../../../features/orders/order-status';
 import { Timeline } from '../../../features/orders/components/Timeline';
+import { isolate } from '../../../core/i18n/bidi';
 
 export default function TrackOrder() {
   const { orderId } = useLocalSearchParams<{ orderId: string }>();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const enabled = useFlag('orders_fulfilment');
   const [shipment, setShipment] = useState<Shipment | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,7 +36,7 @@ export default function TrackOrder() {
         <EmptyState title={t('track.noShipment.title')} message={t('track.noShipment.message')} actionLabel={t('common.retry')} onAction={load} />
       ) : (
         <Card>
-          {shipment.awbNo ? <Text style={styles.awb}>{t('track.awb', { awb: shipment.awbNo })}</Text> : null}
+          {shipment.awbNo ? <Text style={styles.awb}>{t('track.awb', { awb: isolate(shipment.awbNo, lang) })}</Text> : null}
           <StatusPill label={t(`shipment.status.${shipment.status}`)} tone={orderStatusTone(shipment.status)} />
           <Text style={styles.spacer} />
           <Timeline steps={trackingSteps(shipment.status)} labelFor={(k) => t(`shipment.status.${k}`)} />

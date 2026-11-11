@@ -16,7 +16,6 @@ import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import type { ListingCard, SellerPublicProfile } from '@krishalaya/sdk-js';
 import { Card, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishalaya/ui-native';
-import { formatMoneyMinor } from '@krishalaya/i18n';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { BuyerListingCard } from '../../features/buyer/components/BuyerListingCard';
@@ -27,6 +26,7 @@ import { priceDropMinor, droppedCount, filterSaved, SAVED_ALL, SAVED_DROPPED, ty
 import { yearsOnKv } from '../../features/buyer/seller-profile';
 import { initials } from '../../features/profile/profile';
 import { cropEmoji } from '../../features/listings/my-listings';
+import { moneyText } from '../../core/i18n/money';
 
 type Tab = 'listings' | 'searches' | 'sellers';
 
@@ -118,7 +118,7 @@ export default function SavedScreen() {
                 <BuyerListingCard card={item} langCode={lang} saved
                   glyph={cropEmoji(item.title)}
                   priceOverrideMinor={live[item.id]}
-                  dropLabel={drop ? t('savedListings.priceDrop', { amount: formatMoneyMinor(drop, item.currencyCode, lang) }) : null}
+                  dropLabel={drop ? t('savedListings.priceDrop', { amount: moneyText(drop, item.currencyCode, lang) }) : null}
                   onPress={() => router.push({ pathname: '/(buyer)/listings/[id]', params: { id: item.id } })}
                   onToggleSave={() => unsaveListing(item)} saveLabel={t('buyer.unsave')} />
               );

@@ -17,13 +17,15 @@ import { View, Text, ScrollView, StyleSheet, Pressable, Alert } from 'react-nati
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SdkError, type CreateBookingInput, type WorkerProfile, type LabourLookups } from '@krishalaya/sdk-js';
 import { Button, Card, EmptyState, MoneyText, Toggle, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
-import { formatDate, formatMoneyMinor } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
 import { useTranslation } from '../../../../core/i18n/useTranslation';
 import { useFlag } from '../../../../core/flags/useFlag';
 import { useSecureScreen } from '../../../../core/security/screen-guard';
 import { createBooking, assignWorker, getWorker, labourLookups } from '../../../../features/labour/hire.api';
 import { walletBalance } from '../../../../features/wallet/wallet.api';
 import { PAYMENT_METHODS, type PaymentMethod, walletSufficient, confirmFeeLines, committedWageMinor, canConfirm } from '../../../../features/labour/book-confirm';
+import { moneyText } from '../../../../core/i18n/money';
+import { isolate } from '../../../../core/i18n/bidi';
 
 export default function BookConfirm() {
   useSecureScreen(); // FLAG_SECURE — wage + wallet balance on screen (§4)
@@ -55,7 +57,7 @@ export default function BookConfirm() {
   const committed = committedWageMinor(wageMinor);
   const feeLines = confirmFeeLines(wageMinor);
   const sufficient = walletSufficient(balanceMinor, committed);
-  const workerName = workerId ? t('bookWorker.workerAnon', { id: workerId.slice(0, 6).toUpperCase() }) : t('bookTask.aWorker');
+  const workerName = workerId ? t('bookWorker.workerAnon', { id: isolate(workerId.slice(0, 6).toUpperCase(), lang) }) : t('bookTask.aWorker');
   const initials = workerId ? workerId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 2).toUpperCase() : '👤';
 
   const confirm = async () => {
@@ -75,7 +77,7 @@ export default function BookConfirm() {
   const footer = (
     <View style={styles.footerRow}>
       <Button title={t('bookConfirm.edit')} variant="outline" disabled={busy} onPress={() => router.back()} />
-      <View style={{ flex: 1 }}><Button title={t('bookConfirm.confirmCta', { amount: formatMoneyMinor(committed, ccy, lang) })} onPress={confirm} loading={busy} disabled={busy || !canConfirm(!!input, agreed, method)} fullWidth /></View>
+      <View style={{ flex: 1 }}><Button title={t('bookConfirm.confirmCta', { amount: moneyText(committed, ccy, lang) })} onPress={confirm} loading={busy} disabled={busy || !canConfirm(!!input, agreed, method)} fullWidth /></View>
     </View>
   );
 
@@ -135,7 +137,7 @@ export default function BookConfirm() {
                     <Text style={styles.methodTitle}>{t(`bookConfirm.method.${m}.title`)}</Text>
                     {m === 'wallet' ? (
                       <Text style={styles.methodSub}>
-                        {balanceMinor != null ? t('bookConfirm.balance', { amount: formatMoneyMinor(balanceMinor, ccy, lang) }) : t('bookReview.balanceUnavailable')}
+                        {balanceMinor != null ? t('bookConfirm.balance', { amount: moneyText(balanceMinor, ccy, lang) }) : t('bookReview.balanceUnavailable')}
                         {balanceMinor != null ? ` · ${sufficient ? t('bookConfirm.sufficient') : t('bookConfirm.insufficient')}` : ''}
                       </Text>
                     ) : (
@@ -168,7 +170,7 @@ export default function BookConfirm() {
           {/* Terms */}
           <Card>
             <Text style={styles.termsTitle}>{t('bookConfirm.termsTitle')}</Text>
-            <Text style={styles.terms}>{t('bookConfirm.terms', { amount: formatMoneyMinor(committed, ccy, lang), worker: workerName })}</Text>
+            <Text style={styles.terms}>{t('bookConfirm.terms', { amount: moneyText(committed, ccy, lang), worker: workerName })}</Text>
             <Pressable onPress={() => router.push('/(farmer)/profile/help')} accessibilityRole="link"><Text style={styles.readTerms}>{t('bookConfirm.readTerms')}</Text></Pressable>
             <Toggle label={t('bookConfirm.agree')} value={agreed} onValueChange={setAgreed} />
           </Card>

@@ -21,6 +21,7 @@ import { reportsArchive, type ScheduledReport, type GeneratedReport } from '../.
 import { formatBytes, reportKindIcon } from '../../features/tenant/tenant-admin';
 import { openWebConsole } from '../../core/deeplink';
 import { WEB_PATHS } from '../../features/tenant/web-console';
+import { chevFwd } from '../../core/i18n/bidi';
 
 const DT: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
 
@@ -112,7 +113,7 @@ export default function ExportReports() {
             />
           ) : (
             <Pressable onPress={() => openWeb(WEB_PATHS.export)} accessibilityRole="button" accessibilityLabel={t('owner.exportReports.manageWeb')}>
-              <Text style={styles.webLink}>{t('owner.exportReports.manageWeb')} ›</Text>
+              <Text style={styles.webLink}>{t('owner.exportReports.manageWeb')} {chevFwd(lang)}</Text>
             </Pressable>
           )}
         </View>

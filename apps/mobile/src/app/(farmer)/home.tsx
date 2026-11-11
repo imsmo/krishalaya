@@ -13,6 +13,7 @@ import { useAuth } from '../../core/auth/auth.store';
 import { useFlag } from '../../core/flags/useFlag';
 import { loadFarmerHome, type MandiRow, type HomeTip, type HomeWeather } from '../../features/farmer/dashboard.api';
 import { speakToSellTargetMode } from '../../features/listings/create-listing';
+import { arrowFwd } from '../../core/i18n/bidi';
 
 // Crop → emoji is presentational iconography (UI chrome), not data: a small map with a sensible default so a
 // commodity the design didn't anticipate still renders. The price/name themselves are real (from the API).
@@ -161,7 +162,7 @@ export default function FarmerHome() {
           <>
             <View style={styles.sectionHead}>
               <Text style={styles.sectionTitle}>{t('home.mandiPulse')}</Text>
-              <Pressable onPress={() => router.push('/(farmer)/mandi')} hitSlop={8}><Text style={styles.sectionLink}>{t('home.viewAll')} →</Text></Pressable>
+              <Pressable onPress={() => router.push('/(farmer)/mandi')} hitSlop={8}><Text style={styles.sectionLink}>{t('home.viewAll')} {arrowFwd(lang)}</Text></Pressable>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.mandiList}>
               {mandi.map((m) => (

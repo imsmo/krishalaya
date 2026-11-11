@@ -18,13 +18,13 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SdkError, type BoostTier, type ListingCard } from '@krishalaya/sdk-js';
-import { formatMoneyMinor } from '@krishalaya/i18n';
 import { Button, EmptyState, SkeletonCard, MoneyText, Icon, color, font, space, radius, shadow } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getListing, loadBoostTiers, payListingBoost } from '../../../features/listings/listings.api';
 import { tierKind, sortByPrice, pickRecommendedTier, type TierKind } from '../../../features/listings/boost';
 import { newId } from '../../../core/util/ids';
+import { moneyText } from '../../../core/i18n/money';
 
 export default function BoostListing() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -114,7 +114,7 @@ export default function BoostListing() {
                   onPress={() => setSelectedId(tier.id)}
                   accessibilityRole="radio"
                   accessibilityState={{ selected: isSel }}
-                  accessibilityLabel={`${tier.name}, ${formatMoneyMinor(tier.priceMinor, currency, lang)}`}
+                  accessibilityLabel={`${tier.name}, ${moneyText(tier.priceMinor, currency, lang)}`}
                   style={[styles.pack, isSel && styles.packSel]}
                 >
                   {isRec ? <View style={styles.popular}><Text style={styles.popularTxt}>{t('boost.popular')}</Text></View> : null}
@@ -163,7 +163,7 @@ export default function BoostListing() {
             <View style={{ flex: 1 }}><Button title={t('boost.maybeLater')} variant="outline" size="lg" onPress={() => router.back()} /></View>
             <View style={{ flex: 1.5 }}>
               <Button
-                title={selected ? t('boost.payCta', { price: formatMoneyMinor(selected.priceMinor, currency, lang) }) : t('boost.choose')}
+                title={selected ? t('boost.payCta', { price: moneyText(selected.priceMinor, currency, lang) }) : t('boost.choose')}
                 variant="accent"
                 size="lg"
                 loading={busy}

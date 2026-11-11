@@ -15,6 +15,7 @@ import { useFlag } from '../../core/flags/useFlag';
 import { myScheduledJobs } from '../../features/labour/labour.api';
 import { filterByTab } from '../../features/labour/worker-schedule';
 import { monthMatrix, dayState, counts, toggleDay, applyQuickAction, type QuickAction } from '../../features/labour/availability-calendar';
+import { chevBack, chevFwd } from '../../core/i18n/bidi';
 
 type Mode = 'available' | 'block';
 const DOW: readonly string[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -75,9 +76,9 @@ export default function Availability() {
 
           {/* Month nav */}
           <View style={styles.monthNav}>
-            <Pressable onPress={() => shiftMonth(-1)} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('worker.avail.prevMonth')}><Text style={styles.nav}>‹</Text></Pressable>
+            <Pressable onPress={() => shiftMonth(-1)} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('worker.avail.prevMonth')}><Text style={styles.nav}>{chevBack(lang)}</Text></Pressable>
             <Text style={styles.monthLabel}>{monthLabel(year, month0, lang)}</Text>
-            <Pressable onPress={() => shiftMonth(1)} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('worker.avail.nextMonth')}><Text style={styles.nav}>›</Text></Pressable>
+            <Pressable onPress={() => shiftMonth(1)} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('worker.avail.nextMonth')}><Text style={styles.nav}>{chevFwd(lang)}</Text></Pressable>
           </View>
 
           {/* Weekday header */}

@@ -20,6 +20,7 @@ import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getApplication, getScheme, dbtTransfers, resubmitApplication, appealApplication } from '../../../features/schemes/schemes.api';
 import { canResubmit, canAppeal, applicationTimeline } from '../../../features/schemes/schemes';
+import { chevFwd } from '../../../core/i18n/bidi';
 
 const FAQS = ['officerDelay', 'cancel', 'source'] as const;
 function statusIcon(status: string): string {
@@ -129,7 +130,7 @@ export default function SchemeStatus() {
             {FAQS.map((f) => (
               <Pressable key={f} onPress={() => router.push('/(farmer)/assistant')} accessibilityRole="button" style={styles.faqRow}>
                 <Text style={styles.faqQ}>{t(`schemes.status.faq.${f}`)}</Text>
-                <Text style={styles.chevron}>›</Text>
+                <Text style={styles.chevron}>{chevFwd(lang)}</Text>
               </Pressable>
             ))}
           </Card>

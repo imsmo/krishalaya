@@ -32,6 +32,7 @@ import { useFlag } from '../../../core/flags/useFlag';
 import { useSecureScreen } from '../../../core/security';
 import { walletBalance, walletLedger, walletEarnings, listPayouts } from '../../../features/wallet/wallet.api';
 import { currentYearMonth, monthBucketMinor, pendingPayoutMinor, ledgerKind, recentLedger, type LedgerKind } from '../../../features/wallet/wallet-home';
+import { arrowFwd } from '../../../core/i18n/bidi';
 
 export default function WalletHome() {
   useSecureScreen(); // wallet balance on screen — FLAG_SECURE (§4)
@@ -127,7 +128,7 @@ export default function WalletHome() {
             <Text style={styles.sectionTitle}>{t('wallet.recent')}</Text>
             {walletOn && entries.length > 0 ? (
               <Pressable onPress={() => router.push('/(farmer)/wallet/statement')} hitSlop={8}>
-                <Text style={styles.viewAll}>{t('wallet.viewAll')} →</Text>
+                <Text style={styles.viewAll}>{t('wallet.viewAll')} {arrowFwd(lang)}</Text>
               </Pressable>
             ) : null}
           </View>

@@ -12,7 +12,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import type { AmbassadorProfile, AmbassadorEarning, Referral, Enrollment, BankAccount } from '@krishalaya/sdk-js';
-import { formatMoneyMinor, LANGUAGES } from '@krishalaya/i18n';
+import { LANGUAGES } from '@krishalaya/i18n';
 import { Button, Card, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { chosenLanguageName } from '../../core/i18n/languageChoice';
@@ -25,6 +25,8 @@ import { myBankAccounts } from '../../features/profile/profile.api';
 import { personInitials, referralFunnel, referralsThisMonth, tenureYears } from '../../features/ambassador/ambassador-home';
 import { withdrawableMinor } from '../../features/ambassador/commissions-summary';
 import { bankLabel } from '../../features/profile/profile';
+import { moneyText } from '../../core/i18n/money';
+import { chevFwd } from '../../core/i18n/bidi';
 
 export default function AmbassadorProfileScreen() {
   const { t, lang } = useTranslation();
@@ -48,7 +50,7 @@ export default function AmbassadorProfileScreen() {
   const farmers = referralFunnel(refs).total;
   const thisMonth = referralsThisMonth(refs, Date.now());
   const tenure = tenureYears(profile?.createdAt, Date.now());
-  const available = formatMoneyMinor(withdrawableMinor(earnings), 'INR', lang);
+  const available = moneyText(withdrawableMinor(earnings), 'INR', lang);
   const primaryBank = useMemo(() => banks.find((b) => b.isPrimary) ?? banks[0] ?? null, [banks]);
   const trainingPct = enrollments.length ? Math.round(enrollments.reduce((s, e) => s + (e.progressPct ?? 0), 0) / enrollments.length) : null;
   const currentLang = chosenLanguageName(lang) ?? lang;   // PC-56 RTL-1h-1: Arabic shows its name, not the raw code
@@ -133,6 +135,7 @@ function Tile({ value, label }: { value: string; label: string }) {
 }
 
 function MenuRow({ icon, label, value, onPress, divide }: { icon: string; label: string; value: string; onPress: () => void; divide?: boolean }) {
+  const { lang } = useTranslation();
   return (
     <Pressable onPress={onPress} accessibilityRole="button" style={[styles.row, divide && styles.divide]}>
       <Text style={styles.rowIcon}>{icon}</Text>
@@ -140,7 +143,7 @@ function MenuRow({ icon, label, value, onPress, divide }: { icon: string; label:
         <Text style={styles.rowLabel}>{label}</Text>
         <Text style={styles.rowValue} numberOfLines={1}>{value}</Text>
       </View>
-      <Text style={styles.chev}>›</Text>
+      <Text style={styles.chev}>{chevFwd(lang)}</Text>
     </Pressable>
   );
 }

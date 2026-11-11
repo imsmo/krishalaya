@@ -32,6 +32,7 @@ import { rupeesToPaiseMinor } from '../../../core/payments/money';
 import { withdrawable, withdrawErrorKind } from '../../../features/wallet/txn';
 import { withdrawChipRupees, groupDigits } from '../../../features/wallet/amount-entry';
 import { walletBalance, listBankAccounts, requestWithdrawal } from '../../../features/wallet/wallet.api';
+import { arrowFwd } from '../../../core/i18n/bidi';
 
 export default function Withdraw() {
   useSecureScreen();
@@ -130,7 +131,7 @@ export default function Withdraw() {
               {error ? <Text style={styles.error}>{error}</Text> : null}
               {kycRequired ? (
                 <Pressable onPress={() => router.push('/(farmer)/kyc')} hitSlop={8} style={styles.kycCta} accessibilityRole="button">
-                  <Text style={styles.kycCtaTxt}>{t('withdraw.completeKyc')} →</Text>
+                  <Text style={styles.kycCtaTxt}>{t('withdraw.completeKyc')} {arrowFwd(lang)}</Text>
                 </Pressable>
               ) : null}
             </View>

@@ -24,6 +24,7 @@ import { skillLabel, taskEmoji } from '../../../features/labour/worker-home';
 import { attendancePhase, elapsedWorkedSeconds, formatStopwatch } from '../../../features/labour/active-job';
 import { canClockIn } from '../../../features/labour/worker-jobs';
 import { getCurrentFix } from '../../../core/location';
+import { isolate } from '../../../core/i18n/bidi';
 
 export default function ActiveJob() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -88,7 +89,7 @@ export default function ActiveJob() {
   const skill = booking ? skillLabel(booking, lookups) : null;
   const ccy = booking?.currencyCode ?? 'INR';
   const wageMinor = offer?.wageMinor ?? booking?.wageOfferedMinor ?? '0';
-  const farmerAnon = booking ? t('worker.home.employerAnon', { id: booking.employerUserId.slice(0, 6).toUpperCase() }) : '—';
+  const farmerAnon = booking ? t('worker.home.employerAnon', { id: isolate(booking.employerUserId.slice(0, 6).toUpperCase(), lang) }) : '—';
 
   const footer = phase === 'working' ? (
     <Button title={t('worker.activeJob.markComplete')} loading={busy} disabled={busy} onPress={complete} fullWidth />

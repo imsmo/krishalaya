@@ -19,6 +19,7 @@ import { useFlag } from '../../../../core/flags/useFlag';
 import { getJob, labourLookups, getMyWorker, workerRating, applyToJob } from '../../../../features/labour/labour.api';
 import { skillLabel, taskEmoji } from '../../../../features/labour/worker-home';
 import { normalizeApplyNote, canApply } from '../../../../features/labour/apply-job';
+import { isolate } from '../../../../core/i18n/bidi';
 
 export default function ApplyForJob() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -76,7 +77,7 @@ export default function ApplyForJob() {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: space[4], gap: space[3] }}>
           {/* Job summary */}
           <Card>
-            <Text style={styles.jobTitle}>{taskEmoji(skill)} {skill ?? t('worker.home.genericTask')} · {t('workerApply.employerAnon', { id: job.employerUserId.slice(0, 6).toUpperCase() })}</Text>
+            <Text style={styles.jobTitle}>{taskEmoji(skill)} {skill ?? t('worker.home.genericTask')} · {t('workerApply.employerAnon', { id: isolate(job.employerUserId.slice(0, 6).toUpperCase(), lang) })}</Text>
             <Text style={styles.jobMeta}>{safeDate(job.startDate, lang)}</Text>
             <MoneyText minor={job.wageOfferedMinor} currencyCode={job.currencyCode} langCode={lang} size="lg" tone="positive" />
           </Card>

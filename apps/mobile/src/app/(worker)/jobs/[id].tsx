@@ -15,13 +15,15 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { LabourBooking, LabourLookups, WorkerProfile } from '@krishalaya/sdk-js';
 import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
-import { formatDate, formatMoneyMinor } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getJob, labourLookups, getMyWorker } from '../../../features/labour/labour.api';
 import { canAcceptWork } from '../../../features/labour/labour-status';
 import { wageAboveMinMinor } from '../../../features/labour/offer';
 import { skillLabel, workTypeLabel, taskEmoji } from '../../../features/labour/worker-home';
+import { moneyText } from '../../../core/i18n/money';
+import { isolate } from '../../../core/i18n/bidi';
 
 export default function JobDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -57,7 +59,7 @@ export default function JobDetail() {
     ageOk ? (
       <View style={styles.actions}>
         <Button title={t('worker.jobDetail.decline')} variant="outline" disabled={busy} onPress={() => router.back()} />
-        <View style={{ flex: 1 }}><Button title={t('worker.jobDetail.apply', { amount: formatMoneyMinor(job.wageOfferedMinor, ccy, lang) })} loading={busy} disabled={busy} onPress={apply} fullWidth /></View>
+        <View style={{ flex: 1 }}><Button title={t('worker.jobDetail.apply', { amount: moneyText(job.wageOfferedMinor, ccy, lang) })} loading={busy} disabled={busy} onPress={apply} fullWidth /></View>
       </View>
     ) : undefined
   ) : undefined;
@@ -83,8 +85,8 @@ export default function JobDetail() {
                 <MoneyText minor={job.wageOfferedMinor} currencyCode={ccy} langCode={lang} size="2xl" tone="positive" />
                 <Text style={styles.wageKind}>{t(`worker.wageKind.${job.wageKind}`)}</Text>
               </View>
-              {aboveMin ? <Text style={styles.aboveMin}>{t('worker.jobDetail.aboveMin', { amount: formatMoneyMinor(aboveMin, ccy, lang) })}</Text> : null}
-              <Text style={styles.stateMin}>{t('worker.jobDetail.stateMin', { amount: formatMoneyMinor(job.minWageMinor, ccy, lang) })}</Text>
+              {aboveMin ? <Text style={styles.aboveMin}>{t('worker.jobDetail.aboveMin', { amount: moneyText(aboveMin, ccy, lang) })}</Text> : null}
+              <Text style={styles.stateMin}>{t('worker.jobDetail.stateMin', { amount: moneyText(job.minWageMinor, ccy, lang) })}</Text>
             </View>
           </View>
 
@@ -97,7 +99,7 @@ export default function JobDetail() {
           {/* Farmer — §13 anon (employer PII not exposed to worker) */}
           <Card>
             <Text style={styles.h3}>{t('worker.jobDetail.farmer')}</Text>
-            <Text style={styles.employer}>{t('worker.home.employerAnon', { id: job.employerUserId.slice(0, 6).toUpperCase() })}</Text>
+            <Text style={styles.employer}>{t('worker.home.employerAnon', { id: isolate(job.employerUserId.slice(0, 6).toUpperCase(), lang) })}</Text>
             <Text style={styles.note}>{t('worker.jobDetail.farmerNote')}</Text>
           </Card>
 

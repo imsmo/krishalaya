@@ -25,7 +25,7 @@ import { getSavedListings, toggleSavedListing } from '../../../features/buyer/sa
 import { addToCart } from '../../../features/cart/cart.api';
 import { openDirect } from '../../../features/messaging/messaging.api';
 import { clampQuantity, lineTotalMinor, stockState } from '../../../features/cart/cart-math';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../../core/i18n/money';
 
 export default function BuyerListingDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -97,7 +97,7 @@ export default function BuyerListingDetail() {
           <View style={{ flex: 1 }}><Button title={t('cart.addToCart')} variant="outline" onPress={onAddToCart} loading={adding} /></View>
           <View style={{ flex: 1.2 }}>
             <Button
-              title={`${t('buyer.buyNow')} · ${formatMoneyMinor(lineTotalMinor(listing.priceMinor, qty), listing.currencyCode, lang)}`}
+              title={`${t('buyer.buyNow')} · ${moneyText(lineTotalMinor(listing.priceMinor, qty), listing.currencyCode, lang)}`}
               variant="accent"
               loading={adding}
               onPress={onBuyNow}

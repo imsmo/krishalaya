@@ -21,6 +21,7 @@ import { assignments, approveAssignment } from '../../features/tenant/tenant.api
 import { approvalCounts, verifiedApprovalIds } from '../../features/tenant/tenant-admin';
 import { openWebConsole } from '../../core/deeplink';
 import { WEB_PATHS } from '../../features/tenant/web-console';
+import { chevFwd } from '../../core/i18n/bidi';
 
 type Op = { key: string; icon: string; kind: 'approveVerified' | 'web'; path?: string };
 const OPERATIONS: Op[] = [
@@ -33,7 +34,7 @@ const OPERATIONS: Op[] = [
 ];
 
 export default function BulkActions() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const enabled = useFlag('tenant_admin_lite');
   const [items, setItems] = useState<RoleAssignment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,7 +108,7 @@ export default function BulkActions() {
                     <Text style={styles.rowTitle}>{t(`owner.bulk.op.${op.key}.title`)}</Text>
                     <Text style={styles.rowSub}>{subFor(op)}</Text>
                   </View>
-                  <Text style={styles.chev}>›</Text>
+                  <Text style={styles.chev}>{chevFwd(lang)}</Text>
                 </Card>
               </Pressable>
             ))}

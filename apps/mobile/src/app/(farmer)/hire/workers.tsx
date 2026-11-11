@@ -20,6 +20,7 @@ import { browseWorkers, labourLookups } from '../../../features/labour/hire.api'
 import { filterWorkers, sortWorkers, type WorkerSort } from '../../../features/labour/hire-browse';
 import { regionName } from '../../../features/labour/worker-profile';
 import { skillEmoji } from '../../../features/labour/worker-skills';
+import { isolate } from '../../../core/i18n/bidi';
 
 export default function BrowseWorkers() {
   const { t, lang } = useTranslation();
@@ -102,7 +103,7 @@ export default function BrowseWorkers() {
           renderItem={({ item }) => {
             const region = regionName(lookups?.regions ?? [], item.villageRegionId);
             // Consent-gated name: real name only for opted-in workers; otherwise an anonymised handle.
-            const name = item.discoverable && item.displayName ? item.displayName : t('hire.worker.anon', { id: item.id.slice(0, 6).toUpperCase() });
+            const name = item.discoverable && item.displayName ? item.displayName : t('hire.worker.anon', { id: isolate(item.id.slice(0, 6).toUpperCase(), lang) });
             return (
               <Pressable onPress={() => router.push({ pathname: '/(farmer)/hire/worker/[id]', params: { id: item.id, ...(assignBookingId ? { assignBookingId } : {}) } })} accessibilityRole="button" style={styles.card}>
                 <View style={styles.avatar}><Text style={{ fontSize: 18 }}>👤</Text></View>

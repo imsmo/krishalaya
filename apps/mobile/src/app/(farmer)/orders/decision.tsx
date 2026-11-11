@@ -14,10 +14,12 @@ import type { OrderDetail, OrderRole, ReviewSummary, OrderBuyerSummary } from '@
 import { SdkError } from '@krishalaya/sdk-js';
 import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, Icon, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
+import { moneyWholeText } from '../../../core/i18n/money';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getOrder, confirmOrder, cancelOrder, orderBuyerSummary } from '../../../features/orders/orders.api';
 import { buyerReviewSummary } from '../../../features/reviews/reviews.api';
 import { sellerNetMinor, decisionMinutesLeft, businessTypeKey } from '../../../features/orders/order-status';
+import { isolate } from '../../../core/i18n/bidi';
 
 export default function OrderDecision() {
   const { id, party, role } = useLocalSearchParams<{ id: string; party?: string; role?: string }>();
@@ -66,7 +68,7 @@ export default function OrderDecision() {
 
   return (
     <ScreenScaffold
-      title={order ? t('orders.orderNo', { id: order.orderNo }) : ' '}
+      title={order ? t('orders.orderNo', { id: isolate(order.orderNo, lang) }) : ' '}
       footer={order ? (
         <View style={styles.footer}>
           <Button title={t('ordersRecv.reject')} variant="outline" onPress={confirmReject} loading={busy === 'reject'} disabled={!canAct || busy === 'accept'} />
@@ -188,13 +190,9 @@ function humanLeft(mins: number, t: (k: string, p?: Record<string, string | numb
   const h = Math.floor(mins / 60); const m = mins % 60;
   return h > 0 ? t('orderDecision.hm', { h, m }) : t('orderDecision.m', { m });
 }
-// Lightweight INR formatter for the button label (real paise → rupees, locale grouping). Mirrors MoneyText output.
-function moneyInline(minor: string, cc: string, lang: string): string {
-  try {
-    const rupees = Number(BigInt(minor)) / 100;
-    return new Intl.NumberFormat(lang === 'en' ? 'en-IN' : lang === 'gu' ? 'gu-IN' : 'hi-IN', { style: 'currency', currency: cc, maximumFractionDigits: 0 }).format(rupees);
-  } catch { return '—'; }
-}
+// Whole-unit label for the button (real paise → rupees, locale grouping). PC-56 RTL-1h-2: from the one money helper
+// (byte-identical under en/hi/gu; Indian shape, isolated, under ar).
+function moneyInline(minor: string, cc: string, lang: string): string { return moneyWholeText(minor, cc, lang); }
 
 const styles = StyleSheet.create({
   footer: { flexDirection: 'row', gap: space[3], alignItems: 'center' },

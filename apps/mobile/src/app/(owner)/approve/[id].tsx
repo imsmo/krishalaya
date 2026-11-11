@@ -25,6 +25,7 @@ import { getUser, approveAssignment, rejectAssignment } from '../../../features/
 import { approvalStatusTone } from '../../../features/tenant/tenant-admin';
 import { openWebConsole } from '../../../core/deeplink';
 import { WEB_PATHS } from '../../../features/tenant/web-console';
+import { isolate } from '../../../core/i18n/bidi';
 
 function refOf(id: string): string { return (id ?? '').replace(/[^A-Za-z0-9]/g, '').slice(0, 8).toUpperCase() || '—'; }
 function initialsOf(name: string | null, id: string): string {
@@ -35,7 +36,7 @@ function initialsOf(name: string | null, id: string): string {
 
 export default function ReviewFarmer() {
   const { id, userId, roleCode, kycStatus } = useLocalSearchParams<{ id: string; userId?: string; roleCode?: string; kycStatus?: string }>();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('tenant_admin_lite');
   useSecureScreen(); // FLAG_SECURE — KYC review
@@ -98,8 +99,8 @@ export default function ReviewFarmer() {
           <View style={styles.header}>
             <View style={styles.avatar}><Text style={styles.avatarText}>{initialsOf(profile?.displayName ?? null, userId ?? '')}</Text></View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.name} numberOfLines={1}>{profile?.displayName ?? t('owner.farmer.ref', { id: ref })}</Text>
-              <Text style={styles.sub}>{roleCode ? t(`role.${roleCode}`, { defaultValue: roleCode }) : t('owner.farmer.ref', { id: ref })}</Text>
+              <Text style={styles.name} numberOfLines={1}>{profile?.displayName ?? t('owner.farmer.ref', { id: isolate(ref, lang) })}</Text>
+              <Text style={styles.sub}>{roleCode ? t(`role.${roleCode}`, { defaultValue: roleCode }) : t('owner.farmer.ref', { id: isolate(ref, lang) })}</Text>
             </View>
           </View>
 

@@ -20,6 +20,7 @@ import { useFlag } from '../../core/flags/useFlag';
 import { useSecureScreen } from '../../core/security/screen-guard';
 import { myDocuments, myBankAccounts, myParcels } from '../../features/profile/profile.api';
 import { initials, landHoldingLabel, bankLabel, parcelStatusTone } from '../../features/profile/profile';
+import { chevFwd } from '../../core/i18n/bidi';
 
 export default function Profile() {
   useSecureScreen();
@@ -93,9 +94,9 @@ export default function Profile() {
           {/* Account */}
           <Text style={styles.section}>{t('profile.account')}</Text>
           <Card>
-            <Pressable onPress={() => router.push('/(farmer)/profile/edit')} accessibilityRole="button" style={styles.acctRow}><Text style={styles.acctTxt}>{t('profile.editProfile')}</Text><Text style={styles.chev}>›</Text></Pressable>
-            {systemOn ? <Pressable onPress={() => router.push('/(system)/settings')} accessibilityRole="button" style={[styles.acctRow, styles.divide]}><Text style={styles.acctTxt}>{t('system.settings.title')}</Text><Text style={styles.chev}>›</Text></Pressable> : null}
-            <Pressable onPress={() => router.push('/(farmer)/profile/help')} accessibilityRole="button" style={[styles.acctRow, styles.divide]}><Text style={styles.acctTxt}>{t('profile.help')}</Text><Text style={styles.chev}>›</Text></Pressable>
+            <Pressable onPress={() => router.push('/(farmer)/profile/edit')} accessibilityRole="button" style={styles.acctRow}><Text style={styles.acctTxt}>{t('profile.editProfile')}</Text><Text style={styles.chev}>{chevFwd(lang)}</Text></Pressable>
+            {systemOn ? <Pressable onPress={() => router.push('/(system)/settings')} accessibilityRole="button" style={[styles.acctRow, styles.divide]}><Text style={styles.acctTxt}>{t('system.settings.title')}</Text><Text style={styles.chev}>{chevFwd(lang)}</Text></Pressable> : null}
+            <Pressable onPress={() => router.push('/(farmer)/profile/help')} accessibilityRole="button" style={[styles.acctRow, styles.divide]}><Text style={styles.acctTxt}>{t('profile.help')}</Text><Text style={styles.chev}>{chevFwd(lang)}</Text></Pressable>
           </Card>
 
           {/* Language */}

@@ -17,13 +17,13 @@ import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SdkError, type ListingCard } from '@krishalaya/sdk-js';
 import { Button, Input, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
-import { formatMoneyMinor } from '@krishalaya/i18n';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { makeOffer } from '../../features/offers/offers.api';
 import { getPublicListing } from '../../features/buyer/browse.api';
 import { sendInquiry } from '../../features/messaging/messaging.api';
 import { rupeesToOfferMinor, normalizeQuantity, offerTotalMinor, pctDiffVsAsk, listPriceRupees } from '../../features/offers/offer-status';
+import { moneyText } from '../../core/i18n/money';
 
 export default function MakeOffer() {
   const { listingId } = useLocalSearchParams<{ listingId: string }>();
@@ -77,7 +77,7 @@ export default function MakeOffer() {
     <View style={styles.ctaBar}>
       <View style={{ flex: 1 }}><Button title={t('offer.saveDraft')} variant="outline" disabled onPress={() => {}} /></View>
       <View style={{ flex: 1.5 }}>
-        <Button title={totalMinor ? t('offer.sendTotal', { total: formatMoneyMinor(totalMinor, ccy, lang) }) : t('offer.send')} onPress={onSubmit} loading={busy} disabled={!canSend} />
+        <Button title={totalMinor ? t('offer.sendTotal', { total: moneyText(totalMinor, ccy, lang) }) : t('offer.send')} onPress={onSubmit} loading={busy} disabled={!canSend} />
       </View>
     </View>
   ) : undefined;
@@ -109,7 +109,7 @@ export default function MakeOffer() {
               {offerMinor ? <MoneyText minor={offerMinor} currencyCode={ccy} langCode={lang} size="3xl" style={styles.priceAmt} /> : <Text style={styles.priceAmtEmpty}>—</Text>}
               {totalMinor ? (
                 <Text style={styles.priceSub}>
-                  {t('offer.forQty', { n: q, unit })} = {formatMoneyMinor(totalMinor, ccy, lang)} {t('offer.total')}
+                  {t('offer.forQty', { n: q, unit })} = {moneyText(totalMinor, ccy, lang)} {t('offer.total')}
                   {pct !== null && pct !== 0 ? ` · ${pct > 0 ? t('offer.belowAsk', { pct }) : t('offer.aboveAsk', { pct: -pct })}` : ''}
                 </Text>
               ) : <Text style={styles.priceSub}>{t('offer.enterPriceQty')}</Text>}
@@ -132,7 +132,7 @@ export default function MakeOffer() {
             <View style={styles.chips}>
               <Pressable onPress={() => setRupeesNum(askRupees - 100)} style={styles.chip} accessibilityRole="button"><Text style={styles.chipTxt}>−₹100</Text></Pressable>
               <Pressable onPress={() => setRupeesNum(askRupees * 0.95)} style={styles.chip} accessibilityRole="button"><Text style={styles.chipTxt}>{t('offer.minus5')}</Text></Pressable>
-              <Pressable onPress={() => setRupeesNum(askRupees)} style={styles.chip} accessibilityRole="button"><Text style={styles.chipTxt}>{t('offer.listPrice')} {formatMoneyMinor(listing.priceMinor, ccy, lang)}</Text></Pressable>
+              <Pressable onPress={() => setRupeesNum(askRupees)} style={styles.chip} accessibilityRole="button"><Text style={styles.chipTxt}>{t('offer.listPrice')} {moneyText(listing.priceMinor, ccy, lang)}</Text></Pressable>
             </View>
           </View>
 

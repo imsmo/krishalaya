@@ -17,11 +17,12 @@ import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { browseCourses, myEnrollments, getLessons, getProgress } from '../../features/education/education.api';
 import { lessonStatus, minutesWatched, hubSummary, sortLessons } from '../../features/ambassador/training-hub';
+import { chevFwd } from '../../core/i18n/bidi';
 
 interface Section { course: Course; enrollment: Enrollment | null; lessons: CourseLesson[]; progress: LessonProgress[] }
 
 export default function Training() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('ambassador_training');
   const [sections, setSections] = useState<Section[]>([]);
@@ -84,7 +85,7 @@ export default function Training() {
                       <Text style={styles.lessonTitle} numberOfLines={2}>{l.defaultTitle}</Text>
                       <Text style={[styles.lessonStatus, lessonStatus(s.progress, l.id) === 'completed' && styles.doneStatus]}>{statusLabel(s.progress, l.id, t)}</Text>
                     </View>
-                    <Text style={styles.chevron}>›</Text>
+                    <Text style={styles.chevron}>{chevFwd(lang)}</Text>
                   </Pressable>
                 ))}
               </Card>
@@ -100,7 +101,7 @@ export default function Training() {
                 <Text style={styles.lessonTitle}>{t('amb.training.faqTitle')}</Text>
                 <Text style={styles.lessonStatus}>{t('amb.training.faqSub')}</Text>
               </View>
-              <Text style={styles.chevron}>›</Text>
+              <Text style={styles.chevron}>{chevFwd(lang)}</Text>
             </Card>
           </Pressable>
         </View>

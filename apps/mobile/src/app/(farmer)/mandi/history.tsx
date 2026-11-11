@@ -18,6 +18,8 @@ import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getPulse, listPrices, listMandis, defaultLatLng } from '../../../features/market/market.api';
 import { sortedDesc, previousModalMinor, modalOnOrBefore, priceChange, summaryStats, trendByDays, nearbyMandiPrices, bestNearby, type MandiMeta } from '../../../features/market/mandi-detail';
+import { arrowFwd } from '../../../core/i18n/bidi';
+import { moneyWholeText } from '../../../core/i18n/money';
 
 const PERIODS: { key: string; days: number }[] = [
   { key: '7d', days: 7 }, { key: '30d', days: 30 }, { key: '3mo', days: 90 }, { key: '6mo', days: 180 }, { key: '1yr', days: 365 }, { key: '5yr', days: 1825 },
@@ -67,7 +69,7 @@ export default function MandiHistory() {
       footer={latest ? (
         <View style={styles.footer}>
           <Button title={t('mandiDetail.setAlert')} variant="outline" onPress={() => router.push({ pathname: '/(farmer)/mandi/alerts', params: { productId: id!, regionId: region ?? '' } })} />
-          <View style={{ flex: 1 }}><Button title={`${t('mandiHistory.sellAt')} ${moneyInline(latest.modalMinor, lang)} →`} onPress={() => router.push('/(farmer)/listings/new')} /></View>
+          <View style={{ flex: 1 }}><Button title={`${t('mandiHistory.sellAt')} ${moneyInline(latest.modalMinor, lang)} ${arrowFwd(lang)}`} onPress={() => router.push('/(farmer)/listings/new')} /></View>
         </View>
       ) : undefined}
     >
@@ -153,10 +155,8 @@ export default function MandiHistory() {
 }
 
 function dayLabel(iso: string, lang: string): string { try { return formatDate(iso, lang, { day: 'numeric', month: 'short' }); } catch { return iso; } }
-function moneyInline(minor: string, lang: string): string {
-  try { return new Intl.NumberFormat(lang === 'en' ? 'en-IN' : lang === 'gu' ? 'gu-IN' : 'hi-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(BigInt(minor)) / 100); }
-  catch { return '—'; }
-}
+// PC-56 RTL-1h-2: the whole-rupee shape now comes from the one money helper (byte-identical under en/hi/gu; Indian shape, isolated, under ar).
+function moneyInline(minor: string, lang: string): string { return moneyWholeText(minor, 'INR', lang); }
 
 const styles = StyleSheet.create({
   footer: { flexDirection: 'row', gap: space[3], alignItems: 'center' },

@@ -23,6 +23,7 @@ import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { listOrders } from '../../features/orders/orders.api';
 import { orderStatusTone, orderProgress, orderListCta, buyerOrderTab, buyerOrderCounts, type BuyerTab } from '../../features/orders/order-status';
+import { isolate } from '../../core/i18n/bidi';
 
 const TABS: BuyerTab[] = ['active', 'delivered', 'returns'];
 
@@ -71,10 +72,10 @@ export default function BuyerOrders() {
             const date = safeDate(item.createdAt, lang);
             return (
               <Pressable onPress={() => router.push({ pathname: '/(buyer)/orders/[id]', params: { id: item.id } })} accessibilityRole="button"
-                accessibilityLabel={t('orders.orderNo', { id: item.orderNo })} style={styles.card}>
+                accessibilityLabel={t('orders.orderNo', { id: isolate(item.orderNo, lang) })} style={styles.card}>
                 {/* Head: id + status */}
                 <View style={styles.head}>
-                  <Text style={styles.id}>{t('orders.orderNo', { id: item.orderNo })}</Text>
+                  <Text style={styles.id}>{t('orders.orderNo', { id: isolate(item.orderNo, lang) })}</Text>
                   <StatusPill label={t(`orders.status.${item.status}`)} tone={orderStatusTone(item.status)} />
                 </View>
                 {/* Body: thumb + info + price */}

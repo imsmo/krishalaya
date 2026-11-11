@@ -11,6 +11,7 @@ import { Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, StatusPill, 
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { myTasks, myPayoutStatement } from '../../features/delivery-partner/delivery.api';
 import { isActiveTask, shipmentTone } from '../../features/delivery-partner/delivery';
+import { dateTimeText } from '../../core/i18n/dates';
 
 export default function RiderHistory() {
   const { t, lang } = useTranslation();
@@ -33,7 +34,7 @@ export default function RiderHistory() {
                 <Text style={styles.awb}>{item.awbNo ? `AWB ${item.awbNo}` : item.id.slice(0, 8)}</Text>
                 <StatusPill label={t(`rider.status.${item.status}`) || item.status} tone={shipmentTone(item.status)} />
               </View>
-              {item.deliveredAt ? <Text style={styles.muted}>{new Date(item.deliveredAt).toLocaleString()}</Text> : null}
+              {item.deliveredAt ? <Text style={styles.muted}>{dateTimeText(item.deliveredAt, lang)}</Text> : null}
             </Card>
           )}
           ListHeaderComponent={

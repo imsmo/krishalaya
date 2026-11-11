@@ -20,6 +20,7 @@ import { useFlag } from '../../core/flags/useFlag';
 import { browseJobs, labourLookups } from '../../features/labour/labour.api';
 import { JOB_FILTERS, type JobSort, filterJobs, sortJobs, jobTags, presentSkillIds } from '../../features/labour/browse-jobs';
 import { taskEmoji, skillLabel } from '../../features/labour/worker-home';
+import { isolate } from '../../core/i18n/bidi';
 
 export default function Jobs() {
   const { t, lang } = useTranslation();
@@ -94,7 +95,7 @@ export default function Jobs() {
                   <View style={styles.jobIcon}><Text style={{ fontSize: 22 }}>{taskEmoji(label)}</Text></View>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={styles.jobTitle} numberOfLines={1}>{label ?? t('worker.home.genericTask')} · {t(`worker.wageKind.${item.wageKind}`)}</Text>
-                    <Text style={styles.jobMeta} numberOfLines={1}>{t('worker.home.employerAnon', { id: item.employerUserId.slice(0, 6).toUpperCase() })}</Text>
+                    <Text style={styles.jobMeta} numberOfLines={1}>{t('worker.home.employerAnon', { id: isolate(item.employerUserId.slice(0, 6).toUpperCase(), lang) })}</Text>
                     <Text style={styles.jobMeta} numberOfLines={1}>📅 {safeDate(item.startDate, lang)}</Text>
                   </View>
                   <MoneyText minor={item.wageOfferedMinor} currencyCode={item.currencyCode} langCode={lang} size="lg" tone="positive" />

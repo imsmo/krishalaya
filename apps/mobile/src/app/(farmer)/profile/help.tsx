@@ -23,12 +23,13 @@ import { useFlag } from '../../../core/flags/useFlag';
 import { sdkErrorMessage } from '../../../core/errors/sdk-error-message';
 import { myTickets, rateTicket, openTicket, openTicketThread } from '../../../features/profile/profile.api';
 import { ticketStatusTone, canRateCsat } from '../../../features/profile/profile';
+import { chevFwd } from '../../../core/i18n/bidi';
 
 const FAQS = ['payout', 'rejected', 'rating', 'kyc', 'priceBand'] as const;
 const TOPICS = ['selling', 'payments', 'workers', 'auctions', 'schemes', 'app'] as const;
 
 export default function Help() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('farmer_profile');
   const [items, setItems] = useState<SupportTicket[]>([]);
@@ -89,7 +90,7 @@ export default function Help() {
         {FAQS.map((f, i) => (
           <Pressable key={f} onPress={askTopic} accessibilityRole="button" style={[styles.faqRow, i > 0 && styles.divide]}>
             <Text style={styles.faqQ} numberOfLines={2}>{t(`profile.help.q.${f}`)}</Text>
-            <Text style={styles.chev}>›</Text>
+            <Text style={styles.chev}>{chevFwd(lang)}</Text>
           </Pressable>
         ))}
       </Card>

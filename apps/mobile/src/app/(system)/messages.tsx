@@ -18,6 +18,7 @@ import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { listConversations } from '../../features/messaging/messaging.api';
 import { messageTabs, filterConversationsByTab, conversationPreview, unreadTotal, type MessageCategory } from '../../features/system/system';
+import { chevFwd } from '../../core/i18n/bidi';
 
 export default function Messages() {
   const { t, lang } = useTranslation();
@@ -95,7 +96,7 @@ export default function Messages() {
               </View>
               <View style={styles.rowEnd}>
                 {when ? <Text style={styles.time}>{safeDate(when, lang)}</Text> : null}
-                {(item.unreadCount ?? 0) > 0 ? <View style={styles.badge}><Text style={styles.badgeText}>{item.unreadCount}</Text></View> : <Text style={styles.chev}>›</Text>}
+                {(item.unreadCount ?? 0) > 0 ? <View style={styles.badge}><Text style={styles.badgeText}>{item.unreadCount}</Text></View> : <Text style={styles.chev}>{chevFwd(lang)}</Text>}
               </View>
             </Pressable>
           );

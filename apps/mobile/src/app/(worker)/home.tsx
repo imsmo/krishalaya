@@ -21,7 +21,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import type { WorkerProfile, LabourBooking, LabourAssignment, LabourLookups, LearningResource } from '@krishalaya/sdk-js';
 import { Button, Card, EmptyState, MoneyText, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
-import { formatMoneyMinor } from '@krishalaya/i18n';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useAuth } from '../../core/auth/auth.store';
 import { useFlag } from '../../core/flags/useFlag';
@@ -30,6 +29,8 @@ import { walletEarnings } from '../../features/wallet/wallet.api';
 import { listTips } from '../../features/content/content.api';
 import { periodTotal, momDelta } from '../../features/wallet/earnings';
 import { initials, pendingOfferCount, confirmedCount, taskEmoji, skillLabel } from '../../features/labour/worker-home';
+import { moneyText } from '../../core/i18n/money';
+import { arrowFwd, isolate } from '../../core/i18n/bidi';
 
 export default function WorkerHome() {
   const { t, lang } = useTranslation();
@@ -102,7 +103,7 @@ export default function WorkerHome() {
             <View style={styles.earnCard}>
               <View style={styles.earnGlow} />
               <Text style={styles.earnLabel}>{t('worker.home.earnings.label')}</Text>
-              <Text style={styles.earnAmt}>{formatMoneyMinor(earnMinor, 'INR', lang)}</Text>
+              <Text style={styles.earnAmt}>{moneyText(earnMinor, 'INR', lang)}</Text>
               <Text style={styles.earnMeta}>
                 {t('worker.home.earnings.jobs', { count: earnCount })}
                 {earnPct != null ? ` · ${earnPct >= 0 ? '↑' : '↓'} ${t('worker.home.earnings.delta', { pct: Math.abs(earnPct) })}` : ''}
@@ -112,7 +113,7 @@ export default function WorkerHome() {
                   <Text style={styles.earnBtnTxt}>{t('worker.home.viewEarnings')}</Text>
                 </Pressable>
                 <Pressable style={styles.earnBtn} onPress={() => router.push('/(worker)/withdraw')} accessibilityRole="button">
-                  <Text style={styles.earnBtnTxt}>{t('worker.home.getPaid')} →</Text>
+                  <Text style={styles.earnBtnTxt}>{t('worker.home.getPaid')} {arrowFwd(lang)}</Text>
                 </Pressable>
               </View>
             </View>
@@ -146,7 +147,7 @@ export default function WorkerHome() {
                     <View style={styles.jobIcon}><Text style={{ fontSize: 22 }}>{taskEmoji(label)}</Text></View>
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text style={styles.jobTitle} numberOfLines={1}>{label ?? t('worker.home.genericTask')}</Text>
-                      <Text style={styles.jobMeta} numberOfLines={1}>{t('worker.home.employerAnon', { id: b.employerUserId.slice(0, 6).toUpperCase() })}</Text>
+                      <Text style={styles.jobMeta} numberOfLines={1}>{t('worker.home.employerAnon', { id: isolate(b.employerUserId.slice(0, 6).toUpperCase(), lang) })}</Text>
                       <MoneyText minor={b.wageOfferedMinor} currencyCode={b.currencyCode} langCode={lang} size="sm" tone="positive" />
                     </View>
                   </Pressable>

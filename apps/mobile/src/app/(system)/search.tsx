@@ -18,6 +18,7 @@ import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { globalSearch } from '../../features/system/system.api';
 import { normalizeQuery, searchKindIcon, searchTabs, filterHits, type SearchHit, type SearchHitKind } from '../../features/system/system';
+import { chevFwd } from '../../core/i18n/bidi';
 
 const ROUTE_OF: Partial<Record<SearchHitKind, string>> = {
   listing: '/(buyer)/listing/[id]',
@@ -111,7 +112,7 @@ export default function GlobalSearch() {
                     ) : null}
                   </View>
                 </View>
-                <Text style={styles.chev}>›</Text>
+                <Text style={styles.chev}>{chevFwd(lang)}</Text>
               </Pressable>
             )}
             contentContainerStyle={{ paddingBottom: space[6] }}

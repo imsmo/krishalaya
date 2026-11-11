@@ -22,6 +22,7 @@ import { assignments, tenantAnalytics } from '../../features/tenant/tenant.api';
 import { rosterCounts, pctOf } from '../../features/tenant/tenant-admin';
 import { openWebConsole } from '../../core/deeplink';
 import { WEB_PATHS } from '../../features/tenant/web-console';
+import { isolate } from '../../core/i18n/bidi';
 
 function sellerRef(id: string): string { const c = (id ?? '').replace(/[^A-Za-z0-9]/g, ''); return c ? `#${c.slice(0, 6).toUpperCase()}` : '—'; }
 
@@ -92,7 +93,7 @@ export default function FarmerAnalytics() {
               {top.map((s, i) => (
                 <View key={s.sellerUserId} style={[styles.row, i > 0 && styles.rowBorder]}>
                   <Text style={styles.rank}>#{String(i + 1)}</Text>
-                  <Text style={styles.perfRef}>{t('owner.farmerAnalytics.sellerRef', { ref: sellerRef(s.sellerUserId) })}</Text>
+                  <Text style={styles.perfRef}>{t('owner.farmerAnalytics.sellerRef', { ref: isolate(sellerRef(s.sellerUserId), lang) })}</Text>
                   <MoneyText minor={s.salesMinor} currencyCode={an!.currencyCode} langCode={lang} size="sm" />
                 </View>
               ))}

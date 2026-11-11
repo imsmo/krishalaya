@@ -15,7 +15,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
-import { formatMoneyMinor } from '@krishalaya/i18n';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { findPmsbyProduct, myPmsbyPolicy, type InsurancePolicyView } from '../../features/insurance/insurance.api';
@@ -26,6 +25,7 @@ import { findPmsbyProduct, myPmsbyPolicy, type InsurancePolicyView } from '../..
 // (this has happened before: the premium moved ₹12→₹20 in 2022) while the other silently goes stale. Importing
 // the single existing source instead; no behavior change (same literal values).
 import { PMSBY_COVER_MINOR as COVER_MINOR, PMSBY_PARTIAL_MINOR as PARTIAL_MINOR, PMSBY_PREMIUM_MINOR as PREMIUM_MINOR } from '../../features/labour/pmsby-enroll';
+import { moneyText } from '../../core/i18n/money';
 
 export default function WorkerInsurance() {
   const { t, lang } = useTranslation();
@@ -85,7 +85,7 @@ export default function WorkerInsurance() {
             </View>
             <View style={styles.heroStat}>
               <Text style={styles.heroStatLabel}>{t('worker.insurance.premium')}</Text>
-              <Text style={styles.heroPremium}>{t('worker.insurance.premiumOnly', { amount: formatMoneyMinor(PREMIUM_MINOR, 'INR', lang) })}</Text>
+              <Text style={styles.heroPremium}>{t('worker.insurance.premiumOnly', { amount: moneyText(PREMIUM_MINOR, 'INR', lang) })}</Text>
             </View>
           </View>
         </View>
@@ -102,7 +102,7 @@ export default function WorkerInsurance() {
             <View key={c.key} style={styles.coverRow}>
               <Text style={styles.tick}>✓</Text>
               <Text style={styles.coverText}>
-                {t(`worker.insurance.cover.${c.key}`)}{c.minor ? ` — ${formatMoneyMinor(c.minor, 'INR', lang)}` : ''}
+                {t(`worker.insurance.cover.${c.key}`)}{c.minor ? ` — ${moneyText(c.minor, 'INR', lang)}` : ''}
               </Text>
             </View>
           ))}

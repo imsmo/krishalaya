@@ -17,6 +17,7 @@ import { formatDate, formatRelative } from '@krishalaya/i18n';
 import { useTranslation } from '../../../../core/i18n/useTranslation';
 import { useFlag } from '../../../../core/flags/useFlag';
 import { getBooking, bookingAssignments } from '../../../../features/labour/hire.api';
+import { isolate } from '../../../../core/i18n/bidi';
 
 export default function BookingAccepted() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -39,7 +40,7 @@ export default function BookingAccepted() {
   if (!enabled) return <ScreenScaffold title={t('hireAccepted.title')}><EmptyState title={t('common.unavailable')} /></ScreenScaffold>;
 
   const accepted = assignments.find((a) => a.status === 'accepted') ?? assignments[0] ?? null;
-  const worker = accepted ? t('bookWorker.workerAnon', { id: accepted.workerId.slice(0, 6).toUpperCase() }) : t('bookTask.aWorker');
+  const worker = accepted ? t('bookWorker.workerAnon', { id: isolate(accepted.workerId.slice(0, 6).toUpperCase(), lang) }) : t('bookTask.aWorker');
   const ccy = booking?.currencyCode ?? 'INR';
 
   const steps = ['before', 'onDay', 'after'] as const;

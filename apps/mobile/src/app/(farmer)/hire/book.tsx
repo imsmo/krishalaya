@@ -22,7 +22,7 @@ import { buildBookingDraft, type BookingDraftField } from '../../../features/lab
 import { withDailyHours, BOOKING_HOURS } from '../../../features/labour/book-worker';
 import { rupeesToWageMinor } from '../../../features/labour/labour-status';
 import { labourLookups } from '../../../features/labour/hire.api';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { isolate } from '../../../core/i18n/bidi';
 
 const SKILL_LEVELS = ['unskilled', 'semi_skilled', 'skilled', 'highly_skilled'] as const;
 
@@ -86,7 +86,7 @@ export default function BookWorker() {
   const err = (f: BookingDraftField) => errors.includes(f) ? t(`hire.book.err.${f}`) : undefined;
 
   return (
-    <ScreenScaffold title={workerId ? t('bookWorker.titleWorker', { id: workerId.slice(0, 6).toUpperCase() }) : t('bookWorker.title')} scroll={false} footer={footer}>
+    <ScreenScaffold title={workerId ? t('bookWorker.titleWorker', { id: isolate(workerId.slice(0, 6).toUpperCase(), lang) }) : t('bookWorker.title')} scroll={false} footer={footer}>
       {/* Step 3 of 4 progress */}
       <View style={styles.progress}>
         <View style={styles.bar}><View style={[styles.seg, styles.done]} /><View style={[styles.seg, styles.done]} /><View style={[styles.seg, styles.active]} /><View style={[styles.seg, styles.pending]} /></View>
@@ -125,7 +125,7 @@ export default function BookWorker() {
         {/* Booking summary — real fields */}
         <Text style={styles.h3}>{t('bookWorker.summary')}</Text>
         <Card>
-          {workerId ? <Row label={t('bookWorker.sum.worker')} value={t('bookWorker.workerAnon', { id: workerId.slice(0, 6).toUpperCase() })} /> : null}
+          {workerId ? <Row label={t('bookWorker.sum.worker')} value={t('bookWorker.workerAnon', { id: isolate(workerId.slice(0, 6).toUpperCase(), lang) })} /> : null}
           <Row label={t('bookWorker.sum.task')} value={skillName ?? '—'} />
           <Row label={t('bookWorker.sum.date')} value={startDate || '—'} />
           <Row label={t('bookWorker.sum.hours')} value={t('bookWorker.hoursOpt', { n: hours })} />

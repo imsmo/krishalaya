@@ -20,6 +20,7 @@ import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { assignments, tenantAnalytics } from '../../features/tenant/tenant.api';
 import { approvalStatusTone, rosterCounts, filterRoster, type RosterTab } from '../../features/tenant/tenant-admin';
+import { isolate } from '../../core/i18n/bidi';
 
 const TABS: RosterTab[] = ['all', 'active', 'pending_kyc', 'inactive'];
 
@@ -66,7 +67,7 @@ export default function Farmers() {
             <Card key={s.sellerUserId} style={styles.sellerCard}>
               <View style={styles.avatar}><Text style={styles.avatarText}>{s.sellerUserId.slice(0, 2).toUpperCase()}</Text></View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.ref}>{t('owner.farmer.ref', { id: s.sellerUserId.slice(0, 8).toUpperCase() })}</Text>
+                <Text style={styles.ref}>{t('owner.farmer.ref', { id: isolate(s.sellerUserId.slice(0, 8).toUpperCase(), lang) })}</Text>
                 <Text style={styles.sub}>{t('owner.farmers.orders', { n: s.orders })}</Text>
               </View>
               <MoneyText minor={s.salesMinor} currencyCode={analytics!.currencyCode} langCode={lang} size="sm" />
@@ -94,7 +95,7 @@ export default function Farmers() {
                 <View style={styles.avatar}><Text style={styles.avatarText}>{item.userId.slice(0, 2).toUpperCase()}</Text></View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.role}>{t(`role.${item.roleCode}`, { defaultValue: item.roleCode })}</Text>
-                  <Text style={styles.ref}>{t('owner.farmer.ref', { id: item.userId.slice(0, 8).toUpperCase() })}</Text>
+                  <Text style={styles.ref}>{t('owner.farmer.ref', { id: isolate(item.userId.slice(0, 8).toUpperCase(), lang) })}</Text>
                 </View>
                 <StatusPill label={t(`kyc.status.${item.kycStatus}`, { defaultValue: item.kycStatus })} tone={approvalStatusTone(item.kycStatus)} />
               </Card>

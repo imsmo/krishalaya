@@ -13,12 +13,13 @@ import { View, Text, FlatList, Pressable, StyleSheet, RefreshControl } from 'rea
 import { useFocusEffect } from 'expo-router';
 import type { WorkerProfile, LabourAttendance } from '@krishalaya/sdk-js';
 import { Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius, type PillTone } from '@krishalaya/ui-native';
-import { formatDate, formatMoneyMinor } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { getMyWorker, workerRating, workHistory } from '../../features/labour/labour.api';
 import { walletEarnings } from '../../features/wallet/wallet.api';
 import { attendanceTotalHours, attendanceStatusKey, matchesHistoryFilter, thisYearCount, HISTORY_FILTERS, type HistoryFilter, type HistoryStatus } from '../../features/labour/work-history';
+import { moneyText } from '../../core/i18n/money';
 
 const STATUS_TONE: Record<HistoryStatus, PillTone> = { paid: 'success', confirmed: 'success', clocked_out: 'info', clocked_in: 'warning', pending: 'neutral' };
 
@@ -75,7 +76,7 @@ export default function WorkHistory() {
                 <Text style={styles.lifetimeLabel}>{t('workerHistory.lifetime')}</Text>
                 <View style={styles.lifetimeRow}>
                   <Text style={styles.lifetimeJobs}>{t('workerHistory.jobsCount', { n: worker?.bookingsCompleted ?? 0 })}</Text>
-                  {lifetimeMinor ? <Text style={styles.lifetimeMoney}> · {formatMoneyMinor(lifetimeMinor, 'INR', lang)}</Text> : null}
+                  {lifetimeMinor ? <Text style={styles.lifetimeMoney}> · {moneyText(lifetimeMinor, 'INR', lang)}</Text> : null}
                 </View>
                 <View style={styles.stats}>
                   <Stat value={rating?.averageStars != null ? `⭐ ${rating.averageStars.toFixed(1)}` : '—'} label={t('workerHistory.rating')} />

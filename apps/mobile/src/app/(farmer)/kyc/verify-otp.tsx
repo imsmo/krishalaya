@@ -20,6 +20,7 @@ import { useFlag } from '../../../core/flags/useFlag';
 import { useSecureScreen } from '../../../core/security';
 import { verifyAadhaarEkyc } from '../../../features/kyc/kyc.api';
 import { resendSecondsRemaining } from '../../../core/auth/otp.helpers';
+import { isolate } from '../../../core/i18n/bidi';
 
 /** Seconds → "m:ss" for the resend countdown. Pure. */
 function mmss(total: number): string {
@@ -30,7 +31,7 @@ function mmss(total: number): string {
 export default function VerifyAadhaarOtp() {
   useSecureScreen();
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const enabled = useFlag('kyc');
   const { sessionId, masked } = useLocalSearchParams<{ sessionId?: string; masked?: string }>();
 
@@ -75,7 +76,7 @@ export default function VerifyAadhaarOtp() {
         <Text style={styles.title}>{t('kycOtp.title')}</Text>
         <Text style={styles.sub}>{t('kycOtp.sub')}</Text>
         {/* §13: masked AADHAAR reference (real), not a fabricated phone number. */}
-        <Text style={styles.masked}>{masked ? t('kycOtp.linkedTo', { masked }) : t('kycOtp.linkedGeneric')}</Text>
+        <Text style={styles.masked}>{masked ? t('kycOtp.linkedTo', { masked: isolate(masked, lang) }) : t('kycOtp.linkedGeneric')}</Text>
 
         <View style={styles.boxes}>
           <OtpInput value={code} onChange={setCode} onComplete={onVerify} autoFocus error={!!error} />

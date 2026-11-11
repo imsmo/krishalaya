@@ -25,6 +25,7 @@ import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getDispute, disputeMessages, reviewDispute, escalateDispute, resolveDispute } from '../../../features/tenant/tenant.api';
 import { disputeStatusTone, disputeActions, RESOLUTION_OPTIONS, buildResolution, isDisputeUrgent, daysAgo, disputeMessageRole } from '../../../features/tenant/tenant-admin';
+import { isolate } from '../../../core/i18n/bidi';
 
 const DT: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' };
 const D_ONLY: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
@@ -79,7 +80,7 @@ export default function DisputeDetail() {
           {/* Header */}
           <Card>
             <View style={styles.row}>
-              <Text style={styles.no}>{t('owner.dispute.ref', { id: d.id.slice(0, 8).toUpperCase() })}</Text>
+              <Text style={styles.no}>{t('owner.dispute.ref', { id: isolate(d.id.slice(0, 8).toUpperCase(), lang) })}</Text>
               <View style={styles.pills}>
                 {isDisputeUrgent(d.slaDueAt, d.status) ? <StatusPill label={t('owner.disputes.urgent')} tone="danger" /> : null}
                 <StatusPill label={t(`owner.disputeStatus.${d.status}`, { defaultValue: d.status })} tone={disputeStatusTone(d.status)} />
@@ -168,10 +169,11 @@ export default function DisputeDetail() {
 }
 
 function PartyRow({ role, idRef, t }: { role: 'complainant' | 'respondent'; idRef: string; t: (k: string, v?: Record<string, string>) => string }) {
+  const { lang } = useTranslation();
   return (
     <Card style={{ marginBottom: space[2] }}>
       <View style={styles.row}>
-        <Text style={styles.partyRef}>{t('owner.dispute.userRef', { id: (idRef ?? '').slice(0, 8).toUpperCase() })}</Text>
+        <Text style={styles.partyRef}>{t('owner.dispute.userRef', { id: isolate((idRef ?? '').slice(0, 8).toUpperCase(), lang) })}</Text>
         <StatusPill label={t(`owner.dispute.role.${role}`)} tone={role === 'complainant' ? 'accent' : 'neutral'} />
       </View>
     </Card>

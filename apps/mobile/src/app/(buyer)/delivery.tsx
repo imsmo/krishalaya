@@ -20,7 +20,8 @@ import { listAddresses } from '../../features/addresses/addresses.api';
 import { deliveryMethods } from '../../features/cart/cart.api';
 import { formatAddress } from '../../features/cart/cart-math';
 import { defaultMethodId, deliverySavingMinor } from '../../features/cart/delivery';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../core/i18n/money';
+import { isolate } from '../../core/i18n/bidi';
 
 export default function DeliveryStep() {
   const { t, lang } = useTranslation();
@@ -104,7 +105,7 @@ export default function DeliveryStep() {
                     {a.isDefault ? <StatusPill label={t('delivery.primary')} tone="success" /> : null}
                     {a.contactName ? <Text style={styles.addrName}>{a.contactName}</Text> : null}
                     <Text style={styles.addrFull}>{formatAddress(a)}</Text>
-                    {a.contactPhone ? <Text style={styles.addrContact}>{t('delivery.contact', { phone: a.contactPhone })}</Text> : null}
+                    {a.contactPhone ? <Text style={styles.addrContact}>{t('delivery.contact', { phone: isolate(a.contactPhone, lang) })}</Text> : null}
                   </Pressable>
                 );
               })}
@@ -127,7 +128,7 @@ export default function DeliveryStep() {
                       <Text style={[styles.methodName, active && styles.addrNameOn]}>{m.name}</Text>
                       <MoneyText minor={m.feeMinor} currencyCode={currency} langCode={lang} size="md" />
                     </View>
-                    {saving ? <Text style={styles.saving}>{t('delivery.save', { amount: formatMoneyMinor(saving, currency, lang) })}</Text> : null}
+                    {saving ? <Text style={styles.saving}>{t('delivery.save', { amount: moneyText(saving, currency, lang) })}</Text> : null}
                   </Pressable>
                 );
               })}

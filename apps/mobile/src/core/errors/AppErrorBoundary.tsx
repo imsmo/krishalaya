@@ -10,10 +10,11 @@ import { EmptyState, ScreenScaffold, color, font, space } from '@krishalaya/ui-n
 import { useTranslation } from '../i18n/useTranslation';
 import { captureError } from '../observability';
 import { safeErrorRef } from '../../features/system/system';
+import { isolate } from '../i18n/bidi';
 
 /** The visible fallback. A function child so it can use the translation hook (the boundary itself can't). */
 function ErrorFallback({ refId, onRetry }: { refId: string | null; onRetry: () => void }) {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   return (
     <ScreenScaffold title={t('system.error.title')}>
       <EmptyState
@@ -23,7 +24,7 @@ function ErrorFallback({ refId, onRetry }: { refId: string | null; onRetry: () =
         onAction={onRetry}
         testID="app-error-fallback"
       />
-      {refId ? <View style={styles.refBox}><Text style={styles.ref}>{t('system.error.ref', { ref: refId })}</Text></View> : null}
+      {refId ? <View style={styles.refBox}><Text style={styles.ref}>{t('system.error.ref', { ref: isolate(refId, lang) })}</Text></View> : null}
     </ScreenScaffold>
   );
 }

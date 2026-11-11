@@ -14,6 +14,7 @@ import { getTask, markPickedUp, markInTransit, markAtHub, markOutForDelivery, fa
 import { riderActionsFor, shipmentTone, type RiderAction } from '../../../features/delivery-partner/delivery';
 import { isValidPodOtp } from '../../../features/orders/order-status';
 import { captureFromCamera } from '../../../core/media';
+import { dateTimeText } from '../../../core/i18n/dates';
 
 const MILESTONES: Partial<Record<RiderAction, (id: string) => Promise<Shipment>>> = {
   picked_up: markPickedUp, in_transit: markInTransit, at_hub: markAtHub, out_for_delivery: markOutForDelivery,
@@ -21,7 +22,7 @@ const MILESTONES: Partial<Record<RiderAction, (id: string) => Promise<Shipment>>
 
 export default function TaskDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const [task, setTask] = useState<Shipment | null | undefined>(undefined);
   const [otp, setOtp] = useState('');
   const [podMediaId, setPodMediaId] = useState<string | null>(null);
@@ -63,7 +64,7 @@ export default function TaskDetail() {
       <ScrollView>
         <Card>
           <StatusPill label={t(`rider.status.${task.status}`) || task.status} tone={shipmentTone(task.status)} />
-          {task.scheduledPickupAt ? <Text style={styles.muted}>{t('rider.today.pickupAt')} {new Date(task.scheduledPickupAt).toLocaleString()}</Text> : null}
+          {task.scheduledPickupAt ? <Text style={styles.muted}>{t('rider.today.pickupAt')} {dateTimeText(task.scheduledPickupAt, lang)}</Text> : null}
           {task.requiresOtp ? <Text style={styles.muted}>{t('rider.today.otpNeeded')}</Text> : null}
         </Card>
         {actions.filter((a) => MILESTONES[a]).map((a) => (

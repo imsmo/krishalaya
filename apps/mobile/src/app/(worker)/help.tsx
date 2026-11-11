@@ -20,9 +20,10 @@ import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { openTicket } from '../../features/profile/profile.api';
 import { HELP_FAQS, HELP_RIGHTS, WAGE_TICKET_SEVERITY } from '../../features/labour/worker-help';
+import { chevFwd } from '../../core/i18n/bidi';
 
 export default function WorkerHelp() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('worker_app');
   const [openFaq, setOpenFaq] = useState<string | null>(null);
@@ -74,7 +75,7 @@ export default function WorkerHelp() {
               <View key={q} style={i > 0 ? styles.divide : undefined}>
                 <Pressable onPress={() => setOpenFaq(on ? null : q)} accessibilityRole="button" accessibilityState={{ expanded: on }} style={styles.faqRow}>
                   <Text style={styles.faqQ} numberOfLines={2}>{t(`workerHelp.q.${q}.q`)}</Text>
-                  <Text style={styles.chev}>{on ? '⌄' : '›'}</Text>
+                  <Text style={styles.chev}>{on ? '⌄' : chevFwd(lang)}</Text>
                 </Pressable>
                 {on ? <Text style={styles.faqA}>{t(`workerHelp.q.${q}.a`)}</Text> : null}
               </View>

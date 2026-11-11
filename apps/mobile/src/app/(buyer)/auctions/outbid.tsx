@@ -15,7 +15,6 @@ import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { Auction, BidHistoryItem, ListingCard } from '@krishalaya/sdk-js';
 import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
-import { formatMoneyMinor } from '@krishalaya/i18n';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { useAuth } from '../../../core/auth/auth.store';
@@ -23,6 +22,7 @@ import { useSecureScreen } from '../../../core/security/screen-guard';
 import { getAuction, bidHistory } from '../../../features/auctions/auctions.api';
 import { getPublicListing } from '../../../features/buyer/browse.api';
 import { currentPriceMinor, minNextBidMinor, timeLeft, bidStats, myHighestBidMinor, shortByMinor, recommendedBidMinor, isBiddable } from '../../../features/auctions/auction-status';
+import { moneyText } from '../../../core/i18n/money';
 
 export default function Outbid() {
   useSecureScreen();
@@ -72,7 +72,7 @@ export default function Outbid() {
           <View style={{ flex: 1 }}><Button title={t('outbid.walkAway')} variant="outline" onPress={() => router.back()} /></View>
           {biddable ? (
             <View style={{ flex: 1.5 }}>
-              <Button title={`${t('outbid.bid')} ${formatMoneyMinor(recommend, ccy, lang)}`} variant="accent"
+              <Button title={`${t('outbid.bid')} ${moneyText(recommend, ccy, lang)}`} variant="accent"
                 onPress={() => router.replace({ pathname: '/(buyer)/auctions/bid', params: { id: id!, minNextMinor: minNext } })} />
             </View>
           ) : null}
@@ -91,8 +91,8 @@ export default function Outbid() {
             <MoneyText minor={current} currencyCode={ccy} langCode={lang} size="3xl" style={styles.heroAmt} />
             {myBid ? (
               <Text style={styles.heroSub}>
-                {t('outbid.yourBidWas', { bid: formatMoneyMinor(myBid, ccy, lang) })}
-                {short && short !== '0' ? ` · ${t('outbid.short', { amount: formatMoneyMinor(short, ccy, lang) })}` : ''}
+                {t('outbid.yourBidWas', { bid: moneyText(myBid, ccy, lang) })}
+                {short && short !== '0' ? ` · ${t('outbid.short', { amount: moneyText(short, ccy, lang) })}` : ''}
               </Text>
             ) : null}
           </View>
@@ -112,7 +112,7 @@ export default function Outbid() {
               <View style={styles.tip}>
                 <Text style={styles.tipText}>
                   <Text style={styles.tipStrong}>💡 {t('outbid.placeNew')}</Text>{'\n'}
-                  {t('outbid.needAtLeast', { min: formatMoneyMinor(minNext, ccy, lang) })} · {t('outbid.weRecommend', { rec: formatMoneyMinor(recommend, ccy, lang) })}
+                  {t('outbid.needAtLeast', { min: moneyText(minNext, ccy, lang) })} · {t('outbid.weRecommend', { rec: moneyText(recommend, ccy, lang) })}
                 </Text>
               </View>
             ) : null}
@@ -120,7 +120,7 @@ export default function Outbid() {
             {/* Escrow released */}
             {myBid ? (
               <View style={styles.escrow}>
-                <Text style={styles.escrowText}>{t('outbid.escrowReleased', { amount: formatMoneyMinor(myBid, ccy, lang) })}</Text>
+                <Text style={styles.escrowText}>{t('outbid.escrowReleased', { amount: moneyText(myBid, ccy, lang) })}</Text>
               </View>
             ) : null}
           </View>

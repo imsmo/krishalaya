@@ -15,7 +15,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { Auction, BidHistoryItem, ListingCard } from '@krishalaya/sdk-js';
 import { Button, Input, MoneyText, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
-import { formatMoneyMinor } from '@krishalaya/i18n';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { useSecureScreen } from '../../../core/security/screen-guard';
@@ -26,6 +25,7 @@ import {
   validateBidRupees, currentPriceMinor, minNextBidMinor, emdRequirement,
   bidAmountMinor, emdHoldMinor, walletCoversHold, BID_QUICK_ADD_RUPEES,
 } from '../../../features/auctions/auction-status';
+import { moneyText } from '../../../core/i18n/money';
 
 export default function PlaceBid() {
   useSecureScreen();
@@ -96,7 +96,7 @@ export default function PlaceBid() {
   };
 
   const confirmLabel = perUnitMinor !== '0'
-    ? `${t('auction.confirmBid')} · ${formatMoneyMinor(perUnitMinor, walletCcy, lang)}`
+    ? `${t('auction.confirmBid')} · ${moneyText(perUnitMinor, walletCcy, lang)}`
     : t('auction.confirmBid');
 
   return (
@@ -113,8 +113,8 @@ export default function PlaceBid() {
         <ScrollView contentContainerStyle={{ paddingBottom: space[6] }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {/* Current highest + increment */}
           <Text style={styles.current}>
-            {t('auction.currentHighest')} <Text style={styles.currentStrong}>{formatMoneyMinor(current, walletCcy, lang)} {t('auction.perQtl')}</Text>
-            {auction ? ` · ${t('auction.minIncrement')} ${formatMoneyMinor(auction.minIncrementMinor, walletCcy, lang)}` : ''}
+            {t('auction.currentHighest')} <Text style={styles.currentStrong}>{moneyText(current, walletCcy, lang)} {t('auction.perQtl')}</Text>
+            {auction ? ` · ${t('auction.minIncrement')} ${moneyText(auction.minIncrementMinor, walletCcy, lang)}` : ''}
           </Text>
 
           {/* Bid input (₹ prefix + /qtl suffix around the field) */}
@@ -135,12 +135,12 @@ export default function PlaceBid() {
 
           {/* Summary */}
           <View style={styles.summary}>
-            <Row label={t('auction.bidAmount', { qty, unit, price: formatMoneyMinor(perUnitMinor, walletCcy, lang) })} value={<MoneyText minor={total} currencyCode={walletCcy} langCode={lang} size="sm" />} />
+            <Row label={t('auction.bidAmount', { qty, unit, price: moneyText(perUnitMinor, walletCcy, lang) })} value={<MoneyText minor={total} currencyCode={walletCcy} langCode={lang} size="sm" />} />
             <Row label={t('auction.emdToHold')} value={<MoneyText minor={hold} currencyCode={walletCcy} langCode={lang} size="sm" />} />
             <Row
               label={t('auction.walletBalance')}
               value={available != null
-                ? <Text style={[styles.val, covered ? styles.ok : styles.bad]}>{formatMoneyMinor(available, walletCcy, lang)}{covered ? ' ✓' : ''}</Text>
+                ? <Text style={[styles.val, covered ? styles.ok : styles.bad]}>{moneyText(available, walletCcy, lang)}{covered ? ' ✓' : ''}</Text>
                 : <Text style={styles.valMuted}>—</Text>}
             />
             <View style={styles.totalRow}>

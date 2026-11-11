@@ -23,6 +23,7 @@ import { useSecureScreen } from '../../../core/security/screen-guard';
 import { captureFromCamera, pickFromGallery } from '../../../core/media';
 import { uploadSchemeDocument, applyToScheme, submitApplication } from '../../../features/schemes/schemes.api';
 import { docChecklist, allDocsUploaded, buildApplyDraft, buildSchemeDetailsDraft, onlyDigits, SCHEME_CATEGORIES, type DetailsForm } from '../../../features/schemes/schemes';
+import { isolate } from '../../../core/i18n/bidi';
 
 const GENDERS = ['male', 'female', 'other'] as const;
 const TOTAL_STEPS = 3;
@@ -30,7 +31,7 @@ const TOTAL_STEPS = 3;
 export default function SchemeApply() {
   useSecureScreen();
   const { id, docs } = useLocalSearchParams<{ id: string; docs?: string }>();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const { state } = useAuth();
   const router = useRouter();
   const enabled = useFlag('schemes_govt');
@@ -209,7 +210,7 @@ export default function SchemeApply() {
             <Card>
               <Text style={styles.h}>{t('schemes.apply.reviewTitle')}</Text>
               <Review k={t('schemes.apply.field.fullName')} v={form.fullName ?? '—'} />
-              <Review k={t('schemes.apply.field.aadhaar')} v={aadhaarLast4 ? t('schemes.apply.aadhaarMasked', { last4: aadhaarLast4 }) : '—'} />
+              <Review k={t('schemes.apply.field.aadhaar')} v={aadhaarLast4 ? t('schemes.apply.aadhaarMasked', { last4: isolate(aadhaarLast4, lang) }) : '—'} />
               <Review k={t('schemes.apply.field.category')} v={form.category ? t(`schemes.apply.category.${form.category}`) : '—'} />
               <Review k={t('schemes.apply.field.gender')} v={form.gender ? t(`schemes.gender.${form.gender}`) : '—'} />
               <Review k={t('schemes.apply.field.village')} v={[form.village, form.district].filter(Boolean).join(', ') || '—'} />

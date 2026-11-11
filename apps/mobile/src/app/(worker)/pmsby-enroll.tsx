@@ -22,7 +22,6 @@ import { View, Text, ScrollView, StyleSheet, Pressable, Alert } from 'react-nati
 import { useRouter } from 'expo-router';
 import type { WorkerProfile, BankAccount, KycDocument, KycDocType } from '@krishalaya/sdk-js';
 import { Button, Card, Input, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
-import { formatMoneyMinor } from '@krishalaya/i18n';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { useSecureScreen } from '../../core/security/screen-guard';
@@ -36,6 +35,7 @@ import {
   normalizeAadhaar, canEnroll, pmsbyEligibility, pmsbyCoverageWindow, type NomineeRelationship,
 } from '../../features/labour/pmsby-enroll';
 import { findPmsbyProduct, proposePmsbyPolicy, payPmsbyPremium } from '../../features/insurance/insurance.api';
+import { moneyText } from '../../core/i18n/money';
 
 export default function PmsbyEnroll() {
   const { t, lang } = useTranslation();
@@ -110,7 +110,7 @@ export default function PmsbyEnroll() {
       <Button title={t('pmsbyEnroll.later')} variant="outline" onPress={() => router.back()} disabled={enrolling} />
       <View style={{ flex: 1 }}>
         <Button
-          title={enrolling ? t('pmsbyEnroll.enrolling') : t('pmsbyEnroll.enrollCta', { amount: formatMoneyMinor(PMSBY_PREMIUM_MINOR, 'INR', lang) })}
+          title={enrolling ? t('pmsbyEnroll.enrolling') : t('pmsbyEnroll.enrollCta', { amount: moneyText(PMSBY_PREMIUM_MINOR, 'INR', lang) })}
           onPress={enroll}
           loading={enrolling}
           disabled={!canEnroll(name, rel, aadhaar) || !consent || !elig.qualifies || enrolling}
@@ -132,7 +132,7 @@ export default function PmsbyEnroll() {
             <Text style={styles.heroSub}>{t('pmsbyEnroll.pmsbyFull')}</Text>
             <MoneyText minor={PMSBY_COVER_MINOR} currencyCode="INR" langCode={lang} size="3xl" style={{ color: color.white }} />
             <Text style={styles.heroCover}>{t('pmsbyEnroll.coverDesc')}</Text>
-            <View style={styles.premiumTag}><Text style={styles.premiumTxt}>{t('pmsbyEnroll.premiumTag', { amount: formatMoneyMinor(PMSBY_PREMIUM_MINOR, 'INR', lang) })}</Text></View>
+            <View style={styles.premiumTag}><Text style={styles.premiumTxt}>{t('pmsbyEnroll.premiumTag', { amount: moneyText(PMSBY_PREMIUM_MINOR, 'INR', lang) })}</Text></View>
           </View>
 
           {/* What you get */}
@@ -197,7 +197,7 @@ export default function PmsbyEnroll() {
           {/* Auto-debit mandate note */}
           <View style={styles.mandate}>
             <Text style={styles.mandateTxt}>
-              {debitBank ? t('pmsbyEnroll.mandateBank', { amount: formatMoneyMinor(PMSBY_PREMIUM_MINOR, 'INR', lang), bank: debitBank }) : t('pmsbyEnroll.mandateGeneric', { amount: formatMoneyMinor(PMSBY_PREMIUM_MINOR, 'INR', lang) })}
+              {debitBank ? t('pmsbyEnroll.mandateBank', { amount: moneyText(PMSBY_PREMIUM_MINOR, 'INR', lang), bank: debitBank }) : t('pmsbyEnroll.mandateGeneric', { amount: moneyText(PMSBY_PREMIUM_MINOR, 'INR', lang) })}
             </Text>
           </View>
         </ScrollView>

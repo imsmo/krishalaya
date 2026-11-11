@@ -40,6 +40,7 @@ import { myListings, getListing, listingAnalytics } from '../../../features/list
 import { walletEarnings } from '../../../features/wallet/wallet.api';
 import { useSplitLayout } from '../../../core/mechanisms/useSplitLayout';
 import { LISTING_FILTERS, badgeFor, countByStatus, filterListings, auctionCountdown, cropEmoji, type ListingFilter, type BadgeKind } from '../../../features/listings/my-listings';
+import { arrowFwd } from '../../../core/i18n/bidi';
 
 // Badge palette per status — design tones, mapped to the theme ramps (kept here so the card stays presentational).
 const BADGE_STYLE: Record<BadgeKind, { bg: string; fg: string }> = {
@@ -198,7 +199,7 @@ export default function MyListings() {
                     </View>
                   </View>
                   {isDraft ? (
-                    <Text style={styles.draftHint}>{t('listings.draftContinue')} →</Text>
+                    <Text style={styles.draftHint}>{t('listings.draftContinue')} {arrowFwd(lang)}</Text>
                   ) : (
                     <>
                       <View style={styles.metaRow}>

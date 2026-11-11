@@ -17,7 +17,6 @@ import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SdkError, type Cart, type Address, type DeliveryMethod, type CheckoutPreview } from '@krishalaya/sdk-js';
 import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, StatusPill, color, font, space, radius } from '@krishalaya/ui-native';
-import { formatMoneyMinor } from '@krishalaya/i18n';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { useSecureScreen } from '../../core/security/screen-guard';
@@ -28,6 +27,7 @@ import { previewUnitMap, isFreeDelivery } from '../../features/cart/cart-math';
 import { walletCovers, walletShortfallMinor, previewItemCount } from '../../features/cart/payment-methods';
 import { defaultRail, isWalletRail, railSelectable, checkoutItemSubtitle, type ReviewRail } from '../../features/cart/review-order';
 import { payForOrder, payOrderFromWallet } from '../../features/payments/payments.api';
+import { moneyText } from '../../core/i18n/money';
 
 export default function Checkout() {
   useSecureScreen();
@@ -97,7 +97,7 @@ export default function Checkout() {
   };
 
   const footer = (
-    <Button title={t('reviewOrder.place', { total: formatMoneyMinor(totalMinor, ccy, lang) })} variant="accent"
+    <Button title={t('reviewOrder.place', { total: moneyText(totalMinor, ccy, lang) })} variant="accent"
       onPress={onPlace} loading={busy} disabled={!preview || (isWalletRail(rail) && !covers)} />
   );
 
@@ -143,8 +143,8 @@ export default function Checkout() {
         <Text style={styles.h3}>{t('reviewOrder.paymentMethod')}</Text>
         <Rail icon="💵" selected={rail === 'wallet'} disabled={!railSelectable('wallet', covers)} onPress={() => railSelectable('wallet', covers) && setRail('wallet')}
           name={t('reviewOrder.walletBalance')}
-          meta={covers ? t('reviewOrder.walletAvailable', { amount: formatMoneyMinor(balanceMinor, ccy, lang) })
-            : (shortfall ? t('reviewOrder.walletShort', { amount: formatMoneyMinor(shortfall, ccy, lang) }) : t('reviewOrder.walletAvailable', { amount: formatMoneyMinor(balanceMinor, ccy, lang) }))} />
+          meta={covers ? t('reviewOrder.walletAvailable', { amount: moneyText(balanceMinor, ccy, lang) })
+            : (shortfall ? t('reviewOrder.walletShort', { amount: moneyText(shortfall, ccy, lang) }) : t('reviewOrder.walletAvailable', { amount: moneyText(balanceMinor, ccy, lang) }))} />
         <Rail icon="📱" selected={rail === 'upi'} onPress={() => setRail('upi')} name={t('reviewOrder.upi')} meta={t('reviewOrder.upiDesc')} />
         <Rail icon="💳" selected={rail === 'card'} onPress={() => setRail('card')} name={t('reviewOrder.card')} meta={t('reviewOrder.cardDesc')} />
 

@@ -17,9 +17,10 @@ import { useFlag } from '../../../../core/flags/useFlag';
 import { getWorker, labourLookups } from '../../../../features/labour/hire.api';
 import { bookableSkills } from '../../../../features/labour/hire-browse';
 import { skillEmoji } from '../../../../features/labour/worker-skills';
+import { isolate } from '../../../../core/i18n/bidi';
 
 export default function BookTask() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const router = useRouter();
   const { workerId } = useLocalSearchParams<{ workerId?: string }>();
   const enabled = useFlag('labour_hire');
@@ -37,7 +38,7 @@ export default function BookTask() {
   if (!enabled) return <ScreenScaffold title={t('bookTask.title')}><EmptyState title={t('common.unavailable')} /></ScreenScaffold>;
 
   const tasks = bookableSkills(worker?.skillIds, lookups);
-  const workerLabel = workerId ? t('bookWorker.workerAnon', { id: workerId.slice(0, 6).toUpperCase() }) : t('bookTask.aWorker');
+  const workerLabel = workerId ? t('bookWorker.workerAnon', { id: isolate(workerId.slice(0, 6).toUpperCase(), lang) }) : t('bookTask.aWorker');
 
   const next = () => router.push({
     pathname: '/(farmer)/hire/book/when',

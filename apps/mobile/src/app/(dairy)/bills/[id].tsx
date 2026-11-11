@@ -10,6 +10,8 @@ import { Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, StatusPill, 
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { getBill } from '../../../features/dairy/dairy.api';
 import { billTone, disputeWindowOpen } from '../../../features/dairy/dairy';
+import { spanText } from '../../../core/i18n/bidi';
+import { dateTimeText } from '../../../core/i18n/dates';
 
 export default function BillDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -31,7 +33,7 @@ export default function BillDetail() {
         <Card>
           <View style={styles.between}>
             <StatusPill label={t(`dairyapp.bill.${bill.status}`) || bill.status} tone={billTone(bill.status)} />
-            <Text style={styles.muted}>{bill.periodStart} → {bill.periodEnd}</Text>
+            <Text style={styles.muted}>{spanText(bill.periodStart, bill.periodEnd, lang)}</Text>
           </View>
           {row(t('dairyapp.billDetail.litres'), <Text style={styles.value}>{bill.totalLitres}</Text>)}
           {row(t('dairyapp.billDetail.gross'), <MoneyText minor={bill.grossMinor} langCode={lang} size="md" />)}
@@ -42,7 +44,7 @@ export default function BillDetail() {
           <Card>
             <Text style={styles.value}>{t('dairyapp.billDetail.disputeOpen')}</Text>
             <Text style={styles.muted}>{t('dairyapp.billDetail.disputeHow')}</Text>
-            <Text style={styles.muted}>{t('dairyapp.billDetail.disputeEnds')} {new Date(bill.disputeWindowEnds!).toLocaleString()}</Text>
+            <Text style={styles.muted}>{t('dairyapp.billDetail.disputeEnds')} {dateTimeText(bill.disputeWindowEnds!, lang)}</Text>
           </Card>
         )}
         {bill.status === 'paid' && <Text style={styles.muted}>{t('dairyapp.billDetail.paidNote')}</Text>}

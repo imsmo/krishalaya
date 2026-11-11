@@ -20,12 +20,13 @@ import { useFlag } from '../../core/flags/useFlag';
 import { useSecureScreen } from '../../core/security';
 import { startPhoneChange, confirmPhoneChange } from '../../features/system/system.api';
 import { CHANGE_PHONE_REASONS, reasonLabelKey, isValidNewMobile, normalizeNewMobile, type ChangePhoneReason } from '../../features/system/change-phone';
+import { isolate } from '../../core/i18n/bidi';
 
 const WARNINGS = ['otpBoth', 'aadhaar', 'cooldown', 'bankSame'] as const;
 
 export default function ChangePhone() {
   useSecureScreen(); // OTP + phone on screen — block screenshots/recording (§4)
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('system_screens');
   const [phone, setPhone] = useState('');
@@ -55,7 +56,7 @@ export default function ChangePhone() {
     return (
       <ScreenScaffold title={t('changePhone.title')} scroll>
         <Card>
-          <Text style={styles.body}>{t('changePhone.enterOtp', { phone: `+91 ${normalizeNewMobile(phone)}` })}</Text>
+          <Text style={styles.body}>{t('changePhone.enterOtp', { phone: isolate(`+91 ${normalizeNewMobile(phone)}`, lang) })}</Text>
           <OtpInput value={code} onChange={setCode} length={6} />
           {error ? <Text style={styles.err}>{error}</Text> : null}
           <View style={{ marginTop: space[3] }}><Button title={t('changePhone.confirm')} loading={busy} disabled={code.length < 6} onPress={confirm} /></View>

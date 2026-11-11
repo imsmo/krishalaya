@@ -16,6 +16,8 @@ import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getPulse, listPrices, listMandis, defaultLatLng } from '../../../features/market/market.api';
 import { sortedDesc, previousModalMinor, priceChange, summaryStats, trendSeries, nearbyMandiPrices, bestNearby, TREND_PERIODS, type TrendPeriod, type MandiMeta } from '../../../features/market/mandi-detail';
+import { arrowFwd } from '../../../core/i18n/bidi';
+import { moneyWholeText } from '../../../core/i18n/money';
 
 export default function CommodityDetail() {
   const { id, regionId } = useLocalSearchParams<{ id: string; regionId?: string }>();
@@ -110,7 +112,7 @@ export default function CommodityDetail() {
               </View>
             ) : <Text style={styles.muted}>{t('mandiDetail.noTrend')}</Text>}
             <Pressable onPress={() => router.push({ pathname: '/(farmer)/mandi/history', params: { id: id!, regionId: region ?? '' } })} accessibilityRole="button" hitSlop={6}>
-              <Text style={styles.historyLink}>{t('mandiDetail.viewHistory')} →</Text>
+              <Text style={styles.historyLink}>{t('mandiDetail.viewHistory')} {arrowFwd(lang)}</Text>
             </Pressable>
           </Card>
 
@@ -155,12 +157,8 @@ export default function CommodityDetail() {
 function Sum({ label, children }: { label: string; children: React.ReactNode }) {
   return <View style={styles.sum}>{children}<Text style={styles.sumLabel}>{label}</Text></View>;
 }
-function moneyInline(minor: string, lang: string): string {
-  try {
-    const r = Number(BigInt(minor)) / 100;
-    return new Intl.NumberFormat(lang === 'en' ? 'en-IN' : lang === 'gu' ? 'gu-IN' : 'hi-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(r);
-  } catch { return '—'; }
-}
+// PC-56 RTL-1h-2: the whole-rupee shape now comes from the one money helper (byte-identical under en/hi/gu; Indian shape, isolated, under ar).
+function moneyInline(minor: string, lang: string): string { return moneyWholeText(minor, 'INR', lang); }
 
 const styles = StyleSheet.create({
   footer: { flexDirection: 'row', gap: space[3], alignItems: 'center' },

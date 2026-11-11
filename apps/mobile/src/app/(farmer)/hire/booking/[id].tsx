@@ -24,6 +24,7 @@ import { getBooking, bookingAssignments, labourLookups, startBooking, completeBo
 import { MOBILE_CANCEL_REASONS, bookingLifecycleActions, bookingStatusTone, tallyAssignments, type EmployerAction } from '../../../../features/labour/booking-flow';
 import { bookingProgressStage, progressStepIndex, assignedWorkerId, workerAvatarInitials, PROGRESS_STEPS } from '../../../../features/labour/booking-progress';
 import { skillLabel, taskEmoji } from '../../../../features/labour/worker-home';
+import { isolate } from '../../../../core/i18n/bidi';
 
 export default function BookingDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -85,13 +86,13 @@ export default function BookingDetail() {
   const actions = booking ? bookingLifecycleActions(booking.status) : [];
   const workerId = assignedWorkerId(assignments);
   const initials = workerAvatarInitials(workerId);
-  const workerRef = workerId ? t('bookWorker.workerAnon', { id: workerId.slice(0, 6).toUpperCase() }) : t('bookTask.aWorker');
+  const workerRef = workerId ? t('bookWorker.workerAnon', { id: isolate(workerId.slice(0, 6).toUpperCase(), lang) }) : t('bookTask.aWorker');
   const skill = booking ? skillLabel(booking, lookups) : null;
   const stage = booking ? bookingProgressStage(booking.status) : 'scheduled';
   const stepIdx = booking ? progressStepIndex(booking.status) : -1;
 
   return (
-    <ScreenScaffold title={booking ? t('worker.jobNo', { id: booking.bookingNo }) : t('hireBookingDetail.title')} scroll={false}>
+    <ScreenScaffold title={booking ? t('worker.jobNo', { id: isolate(booking.bookingNo, lang) }) : t('hireBookingDetail.title')} scroll={false}>
       {loading ? (
         <View style={{ gap: space[3] }}><SkeletonCard lines={4} /><SkeletonCard lines={5} /><SkeletonCard lines={4} /></View>
       ) : !booking ? (
@@ -102,7 +103,7 @@ export default function BookingDetail() {
           <Card>
             <View style={styles.head}>
               <StatusPill label={t(`worker.bookingStatus.${booking.status}`)} tone={bookingStatusTone(booking.status)} />
-              <Text style={styles.no}>{t('worker.jobNo', { id: booking.bookingNo })}</Text>
+              <Text style={styles.no}>{t('worker.jobNo', { id: isolate(booking.bookingNo, lang) })}</Text>
             </View>
             <Text style={styles.hero}>{t(`hireBookingDetail.hero.${stage}`, { worker: workerRef })}</Text>
           </Card>

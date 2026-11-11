@@ -25,6 +25,7 @@ import { useAuth } from '../../../core/auth/auth.store';
 import { getAuction, bidHistory, isWatchingAuction, watchAuction, unwatchAuction } from '../../../features/auctions/auctions.api';
 import { getPublicListing } from '../../../features/buyer/browse.api';
 import { auctionStatusTone, isBiddable, currentPriceMinor, minNextBidMinor, isOutbid, emdRequirement, timeLeft, bidStats } from '../../../features/auctions/auction-status';
+import { arrowFwd } from '../../../core/i18n/bidi';
 
 const POLL_MS = 4000;
 
@@ -85,7 +86,7 @@ export default function AuctionDetail() {
     <View style={styles.ctaBar}>
       <View style={{ flex: 1 }}><Button title={watching ? t('auction.watching') : t('auction.watch')} variant="outline" loading={watchBusy} onPress={toggleWatch} /></View>
       {biddable ? (
-        <View style={{ flex: 1.5 }}><Button title={`${t('auction.placeBid')} →`} variant="accent" onPress={() => router.push({ pathname: '/(buyer)/auctions/bid', params: { id: id!, minNextMinor: minNext } })} /></View>
+        <View style={{ flex: 1.5 }}><Button title={`${t('auction.placeBid')} ${arrowFwd(lang)}`} variant="accent" onPress={() => router.push({ pathname: '/(buyer)/auctions/bid', params: { id: id!, minNextMinor: minNext } })} /></View>
       ) : null}
     </View>
   ) : undefined;

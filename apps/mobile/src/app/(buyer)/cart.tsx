@@ -16,11 +16,11 @@ import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import type { Cart, CartItem, CheckoutPreview } from '@krishalaya/sdk-js';
 import { Button, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
-import { formatMoneyMinor } from '@krishalaya/i18n';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { getCart, checkoutPreview, setCartQuantity, removeFromCart } from '../../features/cart/cart.api';
 import { canCheckout, clampQuantity, cartCount, checkoutSummaryRows, previewUnitMap } from '../../features/cart/cart-math';
+import { moneyText } from '../../core/i18n/money';
 
 export default function CartScreen() {
   const { t, lang } = useTranslation();
@@ -65,7 +65,7 @@ export default function CartScreen() {
   );
 
   const Footer = cart && cart.items.length > 0 ? (
-    <Button title={t('cart.checkoutTotal', { total: formatMoneyMinor(totalMinor, ccy, lang) })} onPress={() => router.push('/(buyer)/delivery')} disabled={!ready || busy} fullWidth />
+    <Button title={t('cart.checkoutTotal', { total: moneyText(totalMinor, ccy, lang) })} onPress={() => router.push('/(buyer)/delivery')} disabled={!ready || busy} fullWidth />
   ) : undefined;
 
   return (

@@ -8,6 +8,7 @@ import type { EquipmentRental } from '@krishalaya/sdk-js';
 import { Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { ownerRentals } from '../../features/equipment/equipment.api';
+import { dateText } from '../../core/i18n/dates';
 
 export default function EquipmentEarnings() {
   const { t, lang } = useTranslation();
@@ -28,7 +29,7 @@ export default function EquipmentEarnings() {
                 <Text style={styles.name}>{item.bookingNo}</Text>
                 {item.totalMinor ? <MoneyText minor={item.totalMinor} langCode={lang} size="md" tone="positive" /> : null}
               </View>
-              <Text style={styles.muted}>{item.actualQuantity ?? item.estQuantity} · {t(`equip.basis.${item.rateBasis}`)}{item.completedAt ? ` · ${new Date(item.completedAt).toLocaleDateString()}` : ''}</Text>
+              <Text style={styles.muted}>{item.actualQuantity ?? item.estQuantity} · {t(`equip.basis.${item.rateBasis}`)}{item.completedAt ? ` · ${dateText(item.completedAt, lang)}` : ''}</Text>
             </Card>
           )}
           ListFooterComponent={<Text style={styles.muted}>{t('equip.earn.walletNote')}</Text>}

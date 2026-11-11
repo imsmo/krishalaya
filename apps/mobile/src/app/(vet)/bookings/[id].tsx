@@ -23,6 +23,7 @@ import { getVetBooking, progressBooking, getPrescription, writePrescription } fr
 import { vetActionsFor, type VetAction } from '../../../features/vet/vet';
 import { bookingTone } from '../../../features/livestock/livestock';
 import { buildPrescription, canWritePrescription, scheduleHCount, RX_MAX_LINES } from '../../../features/livestock/health';
+import { dateTimeText } from '../../../core/i18n/dates';
 
 type Line = { drugName: string; dosage: string; durationDays: string; isScheduleH: boolean };
 const blankLine = (): Line => ({ drugName: '', dosage: '', durationDays: '', isScheduleH: false });
@@ -105,7 +106,7 @@ export default function VetCase() {
             <MoneyText minor={booking.feeMinor} langCode={lang} />
           </View>
           <Text style={styles.muted}>{t(`pashu.urgency.${booking.urgency}`)} · {t(`pashu.mode.${booking.mode}`)}</Text>
-          {booking.scheduledAt ? <Text style={styles.muted}>{t('pashu.booking.scheduled')} {new Date(booking.scheduledAt).toLocaleString()}</Text> : null}
+          {booking.scheduledAt ? <Text style={styles.muted}>{t('pashu.booking.scheduled')} {dateTimeText(booking.scheduledAt, lang)}</Text> : null}
         </Card>
         {actions.map((a) => <Button key={a} title={t(`vetpro.action.${a}`)} disabled={busy} onPress={() => act(a)} />)}
         {booking.status === 'prescribed' ? <Text style={styles.muted}>{t('vetpro.case.awaitingFarmer')}</Text> : null}

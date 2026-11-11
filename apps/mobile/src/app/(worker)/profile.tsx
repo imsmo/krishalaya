@@ -24,7 +24,9 @@ import { listKyc } from '../../features/kyc/kyc.api';
 import { canAcceptWork } from '../../features/labour/labour-status';
 import { initials } from '../../features/labour/worker-home';
 import { workerYears, regionName, compactLakh } from '../../features/labour/worker-profile';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../core/i18n/money';
+import { chevFwd } from '../../core/i18n/bidi';
 
 const KYC_TONE: Record<string, PillTone> = { verified: 'success', pending: 'warning', rejected: 'danger', expired: 'danger' };
 
@@ -97,7 +99,7 @@ export default function WorkerProfile() {
             <LinkRow icon="🌾" title={t('worker.skills.title')} sub={t('worker.profileView.skillsActive', { n: worker.skillIds?.length ?? 0 })} onPress={() => router.push('/(worker)/skills')} />
             <LinkRow icon="📅" title={t('worker.avail.title')} sub={t('worker.profileView.availSub')} onPress={() => router.push('/(worker)/availability')} />
             <LinkRow icon="📍" title={t('worker.profileView.workArea')} sub={worker.travelKm != null ? t('worker.profileView.workAreaSub', { km: worker.travelKm, place: region ?? t('worker.profileView.yourVillage') }) : t('worker.profileView.notSet')} onPress={() => router.push('/(worker)/profile/edit')} />
-            <LinkRow icon="💰" title={t('worker.profileView.minWage')} sub={worker.minWageExpectationMinor ? t('worker.profileView.perDay', { amount: formatMoneyMinor(worker.minWageExpectationMinor, 'INR', lang) }) : t('worker.profileView.notSet')} onPress={() => router.push('/(worker)/profile/edit')} last />
+            <LinkRow icon="💰" title={t('worker.profileView.minWage')} sub={worker.minWageExpectationMinor ? t('worker.profileView.perDay', { amount: moneyText(worker.minWageExpectationMinor, 'INR', lang) }) : t('worker.profileView.notSet')} onPress={() => router.push('/(worker)/profile/edit')} last />
           </Card>
 
           {/* Protection & ID */}
@@ -133,6 +135,7 @@ function Stat({ value, label }: { value: string; label: string }) {
   return <View style={styles.stat}><Text style={styles.statVal}>{value}</Text><Text style={styles.statLabel}>{label}</Text></View>;
 }
 function LinkRow({ icon, title, sub, onPress, rightNode, last }: { icon: string; title: string; sub?: string; onPress?: () => void; rightNode?: React.ReactNode; last?: boolean }) {
+  const { lang } = useTranslation();
   const Wrap: any = onPress ? Pressable : View;
   return (
     <Wrap onPress={onPress} style={[styles.linkRow, !last && styles.linkBorder]} accessibilityRole={onPress ? 'button' : undefined}>
@@ -141,7 +144,7 @@ function LinkRow({ icon, title, sub, onPress, rightNode, last }: { icon: string;
         <Text style={styles.linkTitle}>{title}</Text>
         {sub ? <Text style={styles.linkSub} numberOfLines={1}>{sub}</Text> : null}
       </View>
-      {rightNode ?? (onPress ? <Text style={styles.chevron}>›</Text> : null)}
+      {rightNode ?? (onPress ? <Text style={styles.chevron}>{chevFwd(lang)}</Text> : null)}
     </Wrap>
   );
 }

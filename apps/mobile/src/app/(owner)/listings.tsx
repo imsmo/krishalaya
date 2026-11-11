@@ -20,6 +20,7 @@ import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { tenantListings, tenantAnalytics } from '../../features/tenant/tenant.api';
 import { openWebConsole } from '../../core/deeplink';
+import { isolate } from '../../core/i18n/bidi';
 
 const STATS = ['pending', 'active', 'sold', 'flagged'] as const;
 
@@ -80,7 +81,7 @@ export default function Listings() {
               </View>
               <View style={[styles.row, { marginTop: space[1] }]}>
                 <Text style={styles.meta} numberOfLines={1}>
-                  {t('owner.farmer.ref', { id: item.sellerUserId.slice(0, 8).toUpperCase() })}
+                  {t('owner.farmer.ref', { id: isolate(item.sellerUserId.slice(0, 8).toUpperCase(), lang) })}
                   {'  ·  '}
                   {t('owner.listings.qty', { n: String(item.quantityAvailable), unit: item.unitCode })}
                 </Text>

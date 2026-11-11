@@ -25,6 +25,7 @@ import { requestAccountDeletion, openDeletionRequest } from '../../features/syst
 import { DELETE_REASONS, deleteReasonLabelKey, hasWithdrawableBalance, composeDeleteReason, type DeleteReason } from '../../features/system/system';
 import { walletBalance } from '../../features/wallet/wallet.api';
 import { myBuyerRating } from '../../features/profile/profile.api';
+import { dateText } from '../../core/i18n/dates';
 
 const LOSE_ITEMS = ['listings', 'txnHistory', 'reviews', 'wallet'] as const;
 const BEFORE_ITEMS = ['withdraw', 'orders', 'download', 'pending'] as const;
@@ -103,7 +104,7 @@ export default function AccountDelete() {
         <Card style={styles.pending}>
           <Text style={styles.pendingTitle}>{t('accountDelete.pendingTitle')}</Text>
           <Text style={styles.pendingBody}>
-            {coolingEndsAt ? t('accountDelete.pendingBody', { date: new Date(coolingEndsAt).toLocaleDateString() }) : t('accountDelete.pendingBodyNoDate')}
+            {coolingEndsAt ? t('accountDelete.pendingBody', { date: dateText(coolingEndsAt, lang) }) : t('accountDelete.pendingBodyNoDate')}
           </Text>
         </Card>
       ) : null}

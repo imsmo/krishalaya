@@ -17,6 +17,7 @@ import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getOrder, getOrderShipment, confirmOrder, packOrder, readyOrder, completeOrder, cancelOrder } from '../../../features/orders/orders.api';
 import { nextActions, orderStatusTone, orderTimeline, orderBannerKey, type OrderAction, type OrderTimelineStep } from '../../../features/orders/order-status';
+import { isolate } from '../../../core/i18n/bidi';
 
 export default function OrderDetailScreen() {
   const { id, role, party } = useLocalSearchParams<{ id: string; role?: string; party?: string }>();
@@ -80,7 +81,7 @@ export default function OrderDetailScreen() {
   const partyRoleLabel = orderRole === 'buyer' ? t('orders.role.seller') : t('orders.role.buyer'); // the OTHER side
 
   return (
-    <ScreenScaffold title={order ? t('orders.orderNo', { id: order.orderNo }) : ' '}>
+    <ScreenScaffold title={order ? t('orders.orderNo', { id: isolate(order.orderNo, lang) }) : ' '}>
       {loading ? <SkeletonCard lines={8} /> : !order || failed ? (
         <>
           {/* KV MF-06 fix: ScreenScaffold renders no header chrome (headerShown:false at the tab-navigator

@@ -9,6 +9,7 @@ import { Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font,
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { myMemberships, myCollections } from '../../features/dairy/dairy.api';
 import { defaultDiaryRange, shiftMonth } from '../../features/dairy/dairy';
+import { arrowBack, arrowFwd, spanText } from '../../core/i18n/bidi';
 
 export default function MilkDiary() {
   const { t, lang } = useTranslation();
@@ -34,9 +35,9 @@ export default function MilkDiary() {
   return (
     <ScreenScaffold title={t('dairyapp.diary.title')}>
       <View style={styles.pager}>
-        <Pressable style={styles.pageBtn} onPress={() => setRange((r) => shiftMonth(r.from, -1))}><Text style={styles.pageText}>←</Text></Pressable>
-        <Text style={styles.range}>{range.from} → {range.to}</Text>
-        <Pressable style={styles.pageBtn} onPress={() => setRange((r) => shiftMonth(r.from, 1))}><Text style={styles.pageText}>→</Text></Pressable>
+        <Pressable style={styles.pageBtn} onPress={() => setRange((r) => shiftMonth(r.from, -1))}><Text style={styles.pageText}>{arrowBack(lang)}</Text></Pressable>
+        <Text style={styles.range}>{spanText(range.from, range.to, lang)}</Text>
+        <Pressable style={styles.pageBtn} onPress={() => setRange((r) => shiftMonth(r.from, 1))}><Text style={styles.pageText}>{arrowFwd(lang)}</Text></Pressable>
       </View>
       {memberships && memberships.length > 1 && (
         <View style={styles.wrap}>

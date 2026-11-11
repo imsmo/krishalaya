@@ -17,12 +17,13 @@ import { useFlag } from '../../../core/flags/useFlag';
 import { getOrder } from '../../../features/orders/orders.api';
 import { submitReview } from '../../../features/reviews/reviews.api';
 import { ratingLabelKey, ratingNumber, REVIEW_TAGS, REVIEW_BODY_MAX, toggleTag, canSubmitReview } from '../../../features/reviews/review-form';
+import { isolate } from '../../../core/i18n/bidi';
 
 const STARS = [1, 2, 3, 4, 5];
 
 export default function ReviewOrder() {
   const { orderId, party, role } = useLocalSearchParams<{ orderId: string; party?: string; role?: string }>();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('orders_fulfilment');
   const orderRole: OrderRole = role === 'buyer' ? 'buyer' : 'seller';
@@ -84,7 +85,7 @@ export default function ReviewOrder() {
             <View style={styles.badge}><Icon name="check" size={14} color={color.white} /><Text style={styles.badgeTxt}>{t('review.completed')}</Text></View>
             <Text style={styles.bannerTitle}>{t('review.deliveredOk')}</Text>
             <Text style={styles.bannerSub}>
-              {order ? t('review.completedFor', { id: order.orderNo }) : t('review.completedGeneric')}
+              {order ? t('review.completedFor', { id: isolate(order.orderNo, lang) }) : t('review.completedGeneric')}
             </Text>
           </View>
 

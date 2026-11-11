@@ -10,6 +10,7 @@ import { Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, StatusPill, 
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { myMemberships, mccNames, myBills } from '../../features/dairy/dairy.api';
 import { billTone } from '../../features/dairy/dairy';
+import { spanText } from '../../core/i18n/bidi';
 
 export default function DairyHome() {
   const { t, lang } = useTranslation();
@@ -47,7 +48,7 @@ export default function DairyHome() {
                   <StatusPill label={t(`dairyapp.bill.${latestBill.status}`) || latestBill.status} tone={billTone(latestBill.status)} />
                   <MoneyText minor={latestBill.netMinor} langCode={lang} />
                 </View>
-                <Text style={styles.muted}>{latestBill.periodStart} → {latestBill.periodEnd}</Text>
+                <Text style={styles.muted}>{spanText(latestBill.periodStart, latestBill.periodEnd, lang)}</Text>
               </Card>
             </Pressable>
           </>

@@ -21,7 +21,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SdkError, type ListingCard, type ListingAnalytics, type BoostTier } from '@krishalaya/sdk-js';
 import { Button, Input, Toggle, EmptyState, SkeletonCard, MoneyText, Icon, color, font, space, radius } from '@krishalaya/ui-native';
-import { formatMoneyMinor } from '@krishalaya/i18n';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getListing, listingAnalytics, listingMedia, loadBoostTiers, repostListing } from '../../../features/listings/listings.api';
@@ -29,6 +28,7 @@ import { getPulse } from '../../../features/market/market.api';
 import { pickRecommendedTier } from '../../../features/listings/boost';
 import { cropEmoji } from '../../../features/listings/my-listings';
 import { rupeesToPaiseMinor } from '../../../core/payments/money';
+import { moneyText } from '../../../core/i18n/money';
 
 export default function RepostListing() {
   const { id, productId } = useLocalSearchParams<{ id: string; productId?: string }>();
@@ -145,7 +145,7 @@ export default function RepostListing() {
               <Toggle label={t('repost.sameDesc')} value onValueChange={() => {}} disabled />
               {boostOn ? (
                 <Toggle
-                  label={tier ? t('repost.boostWithPrice', { price: formatMoneyMinor(tier.priceMinor, currency, lang) }) : t('repost.boost')}
+                  label={tier ? t('repost.boostWithPrice', { price: moneyText(tier.priceMinor, currency, lang) }) : t('repost.boost')}
                   value={boost}
                   onValueChange={setBoost}
                 />

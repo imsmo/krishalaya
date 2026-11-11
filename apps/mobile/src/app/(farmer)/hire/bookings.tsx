@@ -20,6 +20,7 @@ import { bookingStatusTone } from '../../../features/labour/booking-flow';
 import { BOOKING_TABS, type BookingTab, bookingTab, bookingTabCounts } from '../../../features/labour/farmer-bookings';
 import { skillLabel, taskEmoji } from '../../../features/labour/worker-home';
 import { respondWindow } from '../../../features/labour/offer';
+import { isolate } from '../../../core/i18n/bidi';
 
 type Pair = { booking: LabourBooking; workerId: string | null };
 
@@ -91,12 +92,12 @@ function BookingCard({ pair, lookups, lang, t, onOpen }: { pair: Pair; lookups: 
   return (
     <View style={styles.card}>
       <View style={styles.cardTop}>
-        <Text style={styles.no}>{t('worker.jobNo', { id: booking.bookingNo })}</Text>
+        <Text style={styles.no}>{t('worker.jobNo', { id: isolate(booking.bookingNo, lang) })}</Text>
         <StatusPill label={t(`worker.bookingStatus.${booking.status}`)} tone={bookingStatusTone(booking.status)} />
       </View>
       <View style={styles.workerRow}>
         <View style={styles.avatar}><Text style={{ fontSize: 16 }}>👤</Text></View>
-        <Text style={styles.worker}>{workerId ? t('bookWorker.workerAnon', { id: workerId.slice(0, 6).toUpperCase() }) : t('bookTask.aWorker')}</Text>
+        <Text style={styles.worker}>{workerId ? t('bookWorker.workerAnon', { id: isolate(workerId.slice(0, 6).toUpperCase(), lang) }) : t('bookTask.aWorker')}</Text>
       </View>
       <Text style={styles.task} numberOfLines={1}>{taskEmoji(skill)} {skill ?? t('worker.home.genericTask')}</Text>
       <Text style={styles.date} numberOfLines={1}>{safeDate(booking.startDate, lang)}</Text>

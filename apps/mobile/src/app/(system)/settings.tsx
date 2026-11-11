@@ -37,12 +37,13 @@ import { initials, hasVerifiedKyc, bankCodeFromIfsc } from '../../features/profi
 import { useThemeMode } from '../../core/mechanisms/useThemeMode';
 import { useSeniorMode } from '../../core/mechanisms/useSeniorMode';
 import type { ThemeMode } from '../../core/mechanisms/theme';
+import { chevFwd, isolate } from '../../core/i18n/bidi';
 
 const THEME_CYCLE: ThemeMode[] = ['system', 'light', 'dark'];
 
 export default function Settings() {
   useSecureScreen();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('system_screens');
   const notifOn = useFlag('notifications');
@@ -74,10 +75,10 @@ export default function Settings() {
   const bankAccts = banks.filter((a) => a.accountKind === 'bank');
   const primaryBank = bankAccts.find((a) => a.isPrimary) ?? bankAccts[0];
   const bankSub = bankAccts.length === 0 ? t('settings.bankNone')
-    : t('settings.bankSub', { n: bankAccts.length, code: primaryBank ? (bankCodeFromIfsc(primaryBank.ifsc) ?? '') : '', last4: primaryBank?.accountLast4 ?? '' });
+    : t('settings.bankSub', { n: bankAccts.length, code: isolate(primaryBank ? (bankCodeFromIfsc(primaryBank.ifsc) ?? '') : '', lang), last4: isolate(primaryBank?.accountLast4 ?? '', lang) });
   const upis = banks.filter((a) => a.accountKind === 'upi');
   const primaryUpi = upis.find((a) => a.isPrimary) ?? upis[0];
-  const upiSub = primaryUpi?.upiId ? t('settings.upiSub', { vpa: primaryUpi.upiId }) : t('settings.upiNone');
+  const upiSub = primaryUpi?.upiId ? t('settings.upiSub', { vpa: isolate(primaryUpi.upiId, lang) }) : t('settings.upiNone');
 
   return (
     <ScreenScaffold title={t('settings.title')} scroll>
@@ -147,6 +148,7 @@ export default function Settings() {
 // Q48's 1.30x type-scale + 56px tap floor the instant the toggle above is on, real and screen-wide, not just the
 // one row that owns the toggle.
 function Row({ title, sub, value, onPress, divide }: { title: string; sub?: string; value?: string; onPress?: () => void; divide?: boolean }) {
+  const { lang } = useTranslation();
   const { enabled: seniorOn, fontSize, tapMin } = useSeniorMode();
   const body = (
     <View style={[styles.row, divide && styles.divide, seniorOn && { minHeight: tapMin }]}>
@@ -155,7 +157,7 @@ function Row({ title, sub, value, onPress, divide }: { title: string; sub?: stri
         {sub ? <Text style={[styles.rowSub, seniorOn && { fontSize: fontSize.xs }]}>{sub}</Text> : null}
       </View>
       {value ? <Text style={styles.rowValue}>{value}</Text> : null}
-      {onPress ? <Text style={styles.chev}>›</Text> : null}
+      {onPress ? <Text style={styles.chev}>{chevFwd(lang)}</Text> : null}
     </View>
   );
   return onPress ? <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={title}>{body}</Pressable> : body;

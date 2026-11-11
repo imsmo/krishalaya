@@ -20,10 +20,11 @@ import { useSecureScreen } from '../../../core/security/screen-guard';
 import { addBankAccountFull } from '../../../features/profile/profile.api';
 import { normalizeIfsc, normalizeAccountNumber, isValidIfsc, validateBankForm, type AccountType } from '../../../features/kyc/bank-setup';
 import { bankCodeFromIfsc } from '../../../features/profile/profile';
+import { isolate } from '../../../core/i18n/bidi';
 
 export default function AddBankAccount() {
   useSecureScreen();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('kyc');
 
@@ -87,7 +88,7 @@ export default function AddBankAccount() {
           <View style={styles.gap} />
           <Input label={t('kycBank.ifscLabel')} value={ifsc} onChangeText={(v) => { setIfsc(normalizeIfsc(v)); if (error) setError(undefined); }} autoCapitalize="characters" maxLength={11} placeholder="SBIN0001247" />
           {/* §13: real bank CODE from the IFSC, not a fabricated brand + branch name. */}
-          {ifscValid && bankCode ? <Text style={styles.ifscOk}>{t('kycBank.ifscOk', { code: bankCode })}</Text> : null}
+          {ifscValid && bankCode ? <Text style={styles.ifscOk}>{t('kycBank.ifscOk', { code: isolate(bankCode, lang) })}</Text> : null}
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
         </Card>

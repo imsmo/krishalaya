@@ -16,6 +16,7 @@ import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { listTips, listCropCalendars } from '../../features/content/content.api';
 import { readTimeMinutes, cropNames, seasonLabelKey, sortStages, stageDayLabel, durationLabel } from '../../features/content/content';
+import { arrowFwd, chevFwd } from '../../core/i18n/bidi';
 
 function kindGlyph(kind: string): string {
   switch (kind) {
@@ -28,7 +29,7 @@ function kindGlyph(kind: string): string {
 }
 
 export default function CropHub() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('tips_assistant');
   const [all, setAll] = useState<LearningResource[]>([]);
@@ -104,7 +105,7 @@ export default function CropHub() {
                 {calendar.source ? <Text style={styles.calSource}>{t('content.cropHub.source', { s: calendar.source })}</Text> : null}
                 <Text style={styles.calNote}>{t('content.cropHub.notPersonalised')}</Text>
                 <Pressable onPress={() => router.push('/(farmer)/profile/farm')} accessibilityRole="button" style={styles.calBtn}>
-                  <Text style={styles.calBtnTxt}>{t('content.cropHub.addFarm')} →</Text>
+                  <Text style={styles.calBtnTxt}>{t('content.cropHub.addFarm')} {arrowFwd(lang)}</Text>
                 </Pressable>
               </>
             )}
@@ -125,12 +126,12 @@ export default function CropHub() {
                     <Text style={styles.tipTitle} numberOfLines={2}>{r.title}</Text>
                     <Text style={styles.tipMeta}>🕐 {t('content.readTime', { n: readTimeMinutes(r.body) })}</Text>
                   </View>
-                  <Text style={styles.chevron}>›</Text>
+                  <Text style={styles.chevron}>{chevFwd(lang)}</Text>
                 </Card>
               </Pressable>
             ))}
             <Pressable onPress={() => router.push('/(farmer)/tips')} accessibilityRole="button" style={styles.seeAllRow}>
-              <Text style={styles.seeAll}>{t('content.cropHub.seeAll')} →</Text>
+              <Text style={styles.seeAll}>{t('content.cropHub.seeAll')} {arrowFwd(lang)}</Text>
             </Pressable>
           </>
         )}

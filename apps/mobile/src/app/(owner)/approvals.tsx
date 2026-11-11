@@ -22,13 +22,14 @@ import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { assignments, approveAssignment, rejectAssignment } from '../../features/tenant/tenant.api';
 import { approvalStatusTone, approvalCounts, filterApprovals, verifiedApprovalIds, type ApprovalTab } from '../../features/tenant/tenant-admin';
+import { isolate } from '../../core/i18n/bidi';
 
 const TABS: ApprovalTab[] = ['all', 'verified', 'pending'];
 function refOf(id: string): string { return (id ?? '').replace(/[^A-Za-z0-9]/g, '').slice(0, 8).toUpperCase() || '—'; }
 function initialsOf(id: string): string { const r = refOf(id); return r === '—' ? '–' : r.slice(0, 2); }
 
 export default function Approvals() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('tenant_admin_lite');
   const [items, setItems] = useState<RoleAssignment[]>([]);
@@ -121,7 +122,7 @@ export default function Approvals() {
                   <View style={styles.avatar}><Text style={styles.avatarText}>{initialsOf(item.userId)}</Text></View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.role}>{t(`role.${item.roleCode}`, { defaultValue: item.roleCode })}</Text>
-                    <Text style={styles.ref}>{t('owner.farmer.ref', { id: refOf(item.userId) })}</Text>
+                    <Text style={styles.ref}>{t('owner.farmer.ref', { id: isolate(refOf(item.userId), lang) })}</Text>
                   </View>
                   <StatusPill label={t(`kyc.status.${item.kycStatus}`, { defaultValue: item.kycStatus })} tone={approvalStatusTone(item.kycStatus)} />
                 </Pressable>

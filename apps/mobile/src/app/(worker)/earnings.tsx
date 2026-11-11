@@ -22,6 +22,7 @@ import { currentMonth, momDelta, totalSales, periodTotal, barChart, trailingAver
 import { getMyWorker, workerRating, myScheduledJobs, labourLookups } from '../../features/labour/labour.api';
 import { filterByTab, type ScheduledJob } from '../../features/labour/worker-schedule';
 import { skillLabel } from '../../features/labour/worker-home';
+import { isolate } from '../../core/i18n/bidi';
 
 const PERIODS: EarningsPeriod[] = ['week', 'month', 'year', 'lifetime'];
 const EMPTY: WalletInsights = { fromIso: '', toIso: '', currencyCode: 'INR', totalMinor: '0', byMonth: [], byType: [] };
@@ -125,7 +126,7 @@ export default function WorkerEarnings() {
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={styles.payTitle} numberOfLines={1}>{label ?? t('worker.home.genericTask')}</Text>
-                  <Text style={styles.payMeta} numberOfLines={1}>{job.booking ? t('worker.home.employerAnon', { id: job.booking.employerUserId.slice(0, 6).toUpperCase() }) : '—'}</Text>
+                  <Text style={styles.payMeta} numberOfLines={1}>{job.booking ? t('worker.home.employerAnon', { id: isolate(job.booking.employerUserId.slice(0, 6).toUpperCase(), lang) }) : '—'}</Text>
                 </View>
                 <MoneyText minor={job.assignment.wageMinor} currencyCode={job.booking?.currencyCode ?? 'INR'} langCode={lang} size="md" tone="positive" />
               </View>

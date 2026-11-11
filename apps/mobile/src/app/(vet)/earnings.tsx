@@ -8,6 +8,7 @@ import type { VetBooking } from '@krishalaya/sdk-js';
 import { Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { myVetBookings } from '../../features/vet/vet.api';
+import { dateText } from '../../core/i18n/dates';
 
 export default function VetEarnings() {
   const { t, lang } = useTranslation();
@@ -25,7 +26,7 @@ export default function VetEarnings() {
           renderItem={({ item }) => (
             <Card>
               <View style={styles.between}>
-                <Text style={styles.date}>{item.completedAt ? new Date(item.completedAt).toLocaleDateString() : t('vetpro.earn.completed')}</Text>
+                <Text style={styles.date}>{item.completedAt ? dateText(item.completedAt, lang) : t('vetpro.earn.completed')}</Text>
                 <MoneyText minor={item.feeMinor} langCode={lang} size="md" tone="positive" />
               </View>
               <Text style={styles.muted}>{t(`pashu.mode.${item.mode}`)}</Text>

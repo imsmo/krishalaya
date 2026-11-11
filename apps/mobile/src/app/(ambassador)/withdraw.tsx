@@ -16,7 +16,6 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import type { BankAccount } from '@krishalaya/sdk-js';
 import { SdkError } from '@krishalaya/sdk-js';
-import { formatMoneyMinor } from '@krishalaya/i18n';
 import { Button, Input, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
@@ -24,6 +23,8 @@ import { useSecureScreen } from '../../core/security/screen-guard';
 import { rupeesToPaiseMinor } from '../../core/payments/money';
 import { withdrawable } from '../../features/wallet/txn';
 import { walletBalance, listBankAccounts, requestWithdrawal } from '../../features/wallet/wallet.api';
+import { moneyText } from '../../core/i18n/money';
+import { isolate } from '../../core/i18n/bidi';
 
 // Fixed quick-amount presets in whole rupees (UI convenience, not per-user data — like add-money's chips).
 const PRESET_RUPEES = [1000, 2500];
@@ -74,7 +75,7 @@ export default function AmbassadorWithdraw() {
     } finally { setBusy(false); }
   };
 
-  const submitLabel = minor ? t('ambWithdraw.submit', { amount: formatMoneyMinor(minor, 'INR', lang) }) : t('withdraw.submit');
+  const submitLabel = minor ? t('ambWithdraw.submit', { amount: moneyText(minor, 'INR', lang) }) : t('withdraw.submit');
 
   return (
     <ScreenScaffold
@@ -107,7 +108,7 @@ export default function AmbassadorWithdraw() {
                   <View style={{ flex: 1, gap: 2 }}>
                     {a.holderName ? <Text style={[styles.acctPrimary, active && styles.acctPrimaryOn]}>{a.holderName}</Text> : null}
                     <Text style={styles.acctLine}>{acctMasked(a)}</Text>
-                    {a.ifsc ? <Text style={styles.acctSub}>{t('ambWithdraw.ifsc', { ifsc: a.ifsc })}</Text> : null}
+                    {a.ifsc ? <Text style={styles.acctSub}>{t('ambWithdraw.ifsc', { ifsc: isolate(a.ifsc, lang) })}</Text> : null}
                   </View>
                   {a.isPrimary ? <Text style={styles.primary}>{t('withdraw.primary')}</Text> : null}
                 </Pressable>
@@ -122,11 +123,11 @@ export default function AmbassadorWithdraw() {
             <View style={styles.chipRow}>
               {PRESET_RUPEES.map((r) => (
                 <Pressable key={r} onPress={() => setRupees(String(r))} accessibilityRole="button" style={styles.chip}>
-                  <Text style={styles.chipText}>{formatMoneyMinor(String(r * 100), 'INR', lang)}</Text>
+                  <Text style={styles.chipText}>{moneyText(String(r * 100), 'INR', lang)}</Text>
                 </Pressable>
               ))}
               <Pressable onPress={() => setRupees(allRupees)} accessibilityRole="button" style={[styles.chip, styles.chipAll]}>
-                <Text style={styles.chipAllText}>{t('ambWithdraw.chipAll', { amount: formatMoneyMinor(balanceMinor, 'INR', lang) })}</Text>
+                <Text style={styles.chipAllText}>{t('ambWithdraw.chipAll', { amount: moneyText(balanceMinor, 'INR', lang) })}</Text>
               </Pressable>
             </View>
           </View>

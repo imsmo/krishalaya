@@ -14,6 +14,7 @@ import { useTranslation } from '../../../core/i18n/useTranslation';
 import { getRental, quoteRental, startRental, completeRental, settleRental, cancelRental } from '../../../features/equipment/equipment.api';
 import { cancelReasonDraft, cancelRefusalKey, ownerActionsFor, rentalTone, settleRefusalKey } from '../../../features/equipment/equipment';
 import { rupeesToMinor } from '../../../features/vet/vet';
+import { dateTimeText } from '../../../core/i18n/dates';
 
 export default function RentalDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -74,7 +75,7 @@ export default function RentalDetail() {
           </View>
           <Text style={styles.muted}>{rental.actualQuantity ?? rental.estQuantity} · {t(`equip.basis.${rental.rateBasis}`)}</Text>
           {rental.advanceMinor ? <View style={styles.between}><Text style={styles.muted}>{t('equip.detail.advance')}</Text><MoneyText minor={rental.advanceMinor} langCode={lang} size="sm" /></View> : null}
-          {rental.scheduledAt ? <Text style={styles.muted}>{t('equip.detail.scheduled')} {new Date(rental.scheduledAt).toLocaleString()}</Text> : null}
+          {rental.scheduledAt ? <Text style={styles.muted}>{t('equip.detail.scheduled')} {dateTimeText(rental.scheduledAt, lang)}</Text> : null}
         </Card>
         {actions.includes('quote') && (
           <Card>

@@ -18,6 +18,7 @@ import { useFlag } from '../../../../core/flags/useFlag';
 import { getBooking, bookingAssignments, browseWorkers, labourLookups } from '../../../../features/labour/hire.api';
 import { regionName } from '../../../../features/labour/worker-profile';
 import { skillChips } from '../../../../features/labour/hire-browse';
+import { isolate } from '../../../../core/i18n/bidi';
 
 export default function BookingDeclined() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -43,7 +44,7 @@ export default function BookingDeclined() {
 
   const declined = assignments.find((a) => a.status === 'rejected' || a.status === 'expired') ?? assignments[0] ?? null;
   const declinedWorkerId = declined?.workerId;
-  const worker = declinedWorkerId ? t('bookWorker.workerAnon', { id: declinedWorkerId.slice(0, 6).toUpperCase() }) : t('bookTask.aWorker');
+  const worker = declinedWorkerId ? t('bookWorker.workerAnon', { id: isolate(declinedWorkerId.slice(0, 6).toUpperCase(), lang) }) : t('bookTask.aWorker');
   const ccy = booking?.currencyCode ?? 'INR';
   const others = similar.filter((w) => w.id !== declinedWorkerId).slice(0, 3);
 
@@ -92,7 +93,7 @@ export default function BookingDeclined() {
               <Pressable key={w.id} onPress={() => router.push({ pathname: '/(farmer)/hire/worker/[id]', params: { id: w.id } })} style={styles.wCard} accessibilityRole="button">
                 <View style={styles.wAvatar}><Text style={{ fontSize: 16 }}>👤</Text></View>
                 <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={styles.wName} numberOfLines={1}>{t('bookWorker.workerAnon', { id: w.id.slice(0, 6).toUpperCase() })}{w.ratingAvg != null ? ` · ⭐ ${w.ratingAvg.toFixed(1)}` : ''}</Text>
+                  <Text style={styles.wName} numberOfLines={1}>{t('bookWorker.workerAnon', { id: isolate(w.id.slice(0, 6).toUpperCase(), lang) })}{w.ratingAvg != null ? ` · ⭐ ${w.ratingAvg.toFixed(1)}` : ''}</Text>
                   <Text style={styles.wMeta} numberOfLines={1}>{[chips.labels[0], region, t('hire.browse.jobsCount', { n: w.bookingsCompleted ?? 0 })].filter(Boolean).join(' · ')}</Text>
                 </View>
                 {w.minWageExpectationMinor ? <MoneyText minor={w.minWageExpectationMinor} currencyCode="INR" langCode={lang} size="sm" tone="positive" /> : null}

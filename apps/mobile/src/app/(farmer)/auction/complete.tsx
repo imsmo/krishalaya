@@ -15,12 +15,13 @@ import { View, Text, ScrollView, StyleSheet, Share } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { Auction, BidHistoryItem, ListingCard } from '@krishalaya/sdk-js';
 import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
-import { formatMoneyMinor } from '@krishalaya/i18n';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getAuction, bidHistory } from '../../../features/auctions/auctions.api';
 import { getPublicListing } from '../../../features/buyer/browse.api';
 import { winningBidAmountMinor, auctionDurationParts, bidAmountMinor, bidStats, pctAboveReserve } from '../../../features/auctions/auction-status';
+import { moneyText } from '../../../core/i18n/money';
+import { arrowFwd } from '../../../core/i18n/bidi';
 
 const STEPS = ['escrow', 'pickup', 'delivery'] as const;
 
@@ -66,7 +67,7 @@ export default function AuctionComplete() {
       footer={auction ? (
         <View style={styles.ctaBar}>
           <View style={{ flex: 1 }}><Button title={t('auctionDone.share')} variant="outline" onPress={() => Share.share({ message: t('auctionDone.shareMsg') }).catch(() => {})} /></View>
-          <View style={{ flex: 1.5 }}><Button title={`${t('auctionDone.schedulePickup')} →`} variant="accent" onPress={() => router.replace('/(farmer)/orders/received')} /></View>
+          <View style={{ flex: 1.5 }}><Button title={`${t('auctionDone.schedulePickup')} ${arrowFwd(lang)}`} variant="accent" onPress={() => router.replace('/(farmer)/orders/received')} /></View>
         </View>
       ) : undefined}
     >
@@ -102,7 +103,7 @@ export default function AuctionComplete() {
             <Text style={styles.saleLabel}>{t('auctionDone.totalSale')}</Text>
             <MoneyText minor={total} currencyCode={ccy} langCode={lang} size="2xl" />
             <Text style={styles.saleSub}>
-              {t('auctionDone.saleBreak', { qty, unit, price: formatMoneyMinor(perUnit, ccy, lang) })}
+              {t('auctionDone.saleBreak', { qty, unit, price: moneyText(perUnit, ccy, lang) })}
               {pct != null ? ` · ${pct >= 0 ? '+' : ''}${pct}% ${t('auctionDone.aboveReserve')}` : ''}
             </Text>
           </Card>
@@ -122,7 +123,7 @@ export default function AuctionComplete() {
                 <View style={styles.stepNum}><Text style={styles.stepNumTxt}>{i + 1}</Text></View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.stepTitle}>{t(`auctionDone.step.${s}.title`)}</Text>
-                  <Text style={styles.stepBody}>{s === 'escrow' ? t('auctionDone.step.escrow.body', { amount: formatMoneyMinor(total, ccy, lang) }) : t(`auctionDone.step.${s}.body`)}</Text>
+                  <Text style={styles.stepBody}>{s === 'escrow' ? t('auctionDone.step.escrow.body', { amount: moneyText(total, ccy, lang) }) : t(`auctionDone.step.${s}.body`)}</Text>
                 </View>
               </View>
             ))}

@@ -20,6 +20,7 @@ import { myScheduledJobs, labourLookups } from '../../features/labour/labour.api
 import { SCHEDULE_TABS, type ScheduleTab, type ScheduledJob, filterByTab, tabCounts, groupUpcoming, isActiveNow } from '../../features/labour/worker-schedule';
 import { skillLabel, taskEmoji } from '../../features/labour/worker-home';
 import { jobTags } from '../../features/labour/browse-jobs';
+import { arrowFwd, isolate } from '../../core/i18n/bidi';
 
 type Row = { type: 'section'; key: string; title: string } | { type: 'job'; job: ScheduledJob };
 
@@ -100,7 +101,7 @@ function JobCard({ job, lookups, lang, t, onActive }: { job: ScheduledJob; looku
         <View style={styles.icon}><Text style={{ fontSize: 20 }}>{taskEmoji(label)}</Text></View>
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.title} numberOfLines={1}>{label ?? t('worker.home.genericTask')}</Text>
-          <Text style={styles.meta} numberOfLines={1}>{t('worker.home.employerAnon', { id: booking ? booking.employerUserId.slice(0, 6).toUpperCase() : '—' })}</Text>
+          <Text style={styles.meta} numberOfLines={1}>{t('worker.home.employerAnon', { id: isolate(booking ? booking.employerUserId.slice(0, 6).toUpperCase() : '—', lang) })}</Text>
           {booking ? <Text style={styles.meta} numberOfLines={1}>📅 {safeDate(booking.startDate, lang)}</Text> : null}
         </View>
         <View style={{ alignItems: 'flex-end', gap: 4 }}>
@@ -117,7 +118,7 @@ function JobCard({ job, lookups, lang, t, onActive }: { job: ScheduledJob; looku
       ) : null}
       {active ? (
         <Pressable onPress={() => onActive(assignment.id)} style={styles.activeLink} accessibilityRole="button">
-          <Text style={styles.activeLinkTxt}>{t('worker.schedule.viewActive')} →</Text>
+          <Text style={styles.activeLinkTxt}>{t('worker.schedule.viewActive')} {arrowFwd(lang)}</Text>
         </Pressable>
       ) : null}
     </View>

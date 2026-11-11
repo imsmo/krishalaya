@@ -15,9 +15,10 @@ import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { weatherAlerts, weatherForecast, defaultRegionId, defaultLatLng } from '../../../features/market/market.api';
 import { weatherSeverityTone, forecastDayLabel, weatherEmoji, weatherConditionKey, pickPrimaryAdvisory } from '../../../features/market/market';
+import { arrowFwd } from '../../../core/i18n/bidi';
 
 export default function Weather() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('mandi_weather');
   const [region, setRegion] = useState<string | null>(null);
@@ -46,8 +47,8 @@ export default function Weather() {
       title={t('weather.title')}
       footer={
         <View style={styles.footerRow}>
-          <Pressable onPress={() => router.push('/(farmer)/weather/detail')} accessibilityRole="button"><Text style={styles.link}>{t('weatherDetail.fullForecast')} →</Text></Pressable>
-          <Pressable onPress={() => router.push('/(farmer)/weather/settings')} accessibilityRole="button"><Text style={styles.link}>{t('weather.settings.title')} →</Text></Pressable>
+          <Pressable onPress={() => router.push('/(farmer)/weather/detail')} accessibilityRole="button"><Text style={styles.link}>{t('weatherDetail.fullForecast')} {arrowFwd(lang)}</Text></Pressable>
+          <Pressable onPress={() => router.push('/(farmer)/weather/settings')} accessibilityRole="button"><Text style={styles.link}>{t('weather.settings.title')} {arrowFwd(lang)}</Text></Pressable>
         </View>
       }
     >
@@ -92,7 +93,7 @@ export default function Weather() {
               <Text style={styles.section}>{t('weather.forecast.title')}</Text>
               {days.slice(0, 7).map((d, i) => (
                 <View key={d.date} style={[styles.fcRow, i > 0 && styles.fcDivide]}>
-                  <Text style={styles.fcDay}>{i === 0 ? t('weather.today') : forecastDayLabel(d)}</Text>
+                  <Text style={styles.fcDay}>{i === 0 ? t('weather.today') : forecastDayLabel(d, lang)}</Text>
                   <Text style={styles.fcEmoji}>{weatherEmoji(d.code)}</Text>
                   <Text style={styles.fcRain}>💧 {d.precipProbPct}%{d.precipMm >= 1 ? ` · ${Math.round(d.precipMm)}mm` : ''}</Text>
                   <Text style={styles.fcTemps}><Text style={styles.fcMax}>{Math.round(d.tempMaxC)}°</Text> <Text style={styles.fcMin}>{Math.round(d.tempMinC)}°</Text></Text>

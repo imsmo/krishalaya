@@ -18,6 +18,7 @@ import { useFlag } from '../../../../core/flags/useFlag';
 import { getOffer, getJob, respondOffer, labourLookups } from '../../../../features/labour/labour.api';
 import { skillLabel, taskEmoji } from '../../../../features/labour/worker-home';
 import { DECLINE_REASONS, normalizeDeclineMessage, canSendDecline, type DeclineReasonKey } from '../../../../features/labour/decline-job';
+import { isolate } from '../../../../core/i18n/bidi';
 
 export default function DeclineJob() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -74,7 +75,7 @@ export default function DeclineJob() {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: space[4], gap: space[3] }}>
           {/* Job summary */}
           <Card>
-            <Text style={styles.jobTitle}>{taskEmoji(skill)} {skill ?? t('worker.home.genericTask')} · {booking ? t('jobOffer.employerAnon', { id: booking.employerUserId.slice(0, 6).toUpperCase() }) : '—'}</Text>
+            <Text style={styles.jobTitle}>{taskEmoji(skill)} {skill ?? t('worker.home.genericTask')} · {booking ? t('jobOffer.employerAnon', { id: isolate(booking.employerUserId.slice(0, 6).toUpperCase(), lang) }) : '—'}</Text>
             <View style={styles.metaRow}>
               <Text style={styles.jobMeta}>{booking?.startDate ? safeDate(booking.startDate, lang) : '—'} · </Text>
               <MoneyText minor={offer.wageMinor ?? booking?.wageOfferedMinor ?? '0'} currencyCode={ccy} langCode={lang} size="sm" />

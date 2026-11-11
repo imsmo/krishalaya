@@ -9,6 +9,7 @@ import { Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, StatusPill, 
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { memberSlips, memberBills } from '../../../features/mcc-operator/mcc.api';
 import { defaultDiaryRange, shiftMonth, billTone } from '../../../features/dairy/dairy';
+import { arrowBack, arrowFwd, spanText } from '../../../core/i18n/bidi';
 
 export default function FarmerLedger() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -29,9 +30,9 @@ export default function FarmerLedger() {
     <ScreenScaffold title={t('mcc.ledger.title')}>
       <ScrollView>
         <View style={styles.pager}>
-          <Pressable style={styles.pageBtn} onPress={() => setRange((r) => shiftMonth(r.from, -1))}><Text style={styles.pageText}>←</Text></Pressable>
-          <Text style={styles.range}>{range.from} → {range.to}</Text>
-          <Pressable style={styles.pageBtn} onPress={() => setRange((r) => shiftMonth(r.from, 1))}><Text style={styles.pageText}>→</Text></Pressable>
+          <Pressable style={styles.pageBtn} onPress={() => setRange((r) => shiftMonth(r.from, -1))}><Text style={styles.pageText}>{arrowBack(lang)}</Text></Pressable>
+          <Text style={styles.range}>{spanText(range.from, range.to, lang)}</Text>
+          <Pressable style={styles.pageBtn} onPress={() => setRange((r) => shiftMonth(r.from, 1))}><Text style={styles.pageText}>{arrowFwd(lang)}</Text></Pressable>
         </View>
         {slips === undefined ? <SkeletonCard lines={5} /> : slips === null ? (
           <EmptyState title={t('dairyapp.diary.loadError')} actionLabel={t('common.retry')} onAction={load} />
@@ -53,7 +54,7 @@ export default function FarmerLedger() {
               <StatusPill label={t(`dairyapp.bill.${b.status}`) || b.status} tone={billTone(b.status)} />
               <MoneyText minor={b.netMinor} langCode={lang} size="sm" />
             </View>
-            <Text style={styles.muted}>{b.periodStart} → {b.periodEnd}</Text>
+            <Text style={styles.muted}>{spanText(b.periodStart, b.periodEnd, lang)}</Text>
           </Card>
         ))}
         <Text style={styles.muted}>{t('mcc.ledger.totalNote')}</Text>

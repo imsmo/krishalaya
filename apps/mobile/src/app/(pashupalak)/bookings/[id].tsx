@@ -9,6 +9,7 @@ import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, Stat
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { getBooking, cancelBooking, completeBooking } from '../../../features/livestock/livestock.api';
 import { bookingTone, canCancelBooking, canCompleteBooking } from '../../../features/livestock/livestock';
+import { dateTimeText } from '../../../core/i18n/dates';
 
 export default function BookingDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -40,7 +41,7 @@ export default function BookingDetail() {
             <MoneyText minor={booking.feeMinor} langCode={lang} />
           </View>
           <Text style={styles.muted}>{t(`pashu.urgency.${booking.urgency}`)} · {t(`pashu.mode.${booking.mode}`)}</Text>
-          {booking.scheduledAt ? <Text style={styles.muted}>{t('pashu.booking.scheduled')} {new Date(booking.scheduledAt).toLocaleString()}</Text> : null}
+          {booking.scheduledAt ? <Text style={styles.muted}>{t('pashu.booking.scheduled')} {dateTimeText(booking.scheduledAt, lang)}</Text> : null}
           <Text style={styles.muted}>{t('pashu.booking.feeNote')}</Text>
         </Card>
         {canCancelBooking(booking.status) && <Button title={t('pashu.booking.cancel')} variant="outline" disabled={busy} onPress={() => act(cancelBooking, 'pashu.booking.cancelConfirm')} />}

@@ -14,10 +14,11 @@ import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getBooking, bookingAssignments, cancelBooking } from '../../../features/labour/hire.api';
 import { respondWindow } from '../../../features/labour/offer';
+import { isolate } from '../../../core/i18n/bidi';
 
 export default function BookingSent() {
   const { bookingNo, id } = useLocalSearchParams<{ bookingNo?: string; id?: string }>();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('labour_hire');
   const [booking, setBooking] = useState<LabourBooking | null>(null);
@@ -57,7 +58,7 @@ export default function BookingSent() {
     ]);
   };
 
-  const worker = workerId ? t('bookWorker.workerAnon', { id: workerId.slice(0, 6).toUpperCase() }) : t('bookTask.aWorker');
+  const worker = workerId ? t('bookWorker.workerAnon', { id: isolate(workerId.slice(0, 6).toUpperCase(), lang) }) : t('bookTask.aWorker');
 
   return (
     <ScreenScaffold title={t('hire.sent.title')}>
@@ -67,7 +68,7 @@ export default function BookingSent() {
           <View style={styles.hero}>
             <View style={styles.badge}><Text style={styles.badgeTxt}>{t('hire.sent.waiting')}</Text></View>
             <Text style={styles.h1}>{t('hire.sent.sentTo', { name: worker })}</Text>
-            {bookingNo ? <Text style={styles.no}>{t('worker.jobNo', { id: bookingNo })}</Text> : null}
+            {bookingNo ? <Text style={styles.no}>{t('worker.jobNo', { id: isolate(bookingNo, lang) })}</Text> : null}
             <Text style={styles.body}>{t('hire.sent.windowNote')}</Text>
             <Text style={styles.body}>{t('hire.sent.notifyNote')}</Text>
           </View>

@@ -8,6 +8,7 @@ import { Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, StatusPill, 
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { myBills } from '../../../features/dairy/dairy.api';
 import { billTone } from '../../../features/dairy/dairy';
+import { spanText } from '../../../core/i18n/bidi';
 
 export default function BillList() {
   const { t, lang } = useTranslation();
@@ -30,7 +31,7 @@ export default function BillList() {
                   <StatusPill label={t(`dairyapp.bill.${item.status}`) || item.status} tone={billTone(item.status)} />
                   <MoneyText minor={item.netMinor} langCode={lang} size="md" />
                 </View>
-                <Text style={styles.muted}>{item.periodStart} → {item.periodEnd} · {item.totalLitres} {t('dairyapp.bills.litres')}</Text>
+                <Text style={styles.muted}>{spanText(item.periodStart, item.periodEnd, lang)} · {item.totalLitres} {t('dairyapp.bills.litres')}</Text>
               </Card>
             </Pressable>
           )}

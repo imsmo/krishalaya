@@ -20,10 +20,11 @@ import { useTranslation } from '../../../../core/i18n/useTranslation';
 import { useFlag } from '../../../../core/flags/useFlag';
 import { getWorker, assignWorker, labourLookups, workerRatingSummary } from '../../../../features/labour/hire.api';
 import { workerYears, regionName } from '../../../../features/labour/worker-profile';
+import { isolate } from '../../../../core/i18n/bidi';
 
 export default function WorkerProfileEmployer() {
   const { id, assignBookingId } = useLocalSearchParams<{ id: string; assignBookingId?: string }>();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('labour_hire');
   const [worker, setWorker] = useState<WorkerCard | null>(null);
@@ -50,7 +51,7 @@ export default function WorkerProfileEmployer() {
   if (!worker) return <ScreenScaffold title={t('workerProfile.title')}><EmptyState title={t('hire.worker.unavailable')} actionLabel={t('common.retry')} onAction={load} /></ScreenScaffold>;
 
   // Consent-gated display name: the worker's real name only when they opted in; otherwise an anonymised handle.
-  const name = worker.discoverable && worker.displayName ? worker.displayName : t('hire.worker.anon', { id: worker.id.slice(0, 6).toUpperCase() });
+  const name = worker.discoverable && worker.displayName ? worker.displayName : t('hire.worker.anon', { id: isolate(worker.id.slice(0, 6).toUpperCase(), lang) });
   const region = regionName(lookups?.regions ?? [], worker.villageRegionId);
   const years = workerYears(worker.createdAt);
   const skills: string[] = [];   // §13: the consent-gated card carries no skill set → shown as "not shared"

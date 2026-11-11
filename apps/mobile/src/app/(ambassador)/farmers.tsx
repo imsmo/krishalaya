@@ -18,6 +18,7 @@ import { useFlag } from '../../core/flags/useFlag';
 import { listReferrals } from '../../features/ambassador/ambassador.api';
 import { referralStatusTone } from '../../features/ambassador/referral-flow';
 import { FARMER_TABS, filterReferralsByTab, farmerTabCounts, personInitials, type FarmerTab } from '../../features/ambassador/ambassador-home';
+import { isolate } from '../../core/i18n/bidi';
 
 export default function Farmers() {
   const { t, lang } = useTranslation();
@@ -63,7 +64,7 @@ export default function Farmers() {
               <View style={styles.cardRow}>
                 <View style={styles.avatar}><Text style={styles.avatarTxt}>{personInitials(item.code)}</Text></View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.name}>{t('amb.home.referralAnon', { code: item.code })}</Text>
+                  <Text style={styles.name}>{t('amb.home.referralAnon', { code: isolate(item.code, lang) })}</Text>
                   {item.createdAt ? <Text style={styles.meta}>{t('amb.farmers.joined', { date: safeDate(item.createdAt, lang) })}</Text> : null}
                 </View>
                 <StatusPill label={t(`amb.referral.status.${item.status}`, { defaultValue: item.status })} tone={referralStatusTone(item.status)} />

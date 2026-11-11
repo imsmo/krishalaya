@@ -19,6 +19,7 @@ import { useFlag } from '../../core/flags/useFlag';
 import { assignments } from '../../features/tenant/tenant.api';
 import { approvalStatusTone, groupAssignmentsByRole, type RoleGroup } from '../../features/tenant/tenant-admin';
 import { openWebConsole } from '../../core/deeplink';
+import { isolate } from '../../core/i18n/bidi';
 
 type Row = { kind: 'header'; roleCode: string; count: number } | { kind: 'member'; a: RoleAssignment };
 
@@ -32,7 +33,7 @@ function flatten(groups: RoleGroup[]): Row[] {
 }
 
 export default function Team() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('tenant_admin_lite');
   const [roster, setRoster] = useState<RoleAssignment[]>([]);
@@ -72,7 +73,7 @@ export default function Team() {
             <Card style={styles.card}>
               <View style={styles.avatar}><Text style={styles.avatarText}>{item.a.userId.slice(0, 2).toUpperCase()}</Text></View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.ref}>{t('owner.farmer.ref', { id: item.a.userId.slice(0, 8).toUpperCase() })}</Text>
+                <Text style={styles.ref}>{t('owner.farmer.ref', { id: isolate(item.a.userId.slice(0, 8).toUpperCase(), lang) })}</Text>
                 <Text style={styles.role}>{t(`role.${item.a.roleCode}`, { defaultValue: item.a.roleCode })}</Text>
               </View>
               <View style={styles.pills}>

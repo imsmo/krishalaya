@@ -11,11 +11,12 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Button, Card, ScreenScaffold, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
+import { isolate } from '../../core/i18n/bidi';
 
 const DOS = ['wait', 'offline', 'voice'] as const;
 
 export default function ServerError() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const router = useRouter();
   const { ref } = useLocalSearchParams<{ ref?: string }>();
 
@@ -47,7 +48,7 @@ export default function ServerError() {
         ))}
       </Card>
 
-      {ref ? <Text style={styles.ref}>{t('system.error.ref', { ref })}</Text> : null}
+      {ref ? <Text style={styles.ref}>{t('system.error.ref', { ref: isolate(ref, lang) })}</Text> : null}
     </ScreenScaffold>
   );
 }

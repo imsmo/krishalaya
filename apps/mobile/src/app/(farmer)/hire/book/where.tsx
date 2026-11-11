@@ -20,6 +20,7 @@ import { getCurrentFix } from '../../../../core/location';
 import { myParcels } from '../../../../features/profile/profile.api';
 import { labourLookups } from '../../../../features/labour/hire.api';
 import { savedLocationRows, canContinueLocation, normalizeLandmark } from '../../../../features/labour/book-location';
+import { isolate } from '../../../../core/i18n/bidi';
 
 export default function BookWhere() {
   const { t, lang } = useTranslation();
@@ -74,7 +75,7 @@ export default function BookWhere() {
     });
   };
 
-  const workerName = params.workerId ? t('bookWorker.workerAnon', { id: params.workerId.slice(0, 6).toUpperCase() }) : t('bookTask.aWorker');
+  const workerName = params.workerId ? t('bookWorker.workerAnon', { id: isolate(params.workerId.slice(0, 6).toUpperCase(), lang) }) : t('bookTask.aWorker');
   const footer = (
     <View style={styles.footerRow}>
       <Button title={t('common.back')} variant="outline" onPress={() => router.back()} />

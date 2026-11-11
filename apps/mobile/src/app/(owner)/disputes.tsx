@@ -23,6 +23,7 @@ import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { disputesList } from '../../features/tenant/tenant.api';
 import { disputeStatusTone, disputeTab, disputeTabCounts, filterDisputesByTab, daysAgo, isDisputeUrgent, type DisputeTab } from '../../features/tenant/tenant-admin';
+import { isolate } from '../../core/i18n/bidi';
 
 const TABS: DisputeTab[] = ['open', 'review', 'resolved'];
 const DT: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
@@ -76,7 +77,7 @@ export default function Disputes() {
                 <Card style={styles.card}>
                   <View style={styles.row}>
                     <Text style={styles.no} numberOfLines={1}>
-                      {t('owner.dispute.ref', { id: item.id.slice(0, 8).toUpperCase() })} · {t(`owner.disputeReason.${item.reasonId ?? 'none'}`, { defaultValue: t('owner.disputes.genericCategory') })}
+                      {t('owner.dispute.ref', { id: isolate(item.id.slice(0, 8).toUpperCase(), lang) })} · {t(`owner.disputeReason.${item.reasonId ?? 'none'}`, { defaultValue: t('owner.disputes.genericCategory') })}
                     </Text>
                     <View style={styles.pills}>
                       {urgent ? <StatusPill label={t('owner.disputes.urgent')} tone="danger" /> : null}
@@ -84,7 +85,7 @@ export default function Disputes() {
                     </View>
                   </View>
                   <Text style={styles.meta} numberOfLines={1}>
-                    {t('owner.disputes.orderRef', { id: (item.orderId ?? '').slice(0, 8).toUpperCase() })}{relAge(item.createdAt) ? ` · ${relAge(item.createdAt)}` : ''}
+                    {t('owner.disputes.orderRef', { id: isolate((item.orderId ?? '').slice(0, 8).toUpperCase(), lang) })}{relAge(item.createdAt) ? ` · ${relAge(item.createdAt)}` : ''}
                   </Text>
                   {item.description ? <Text style={styles.desc} numberOfLines={3}>“{item.description}”</Text> : null}
                   {item.resolutionAmountMinor ? (

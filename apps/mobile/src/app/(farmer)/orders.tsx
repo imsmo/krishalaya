@@ -48,6 +48,7 @@ import { listOrders, getOrder } from '../../features/orders/orders.api';
 import { payForOrder } from '../../features/payments/payments.api';
 import { useSplitLayout } from '../../core/mechanisms/useSplitLayout';
 import { orderStatusTone, matchesOrderFilter, orderProgress, orderListCta, counterpartyLabel, moreItemsCount, type OrderFilter, type OrderListCta } from '../../features/orders/order-status';
+import { arrowFwd, isolate } from '../../core/i18n/bidi';
 
 const ROLES: OrderRole[] = ['buyer', 'seller'];
 const FILTERS: OrderFilter[] = ['all', 'in_transit', 'delivered', 'completed', 'cancelled'];
@@ -136,7 +137,7 @@ export default function Orders() {
         <Text style={styles.appbarTitle}>{t('orders.title')}</Text>
         {role === 'seller' ? (
           <Pressable onPress={() => router.push('/(farmer)/orders/received')} accessibilityRole="button" hitSlop={8}>
-            <Text style={styles.appbarLink}>{t('ordersRecv.title')} →</Text>
+            <Text style={styles.appbarLink}>{t('ordersRecv.title')} {arrowFwd(lang)}</Text>
           </Pressable>
         ) : null}
       </View>
@@ -201,7 +202,7 @@ export default function Orders() {
           {selectedItem ? (
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={styles.cardHead}>
-                <Text style={styles.cardId}>{t('orders.orderNo', { id: selectedItem.orderNo })}</Text>
+                <Text style={styles.cardId}>{t('orders.orderNo', { id: isolate(selectedItem.orderNo, lang) })}</Text>
                 <StatusPill label={t(`orders.status.${selectedItem.status}`)} tone={orderStatusTone(selectedItem.status)} />
               </View>
               {selectedItem.primaryItem ? (
@@ -210,7 +211,7 @@ export default function Orders() {
                   {moreItemsCount(selectedItem.itemCount) > 0 ? <Text style={styles.cardMore}>  {t('ordersRecv.moreItems', { n: moreItemsCount(selectedItem.itemCount) })}</Text> : null}
                 </Text>
               ) : (
-                <Text style={styles.cardTitle}>{counterpartyLabel(selectedItem.counterparty) ?? t('orders.orderNo', { id: selectedItem.orderNo })}</Text>
+                <Text style={styles.cardTitle}>{counterpartyLabel(selectedItem.counterparty) ?? t('orders.orderNo', { id: isolate(selectedItem.orderNo, lang) })}</Text>
               )}
               <MoneyText minor={selectedItem.totalMinor} langCode={lang} size="lg" tone="default" style={styles.cardPrice} />
 
@@ -271,9 +272,9 @@ function OrderCard({ item, role, t, lang, busyPay, onOpen, onCta }: {
   const pct = orderProgress(item.status);
   const date = (() => { try { return item.createdAt ? formatDate(item.createdAt, lang, { dateStyle: 'medium' }) : ''; } catch { return ''; } })();
   return (
-    <Pressable style={styles.card} onPress={onOpen} accessibilityRole="button" accessibilityLabel={t('orders.orderNo', { id: item.orderNo })}>
+    <Pressable style={styles.card} onPress={onOpen} accessibilityRole="button" accessibilityLabel={t('orders.orderNo', { id: isolate(item.orderNo, lang) })}>
       <View style={styles.cardHead}>
-        <Text style={styles.cardId}>{t('orders.orderNo', { id: item.orderNo })}</Text>
+        <Text style={styles.cardId}>{t('orders.orderNo', { id: isolate(item.orderNo, lang) })}</Text>
         <StatusPill label={t(`orders.status.${item.status}`)} tone={orderStatusTone(item.status)} />
       </View>
       <View style={styles.cardBody}>
@@ -296,7 +297,7 @@ function OrderCard({ item, role, t, lang, busyPay, onOpen, onCta }: {
             </>
           ) : (
             <>
-              <Text style={styles.cardTitle} numberOfLines={1}>{counterpartyLabel(item.counterparty) ?? t('orders.orderNo', { id: item.orderNo })}</Text>
+              <Text style={styles.cardTitle} numberOfLines={1}>{counterpartyLabel(item.counterparty) ?? t('orders.orderNo', { id: isolate(item.orderNo, lang) })}</Text>
               {date ? <Text style={styles.cardMeta}>{date}</Text> : null}
             </>
           )}

@@ -14,6 +14,7 @@ import { Button, Card, EmptyState, StatusPill, Toggle, ScreenScaffold, SkeletonC
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { defaultRegionId, getWeatherPrefs, saveWeatherPrefs } from '../../../features/market/market.api';
+import { chevFwd } from '../../../core/i18n/bidi';
 
 const DEFAULT_PREFS: WeatherPrefs = { morningAdvisory: true, weeklyOutlook: true, severeOnly: false };
 
@@ -126,6 +127,7 @@ function ToggleRow({ icon, title, desc, value, busy, onChange }: { icon: string;
   );
 }
 function PrefRow({ icon, title, desc, badge, onPress }: { icon: string; title: string; desc?: string; badge?: string; onPress?: () => void }) {
+  const { lang } = useTranslation();
   const body = (
     <View style={styles.prefRow}>
       <Text style={styles.icon}>{icon}</Text>
@@ -133,7 +135,7 @@ function PrefRow({ icon, title, desc, badge, onPress }: { icon: string; title: s
         <Text style={styles.rowTitle}>{title}</Text>
         {desc ? <Text style={styles.rowDesc}>{desc}</Text> : null}
       </View>
-      {badge ? <Text style={styles.badge}>{badge}</Text> : onPress ? <Text style={styles.chevron}>›</Text> : null}
+      {badge ? <Text style={styles.badge}>{badge}</Text> : onPress ? <Text style={styles.chevron}>{chevFwd(lang)}</Text> : null}
     </View>
   );
   return onPress ? <Pressable onPress={onPress} accessibilityRole="button">{body}</Pressable> : body;

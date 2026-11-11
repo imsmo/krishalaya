@@ -19,6 +19,7 @@ import { getOffer, getJob, labourLookups } from '../../../features/labour/labour
 import { openTicket } from '../../../features/profile/profile.api';
 import { skillLabel, taskEmoji } from '../../../features/labour/worker-home';
 import { DISPUTE_REASONS, DISPUTE_SEVERITY, normalizeDisputeText, canSubmitDispute, type DisputeReasonKey } from '../../../features/labour/wage-dispute';
+import { isolate } from '../../../core/i18n/bidi';
 
 export default function WageDispute() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -79,7 +80,7 @@ export default function WageDispute() {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: space[4], gap: space[3] }}>
           {/* Job summary + agreed/received wage */}
           <Card>
-            <Text style={styles.jobTitle}>{taskEmoji(skill)} {skill ?? t('worker.home.genericTask')} · {t('jobOffer.employerAnon', { id: booking.employerUserId.slice(0, 6).toUpperCase() })}</Text>
+            <Text style={styles.jobTitle}>{taskEmoji(skill)} {skill ?? t('worker.home.genericTask')} · {t('jobOffer.employerAnon', { id: isolate(booking.employerUserId.slice(0, 6).toUpperCase(), lang) })}</Text>
             <Text style={styles.jobMeta}>{safeDate(booking.startDate, lang)}</Text>
             <View style={styles.wageRow}>
               <View style={styles.wageCell}>

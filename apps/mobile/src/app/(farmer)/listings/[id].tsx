@@ -35,6 +35,7 @@ import { relativeAge, healthItems, clampExtendDays, EXTEND_MIN_DAYS, EXTEND_MAX_
 import { cropEmoji } from '../../../features/listings/my-listings';
 import { sdkErrorMessage } from '../../../core/errors/sdk-error-message';
 import { captureFromCamera, pickFromGallery, uploadPickedImage, type PickedImage } from '../../../core/media';
+import { chevFwd } from '../../../core/i18n/bidi';
 
 function ageLabel(t: (k: string, p?: Record<string, string | number>) => string, a: RelativeAge | null): string | null {
   if (!a) return null;
@@ -306,7 +307,7 @@ export default function ListingDetail() {
                     <Text style={styles.inqFrom} numberOfLines={1}>{t('listingDetail.inquiryFrom')}</Text>
                     <Text style={styles.inqPreview} numberOfLines={1}>{inq.lastMessagePreview || t('listingDetail.inquiryNoPreview')}</Text>
                   </View>
-                  {inq.unreadCount > 0 ? <View style={styles.inqBadge}><Text style={styles.inqBadgeTxt}>{inq.unreadCount}</Text></View> : <Text style={styles.chev}>›</Text>}
+                  {inq.unreadCount > 0 ? <View style={styles.inqBadge}><Text style={styles.inqBadgeTxt}>{inq.unreadCount}</Text></View> : <Text style={styles.chev}>{chevFwd(lang)}</Text>}
                 </Pressable>
               ))}
             </View>
@@ -320,7 +321,7 @@ export default function ListingDetail() {
                 <View style={styles.healthRow}>
                   <Text style={[styles.healthIcon, { color: h.tone === 'good' ? color.successDark : color.accent700 }]}>{h.tone === 'good' ? '✓' : '⚠'}</Text>
                   <Text style={styles.healthTxt}>{t(h.labelKey, { n: h.count ?? 0 })}</Text>
-                  {h.actionable ? <Text style={styles.healthChev}>{addingPhoto ? '…' : '›'}</Text> : null}
+                  {h.actionable ? <Text style={styles.healthChev}>{addingPhoto ? '…' : chevFwd(lang)}</Text> : null}
                 </View>
               );
               // KV-MF-14: the photo row is a REAL cta (opens the same picker→upload→attach flow as Create

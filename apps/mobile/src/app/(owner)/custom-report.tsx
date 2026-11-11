@@ -16,6 +16,7 @@ import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { openWebConsole } from '../../core/deeplink';
 import { WEB_PATHS } from '../../features/tenant/web-console';
+import { chevFwd } from '../../core/i18n/bidi';
 
 const REPORT_TYPES = ['gmv', 'retention', 'funnel', 'heatmap', 'commission', 'custom'] as const;
 const RANGES = ['7d', '30d', '60d', 'ytd'] as const;
@@ -33,7 +34,7 @@ const FORMATS = [
 ] as const;
 
 export default function CustomReport() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const enabled = useFlag('tenant_admin_lite');
   const [type, setType] = useState<string>('gmv');
   const [range, setRange] = useState<string>('30d');
@@ -98,7 +99,7 @@ export default function CustomReport() {
                     <Text style={styles.filterLabel}>{t(`owner.customReport.filter.${f.key}`)}</Text>
                     <Text style={styles.filterVal}>{t('owner.customReport.filter.allValue')}</Text>
                   </View>
-                  <Text style={styles.chev}>›</Text>
+                  <Text style={styles.chev}>{chevFwd(lang)}</Text>
                 </View>
               </Pressable>
             ))}

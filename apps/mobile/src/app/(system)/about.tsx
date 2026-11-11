@@ -18,6 +18,7 @@ import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { config } from '../../core/config';
 import { languagesSummary } from '../../features/system/system';
+import { chevFwd } from '../../core/i18n/bidi';
 
 export default function About() {
   const { t } = useTranslation();
@@ -79,9 +80,10 @@ function Row({ k, v }: { k: string; v: string }) {
   return <View style={styles.row}><Text style={styles.k}>{k}</Text><Text style={styles.v}>{v}</Text></View>;
 }
 function LinkRow({ label, onPress }: { label: string; onPress: () => void }) {
+  const { lang } = useTranslation();
   return (
     <Card onPress={onPress} accessibilityLabel={label}>
-      <View style={styles.linkRow}><Text style={styles.link}>{label}</Text><Text style={styles.chev}>›</Text></View>
+      <View style={styles.linkRow}><Text style={styles.link}>{label}</Text><Text style={styles.chev}>{chevFwd(lang)}</Text></View>
     </Card>
   );
 }

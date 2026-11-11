@@ -19,6 +19,7 @@ import { useFlag } from '../../../core/flags/useFlag';
 import { getOffer, getJob, labourLookups } from '../../../features/labour/labour.api';
 import { isWagePaid } from '../../../features/labour/worker-jobs';
 import { skillLabel } from '../../../features/labour/worker-home';
+import { isolate } from '../../../core/i18n/bidi';
 
 export default function PaymentReceived() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -71,7 +72,7 @@ export default function PaymentReceived() {
           {/* Receipt */}
           <Card>
             <Row label={t('worker.payment.job')} value={skill ?? t('worker.home.genericTask')} />
-            <Row label={t('worker.payment.from')} value={booking ? t('worker.home.employerAnon', { id: booking.employerUserId.slice(0, 6).toUpperCase() }) : '—'} />
+            <Row label={t('worker.payment.from')} value={booking ? t('worker.home.employerAnon', { id: isolate(booking.employerUserId.slice(0, 6).toUpperCase(), lang) }) : '—'} />
             <Row label={t('worker.payment.date')} value={dateIso ? safeDate(dateIso, lang) : '—'} />
             <Row label={t('worker.payment.hours')} value={t('worker.payment.hoursNote')} />
             <Row label={t('worker.payment.utr')} value={t('worker.payment.utrNote')} />

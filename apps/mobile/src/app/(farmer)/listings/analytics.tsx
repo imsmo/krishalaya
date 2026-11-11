@@ -25,6 +25,7 @@ import { useFlag } from '../../../core/flags/useFlag';
 import { getListing, listingAnalytics } from '../../../features/listings/listings.api';
 import { relativeAge, type RelativeAge } from '../../../features/listings/listing-detail';
 import { convRate, funnelFromAnalytics, viewsByDaySeries } from '../../../features/listings/listing-analytics';
+import { isolate } from '../../../core/i18n/bidi';
 
 function liveLabel(t: (k: string, p?: Record<string, unknown>) => string, a: RelativeAge | null): string | null {
   if (!a) return null;
@@ -80,7 +81,7 @@ export default function ListingAnalyticsScreen() {
           <View style={styles.hero}>
             <Text style={styles.heroTitle}>{listing.title}</Text>
             <Text style={styles.heroSub}>
-              {live ? `${live} · ` : ''}{t('analytics.listingNo', { id: shortId(listing.id) })}
+              {live ? `${live} · ` : ''}{t('analytics.listingNo', { id: isolate(shortId(listing.id), lang) })}
             </Text>
             <View style={styles.statRow}>
               <HeroStat value={num(views)} label={t('analytics.totalViews')} />

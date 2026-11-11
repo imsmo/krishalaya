@@ -12,6 +12,7 @@ import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getOrder, completeOrder, cancelOrder } from '../../../features/orders/orders.api';
 import { nextActions, orderStatusTone, type OrderAction } from '../../../features/orders/order-status';
+import { isolate } from '../../../core/i18n/bidi';
 
 // The buyer order detail handles these inline/navigation actions; others (review/report) are deferred for buyer.
 const HANDLED: OrderAction[] = ['complete', 'cancel', 'track', 'report'];
@@ -57,7 +58,7 @@ export default function BuyerOrderDetail() {
   const actions = (order ? nextActions(order.status, 'buyer') : []).filter((a) => HANDLED.includes(a));
 
   return (
-    <ScreenScaffold title={order ? t('orders.orderNo', { id: order.orderNo }) : ' '}>
+    <ScreenScaffold title={order ? t('orders.orderNo', { id: isolate(order.orderNo, lang) }) : ' '}>
       {loading ? <SkeletonCard lines={6} /> : !order || failed ? (
         <>
           {/* KV MF-06 fix: ScreenScaffold has no back-chrome header (headerShown:false at the tab-navigator

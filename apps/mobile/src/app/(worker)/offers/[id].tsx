@@ -15,12 +15,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { LabourAssignment, LabourBooking, WorkerProfile, LabourLookups } from '@krishalaya/sdk-js';
 import { SdkError } from '@krishalaya/sdk-js';
 import { Button, Card, EmptyState, MoneyText, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
-import { formatDate, formatMoneyMinor } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getOffer, getJob, getMyWorker, respondOffer, labourLookups } from '../../../features/labour/labour.api';
 import { assignmentActions, canAcceptWork } from '../../../features/labour/labour-status';
 import { respondWindow, wageAboveMinMinor, workersNeeded } from '../../../features/labour/offer';
+import { moneyText } from '../../../core/i18n/money';
+import { isolate } from '../../../core/i18n/bidi';
 
 export default function OfferDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -72,7 +74,7 @@ export default function OfferDetail() {
     ageOk ? (
       <View style={styles.actions}>
         <Button title={t('jobOffer.decline')} variant="outline" disabled={busy !== null} onPress={() => router.push({ pathname: '/(worker)/offers/decline/[id]', params: { id: id! } })} />
-        <View style={{ flex: 1 }}><Button title={t('jobOffer.accept', { amount: formatMoneyMinor(wageMinor, ccy, lang) })} loading={busy === 'accept'} disabled={busy !== null} onPress={() => respond('accept')} fullWidth /></View>
+        <View style={{ flex: 1 }}><Button title={t('jobOffer.accept', { amount: moneyText(wageMinor, ccy, lang) })} loading={busy === 'accept'} disabled={busy !== null} onPress={() => respond('accept')} fullWidth /></View>
       </View>
     ) : undefined
   ) : undefined;
@@ -102,7 +104,7 @@ export default function OfferDetail() {
           {/* Employer — §13 anon */}
           <Card>
             <Text style={styles.h3}>{t('jobOffer.employer')}</Text>
-            <Text style={styles.employer}>{booking ? t('jobOffer.employerAnon', { id: booking.employerUserId.slice(0, 6).toUpperCase() }) : '—'}</Text>
+            <Text style={styles.employer}>{booking ? t('jobOffer.employerAnon', { id: isolate(booking.employerUserId.slice(0, 6).toUpperCase(), lang) }) : '—'}</Text>
             <Text style={styles.note}>{t('jobOffer.employerNote')}</Text>
           </Card>
 
@@ -118,7 +120,7 @@ export default function OfferDetail() {
                 <Text style={styles.wageLbl}>{t('jobOffer.wageLabel')}</Text>
               </View>
             </View>
-            <Text style={styles.wageNote}>{aboveMin ? t('jobOffer.aboveMin', { amount: formatMoneyMinor(aboveMin, ccy, lang) }) : t('jobOffer.paidNote')}</Text>
+            <Text style={styles.wageNote}>{aboveMin ? t('jobOffer.aboveMin', { amount: moneyText(aboveMin, ccy, lang) }) : t('jobOffer.paidNote')}</Text>
           </Card>
 
           {/* §13: farm location + special instructions not on the booking read */}

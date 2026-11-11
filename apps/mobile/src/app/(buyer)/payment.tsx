@@ -14,7 +14,6 @@ import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SdkError, type CheckoutPreview } from '@krishalaya/sdk-js';
 import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, StatusPill, color, font, space, radius } from '@krishalaya/ui-native';
-import { formatMoneyMinor } from '@krishalaya/i18n';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { useSecureScreen } from '../../core/security/screen-guard';
@@ -22,6 +21,7 @@ import { checkoutPreview, placeOrder } from '../../features/cart/cart.api';
 import { walletBalance } from '../../features/wallet/wallet.api';
 import { payForOrder, payOrderFromWallet } from '../../features/payments/payments.api';
 import { walletCovers, walletShortfallMinor, previewItemCount, type PaymentMethodKey } from '../../features/cart/payment-methods';
+import { moneyText } from '../../core/i18n/money';
 
 export default function Payment() {
   useSecureScreen();
@@ -75,7 +75,7 @@ export default function Payment() {
     <View style={styles.footerRow}>
       <Button title={t('common.back')} variant="outline" onPress={() => router.back()} />
       <View style={{ flex: 1 }}>
-        <Button title={t('payment.pay', { total: formatMoneyMinor(totalMinor, ccy, lang) })} variant="accent" onPress={onPay} loading={busy} disabled={!preview} fullWidth />
+        <Button title={t('payment.pay', { total: moneyText(totalMinor, ccy, lang) })} variant="accent" onPress={onPay} loading={busy} disabled={!preview} fullWidth />
       </View>
     </View>
   );
@@ -94,7 +94,7 @@ export default function Payment() {
         </View>
         <View style={styles.progressRow}>
           <Text style={styles.step}>{t('payment.step')}</Text>
-          <Text style={styles.stepLabel}>{t('payment.orderTotal', { total: formatMoneyMinor(totalMinor, ccy, lang) })}</Text>
+          <Text style={styles.stepLabel}>{t('payment.orderTotal', { total: moneyText(totalMinor, ccy, lang) })}</Text>
         </View>
       </View>
 
@@ -107,8 +107,8 @@ export default function Payment() {
 
         {/* Wallet — real balance + shortfall */}
         <Method icon="💵" selected={method === 'wallet'} disabled={!covers} onPress={() => covers && setMethod('wallet')}
-          name={t('payment.wallet', { balance: formatMoneyMinor(balanceMinor, ccy, lang) })}
-          meta={covers ? t('payment.walletReady') : (shortfall ? t('payment.walletShort', { amount: formatMoneyMinor(shortfall, ccy, lang) }) : t('payment.walletShortGeneric'))} />
+          name={t('payment.wallet', { balance: moneyText(balanceMinor, ccy, lang) })}
+          meta={covers ? t('payment.walletReady') : (shortfall ? t('payment.walletShort', { amount: moneyText(shortfall, ccy, lang) }) : t('payment.walletShortGeneric'))} />
 
         {/* §13: cash-on-delivery not offered under escrow → disabled, honest note */}
         <Method icon="📋" disabled name={t('payment.cod')} meta={t('payment.codComingSoon')} />

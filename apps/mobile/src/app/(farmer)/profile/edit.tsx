@@ -19,9 +19,10 @@ import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { getMyProfile, updateMyProfile } from '../../../features/profile/profile.api';
 import { buildProfilePatch, initials } from '../../../features/profile/profile';
+import { arrowFwd } from '../../../core/i18n/bidi';
 
 export default function EditProfile() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('farmer_profile');
   const [fullName, setFullName] = useState('');
@@ -77,7 +78,7 @@ export default function EditProfile() {
             <ReadOnly label={t('profile.edit.village') + ' *'} note={t('profile.edit.locationManaged')} />
             <ReadOnly label={t('profile.edit.taluka')} />
             <ReadOnly label={t('profile.edit.district')} />
-            <Pressable onPress={() => router.push('/(farmer)/profile/farm')} accessibilityRole="button" style={styles.linkRow}><Text style={styles.link}>{t('profile.farmDetails')} →</Text></Pressable>
+            <Pressable onPress={() => router.push('/(farmer)/profile/farm')} accessibilityRole="button" style={styles.linkRow}><Text style={styles.link}>{t('profile.farmDetails')} {arrowFwd(lang)}</Text></Pressable>
           </Card>
 
           {/* App language (real, single locale) */}

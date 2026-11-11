@@ -16,6 +16,7 @@ import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { listAlerts, createAlert, setAlertActive, alertActivity } from '../../../features/market/market.api';
 import { buildAlertDraft, alertTone, alertSummary } from '../../../features/market/market';
+import { chevFwd } from '../../../core/i18n/bidi';
 
 const DIRS = ['above', 'below'] as const;
 
@@ -136,11 +137,12 @@ function Stat({ value, label, tone }: { value: string; label: string; tone?: 'pr
   return <View style={styles.stat}><Text style={[styles.statVal, tone === 'primary' && { color: color.primary700 }]}>{value}</Text><Text style={styles.statLabel}>{label}</Text></View>;
 }
 function PrefRow({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) {
+  const { lang } = useTranslation();
   return (
     <Pressable onPress={onPress} style={styles.prefRow} accessibilityRole="button">
       <Text style={styles.prefIcon}>{icon}</Text>
       <Text style={styles.prefLabel}>{label}</Text>
-      <Text style={styles.prefChevron}>›</Text>
+      <Text style={styles.prefChevron}>{chevFwd(lang)}</Text>
     </Pressable>
   );
 }

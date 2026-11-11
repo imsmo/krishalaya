@@ -118,7 +118,7 @@ export default function WeatherDetail() {
               <Text style={styles.section}>{t('weather.forecast.title')}</Text>
               {days.slice(0, 7).map((d, i) => (
                 <View key={d.date} style={[styles.fcRow, i > 0 && styles.fcDivide]}>
-                  <Text style={styles.fcDay}>{i === 0 ? t('weather.today') : forecastDayLabel(d)}</Text>
+                  <Text style={styles.fcDay}>{i === 0 ? t('weather.today') : forecastDayLabel(d, lang)}</Text>
                   <Text style={styles.fcEmoji}>{weatherEmoji(d.code)}</Text>
                   <Text style={styles.fcCond} numberOfLines={1}>{t(`weather.cond.${weatherConditionKey(d.code)}`)}</Text>
                   <Text style={styles.fcTemps}><Text style={styles.fcMax}>{Math.round(d.tempMaxC)}°</Text> <Text style={styles.fcMin}>{Math.round(d.tempMinC)}°</Text></Text>

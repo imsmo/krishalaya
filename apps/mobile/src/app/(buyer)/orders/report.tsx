@@ -17,6 +17,7 @@ import { useFlag } from '../../../core/flags/useFlag';
 import { getOrder, reportOrder } from '../../../features/orders/orders.api';
 import { DISPUTE_REASONS, DISPUTE_RESOLUTIONS, composeDisputeNote, canSubmitDispute, type DisputeReason, type DisputeResolution } from '../../../features/orders/dispute';
 import { cropEmoji } from '../../../features/listings/my-listings';
+import { isolate } from '../../../core/i18n/bidi';
 
 export default function ReportOrder() {
   const { orderId } = useLocalSearchParams<{ orderId: string }>();
@@ -69,7 +70,7 @@ export default function ReportOrder() {
         <View style={{ flex: 1 }}>
           <Text style={styles.orderTitle} numberOfLines={1}>{line?.title_snapshot ?? t('report.orderGeneric')}</Text>
           <View style={styles.metaRow}>
-            <Text style={styles.meta}>{t('report.orderMeta', { no: order.orderNo, qty: line ? `${line.quantity} ${line.unit_code}` : '—' })} · </Text>
+            <Text style={styles.meta}>{t('report.orderMeta', { no: isolate(order.orderNo, lang), qty: line ? `${line.quantity} ${line.unit_code}` : '—' })} · </Text>
             <MoneyText minor={order.totalMinor} currencyCode={order.currencyCode} langCode={lang} size="sm" />
           </View>
           {order.status === 'delivered' || order.status === 'completed' ? <Text style={styles.delivered}>{t(`orders.status.${order.status}`)}</Text> : null}

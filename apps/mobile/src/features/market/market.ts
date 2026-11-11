@@ -5,6 +5,7 @@
 // helpers only drive the UI.
 import type { PillTone } from '@krishalaya/ui-native';
 import type { MandiPrice, WeatherAlert, PriceAlert, ForecastDay } from '@krishalaya/sdk-js';
+import { formatDate } from '@krishalaya/i18n';
 
 /** Percent change between two bigint-minor prices, as a number rounded to 1 dp (display only). Uses BigInt so a
  * huge price never loses precision; returns null if old is missing/zero or inputs are malformed. */
@@ -87,7 +88,8 @@ export function bpsToPct(bps: number | null | undefined): number | null {
 export function hourLabel(iso: string, lang: string = 'en'): string {
   const t = Date.parse(iso);
   if (Number.isNaN(t)) return iso;
-  return new Date(t).toLocaleTimeString(lang === 'en' ? 'en-IN' : lang === 'gu' ? 'gu-IN' : 'hi-IN', { hour: 'numeric' });
+  // PC-56 RTL-1h-2: through the language's pinned Intl locale (en-IN / hi-IN / gu-IN as before; ar-AE-u-nu-latn under a chosen Arabic).
+  return formatDate(t, lang, { hour: 'numeric' });
 }
 /** WHO UV-index band → i18n key suffix (`weather.uvBand.<key>`), or null when UV is unavailable (§13, never faked). */
 export function uvBand(uv: number | null | undefined): 'low' | 'moderate' | 'high' | 'veryHigh' | 'extreme' | null {
@@ -106,10 +108,11 @@ export function windCompass(deg: number | null | undefined): 'N' | 'NE' | 'E' | 
 }
 
 // --- forecast (P0-12) ---
-/** A short weekday label for a forecast day's ISO date (e.g. 'Wed'); falls back to the raw date on parse failure. */
-export function forecastDayLabel(day: Pick<ForecastDay, 'date'>): string {
+/** A short weekday label for a forecast day's ISO date (e.g. 'Wed') in the APP's language (PC-56 RTL-1h-2 — before, the phone's
+ *  own language: survey F-H3); falls back to the raw date on parse failure. */
+export function forecastDayLabel(day: Pick<ForecastDay, 'date'>, lang: string = 'en'): string {
   const t = Date.parse(day.date);
-  return Number.isNaN(t) ? day.date : new Date(t).toLocaleDateString(undefined, { weekday: 'short' });
+  return Number.isNaN(t) ? day.date : formatDate(t, lang, { weekday: 'short' });
 }
 /** Compact one-line summary for a forecast day (display only; numbers come straight from the provider). */
 export function forecastDaySummary(day: ForecastDay): string {

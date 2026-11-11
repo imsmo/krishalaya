@@ -21,6 +21,7 @@ import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { listSchemes, listAuthorities, myApplications } from '../../../features/schemes/schemes.api';
 import { applicationsBySchemeId, applicationStatusTone } from '../../../features/schemes/schemes';
+import { arrowFwd } from '../../../core/i18n/bidi';
 
 export default function Schemes() {
   const { t, lang } = useTranslation();
@@ -55,7 +56,7 @@ export default function Schemes() {
             <View style={styles.head}>
               <Text style={styles.forYou}>{t('schemes.forYou')}</Text>
               <Text style={styles.forYouNote}>{t('schemes.forYouNote')}</Text>
-              <Pressable onPress={() => router.push('/(farmer)/schemes/mine')} accessibilityRole="button"><Text style={styles.link}>📋 {t('schemes.mine.title')} →</Text></Pressable>
+              <Pressable onPress={() => router.push('/(farmer)/schemes/mine')} accessibilityRole="button"><Text style={styles.link}>📋 {t('schemes.mine.title')} {arrowFwd(lang)}</Text></Pressable>
             </View>
           }
           renderItem={({ item }) => {
@@ -79,7 +80,7 @@ export default function Schemes() {
                       ? <MoneyText minor={item.processingFeeMinor} langCode={lang} size="sm" />
                       : <Text style={styles.free}>{t('schemes.free')}</Text>}
                   </View>
-                  <Text style={styles.action}>{status ? t('schemes.viewStatus') : t('schemes.viewApply')} →</Text>
+                  <Text style={styles.action}>{status ? t('schemes.viewStatus') : t('schemes.viewApply')} {arrowFwd(lang)}</Text>
                 </Card>
               </Pressable>
             );

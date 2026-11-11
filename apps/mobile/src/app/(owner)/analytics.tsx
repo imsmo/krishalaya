@@ -23,6 +23,7 @@ import { openWebConsole } from '../../core/deeplink';
 import { WEB_PATHS } from '../../features/tenant/web-console';
 import { tenantAnalytics } from '../../features/tenant/tenant.api';
 import { avgOrderMinor, windowRange, type GmvWindow } from '../../features/tenant/tenant-admin';
+import { isolate } from '../../core/i18n/bidi';
 
 const WINDOWS: GmvWindow[] = ['7d', '30d', '3mo', '1yr', 'all'];
 /** A masked, non-PII reference for an opaque id (product/seller) — honest placeholder, never an invented name. */
@@ -93,7 +94,7 @@ export default function GmvAnalytics() {
                 <View key={p.productId} style={[styles.row, i > 0 && styles.rowBorder]}>
                   <Text style={styles.rank}>{String(i + 1)}</Text>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.rowTitle}>{t('owner.gmv.productRef', { ref: shortRef(p.productId) })}</Text>
+                    <Text style={styles.rowTitle}>{t('owner.gmv.productRef', { ref: isolate(shortRef(p.productId), lang) })}</Text>
                     <Text style={styles.rowSub}>{t('owner.gmv.qtySold', { qty: String(p.quantity) })}</Text>
                   </View>
                   <MoneyText minor={p.salesMinor} currencyCode={data.currencyCode} langCode={lang} size="sm" />
@@ -112,7 +113,7 @@ export default function GmvAnalytics() {
                 <View key={s.sellerUserId} style={[styles.row, i > 0 && styles.rowBorder]}>
                   <Text style={styles.rank}>{String(i + 1)}</Text>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.rowTitle}>{t('owner.gmv.sellerRef', { ref: shortRef(s.sellerUserId) })}</Text>
+                    <Text style={styles.rowTitle}>{t('owner.gmv.sellerRef', { ref: isolate(shortRef(s.sellerUserId), lang) })}</Text>
                     <Text style={styles.rowSub}>{t('owner.gmv.ordersCount', { count: String(s.orders) })}</Text>
                   </View>
                   <MoneyText minor={s.salesMinor} currencyCode={data.currencyCode} langCode={lang} size="sm" />

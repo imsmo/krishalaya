@@ -14,11 +14,13 @@ import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { type CreateBookingInput, type WorkerProfile, type LabourLookups } from '@krishalaya/sdk-js';
 import { Button, Card, EmptyState, MoneyText, Toggle, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
-import { formatDate, formatMoneyMinor } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
 import { useTranslation } from '../../../../core/i18n/useTranslation';
 import { useFlag } from '../../../../core/flags/useFlag';
 import { getWorker, labourLookups } from '../../../../features/labour/hire.api';
 import { walletBalance } from '../../../../features/wallet/wallet.api';
+import { moneyText } from '../../../../core/i18n/money';
+import { isolate } from '../../../../core/i18n/bidi';
 
 export default function BookReview() {
   const { t, lang } = useTranslation();
@@ -79,7 +81,7 @@ export default function BookReview() {
             <View style={styles.workerRow}>
               <View style={styles.avatar}><Text style={{ fontSize: 18 }}>👤</Text></View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.workerName}>{workerId ? t('bookWorker.workerAnon', { id: workerId.slice(0, 6).toUpperCase() }) : t('bookTask.aWorker')}</Text>
+                <Text style={styles.workerName}>{workerId ? t('bookWorker.workerAnon', { id: isolate(workerId.slice(0, 6).toUpperCase(), lang) }) : t('bookTask.aWorker')}</Text>
                 {worker ? <Text style={styles.workerMeta}>{[worker.ratingAvg != null ? `⭐ ${worker.ratingAvg.toFixed(1)}` : null, t('bookReview.jobs', { n: worker.bookingsCompleted ?? 0 })].filter(Boolean).join(' · ')}</Text> : null}
               </View>
             </View>
@@ -110,7 +112,7 @@ export default function BookReview() {
               <Text style={{ fontSize: 22 }}>💳</Text>
               <View style={{ flex: 1 }}>
                 <Text style={styles.payTitle}>{t('bookReview.payWallet')}</Text>
-                {balanceMinor != null ? <Text style={styles.payBal}>{t('bookReview.balance', { amount: formatMoneyMinor(balanceMinor, ccy, lang) })}</Text> : <Text style={styles.payBal}>{t('bookReview.balanceUnavailable')}</Text>}
+                {balanceMinor != null ? <Text style={styles.payBal}>{t('bookReview.balance', { amount: moneyText(balanceMinor, ccy, lang) })}</Text> : <Text style={styles.payBal}>{t('bookReview.balanceUnavailable')}</Text>}
               </View>
             </View>
           </Card>
@@ -118,7 +120,7 @@ export default function BookReview() {
           {/* Terms */}
           <Card>
             <Text style={styles.termsTitle}>{t('bookReview.termsTitle')}</Text>
-            <Text style={styles.terms}>{t('bookReview.terms', { amount: formatMoneyMinor(wageMinor, ccy, lang) })}</Text>
+            <Text style={styles.terms}>{t('bookReview.terms', { amount: moneyText(wageMinor, ccy, lang) })}</Text>
             <Toggle label={t('bookReview.agree')} value={agreed} onValueChange={setAgreed} />
           </Card>
         </ScrollView>

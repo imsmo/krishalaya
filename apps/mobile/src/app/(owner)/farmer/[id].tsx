@@ -20,12 +20,13 @@ import { useFlag } from '../../../core/flags/useFlag';
 import { getUser, assignments } from '../../../features/tenant/tenant.api';
 import { approvalStatusTone } from '../../../features/tenant/tenant-admin';
 import { openWebConsole } from '../../../core/deeplink';
+import { isolate } from '../../../core/i18n/bidi';
 
 const SECTIONS = ['personal', 'activity', 'subscription'] as const;
 
 export default function FarmerDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('tenant_admin_lite');
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -50,6 +51,7 @@ export default function FarmerDetail() {
   };
   const onMessage = () => Alert.alert(t('owner.farmer.messageTitle'), t('owner.farmer.messageBody'));
 
+  // Not isolated (PC-56 RTL-1h-2): `initials` below takes the first letter of each word, and an LRI mark would become one.
   const name = user?.displayName?.trim() || (id ? t('owner.farmer.ref', { id: id.slice(0, 8).toUpperCase() }) : t('owner.farmer.title'));
   const initials = name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 
@@ -72,7 +74,7 @@ export default function FarmerDetail() {
           <Card style={styles.header}>
             <View style={styles.avatar}><Text style={styles.avatarText}>{initials}</Text></View>
             <Text style={styles.name}>{name}</Text>
-            {id ? <Text style={styles.ref}>{t('owner.farmer.idRef', { id: id.slice(0, 8).toUpperCase() })}</Text> : null}
+            {id ? <Text style={styles.ref}>{t('owner.farmer.idRef', { id: isolate(id.slice(0, 8).toUpperCase(), lang) })}</Text> : null}
             <View style={styles.badges}>
               {assignment ? <StatusPill label={t(`kyc.status.${assignment.kycStatus}`, { defaultValue: assignment.kycStatus })} tone={approvalStatusTone(assignment.kycStatus)} /> : null}
               {assignment ? <StatusPill label={t(`role.${assignment.roleCode}`, { defaultValue: assignment.roleCode })} tone="neutral" /> : null}

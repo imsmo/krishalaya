@@ -17,6 +17,7 @@ import { useTranslation } from '../../../../core/i18n/useTranslation';
 import { useFlag } from '../../../../core/flags/useFlag';
 import { monthMatrix, isoOf } from '../../../../features/labour/availability-calendar';
 import { BOOKING_HOURS } from '../../../../features/labour/book-worker';
+import { chevBack, chevFwd, isolate } from '../../../../core/i18n/bidi';
 
 const DOW = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 const SLOTS: Array<{ h: number; label: string; recommended?: boolean }> = [
@@ -56,7 +57,7 @@ export default function BookWhen() {
   );
 
   return (
-    <ScreenScaffold title={t('bookTask.bookName', { name: params.workerId ? t('bookWorker.workerAnon', { id: params.workerId.slice(0, 6).toUpperCase() }) : t('bookTask.aWorker') })} scroll={false} footer={footer}>
+    <ScreenScaffold title={t('bookTask.bookName', { name: params.workerId ? t('bookWorker.workerAnon', { id: isolate(params.workerId.slice(0, 6).toUpperCase(), lang) }) : t('bookTask.aWorker') })} scroll={false} footer={footer}>
       <View style={styles.progress}>
         <View style={styles.bar}><View style={[styles.seg, styles.done]} /><View style={[styles.seg, styles.active]} /><View style={[styles.seg, styles.pending]} /><View style={[styles.seg, styles.pending]} /></View>
         <Text style={styles.step}>{t('bookWhen.step')}</Text>
@@ -70,9 +71,9 @@ export default function BookWhen() {
 
         {/* Month nav */}
         <View style={styles.monthNav}>
-          <Pressable onPress={() => shiftMonth(-1)} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('worker.avail.prevMonth')}><Text style={styles.nav}>‹</Text></Pressable>
+          <Pressable onPress={() => shiftMonth(-1)} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('worker.avail.prevMonth')}><Text style={styles.nav}>{chevBack(lang)}</Text></Pressable>
           <Text style={styles.monthLabel}>{monthLabel(year, month0, lang)}</Text>
-          <Pressable onPress={() => shiftMonth(1)} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('worker.avail.nextMonth')}><Text style={styles.nav}>›</Text></Pressable>
+          <Pressable onPress={() => shiftMonth(1)} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('worker.avail.nextMonth')}><Text style={styles.nav}>{chevFwd(lang)}</Text></Pressable>
         </View>
         <View style={styles.week}>{DOW.map((d, i) => <Text key={i} style={styles.dow}>{t(`worker.avail.dow.${d}`)}</Text>)}</View>
         {matrix.map((wk, wi) => (

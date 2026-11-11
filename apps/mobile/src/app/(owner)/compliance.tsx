@@ -17,6 +17,7 @@ import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { openWebConsole } from '../../core/deeplink';
 import { WEB_PATHS } from '../../features/tenant/web-console';
+import { chevFwd } from '../../core/i18n/bidi';
 
 const SECTIONS: { key: string; items: { key: string; icon: string }[] }[] = [
   { key: 'reports', items: [
@@ -31,7 +32,7 @@ const SECTIONS: { key: string; items: { key: string; icon: string }[] }[] = [
 ];
 
 export default function Compliance() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const enabled = useFlag('tenant_admin_lite');
   const [busy, setBusy] = useState(false);
 
@@ -55,7 +56,7 @@ export default function Compliance() {
                 <Card style={styles.row}>
                   <Text style={styles.icon}>{it.icon}</Text>
                   <Text style={styles.itemTitle}>{t(`owner.compliance.item.${it.key}`)}</Text>
-                  <Text style={styles.chev}>{'›'}</Text>
+                  <Text style={styles.chev}>{chevFwd(lang)}</Text>
                 </Card>
               </Pressable>
             ))}

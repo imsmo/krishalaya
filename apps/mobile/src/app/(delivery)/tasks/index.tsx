@@ -9,9 +9,10 @@ import { Card, EmptyState, ScreenScaffold, SkeletonCard, StatusPill, color, font
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { myTasks } from '../../../features/delivery-partner/delivery.api';
 import { isActiveTask, shipmentTone } from '../../../features/delivery-partner/delivery';
+import { dateTimeText } from '../../../core/i18n/dates';
 
 export default function TodayTasks() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const router = useRouter();
   const [items, setItems] = useState<Shipment[] | null>(null);
   useFocusEffect(useCallback(() => { myTasks().then(setItems); }, []));
@@ -33,7 +34,7 @@ export default function TodayTasks() {
                   <StatusPill label={t(`rider.status.${item.status}`) || item.status} tone={shipmentTone(item.status)} />
                 </View>
                 {item.requiresOtp ? <Text style={styles.muted}>{t('rider.today.otpNeeded')}</Text> : null}
-                {item.scheduledPickupAt ? <Text style={styles.muted}>{t('rider.today.pickupAt')} {new Date(item.scheduledPickupAt).toLocaleString()}</Text> : null}
+                {item.scheduledPickupAt ? <Text style={styles.muted}>{t('rider.today.pickupAt')} {dateTimeText(item.scheduledPickupAt, lang)}</Text> : null}
               </Card>
             </Pressable>
           )}

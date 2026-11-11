@@ -14,6 +14,7 @@ import type { WalletInsights } from '@krishalaya/sdk-js';
 import { formatDate } from '@krishalaya/i18n';
 import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
+import { moneyWholeText } from '../../../core/i18n/money';
 import { useFlag } from '../../../core/flags/useFlag';
 import { useSecureScreen } from '../../../core/security';
 import { walletEarnings, walletBalance, exportWalletStatement } from '../../../features/wallet/wallet.api';
@@ -178,12 +179,8 @@ function moneyShort(minor: string): string {
     return r >= 1000 ? `₹${Math.round(r / 1000)}k` : `₹${Math.round(r)}`;
   } catch { return '—'; }
 }
-function moneyInline(minor: string, cc: string, lang: string): string {
-  try {
-    const r = Number(BigInt(minor)) / 100;
-    return new Intl.NumberFormat(lang === 'en' ? 'en-IN' : lang === 'gu' ? 'gu-IN' : 'hi-IN', { style: 'currency', currency: cc, maximumFractionDigits: 0 }).format(r);
-  } catch { return '—'; }
-}
+// PC-56 RTL-1h-2: the whole-unit shape now comes from the one money helper (byte-identical under en/hi/gu; Indian shape, isolated, under ar).
+function moneyInline(minor: string, cc: string, lang: string): string { return moneyWholeText(minor, cc, lang); }
 
 const styles = StyleSheet.create({
   footer: { flexDirection: 'row', gap: space[3], alignItems: 'center' },

@@ -19,9 +19,10 @@ import { useAuth } from '../../core/auth/auth.store';
 import { myProfile, listReferrals, myEarnings, leaderboard } from '../../features/ambassador/ambassador.api';
 import { referralFunnel, referralStatusTone, sumEarningsMinor } from '../../features/ambassador/referral-flow';
 import { referralsThisMonth, pendingReferrals, myRank, personInitials } from '../../features/ambassador/ambassador-home';
+import { arrowFwd, isolate } from '../../core/i18n/bidi';
 
 export default function AmbassadorHome() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const { state } = useAuth();
   const router = useRouter();
   const enabled = useFlag('ambassador_app');
@@ -74,14 +75,14 @@ export default function AmbassadorHome() {
                 <Text style={styles.onboardTitle}>{t('amb.home.onboardTitle')}</Text>
                 <Text style={styles.onboardSub}>{t('amb.home.onboardSub')}</Text>
               </View>
-              <Text style={styles.onboardArrow}>→</Text>
+              <Text style={styles.onboardArrow}>{arrowFwd(lang)}</Text>
             </Card>
           </Pressable>
 
           {/* Pending onboardings — real, anonymised (§13) */}
           <View style={styles.rowBetween}>
             <Text style={styles.section}>{t('amb.home.pendingTitle')}</Text>
-            <Pressable onPress={() => router.push('/(ambassador)/farmers')} accessibilityRole="button"><Text style={styles.link}>{t('amb.home.allCount', { n: funnel.invited + funnel.signedUp })} →</Text></Pressable>
+            <Pressable onPress={() => router.push('/(ambassador)/farmers')} accessibilityRole="button"><Text style={styles.link}>{t('amb.home.allCount', { n: funnel.invited + funnel.signedUp })} {arrowFwd(lang)}</Text></Pressable>
           </View>
           {pending.length === 0 ? (
             <Card><Text style={styles.muted}>{t('amb.home.pendingEmpty')}</Text></Card>
@@ -91,7 +92,7 @@ export default function AmbassadorHome() {
                 <View key={r.id} style={[styles.pendRow, i > 0 && styles.divide]}>
                   <View style={styles.avatar}><Text style={styles.avatarTxt}>{personInitials(r.code)}</Text></View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.pendName}>{t('amb.home.referralAnon', { code: r.code })}</Text>
+                    <Text style={styles.pendName}>{t('amb.home.referralAnon', { code: isolate(r.code, lang) })}</Text>
                     <StatusPill label={t(`amb.referral.status.${r.status}`, { defaultValue: r.status })} tone={referralStatusTone(r.status)} />
                   </View>
                   <Button title={t('amb.home.help')} variant="outline" size="sm" onPress={() => router.push('/(ambassador)/onboard-start')} />

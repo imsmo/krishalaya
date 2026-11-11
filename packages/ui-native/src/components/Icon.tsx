@@ -3,7 +3,14 @@
 // icon font. Add a new glyph by adding one entry to ICONS (a 24×24 stroke path or path-set). Decorative by
 // default (a11y-hidden); pass `label` to expose it to screen readers. Colour/size come from theme tokens at the
 // call-site (e.g. color.accent300, font.size.xl) — never hardcode.
+//
+// PC-56 RTL-1h-2: a DIRECTIONAL glyph (an arrow or a chevron: 'back', 'next', 'opens') is drawn mirrored when the app is laid out
+// right-to-left, because React Native flips the layout around it but never an SVG path. Every other glyph (a wheat, a bell, a check,
+// a phone …) is never mirrored. The direction is read from React Native's own `I18nManager.isRTL` at render — the layout the
+// icon actually sits in — and not from a prop, so all 21 directional uses in the app follow it with no call-site change. It is
+// true only after a person chose Arabic and reopened the app (apps/mobile core/mechanisms/rtlBoot.ts locks it off otherwise).
 import React from 'react';
+import { I18nManager } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { color as theme } from '../theme';
 
@@ -48,6 +55,14 @@ const ICONS: Record<IconName, React.ReactNode> = {
   'user-check': (<><Circle cx="9" cy="7" r="4" /><Path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" /><Path d="M16 11l2 2 4-4" /></>),
 };
 
+/** The glyphs that point a way and so mirror under right-to-left. Nothing else ever mirrors. */
+export const DIRECTIONAL_ICONS: ReadonlySet<IconName> = new Set<IconName>(['arrow-left', 'arrow-right', 'chevron-right']);
+
+/** Whether `name` is drawn mirrored in a layout whose direction is `rtl`. */
+export function iconMirrors(name: IconName, rtl: boolean): boolean {
+  return rtl && DIRECTIONAL_ICONS.has(name);
+}
+
 export interface IconProps {
   name: IconName;
   size?: number;
@@ -59,8 +74,10 @@ export interface IconProps {
 }
 
 export function Icon({ name, size = 24, color = theme.ink700, weight = 2, label }: IconProps) {
+  const mirrored = iconMirrors(name, I18nManager.isRTL);
   return (
     <Svg
+      style={mirrored ? MIRROR : undefined}
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -78,3 +95,5 @@ export function Icon({ name, size = 24, color = theme.ink700, weight = 2, label 
     </Svg>
   );
 }
+
+const MIRROR = { transform: [{ scaleX: -1 }] };

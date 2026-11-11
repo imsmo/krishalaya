@@ -21,10 +21,11 @@ import { useFlag } from '../../../core/flags/useFlag';
 import { getLessons, lessonMediaUrl, markProgress } from '../../../features/education/education.api';
 import { parseQuiz } from '../../../features/education/learn';
 import { moduleCount, nextLessons } from '../../../features/ambassador/training-hub';
+import { chevFwd } from '../../../core/i18n/bidi';
 
 export default function LessonPlayer() {
   const { id, courseId, enrollmentId } = useLocalSearchParams<{ id: string; courseId: string; enrollmentId: string }>();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('ambassador_training');
   const [lessons, setLessons] = useState<CourseLesson[]>([]);
@@ -94,7 +95,7 @@ export default function LessonPlayer() {
                   <Pressable key={l.id} onPress={() => router.push({ pathname: '/(ambassador)/lesson/[id]', params: { id: l.id, courseId: courseId!, enrollmentId: enrollmentId! } })} accessibilityRole="button" style={[styles.upRow, i > 0 && styles.divide]}>
                     <Text style={styles.upIcon}>🎬</Text>
                     <Text style={styles.upTitle} numberOfLines={2}>{l.defaultTitle}</Text>
-                    <Text style={styles.chev}>›</Text>
+                    <Text style={styles.chev}>{chevFwd(lang)}</Text>
                   </Pressable>
                 ))}
               </Card>

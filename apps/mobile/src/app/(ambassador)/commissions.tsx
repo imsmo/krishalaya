@@ -12,7 +12,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import type { AmbassadorEarning } from '@krishalaya/sdk-js';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
 import { Button, Card, EmptyState, MoneyText, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
@@ -22,6 +22,7 @@ import {
   commissionCategory, isPayout, monthCreditsMinor, monthCountByCategory,
   withdrawableMinor, paidMinor, momDeltaPct, EARNING_RULES,
 } from '../../features/ambassador/commissions-summary';
+import { moneyText } from '../../core/i18n/money';
 
 export default function Commissions() {
   const { t, lang } = useTranslation();
@@ -57,7 +58,7 @@ export default function Commissions() {
 
   const footer = (
     <Button
-      title={t('amb.commissions.withdrawTo', { amount: formatMoneyMinor(withdrawable, 'INR', lang) })}
+      title={t('amb.commissions.withdrawTo', { amount: moneyText(withdrawable, 'INR', lang) })}
       onPress={() => router.push('/(ambassador)/withdraw')}
       disabled={!canWithdraw}
     />
