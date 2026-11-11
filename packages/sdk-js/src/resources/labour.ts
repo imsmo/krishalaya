@@ -176,6 +176,7 @@ export class LabourResource {
   }
 
   // --- PC-54 W54-3 `mgnrega-program` (job-card slice) ---
+  // [PC-56 HOTFIX-16] Every labour/mgnrega/* method below is behind the `labour` AND `mgnrega` flags, both seeded OFF: they answer 404.
   async registerJobCard(input: { jobCardNo: string; regionId?: string }, idempotencyKey: string): Promise<{ id: string; jobCardNo: string }> {
     return (await this.http.request<{ id: string; jobCardNo: string }>('POST', 'labour/mgnrega/job-cards', { body: input, idempotencyKey })).data;
   }

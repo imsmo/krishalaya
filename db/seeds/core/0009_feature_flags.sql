@@ -32,6 +32,9 @@ INSERT INTO feature_flags (key, description, is_enabled, rollout_pct, rules) VAL
   ('memberships','Subscription tiers + wallet-paid memberships — OFF until launch', false, 100, '{}'),
   ('tenancy','SaaS plans + tenant subscriptions (quota foundation) — OFF until launch', false, 100, '{}'),
   ('labour','Labour bookings + assignments + wage settlement (dignity floor) — OFF until launch', false, 100, '{}'),
+  -- PC-56 HOTFIX-16 (GOV-5 Q4-A, lead-applied 2026-11-11; no migration — a flag with no row already reads OFF, flags.service.ts): the
+  -- organisation's MGNREGA records (labour/mgnrega/*), composed with `labour` (both must be ON). OFF until the platform is connected to NREGASoft
+  ('mgnrega','PC-56 HOTFIX-16 (GOV-5 Q4-A, Law 10): the organisation''s MGNREGA records — job-card claims, works, musters, work demands, the 100-day ledger, the export (/v1/labour/mgnrega/*). Composes with `labour`: both must be ON. OFF = every /v1/labour/mgnrega/* route answers 404. Stays OFF until the platform is connected to NREGASoft', false, 100, '{}'),
   ('livestock','Animal registry + vet marketplace + fee settlement — OFF until launch', false, 100, '{}'),
   ('dairy','Milk procurement: MCC/collections/rate-cards/bills + wallet payout — OFF until launch', false, 100, '{}'),
   ('equipment','Equipment/CHC rental: assets/rates/bookings + escrow settlement — OFF until launch', false, 100, '{}'),

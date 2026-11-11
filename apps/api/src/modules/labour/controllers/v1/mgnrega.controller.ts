@@ -1,10 +1,18 @@
-// modules/labour/controllers/v1/mgnrega.controller.ts · PC-54 W54-3 `mgnrega-program` (job-card slice;
-// canon W346). Self-service register + self-read; the cross-region LIST is the gov/ops oversight read
-// (labour.manage). Work-demand/muster/wage sync remain gated (`mgnrega-works`) — the state ledger side.
+// modules/labour/controllers/v1/mgnrega.controller.ts · PC-54 W54-3 `mgnrega-program` (job-card slice; canon W346), PC-55 A4/B2
+// (works, musters, demands, the export).
+// [PC-56 HOTFIX-16 · C-3 corrected, Law 5] This header used to say: "Self-service register + self-read; the cross-region LIST is the
+// gov/ops oversight read (labour.manage). Work-demand/muster/wage sync remain gated (`mgnrega-works`)". None of that was true: the list
+// needs `booking.manage` (held by `tenant_admin` only — no gov or ops realm reads anything here), demand and muster WRITES exist below,
+// there was no `mgnrega-works` flag, and NOTHING on this controller was gated — it was the only labour controller without a flag.
+// NOW: every route is behind BOTH `labour` AND `mgnrega` (the guard composes them — flags.guard.ts), at the CLASS level so a route added
+// later is covered too. Both are seeded OFF (core/0009), so with the seed flags every route answers 404, the house's flag-off answer.
+// GOV-5 Q4-A (lead-applied, the founder's to reopen): it stays off until the platform is connected to NREGASoft. The known defects behind
+// the switch (survey_gov5 F-3, F-5, F-6, F-8, F-11) are recorded, not fixed here.
 import { Controller, Get, Headers, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthGuard } from '../../../../core/auth/auth.guard';
 import { PermissionsGuard, RequirePermissions } from '../../../../core/auth/permissions.guard';
+import { FeatureFlag, FeatureFlagGuard } from '../../../../core/feature-flags/flags.guard';
 import { ZodBody, ZodQuery } from '../../../../core/http/zod.pipe';
 import { CurrentContext } from '../../../../core/tenancy-context/current-context.decorator';
 import { RequestContext } from '../../../../core/tenancy-context/request-context';
@@ -82,7 +90,8 @@ const ExportSchema = z.object({
 }).strict();
 
 @Controller({ path: 'labour/mgnrega', version: '1' })
-@UseGuards(AuthGuard, PermissionsGuard)
+@UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)
+@FeatureFlag('labour', 'mgnrega')
 export class MgnregaController {
   constructor(private readonly svc: MgnregaService) {}
   private actor(ctx: RequestContext) { return { userId: ctx.userId, canManage: ctx.permissions.has('booking.manage') || ctx.permissions.has('*') }; }
@@ -145,7 +154,9 @@ export class MgnregaController {
     return this.svc.export(ctx.tenantId, this.actor(ctx), ip, dto).then((data) => ({ data }));
   }
 
-  /** The worker's own 100-day ledger (self-read; no Manage needed for one's own card). */
+  /** One job card's 100-day ledger — MANAGER-ONLY. [PC-56 HOTFIX-16 · C-2 corrected, Law 5] This comment used to say "The worker's own
+   *  100-day ledger (self-read; no Manage needed for one's own card)"; the route passes `{ self: false }`, so the service demands
+   *  `booking.manage` of every caller and a worker cannot read her own ledger (survey_gov5 F-6 — recorded, not fixed: GOV5-B5). */
   @Get('job-cards/:id/ledger')
   cardLedger(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
     return this.svc.cardLedger(ctx.tenantId, this.actor(ctx), id, { self: false }).then((data) => ({ data }));
