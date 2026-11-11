@@ -3,6 +3,9 @@
 // silently), then asserted against every `gov3.` value in en, hi and gu — Q1's sentence alone may say "releases" and "pauses" (it says the
 // console never does). Q1-A, Q2-A and Q4-A are PINNED verbatim in English and by meaning in hi and gu. Plus a BRAND guard: no canon person,
 // body, place, scheme code or reference in any `gov3.` value or GOV-3a source.
+// GOV-3b (brief_gov3b.md §E, survey E7): the 3b regexes — each PROVEN on its W341 / W342 / W343 canon phrase — run over every `gov3.` value
+// too; Q3-A and Q5-A pinned verbatim in English and by meaning in hi and gu. (E7's "reconcil except Q5's sentence": Q5's sentence has no
+// "reconcil" in it, so no key is exempt — the guard runs on every value.)
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { en } from '../i18n/en';
@@ -63,6 +66,41 @@ const BRAND: ReadonlyArray<[RegExp, string]> = [
   [/DBT-\d/i, 'DBT-0713-2'], [/Christian/i, 'A. Christian'], [/Kapadia/i, 'Dr. D. Kapadia'], [/Keshod/i, 'Keshod'], [/GM26-/i, 'GM26-097854'],
   [/PFMS-\d/i, 'PFMS-26-71••402'], [/\bDK\b/, 'avatar "DK"'], [/[A-Z]••• [A-Z]\./, 'D••• B.'], [/\bW3(13|33|35)\b/, 'W313 as-of law'],
 ];
+/** GOV-3b · [name, regex, the W341 / W342 / W343 canon phrase it is proven on, keys exempt] — E7's list plus the 3b screens' own false words. */
+const GUARDS_3B: ReadonlyArray<[string, RegExp, string, string[]?]> = [
+  ['penny', /penny/i, 'Our record: account ••42 (penny-drop verified 04 Jun) · from the application'],
+  ['NPCI', /NPCI/i, 'both accounts resolve to the same Aadhaar-seeded beneficiary per NPCI mapper'],
+  ['Aadhaar-seeded', /Aadhaar/i, 'Name mismatch (bank vs Aadhaar spelling)'],
+  ['account', /account/i, 'account-tail mismatch'],
+  ['IFSC', /IFSC/i, 'none — we re-map the IFSC ourselves and re-queue'],
+  ['a/c', /a\/c/i, '₹17,280 → a/c ••42 · credited → a/c ••88'],
+  ['••', /••/, 'farmer D••• B., Keshod'],
+  ['re-queue', /re-?queue/i, 'Every bounce has a named reason, a farmer-side fix, and an automatic re-queue'],
+  ['recall', /recall/i, 'wrong beneficiary — recall via PFMS process'],
+  ['SMS', /\bSMS\b/, 'one branch visit … the SMS names the branch'],
+  ['reminder', /reminder/i, 'Send fix-reminders (this week\'s 47 unfixed)'],
+  ['reconcil', /reconcil/i, 'PFMS reconciliation — DBT-0713-2'],
+  ['foot', /\bfoot/i, 'A recon that doesn\'t foot doesn\'t close'],
+  ['observed from', /observed from|observes/i, 'The platform observes and reconciles credits'],
+  ['acknowledg', /acknowledg/i, 'Our file vs PFMS acknowledgement, to the rupee'],
+  ['acks', /\backs?\b/i, 'Missing acks ₹62,208 · 3 lines · PFMS re-query at 18:00'],
+  ['rupee', /rupee|₹/i, 'Our file vs PFMS acknowledgement, to the rupee'],
+  ['bounce', /bounce/i, 'Bounce desk — 88 farmers not yet paid'],
+  ['KPI', /\bKPI\b/, 'The desk\'s only KPI is reaching zero'],
+  ['escalat', /escalat/i, 'unresolved 7 days — auto-escalates'],
+  ['investigating', /investigat/i, 'Recon case — GM26-097854 · investigating'],
+  ['dormant', /dormant/i, 'Account dormant (no activity 24 months)'],
+  ['elderly', /elderly/i, 'three are elderly farmers with dormant accounts'],
+  ['home visit', /home[- ]visit/i, '7 older than 21 days → ambassador home-visit ordered'],
+  ['re-seed / re-map', /re-?seed|re-?map/i, 're-seed to another owned account in-app'],
+  ['two taps', /two taps/i, 'pick another verified account in-app — two taps'],
+  ['unmask / reveal', /unmask|reveal/i, 'account tails unmask only for the finance role (logged reveal)'],
+  ['bank file', /bank file/i, 'Bounce statuses shown as-of the last bank file'],
+  ['landed', /landed|none have/i, 'Zero bounces — Every credit landed'],
+  ['beneficiary', /beneficiar/i, 'Aadhaar-seeded beneficiary per NPCI mapper'],
+  ['has the money', /has the money/i, 'the FARMER HAS THE MONEY, our record is what\'s stale'],
+  ['fully matched', /fully|automatic(?!ally)/i, 'Fully reconciled · Close is automatic'],
+];
 const SOURCES_3A = ['components/gov3/DbtViews.tsx', 'app/dbt/page.tsx', 'features/gov3/refusals.ts'];
 
 describe('PC-56 GOV-3a · the claims guard (gov3. scope)', () => {
@@ -74,11 +112,26 @@ describe('PC-56 GOV-3a · the claims guard (gov3. scope)', () => {
   });
   it.each(Object.entries(CATS))('%s: no gov3. value trips a guard or a brand regex', (_l, cat) => {
     const vals = scoped(cat);
-    expect(vals.length).toBe(56);
+    expect(vals.length).toBe(56 + 52);   // GOV-3a 56 + GOV-3b 52
     for (const [k, v] of vals) {
       for (const [name, re, , exempt] of GUARDS) if (!(exempt ?? []).includes(k)) expect([k, name, re.test(v)]).toEqual([k, name, false]);
       for (const [re] of BRAND) expect([k, String(re), re.test(v)]).toEqual([k, String(re), false]);
     }
+  });
+  it.each(GUARDS_3B.map((g) => [g[0], g] as const))('GOV-3b: the guard "%s" matches the W341 / W342 / W343 canon phrase it exists to stop', (_n, g) => {
+    expect(g[1].test(g[2])).toBe(true);
+  });
+  it.each(Object.entries(CATS))('GOV-3b · %s: no gov3. value trips a 3b guard', (_l, cat) => {
+    for (const [k, v] of scoped(cat)) for (const [name, re, , exempt] of GUARDS_3B) if (!(exempt ?? []).includes(k)) expect([k, name, re.test(v)]).toEqual([k, name, false]);
+  });
+  it('GOV-3b · Q3-A and Q5-A verbatim (en) and by meaning in hi and gu', () => {
+    expect(en['gov3.q3']).toBe('This console never shows a farmer\'s bank details.');
+    expect(en['gov3.q5']).toBe('PFMS is not connected to this platform. Nothing here is matched against PFMS, and no message about a payment is sent to a farmer from this console.');
+    expect(/बैंक विवरण/.test(hi['gov3.q3']) && /कभी/.test(hi['gov3.q3']) && /नहीं दिखाता/.test(hi['gov3.q3'])).toBe(true);
+    expect(/બેંક વિગતો/.test(gu['gov3.q3']) && /ક્યારેય/.test(gu['gov3.q3']) && /બતાવતું નથી/.test(gu['gov3.q3'])).toBe(true);
+    expect(/PFMS इस प्लेटफ़ॉर्म से जुड़ा नहीं है/.test(hi['gov3.q5']) && /मिलाया नहीं जाता/.test(hi['gov3.q5']) && /संदेश नहीं भेजा जाता/.test(hi['gov3.q5'])).toBe(true);
+    expect(/PFMS આ પ્લેટફોર્મ સાથે જોડાયેલું નથી/.test(gu['gov3.q5']) && /મેળવાતું નથી/.test(gu['gov3.q5']) && /સંદેશ મોકલાતો નથી/.test(gu['gov3.q5'])).toBe(true);
+    for (const cat of [hi, gu]) for (const k of ['gov3.q3', 'gov3.q5']) expect([k, cat[k] !== en[k]]).toEqual([k, true]);
   });
   it('Q1-A, Q2-A and Q4-A verbatim (en) and by meaning in hi and gu', () => {
     expect(en['gov3.q1']).toBe('This console never prepares, releases or pauses a payment. Benefits are paid by PFMS and the banks, outside this platform, and this platform cannot check them.');

@@ -3,11 +3,15 @@
 // Q2's and Q4's sentences verbatim; "What this console does not do" (W339, W340, W344 in plain words); no money figure, %, single payment,
 // farmer, bank detail, reference, list of payments, release or file; every state (ready, none marked, no scheme, switched off, refused, error
 // with Retry → the re-read chain); the refusals BY NAME in en/hi/gu. And B4: the applications page words `disbursed` as GOV-1b does.
+// GOV-3b: the sections "PFMS" (W341, W342 — Q5 verbatim) and "Returned payments" (W343 — no row, no count; Q3 verbatim), each canon feature
+// named once as not done, the refusals BY NAME; in every state; and NO account, IFSC, bank or PFMS reference, farmer name or village, `••` or
+// `a/c` ANYWHERE in the markup — even when the read's fixture carries bank-shaped sentinels (extra fields the view must never print).
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { DbtView } from '../components/gov3/DbtViews';
 import { ApplicationsListView } from '../components/gov2/ApplicationsViews';
-import { gov3RefusalKeys, GOV3_NOT_DONE } from '../features/gov3/refusals';
+import type { GovOverview } from '@krishalaya/sdk-js';
+import { gov3RefusalKeys, GOV3_NOT_DONE, GOV3_NOT_DONE_3B, GOV3_SECTIONS } from '../features/gov3/refusals';
 import type { DashState } from '../features/gov1/dashboard';
 import { en } from '../i18n/en';
 import { hi } from '../i18n/hi';
@@ -95,5 +99,69 @@ describe('PC-56 GOV-3a · B4 — the applications page words `disbursed` as GOV-
     const t = text(renderToStaticMarkup(<ApplicationsListView t={tr(cat)} state="ok" me={ME_OFFICER} items={items} schemes={SCHEMES} nextCursor={null} />));
     expect(t).toContain(cat['gov1.dash.status.disbursed']);
     if (cat === en) expect(t).not.toMatch(/(^|[^y] )Disbursed\b/);
+  });
+});
+
+const Q3 = 'This console never shows a farmer\'s bank details.';
+const Q5 = 'PFMS is not connected to this platform. Nothing here is matched against PFMS, and no message about a payment is sent to a farmer from this console.';
+/** The overview with bank-shaped SENTINELS on every row, every scheme and at the top (fields the server never sends; never to be printed). */
+const SENTINEL = { accountTail: '••4242', account: 'a/c 000011114242', ifsc: 'SBIN0004242', bankRef: 'UTR4242RET', pfmsRef: 'PFMSREF4242', farmerName: 'Sentinel Farmer', village: 'Sentinelpur' };
+const OVERVIEW_BANK = { ...OVERVIEW, ...SENTINEL, byScheme: OVERVIEW.byScheme.map((r) => ({ ...r, ...SENTINEL, scheme: { ...r.scheme, ...SENTINEL } })) } as unknown as GovOverview;
+const NO_BANK = /4242|Sentinel|••|a\/c|IFSC|account|\bUTR|PFMSREF/i;   // ("village" is the word a refusal uses to say none is shown; the sentinel village is caught by /Sentinel/)
+/** One GOV-3b section's markup, from its opening tag to the end of its "not done" list (before its refusals). */
+const sectionOf = (h: string, id: string) => (h.match(new RegExp(`<section class="kv-card" data-kv-section="${id}"[\\s\\S]*?</ul>`)) ?? [''])[0];
+
+describe('PC-56 GOV-3b · /dbt\'s sections "PFMS" (W341, W342) and "Returned payments" (W343)', () => {
+  it('Q5 verbatim in the PFMS section; Q3 verbatim in the returned-payments section, which lists and counts nothing', () => {
+    const h = view(); const t = text(h);
+    expect(t).toContain(Q5); expect(t).toContain(Q3);
+    expect(text(sectionOf(h, 'pfms'))).toContain(Q5); expect(text(sectionOf(h, 'returns'))).toContain(Q3);
+    expect(h).toContain('data-kv-section="pfms" data-kv-files="W341 W342"'); expect(h).toContain('data-kv-section="returns" data-kv-files="W343"');
+    expect(text(sectionOf(h, 'returns'))).toContain('No returned payment is listed or counted on this page.');
+    for (const id of ['pfms', 'returns']) {
+      const sec = sectionOf(h, id);
+      expect([id, /<table|<td|data-kv-status|data-kv-count/.test(sec), /\d/.test(text(sec))]).toEqual([id, false, false]);
+    }
+  });
+  it('each canon feature (matching, cases, certificate requests, taking back, sending again, contacting a farmer) named ONCE, as not done', () => {
+    const h = view(); const t = text(h);
+    for (const n of GOV3_NOT_DONE_3B) {
+      expect([n.id, h.includes(`data-kv-not-done-item="${n.id}"`)]).toEqual([n.id, true]);
+      expect([n.id, t.split(en[n.key]).length - 1]).toEqual([n.id, 1]);
+      expect([n.id, text(sectionOf(h, n.section)).includes(en[n.key])]).toEqual([n.id, true]);
+    }
+    expect(t).toContain('Payments are not compared with PFMS figures here, in total or one by one, and no difference is worked out.');
+    expect(t).toContain('Nothing here asks PFMS for a certificate that a payment arrived.');
+    expect(t).toContain('No returned payment is sent again from here, automatically or by hand.');
+  });
+  it('in every state (ready, none marked, no scheme, off, refused, error) both sections and both sentences are printed', () => {
+    for (const [s, o] of [['ok', OVERVIEW], ['ok', OVERVIEW_EMPTY], ['no_scheme', OVERVIEW_NO_SCHEME], ['off', null], ['forbidden', null], ['error', null]] as const) {
+      const h = view(s, o as never); const t = text(h);
+      expect([s, t.includes(Q3), t.includes(Q5), h.includes('data-kv-section="pfms"'), h.includes('data-kv-section="returns"')]).toEqual([s, true, true, true, true]);
+    }
+  });
+  it('Q3-A: no account, IFSC, bank or PFMS reference, farmer name or village, •• or a/c ANYWHERE — even with bank-shaped sentinels in the read', () => {
+    expect(NO_BANK.test(JSON.stringify(OVERVIEW_BANK))).toBe(true);   // the sentinels are there to be (not) printed
+    for (const cat of [en, hi, gu]) for (const o of [OVERVIEW, OVERVIEW_BANK]) {
+      const h = view('ok', o, cat);
+      expect(NO_BANK.test(h)).toBe(false);            // the whole markup: text, attributes, refusals and all
+      expect(h).toContain('data-kv-dbt-counts="2"');  // the sentinel fixture still renders its counts
+    }
+    expect(text(view('ok', OVERVIEW_BANK))).toContain('Test Scheme A');
+  });
+  it('no false word of W341–W343 in visible text; no form, button, file link or opener of a 3b chain on the page', () => {
+    const h = view();
+    expect(FALSE_3A.test(noNotDone(h))).toBe(false);
+    expect(h).not.toMatch(/<form|<input|<button|<select|download=|do=ask|do=remind|do=pfms_file|do=pfms_reread/i);
+  });
+  it.each(Object.entries(CATS))('%s: the sections\' refusals BY NAME, every key resolved', (_l, cat) => {
+    const h = view('ok', OVERVIEW, cat); const t = text(h);
+    for (const sec of GOV3_SECTIONS) {
+      const st = text(h.slice(h.indexOf(`data-kv-section="${sec.id}"`)));
+      for (const k of [sec.titleKey, sec.statement, ...gov3RefusalKeys(sec.surface)]) expect([sec.id, k, typeof cat[k], st.includes(cat[k])]).toEqual([sec.id, k, 'string', true]);
+    }
+    for (const n of GOV3_NOT_DONE_3B) expect([n.id, typeof cat[n.key], t.includes(cat[n.key])]).toEqual([n.id, 'string', true]);
+    for (const k of ['gov3.q3', 'gov3.q5', 'gov3.refused.sectionTitle']) expect([k, typeof cat[k], t.includes(cat[k])]).toEqual([k, 'string', true]);
+    expect(/gov3\.|gov2\.|gov1\.|common\./.test(t)).toBe(false);
   });
 });

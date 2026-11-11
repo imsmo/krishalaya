@@ -24,7 +24,7 @@ const pages = (cat: Record<string, string>) => {
     rtl(<DbtView t={t} state="ok" me={ME_OFFICER} overview={OVERVIEW} />), rtl(<DbtView t={t} state="ok" me={ME_OFFICER} overview={OVERVIEW_EMPTY} />),
     rtl(<DbtView t={t} state="no_scheme" me={ME_OFFICER} overview={OVERVIEW_NO_SCHEME} />),
     ...(['off', 'forbidden', 'error'] as const).map((s) => rtl(<DbtView t={t} state={s} me={ME_OFFICER} overview={null} />)),
-    ...GOV3_CHAINS.flatMap((c) => c.states.map((s) => rtl(<Gov3Chain t={t} chain={c.id} state={s} />))),
+    ...GOV3_CHAINS.filter((c) => c.wave === '3a').flatMap((c) => c.states.map((s) => rtl(<Gov3Chain t={t} chain={c.id} state={s} />))),   // (3b's chains: rtl-gov3b)
   ];
 };
 const SRC_3A = ['components/gov3/DbtViews.tsx', 'app/dbt/page.tsx'];   // (refusals.ts quotes the canon's own arrows in its `canon` strings; none is printed)

@@ -3,6 +3,8 @@
 //   • E2: /dbt reads ONLY gov.overview(); no Server Action, no 'use server', no form, input, button, select or textarea in a gov3 file;
 //   • E3: no formatMoneyMinor, no money module, no `amount`, no rupee sign in any gov3 file; the dead DBT helpers and features/money.ts are gone;
 //   • the view prints only the `approved` and `disbursed` counts of the read (no other status, no computed figure); the gate; GOV_NAV /dbt.
+//   • GOV-3b: `/dbt/recon`, `/dbt/recon/[id]`, `/dbt/bounces` have no route; the sections take no data; no bank / PFMS / farmer identifier is
+//     read or named in a view or the page; the 3b chains open only by `?do=` (no form, no button — the E2 assertions above cover them).
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -22,6 +24,24 @@ describe('PC-56 GOV-3a · E1 — one route', () => {
   it('the gov3 files are the ones this wave built; app/dbt holds page.tsx only', () => {
     expect([...GOV3_FILES].sort()).toEqual(['app/dbt/page.tsx', 'components/gov3/DbtViews.tsx', 'features/gov3/refusals.ts']);
     expect(walk(path.join(SRC, 'app', 'dbt'))).toEqual(['app/dbt/page.tsx']);
+  });
+  it('GOV-3b · W341, W342, W343 have no address of their own: /dbt/recon, /dbt/recon/[id], /dbt/bounces do not exist (not found)', () => {
+    for (const rel of ['app/dbt/recon', 'app/dbt/recon/[id]', 'app/dbt/bounces', 'app/dbt/recon/page.tsx', 'app/dbt/bounces/page.tsx'])
+      expect([rel, fs.existsSync(path.join(SRC, rel))]).toEqual([rel, false]);
+    const app = walk(path.join(SRC, 'app'));
+    expect(app.filter((r) => /recon|bounce|pfms|return/i.test(r))).toEqual([]);
+  });
+});
+
+describe('PC-56 GOV-3b · Q3-A — no bank, PFMS or farmer identifier in the page or the view', () => {
+  it('neither the page nor the view reads or names an account, IFSC, bank or PFMS reference, or a farmer\'s name or village', () => {
+    for (const rel of ['app/dbt/page.tsx', 'components/gov3/DbtViews.tsx'])
+      expect([rel, /account|ifsc|bankRef|bank_ref|pfmsRef|pfms_ref|utr\b|farmerName|village|userId|user_id|••/i.test(code(read(rel)))]).toEqual([rel, false]);
+  });
+  it('the sections take no data: Gov3Sections\' only prop is the translator', () => {
+    const v = code(read('components/gov3/DbtViews.tsx'));
+    expect(v).toMatch(/export function Gov3Sections\(\{ t \}: \{ t: Tr \}\)/);
+    expect(v).toMatch(/<Gov3Sections t=\{t\} \/>/);
   });
 });
 
