@@ -12,6 +12,7 @@ import Link from 'next/link';
 // PC-56 RTL-1e: the console's money text (features/rtl/money.ts `moneyText`) — the Indian shape, isolated, under Arabic; byte-identical under
 // en/hi/gu. Bound to the name `formatMoneyMinor` here so this view's call reads as before (its pinned OPS spec).
 import { moneyText as formatMoneyMinor } from '../../features/rtl/money';
+import { ltrText } from '../../features/rtl/span';   // PC-56 RTL-1g: a code inside a sentence, isolated under Arabic only
 import type { DairyBmcTile, DairyDaySummaryRow, DairyMcc, DairyMembership, DairyRateCard } from '@krishalaya/sdk-js';
 import type { Tr } from '../../features/ops3/refusals';
 import {
@@ -23,10 +24,10 @@ import { Ops3Refusals } from './Ops3Chain';
 const money = (minor: string | undefined, lang: string) => (isMinor(minor) ? formatMoneyMinor(minor, 'INR', lang) : null);
 
 /** The counter's chrome: the centre's own code and name, and "signed in as you" (Q14-A) — never a name from the canon, never a role. */
-export function CounterChrome({ t, centre }: { t: Tr; centre: DairyMcc | null }) {
+export function CounterChrome({ t, centre, lang = 'en' }: { t: Tr; centre: DairyMcc | null; lang?: string }) {
   return (
     <p className="kv-muted" data-kv-chrome="pos">
-      {centre ? <span data-kv-centre={centre.id}>{t.t('ops3.pos.centre', { code: centre.code, name: centre.defaultName })}</span> : null}
+      {centre ? <span data-kv-centre={centre.id}>{t.t('ops3.pos.centre', { code: ltrText(centre.code, lang), name: centre.defaultName })}</span> : null}
       {centre ? ' · ' : null}<span data-kv-signed-in="you">{t.t('ops3.pos.signedIn')}</span>
     </p>
   );
@@ -44,11 +45,11 @@ export function CounterStateView({ t, state, page }: { t: Tr; state: Exclude<Cou
 }
 
 /** Several centres in custody: pick one by a LINK (no input) — `?mcc=`. */
-export function CentrePicker({ t, centres, page }: { t: Tr; centres: readonly DairyMcc[]; page: string }) {
+export function CentrePicker({ t, centres, page, lang = 'en' }: { t: Tr; centres: readonly DairyMcc[]; page: string; lang?: string }) {
   return (
     <div className="kv-card" data-kv-state="pick">
       <h2 className="kv-card__title">{t.t('ops3.pos.pick.title')}</h2>
-      <ul>{centres.map((c) => <li key={c.id}><Link href={`${page}?mcc=${c.id}`} data-kv-pick={c.id}>{t.t('ops3.pos.centre', { code: c.code, name: c.defaultName })}</Link></li>)}</ul>
+      <ul>{centres.map((c) => <li key={c.id}><Link href={`${page}?mcc=${c.id}`} data-kv-pick={c.id}>{t.t('ops3.pos.centre', { code: ltrText(c.code, lang), name: c.defaultName })}</Link></li>)}</ul>
     </div>
   );
 }
@@ -84,9 +85,9 @@ export function PosHomeView({ t, lang, state, centre, centres, today, rows }: Po
   return (
     <section data-kv-page="pos_home">
       <h1>{t.t('ops3.pos.home.title')}</h1>
-      <CounterChrome t={t} centre={centre} />
+      <CounterChrome t={t} centre={centre} lang={lang} />
       <p className="kv-lead">{t.t('ops3.pos.home.lead')}</p>
-      {state !== 'ok' ? <CounterStateView t={t} state={state} page={POS.home} /> : !centre ? <CentrePicker t={t} centres={centres} page={POS.home} /> : (
+      {state !== 'ok' ? <CounterStateView t={t} state={state} page={POS.home} /> : !centre ? <CentrePicker t={t} centres={centres} page={POS.home} lang={lang} /> : (
         <>
           <p data-kv-day={today ?? ''}>{t.t('ops3.pos.day', { day: today ?? '' })}</p>
           {rows === null ? <CounterStateView t={t} state="error" page={`${POS.home}?mcc=${centre.id}`} /> : POUR_SHIFTS.map((s) => (
@@ -112,13 +113,15 @@ export function PosHomeView({ t, lang, state, centre, centres, today, rows }: Po
 export interface PosCollectProps {
   t: Tr; state: CounterState; centre: DairyMcc | null; centres: readonly DairyMcc[]; today: string | null;
   roll: readonly DairyMembership[] | null; code: string | null; nextCursor: string | null; error: PourReason | null;
+  /** PC-56 RTL-1g: the page language (the centre code is isolated under Arabic only); 'en' when absent. */
+  lang?: string;
 }
-export function PosCollectView({ t, state, centre, centres, today, roll, code, nextCursor, error }: PosCollectProps) {
+export function PosCollectView({ t, state, centre, centres, today, roll, code, nextCursor, error, lang = 'en' }: PosCollectProps) {
   return (
     <section data-kv-page="pos_collect">
       <h1>{t.t('ops3.pos.collect.title')}</h1>
-      <CounterChrome t={t} centre={centre} />
-      {state !== 'ok' ? <CounterStateView t={t} state={state} page={POS.collect} /> : !centre ? <CentrePicker t={t} centres={centres} page={POS.collect} /> : (
+      <CounterChrome t={t} centre={centre} lang={lang} />
+      {state !== 'ok' ? <CounterStateView t={t} state={state} page={POS.collect} /> : !centre ? <CentrePicker t={t} centres={centres} page={POS.collect} lang={lang} /> : (
         <>
           <p className="kv-statement" data-kv-statement="ops3.pos.typedHere">{t.t('ops3.pos.typedHere')}</p>
           {error ? <p className="kv-error" role="alert" data-kv-reason={error}>{t.t(`ops3.pos.reason.${error}`)}</p> : null}
@@ -173,13 +176,15 @@ export function PosCollectView({ t, state, centre, centres, today, roll, code, n
 export interface PosQualityProps {
   t: Tr; centre: DairyMcc; pour: PourValue; memberCode: string; milkType: string | null; idemKey: string;
   action: (fd: FormData) => Promise<void>; back: string;
+  /** PC-56 RTL-1g: the page language (the centre code is isolated under Arabic only); 'en' when absent. */
+  lang?: string;
 }
-export function PosQualityView({ t, centre, pour, memberCode, milkType, idemKey, action, back }: PosQualityProps) {
+export function PosQualityView({ t, centre, pour, memberCode, milkType, idemKey, action, back, lang = 'en' }: PosQualityProps) {
   const flags = [...(pour.waterFlag ? ['waterSuspected'] : []), ...(pour.adulterationFlags ?? [])];
   return (
     <section data-kv-page="pos_quality" className="kv-card kv-chain" data-kv-chain="pos_act" data-kv-chain-kind="REAL" data-kv-chain-state="confirm">
       <h1>{t.t('ops3.chain.posAct.confirm.title')}</h1>
-      <CounterChrome t={t} centre={centre} />
+      <CounterChrome t={t} centre={centre} lang={lang} />
       <p className="kv-statement" data-kv-statement="ops3.pos.typed">{t.t('ops3.pos.typed')}</p>
       <p className="kv-statement" data-kv-statement="ops3.pos.payFromThem">{t.t('ops3.pos.payFromThem')}</p>
       <dl className="kv-facts" data-kv-pour="echo">
@@ -256,7 +261,7 @@ export function PosSlipView({ t, lang, state, pour, card, cardRead, centre }: Po
   return (
     <section data-kv-page="pos_slip">
       <h1>{t.t('ops3.pos.slip.title')}</h1>
-      <CounterChrome t={t} centre={centre} />
+      <CounterChrome t={t} centre={centre} lang={lang} />
       {state === 'none' || !pour ? (
         <div className="kv-card" data-kv-state="none" role="status">
           <h2 className="kv-card__title">{t.t('ops3.pos.slip.none.title')}</h2>
@@ -320,9 +325,9 @@ export function PosShiftView({ t, lang, state, centre, centres, today, rows, coo
   return (
     <section data-kv-page="pos_shift">
       <h1>{t.t('ops3.pos.shiftPage.title')}</h1>
-      <CounterChrome t={t} centre={centre} />
+      <CounterChrome t={t} centre={centre} lang={lang} />
       <p className="kv-lead">{t.t('ops3.pos.shiftPage.lead')}</p>
-      {state !== 'ok' ? <CounterStateView t={t} state={state} page={POS.shift} /> : !centre ? <CentrePicker t={t} centres={centres} page={POS.shift} /> : (
+      {state !== 'ok' ? <CounterStateView t={t} state={state} page={POS.shift} /> : !centre ? <CentrePicker t={t} centres={centres} page={POS.shift} lang={lang} /> : (
         <>
           <p data-kv-day={today ?? ''}>{t.t('ops3.pos.day', { day: today ?? '' })}</p>
           {rows === null ? <CounterStateView t={t} state="error" page={`${POS.shift}?mcc=${centre.id}`} /> : POUR_SHIFTS.map((s) => (

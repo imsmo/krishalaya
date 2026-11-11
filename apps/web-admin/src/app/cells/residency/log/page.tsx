@@ -18,7 +18,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireAdmin } from '../../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../../lib/admin-client';
-import { getTranslator } from '../../../../lib/i18n';
+import { getTranslator, getAdminDir } from '../../../../lib/i18n';
+import { rangeArrow } from '../../../../features/rtl/arrow';
 import {
   Button, Callout, EmptyState, StatusPill,
 } from '@krishalaya/ui';
@@ -56,6 +57,7 @@ export default async function ResidencyLogPage({ searchParams }: {
 }) {
   requireAdmin();
   const t = getTranslator();
+  const arrow = rangeArrow(getAdminDir());
   const days = searchParams.days && /^\d{1,3}$/.test(searchParams.days) ? searchParams.days : undefined;
   const country = searchParams.country && /^[A-Za-z]{2}$/.test(searchParams.country)
     ? searchParams.country.toUpperCase() : undefined;
@@ -189,7 +191,7 @@ export default async function ResidencyLogPage({ searchParams }: {
                 <td>{r.createdAt.slice(0, 16).replace('T', ' ')}</td>
                 <td>{r.attemptKind}</td>
                 <td>{r.subjectType}/{r.subjectId.slice(0, 8)}</td>
-                <td>{r.fromCountry ?? '—'} → {r.toCountry ?? '—'}</td>
+                <td>{r.fromCountry ?? '—'}{` ${arrow} `}{r.toCountry ?? '—'}</td>
                 <td>
                   {t.t(refusalKey(r.refusedBy))}
                   {/* Only two of the four refusals ARE the boundary. An attestation counting "the cell did not exist" as

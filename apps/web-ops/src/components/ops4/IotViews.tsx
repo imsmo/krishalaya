@@ -17,6 +17,7 @@ import {
 } from '../../features/ops4/iot';
 import { Ops4Refusals } from './Ops4Chain';
 import { incidentHref } from '../../features/ops5/alerts';
+import { ltrText } from '../../features/rtl/span';   // PC-56 RTL-1g: a code inside a sentence, isolated under Arabic only
 
 /** The Q6-A sentences printed (the second and the third; the first is stopped — see features/ops4/refusals.ts `q6_first_sentence`). */
 export const Q6_PRINTED = ['ops4.q6.typedNotSensor', 'ops4.q6.soilRegistryOnly'] as const;
@@ -76,8 +77,10 @@ export function ReadingLine({ t, tempC, at: when, source, readAt }: { t: Tr; tem
 export interface IotDashboardProps {
   t: Tr; state: IotState; readAt: number; overview: ColdOverview | null; lastBreach: ColdBreach | null | 'failed';
   loggers: readonly ColdLogger[] | null; registry: { soilPods: number; weatherMasts: number } | null;
+  /** PC-56 RTL-1g: the page language (logger serials and references are isolated under Arabic only); 'en' when absent. */
+  lang?: string;
 }
-export function IotDashboardView({ t, state, readAt, overview, lastBreach, loggers, registry }: IotDashboardProps) {
+export function IotDashboardView({ t, state, readAt, overview, lastBreach, loggers, registry, lang = 'en' }: IotDashboardProps) {
   if (state === 'off' || state === 'forbidden') return <NotShown t={t} state={state} page="dash" surface="iot_dashboard" />;
   const groups = byType<ColdSubjectRow>(overview?.items ?? []);
   return (
@@ -100,7 +103,7 @@ export function IotDashboardView({ t, state, readAt, overview, lastBreach, logge
                       : <span data-kv-reading="none">{t.t('ops4.iot.noReading')}</span>}
                     <br />
                     <span className="kv-muted" data-kv-logger={r.device ? r.device.id : 'none'}>
-                      {r.device ? t.t('ops4.iot.loggerSerial', { serial: r.device.serial ?? t.t('ops4.iot.serialUnknown') }) : t.t('ops4.iot.noLogger')}
+                      {r.device ? t.t('ops4.iot.loggerSerial', { serial: r.device.serial != null ? ltrText(r.device.serial, lang) : t.t('ops4.iot.serialUnknown') }) : t.t('ops4.iot.noLogger')}
                     </span>
                   </li>
                 ))}
@@ -112,7 +115,7 @@ export function IotDashboardView({ t, state, readAt, overview, lastBreach, logge
           {lastBreach === 'failed' ? <p className="kv-error" role="alert" data-kv-error="breaches">{t.t('ops4.iot.dash.lastBreachFailed')}</p>
             : lastBreach === null ? <p className="kv-empty-state" data-kv-empty="breach">{t.t('ops4.iot.dash.noBreach')}</p> : (
               <p data-kv-last-breach={lastBreach.id}>
-                {t.t('ops4.iot.dash.lastBreach', { type: t.t(`ops4.iot.type.${lastBreach.subjectType}`), ref: lastBreach.subjectRef, opened: at(t, lastBreach.openedAt) })}
+                {t.t('ops4.iot.dash.lastBreach', { type: t.t(`ops4.iot.type.${lastBreach.subjectType}`), ref: ltrText(lastBreach.subjectRef, lang), opened: at(t, lastBreach.openedAt) })}
                 {' '}{lastBreach.closedAt ? t.t('ops4.iot.breachClosed', { at: at(t, lastBreach.closedAt) }) : t.t('ops4.iot.breachOpen')}
                 {/* PC-56 OPS-5a (survey E1): the edge the canon drew only here — W400's last breach links its file (W403). */}
                 {' '}<Link className="kv-link" href={incidentHref(lastBreach.id)} data-kv-edge="W403">{t.t('ops5.alerts.openIncident')}</Link>
@@ -125,7 +128,7 @@ export function IotDashboardView({ t, state, readAt, overview, lastBreach, logge
               <ul className="kv-list" data-kv-loggers="registered">
                 {loggers.map((l) => (
                   <li key={l.deviceId} data-kv-logger-row={l.deviceId} data-kv-logger-status={l.status}>
-                    {t.t('ops4.iot.loggerSerial', { serial: l.serial })}{' · '}{t.t(l.status === 'registered' ? 'ops4.iot.logger.registered' : 'ops4.iot.logger.retired')}
+                    {t.t('ops4.iot.loggerSerial', { serial: ltrText(l.serial, lang) })}{' · '}{t.t(l.status === 'registered' ? 'ops4.iot.logger.registered' : 'ops4.iot.logger.retired')}
                     {' · '}{l.lastReadingAt ? t.t('ops4.iot.lastSigned', { at: at(t, l.lastReadingAt) }) : t.t('ops4.iot.neverSigned')}
                     {' · '}{l.key ? t.t('ops4.iot.mountedOn', { type: t.t(`ops4.iot.type.${l.key.subjectType}`) }) : t.t('ops4.iot.noKey')}
                   </li>
@@ -148,8 +151,8 @@ export function IotDashboardView({ t, state, readAt, overview, lastBreach, logge
 }
 
 // ══ W401 · /iot/device?type=&id=&hours= ══
-export interface IotDeviceProps { t: Tr; state: IotState | 'notFound'; readAt: number; hours: number; type: SubjectType | null; id: string | null; detail: ColdSubjectDetail | null }
-export function IotDeviceView({ t, state, readAt, hours, type, id, detail }: IotDeviceProps) {
+export interface IotDeviceProps { t: Tr; state: IotState | 'notFound'; readAt: number; hours: number; type: SubjectType | null; id: string | null; detail: ColdSubjectDetail | null; lang?: string }
+export function IotDeviceView({ t, state, readAt, hours, type, id, detail, lang = 'en' }: IotDeviceProps) {
   if (state === 'off' || state === 'forbidden') return <NotShown t={t} state={state} page="device" surface="iot_device" />;
   const self = type && id ? deviceHref(type, id, hours) : IOT.device;
   const sep = self.includes('?') ? '&' : '?';
@@ -167,7 +170,7 @@ export function IotDeviceView({ t, state, readAt, hours, type, id, detail }: Iot
             <div className="kv-facts__row"><dt>{t.t('ops4.iot.device.band')}</dt><dd data-kv-band={detail.band ? `${detail.band.minC}|${detail.band.maxC}` : 'none'}>
               {detail.band ? t.t('ops4.iot.bandText', { min: detail.band.minC, max: detail.band.maxC }) : t.t('ops4.iot.noBand')}</dd></div>
             <div className="kv-facts__row"><dt>{t.t('ops4.iot.device.logger')}</dt><dd data-kv-logger={detail.device ? detail.device.id : 'none'}>
-              {detail.device ? t.t('ops4.iot.loggerSerial', { serial: detail.device.serial ?? t.t('ops4.iot.serialUnknown') }) : t.t('ops4.iot.noLogger')}</dd></div>
+              {detail.device ? t.t('ops4.iot.loggerSerial', { serial: detail.device.serial != null ? ltrText(detail.device.serial, lang) : t.t('ops4.iot.serialUnknown') }) : t.t('ops4.iot.noLogger')}</dd></div>
           </dl>
           {detail.playbook?.rule === 'two_consecutive_device_readings' && detail.playbook.manualNeverOpens
             ? <p className="kv-statement" data-kv-statement="ops4.iot.breachRule">{t.t('ops4.iot.breachRule')}</p> : null}
@@ -220,10 +223,10 @@ export function IotDeviceView({ t, state, readAt, hours, type, id, detail }: Iot
 
 // ══ W404 · /iot/device-health ══
 type Silence = { id: string; deviceId: string; subjectType: string; subjectId: string; lastReadingAt: string; flaggedAt: string; alertState: string; resolvedAt: string | null };
-export interface IotHealthProps { t: Tr; state: IotState; silences: readonly Silence[]; loggers: readonly ColdLogger[]; silenceMinutes: number | null }
-export function IotHealthView({ t, state, silences, loggers, silenceMinutes }: IotHealthProps) {
+export interface IotHealthProps { t: Tr; state: IotState; silences: readonly Silence[]; loggers: readonly ColdLogger[]; silenceMinutes: number | null; lang?: string }
+export function IotHealthView({ t, state, silences, loggers, silenceMinutes, lang = 'en' }: IotHealthProps) {
   if (state === 'off' || state === 'forbidden') return <NotShown t={t} state={state} page="health" surface="iot_health" />;
-  const serialOf = (id: string) => loggers.find((l) => l.deviceId === id)?.serial ?? null;
+  const serialOf = (id: string) => { const s = loggers.find((l) => l.deviceId === id)?.serial; return s != null ? ltrText(s, lang) : null; };
   return (
     <section data-kv-ops4="iot-health" data-kv-state={state}>
       <Head t={t} page="health" />

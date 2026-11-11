@@ -45,7 +45,7 @@ function EntryLine({ t, lang, e }: { t: Tr; lang: string; e: Pick<MaintenanceEnt
 }
 
 /** THE ONE FORM (W408 "Record a maintenance entry"): GET to the review state; five inputs; values kept on a form error. */
-export function MaintForm({ t, machines, categories, values }: { t: Tr; machines: readonly EquipmentAsset[]; categories: readonly CategoryNode[]; values?: MaintDraftInput }) {
+export function MaintForm({ t, machines, categories, values, lang = 'en' }: { t: Tr; machines: readonly EquipmentAsset[]; categories: readonly CategoryNode[]; values?: MaintDraftInput; lang?: string }) {
   return (
     <form method="get" action={MAINT} className="kv-form" data-kv-form="maintenance" aria-labelledby="ops4-maint-form">
       <h2 id="ops4-maint-form" className="kv-card__title">{t.t('ops4.upkeep.record')}</h2>
@@ -53,7 +53,7 @@ export function MaintForm({ t, machines, categories, values }: { t: Tr; machines
       <label className="kv-field__label" htmlFor="ops4-m-asset">{t.t('ops4.upkeep.field.machine')}</label>
       <select id="ops4-m-asset" name="asset" className="kv-input" defaultValue={values?.asset ?? ''} required>
         <option value="">{t.t('ops4.upkeep.field.choose')}</option>
-        {machines.map((a) => <option key={a.id} value={a.id}>{machineText(t, a, categories)}</option>)}
+        {machines.map((a) => <option key={a.id} value={a.id}>{machineText(t, a, categories, lang)}</option>)}
       </select>
       <label className="kv-field__label" htmlFor="ops4-m-type">{t.t('ops4.upkeep.field.type')}</label>
       <select id="ops4-m-type" name="logType" className="kv-input" defaultValue={values?.logType ?? ''} required>
@@ -157,7 +157,7 @@ export function MaintenanceView({ t, lang, state, machines, machinesMore, catego
               <ul className="kv-list" data-kv-alerts="upkeep">
                 {alerts.filter((a) => mine.has(a.assetId)).map((a) => (
                   <li key={`${a.assetId}-${a.alert}`} data-kv-alert={a.alert}>
-                    {machineText(t, machines.find((m) => m.id === a.assetId) ?? null, categories)}{' · '}{t.t(`ops4.upkeep.alert.${a.alert}`)}
+                    {machineText(t, machines.find((m) => m.id === a.assetId) ?? null, categories, lang)}{' · '}{t.t(`ops4.upkeep.alert.${a.alert}`)}
                   </li>
                 ))}
               </ul>
@@ -167,7 +167,7 @@ export function MaintenanceView({ t, lang, state, machines, machinesMore, catego
             const rows = entries[m.id];
             return (
               <article key={m.id} className="kv-card" data-kv-machine={m.id} data-kv-asset-status={m.status}>
-                <h3 className="kv-card__title"><Link className="kv-link" href={`${CHC.detail}?id=${encodeURIComponent(m.id)}`} data-kv-edge="W406">{machineText(t, m, categories)}</Link>{' '}<span className="kv-badge">{t.t(`ops4.asset.${m.status}`)}</span></h3>
+                <h3 className="kv-card__title"><Link className="kv-link" href={`${CHC.detail}?id=${encodeURIComponent(m.id)}`} data-kv-edge="W406">{machineText(t, m, categories, lang)}</Link>{' '}<span className="kv-badge">{t.t(`ops4.asset.${m.status}`)}</span></h3>
                 {rows === null || rows === undefined ? <p className="kv-error" role="alert" data-kv-error="entries">{t.t('ops4.detail.maintFailed')}</p>
                   : rows.length === 0 ? <p className="kv-empty-state" data-kv-empty="entries">{t.t('ops4.detail.maintNone')}</p>
                     : <ul className="kv-list" data-kv-maintenance={rows.length}>{rows.map((e) => <EntryLine key={e.id} t={t} lang={lang} e={e} />)}</ul>}
@@ -176,7 +176,7 @@ export function MaintenanceView({ t, lang, state, machines, machinesMore, catego
           })}
           {machines.length > MAINT_MACHINES || machinesMore ? <p className="kv-muted" data-kv-note="machines-more">{t.t('ops4.upkeep.firstN', { n: MAINT_MACHINES })}</p> : null}
           <p className="kv-muted" data-kv-note="no-notes">{t.t('ops4.upkeep.noNotes')}</p>
-          {machines.length > 0 ? <MaintForm t={t} machines={machines} categories={categories} /> : null}
+          {machines.length > 0 ? <MaintForm t={t} machines={machines} categories={categories} lang={lang} /> : null}
         </>
       )}
       <Ops4Refusals t={t} surface="chc_maintenance" />

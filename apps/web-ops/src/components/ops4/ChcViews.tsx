@@ -23,11 +23,12 @@ import { Ops4Refusals } from './Ops4Chain';
 
 const money = (minor: unknown, lang: string) => (isMinorString(minor) ? formatMoneyMinor(minor, 'INR', lang) : null);
 
-/** A machine in words: its category's name and its registration number. Never a person. */
-export function machineText(t: Tr, a: EquipmentAsset | null, categories: readonly CategoryNode[]): string {
+/** A machine in words: its category's name and its registration number. Never a person. PC-56 RTL-1g: the registration number is
+ *  isolated under Arabic only (`lang`, 'en' when absent — byte-identical under en/hi/gu). */
+export function machineText(t: Tr, a: EquipmentAsset | null, categories: readonly CategoryNode[], lang = 'en'): string {
   if (!a) return t.t('ops4.machine.notListed');
   const cat = categoryName(categories, a.categoryId) ?? t.t('ops4.machine.unnamed');
-  return a.regNo ? t.t('ops4.machine.label', { category: cat, regNo: a.regNo }) : t.t('ops4.machine.labelNoReg', { category: cat });
+  return a.regNo ? t.t('ops4.machine.label', { category: cat, regNo: ltrText(a.regNo, lang) }) : t.t('ops4.machine.labelNoReg', { category: cat });
 }
 
 function Statements({ t, keys, id }: { t: Tr; keys: readonly string[]; id: string }) {
@@ -61,7 +62,7 @@ function ReadError({ t, href }: { t: Tr; href: string }) {
 
 // ══ W405 · /chc/dashboard ══
 export interface ChcDashboardProps { t: Tr; lang: string; state: ChcState; machines: readonly EquipmentAsset[]; machinesMore: boolean; categories: readonly CategoryNode[]; hires: readonly EquipmentRental[]; hiresMore: boolean }
-export function ChcDashboardView({ t, state, machines, machinesMore, categories, hires, hiresMore }: ChcDashboardProps) {
+export function ChcDashboardView({ t, lang, state, machines, machinesMore, categories, hires, hiresMore }: ChcDashboardProps) {
   if (state === 'off') return <Off t={t} page="dash" surface="chc_dashboard" />;
   const counts = countByStatus(hires);
   return (
@@ -76,7 +77,7 @@ export function ChcDashboardView({ t, state, machines, machinesMore, categories,
             <ul className="kv-list" data-kv-machines={machines.length}>
               {machines.map((a) => (
                 <li key={a.id} data-kv-machine={a.id} data-kv-asset-status={a.status}>
-                  <Link className="kv-link" href={`${CHC.detail}?id=${encodeURIComponent(a.id)}`} data-kv-edge="W406">{machineText(t, a, categories)}</Link>
+                  <Link className="kv-link" href={`${CHC.detail}?id=${encodeURIComponent(a.id)}`} data-kv-edge="W406">{machineText(t, a, categories, lang)}</Link>
                   {' '}<span className="kv-badge">{t.t(`ops4.asset.${a.status}`)}</span>
                 </li>
               ))}
@@ -122,7 +123,7 @@ export function ChcEquipmentView({ t, lang, state, asset, categories, rates, mai
         <div className="kv-empty-state" data-kv-empty="machine"><h2>{t.t('ops4.detail.notFound.title')}</h2><p>{t.t('ops4.detail.notFound.body')}</p></div>
       ) : state === 'error' || !asset ? <ReadError t={t} href={`${self}&act=confirm`} /> : (
         <>
-          <h2 data-kv-machine={asset.id}>{machineText(t, asset, categories)}</h2>
+          <h2 data-kv-machine={asset.id}>{machineText(t, asset, categories, lang)}</h2>
           <dl className="kv-facts">
             <div className="kv-facts__row"><dt>{t.t('ops4.detail.category')}</dt><dd>{categoryName(categories, asset.categoryId) ?? t.t('ops4.machine.unnamed')}</dd></div>
             <div className="kv-facts__row"><dt>{t.t('ops4.detail.regNo')}</dt><dd>{asset.regNo ?? t.t('ops4.detail.notEntered')}</dd></div>
@@ -191,7 +192,7 @@ function Hire({ t, lang, h, machines, categories }: { t: Tr; lang: string; h: Eq
       <h3 className="kv-card__title" data-kv-booking-no={h.bookingNo}>{t.t('ops4.hire.bookingNo', { no: ltrText(h.bookingNo, lang) })}</h3>
       <dl className="kv-facts">
         {row('ops4.hire.machine', machine
-          ? <Link className="kv-link" href={`${CHC.detail}?id=${encodeURIComponent(h.assetId)}`} data-kv-edge="W406">{machineText(t, machine, categories)}</Link>
+          ? <Link className="kv-link" href={`${CHC.detail}?id=${encodeURIComponent(h.assetId)}`} data-kv-edge="W406">{machineText(t, machine, categories, lang)}</Link>
           : t.t('ops4.machine.notListed'))}
         {row('ops4.hire.status', <span className="kv-badge">{t.t(`ops4.status.${h.status}`)}</span>)}
         {row('ops4.hire.rate', <span data-kv-minor={h.rateMinor}>{t.t('ops4.rateLine', { money: money(h.rateMinor, lang) ?? t.t('ops4.none'), basis })}</span>)}

@@ -10,7 +10,8 @@ import { notFound } from 'next/navigation';
 import { requireAdmin } from '../../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../../lib/admin-client';
 import { DataTable, Column } from '../../../../components/DataTable';
-import { getTranslator } from '../../../../lib/i18n';
+import { getTranslator, getAdminDir } from '../../../../lib/i18n';
+import { rangeArrow } from '../../../../features/rtl/arrow';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { formatMoneyMinor } from '@krishalaya/i18n';
 import type { SchemeRow, SchemeChangeRow } from '../../../../features/schemes-registry/scheme';
@@ -36,6 +37,7 @@ const ERR = new Set(['defaultName', 'authorityId', 'categoryId', 'sourceUrl', 'b
 export default async function SchemeDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
   requireAdmin();
   const t = getTranslator();
+  const arrow = rangeArrow(getAdminDir());
 
   let s: SchemeDetail | undefined; let notice: string | undefined;
   try { s = (await adminGet<SchemeDetail>(`schemes-registry/schemes/${encodeURIComponent(params.id)}`)).data; }
@@ -76,7 +78,7 @@ export default async function SchemeDetailPage({ params, searchParams }: { param
         <div className="kv-facts__row"><dt>{t.t('sr.schemeName')}</dt><dd>{s.defaultName}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('sr.active')}</dt><dd><StatusPill tone={s.isActive ? 'success' : 'neutral'} label={s.isActive ? t.t('sr.activeYes') : t.t('sr.activeNo')} /></dd></div>
         <div className="kv-facts__row"><dt>{t.t('sr.fee')}</dt><dd>{formatMoneyMinor(s.processingFeeMinor, 'INR')}</dd></div>
-        <div className="kv-facts__row"><dt>{t.t('sr.window')}</dt><dd>{win ? `${win.opens} → ${win.closes}${win.season ? ` (${win.season})` : ''}` : t.t('sr.windowNone')}</dd></div>
+        <div className="kv-facts__row"><dt>{t.t('sr.window')}</dt><dd>{win ? `${win.opens} ${arrow} ${win.closes}${win.season ? ` (${win.season})` : ''}` : t.t('sr.windowNone')}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('sr.authorityId')}</dt><dd>{s.authorityId}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('sr.categoryId')}</dt><dd>{s.categoryId}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('sr.sourceUrl')}</dt><dd>{s.sourceUrl ?? t.t('common.dash')}</dd></div>

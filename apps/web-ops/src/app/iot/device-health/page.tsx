@@ -7,7 +7,7 @@ import type { Metadata } from 'next';
 import { SdkError, type ColdLogger } from '@krishalaya/sdk-js';
 import { requireSession } from '../../../lib/session';
 import { opsClient } from '../../../lib/api-client';
-import { getTranslator } from '../../../lib/i18n';
+import { getTranslator, getLang } from '../../../lib/i18n';
 import { IotHealthView } from '../../../components/ops4/IotViews';
 import { Ops4Chain } from '../../../components/ops4/Ops4Chain';
 import { chain4State } from '../../../features/ops4/refusals';
@@ -21,7 +21,7 @@ export function generateMetadata(): Metadata {
 
 export default async function IotHealthPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
   await requireSession(IOT.health);
-  const t = getTranslator();
+  const t = getTranslator(); const lang = getLang();
   const act = chain4State('device_act', searchParams);
   if (act) return <Ops4Chain t={t} chain="device_act" state={act} page={IOT.health} />;
   let status: 'ok' | number | 'failed' = 'ok';
@@ -31,5 +31,5 @@ export default async function IotHealthPage({ searchParams }: { searchParams?: R
     const r = await opsClient().coldChain.loggers();
     loggers = r.items; silences = r.silences; silenceMinutes = typeof r.silenceMinutes === 'number' ? r.silenceMinutes : null;
   } catch (e) { status = e instanceof SdkError ? e.status : 'failed'; }
-  return <IotHealthView t={t} state={iotState(status)} silences={silences} loggers={loggers} silenceMinutes={silenceMinutes} />;
+  return <IotHealthView t={t} lang={lang} state={iotState(status)} silences={silences} loggers={loggers} silenceMinutes={silenceMinutes} />;
 }

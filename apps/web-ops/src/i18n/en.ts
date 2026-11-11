@@ -2140,5 +2140,6 @@ export const en: Record<string, string> = {
   // ── end OPS-5b ──
   // ── PC-56 RTL-1e · the Arabic machine draft (founder Q1 "Draft all, opt-in only"): the switcher's draft tag and the banner (web-tenant's words) ──
   'lang.draft': 'machine draft',
+  'lang.comingSoon': 'Coming soon',
   'rtl.draftBanner': 'This Arabic text is a machine draft and has not been reviewed.',
 };

@@ -13,7 +13,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
-import { getTranslator } from '../../../lib/i18n';
+import { getTranslator, getAdminDir } from '../../../lib/i18n';
+import { rangeArrow } from '../../../features/rtl/arrow';
 import { revertSettingAction, setSettingValueAction } from '../actions';
 import { Button, Callout, StatusPill } from '@krishalaya/ui';
 import {
@@ -48,6 +49,7 @@ export default async function SettingDetailPage({ params, searchParams }: {
 }) {
   requireAdmin();
   const t = getTranslator();
+  const arrow = rangeArrow(getAdminDir());
 
   let s: Detail | null = null; let notice: string | undefined;
   try {
@@ -197,7 +199,7 @@ export default async function SettingDetailPage({ params, searchParams }: {
                     <tr key={`${h.createdAt}-${i}`}>
                       <td>{h.createdAt.slice(0, 16).replace('T', ' ')}</td>
                       <td>{t.t(`st11.action.${h.action}`)}</td>
-                      <td className="kv-mono">{show(h.oldValue)} → {show(h.newValue)}</td>
+                      <td className="kv-mono">{show(h.oldValue)}{` ${arrow} `}{show(h.newValue)}</td>
                       <td>
                         {h.actorAdminId.slice(0, 8)}
                         {/* The second name, where there was one. A reviewer scans this column for the rows that have

@@ -16,7 +16,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireAdmin } from '../../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../../lib/admin-client';
-import { getTranslator } from '../../../../lib/i18n';
+import { getTranslator, getAdminDir } from '../../../../lib/i18n';
+import { rangeArrow } from '../../../../features/rtl/arrow';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { reviewTranslationAction } from '../../actions';
 import {
@@ -43,6 +44,7 @@ export default async function ReviewQueuePage(
 ) {
   requireAdmin();
   const t = getTranslator();
+  const arrow = rangeArrow(getAdminDir());
 
   let view: QueueView | null = null; let notice: string | undefined;
   try {
@@ -140,7 +142,7 @@ export default async function ReviewQueuePage(
                   <option value="" disabled>{t.t('tr.text')}</option>
                   {/* ONLY rows this person may act on. A row in another language is not offered at all. */}
                   {rows.filter((r) => canReview(r, scopes)).map((r) => (
-                    <option key={r.id} value={r.id}>{r.languageCode} · {r.sourceText ?? r.field} → {r.text.slice(0, 40)}</option>
+                    <option key={r.id} value={r.id}>{r.languageCode} · {r.sourceText ?? r.field}{` ${arrow} `}{r.text.slice(0, 40)}</option>
                   ))}
                 </select>
                 <label htmlFor="q-decision" className="kv-field__label">{t.t('tr.decision')}</label>

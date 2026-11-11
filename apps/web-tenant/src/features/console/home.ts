@@ -3,6 +3,8 @@
 // No React, no I/O. Everything here is a rule about **not manufacturing urgency and not inventing progress** — the two ways
 // a console home can lie to the person who opens it first every morning.
 import type { DashboardAction, DashboardTiles, GoLiveState, GoLiveStep, TenantPlanHealth } from '@krishalaya/sdk-js';
+import { PREVIEW_LANGUAGES } from '@krishalaya/i18n';
+import { ltrRun } from '../rtl/span';
 
 export interface T { t(key: string, vars?: Record<string, string | number>): string }
 
@@ -74,6 +76,28 @@ export function ageLabel(hours: number | null, t: T): string | null {
 export function planUsagePct(p: TenantPlanHealth): number | null {
   if (p.memberLimit === null || p.memberLimit <= 0) return null;
   return Math.min(100, Math.floor((p.membersUsed / p.memberLimit) * 100));
+}
+
+/**
+ * PC-56 RTL-1g · the plan's status as words, not the API's code.
+ *
+ * The SDK types `planHealth.status` as `string | null`; the values are the `subscription_status` enum (migration 0002:
+ * trialing, active, past_due, paused, cancelled, expired), read as text by the dashboard read-model. Every one of them has a
+ * catalogue key in en/hi/gu/ar. A code the console does not know yet (a value added to the enum later) is printed as the code
+ * itself — honest, and never a raw key id — isolated left-to-right on a preview (rtl) page so it stays one run. null → null.
+ */
+export const PLAN_STATUS_KEYS: Readonly<Record<string, string>> = {
+  trialing: 'home.planStatus.trialing',
+  active: 'home.planStatus.active',
+  past_due: 'home.planStatus.pastDue',
+  paused: 'home.planStatus.paused',
+  cancelled: 'home.planStatus.cancelled',
+  expired: 'home.planStatus.expired',
+};
+export function planStatusLabel(status: string | null, t: T, lang: string): string | null {
+  if (!status) return null;
+  if (Object.prototype.hasOwnProperty.call(PLAN_STATUS_KEYS, status)) return t.t(PLAN_STATUS_KEYS[status]);
+  return PREVIEW_LANGUAGES.includes(lang) ? ltrRun(status) : status;
 }
 
 /** True when the tenant is close enough to its cap that a coordinator should know before they run an import. 90% is a

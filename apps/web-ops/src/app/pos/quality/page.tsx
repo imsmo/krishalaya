@@ -6,7 +6,7 @@ import type { Metadata } from 'next';
 import { randomUUID } from 'node:crypto';
 import { requireSession } from '../../../lib/session';
 import { opsClient } from '../../../lib/api-client';
-import { getTranslator } from '../../../lib/i18n';
+import { getTranslator, getLang } from '../../../lib/i18n';
 import { PosQualityView, PourFailure, CounterStateView } from '../../../components/ops3/CounterViews';
 import { Ops3Chain } from '../../../components/ops3/Ops3Chain';
 import { chain3State } from '../../../features/ops3/refusals';
@@ -19,7 +19,7 @@ export function generateMetadata(): Metadata { return { title: getTranslator().t
 
 export default async function PosQualityPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
   await requireSession(POS.quality);
-  const t = getTranslator();
+  const t = getTranslator(); const lang = getLang();
   const mcc = parseId(searchParams?.mcc);
   const collect = mcc ? `${POS.collect}?mcc=${mcc}` : POS.collect;
   const act = chain3State('pos_act', searchParams);
@@ -44,5 +44,5 @@ export default async function PosQualityPage({ searchParams }: { searchParams?: 
     onRoll = !!m; milkType = m?.defaultAnimalType ?? null;
   } catch { return <section data-kv-page="pos_quality"><CounterStateView t={t} state="error" page={`${POS.quality}?${pourQuery(built.value, ctx.centre.id, built.code)}`} /></section>; }
   if (!onRoll) return <Ops3Chain t={t} chain="pos_act" state="failure" back={collect} backKey="ops3.pos.backToForm"><PourFailure t={t} reason="member" /></Ops3Chain>;
-  return <PosQualityView t={t} centre={ctx.centre} pour={built.value} memberCode={built.code} milkType={milkType} idemKey={randomUUID()} action={recordPourAction} back={collect} />;
+  return <PosQualityView t={t} lang={lang} centre={ctx.centre} pour={built.value} memberCode={built.code} milkType={milkType} idemKey={randomUUID()} action={recordPourAction} back={collect} />;
 }

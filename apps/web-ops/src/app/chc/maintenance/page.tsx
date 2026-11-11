@@ -51,11 +51,11 @@ export default async function ChcMaintenancePage({ searchParams }: { searchParam
       return (
         <Ops4Chain t={t} chain="chc_form" state="error" page={MAINT}>
           <MaintFormError t={t} error={error} />
-          <MaintForm t={t} machines={machines} categories={categories} values={draft} />
+          <MaintForm t={t} machines={machines} categories={categories} values={draft} lang={lang} />
         </Ops4Chain>
       );
     }
-    const machine = machineText(t, machines.find((m) => m.id === checked.body?.assetId) ?? null, categories);
+    const machine = machineText(t, machines.find((m) => m.id === checked.body?.assetId) ?? null, categories, lang);
     return (
       <Ops4Chain t={t} chain="chc_form" state="review" page={MAINT}>
         <MaintReview t={t} lang={lang} machine={machine} body={checked.body} idemKey={randomUUID()} action={recordMaintenanceAction} draft={draft} />

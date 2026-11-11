@@ -12,13 +12,16 @@
 // PC-56 RTL-1e (founder Q1 "Draft all, opt-in only"; web-tenant's RTL-1b-1 switcher): a PREVIEW language (`PREVIEW_LANGUAGES` — Arabic) is
 // offered as a real choice, labelled as a machine draft beside its native name; pressing it is the explicit act that serves it. It is taken
 // out of the "coming soon" group (it is choosable now) and never reached from a browser language.
+//
+// PC-56 RTL-1g: the "coming soon" words are the catalogue's (`lang.comingSoon`, passed by Sidebar) — they were an English literal under
+// every language. The en value is exactly "Coming soon", so the en sidebar is byte-identical.
 import { usePathname, useSearchParams } from 'next/navigation';
 import { LANGUAGES, COMING_SOON_LANGUAGES, PREVIEW_LANGUAGES } from '@krishalaya/i18n';
 
 const PREVIEW = COMING_SOON_LANGUAGES.filter((l) => PREVIEW_LANGUAGES.includes(l.code));
 const SOON = COMING_SOON_LANGUAGES.filter((l) => !PREVIEW_LANGUAGES.includes(l.code));
 
-export function LocaleSwitcher({ active, label, comingSoonLabel, draftLabel }: { active: string; label: string; comingSoonLabel?: string; draftLabel: string }) {
+export function LocaleSwitcher({ active, label, comingSoonLabel, draftLabel }: { active: string; label: string; comingSoonLabel: string; draftLabel: string }) {
   const pathname = usePathname() || '/dashboard';
   const qs = useSearchParams()?.toString();
   const from = qs ? `${pathname}?${qs}` : pathname;
@@ -37,9 +40,9 @@ export function LocaleSwitcher({ active, label, comingSoonLabel, draftLabel }: {
         </button>
       ))}
       {SOON.length > 0 && (
-        <span className="kv-locale__soon-group" aria-label={comingSoonLabel ?? 'Coming soon'}>
+        <span className="kv-locale__soon-group" aria-label={comingSoonLabel}>
           {SOON.map((l) => (
-            <span key={l.code} lang={l.code} dir={l.dir} className="kv-locale__soon" aria-disabled="true" title={comingSoonLabel ?? 'Coming soon'}>
+            <span key={l.code} lang={l.code} dir={l.dir} className="kv-locale__soon" aria-disabled="true" title={comingSoonLabel}>
               {l.nameNative}
             </span>
           ))}

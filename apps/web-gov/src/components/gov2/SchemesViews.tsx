@@ -11,6 +11,7 @@ import type { ReactNode } from 'react';
 import type { GovMe, GovScheme, GovSchemeVersion, GovSchemeVersionDiff } from '@krishalaya/sdk-js';
 import { Gov2Refusals } from './Gov2Chain';
 import { atUtc } from '../../features/gov1/access';
+import { ltrOrNull, ltrText } from '../../features/rtl/span';   // PC-56 RTL-1g: instants and rule keys isolated under Arabic only
 import { chain2Href, SCHEME_TABS, type SchemeTab, type Tr } from '../../features/gov2/refusals';
 import { rulesInWords } from '../../features/gov2/rules-format';
 import { activeKey, asStored, diffFieldKey, secondPersonKey, versionStatusKey, type SchemeState, type SchemesState } from '../../features/gov2/schemes';
@@ -100,18 +101,18 @@ function Fact({ t, k, children, id }: { t: Tr; k: string; children: ReactNode; i
 }
 
 /** The rules in words (E6) — used by the rules tab and by the diff. */
-export function RulesInWords({ t, rules }: { t: Tr; rules: Record<string, unknown> | null | undefined }) {
+export function RulesInWords({ t, rules, lang = 'en' }: { t: Tr; rules: Record<string, unknown> | null | undefined; lang?: string }) {
   const w = rulesInWords(rules);
   if (w.lines.length === 0 && w.notApplied.length === 0) return <p data-kv-rules="none">{t.t('gov2.rules.none')}</p>;
   return (
     <ul className="kv-rules" data-kv-rules={w.lines.length}>
       {w.lines.map((l) => <li key={l.field} data-kv-rule={l.field}>{t.t(l.key, l.vars)}</li>)}
-      {w.notApplied.length ? <li data-kv-rule="not-applied">{t.t('gov2.rule.notApplied', { keys: w.notApplied.join(', ') })}</li> : null}
+      {w.notApplied.length ? <li data-kv-rule="not-applied">{t.t('gov2.rule.notApplied', { keys: ltrText(w.notApplied.join(', '), lang) })}</li> : null}
     </ul>
   );
 }
 
-function Identity({ t, s }: { t: Tr; s: GovScheme }) {
+function Identity({ t, s, lang }: { t: Tr; s: GovScheme; lang: string }) {
   const p = s.published;
   return (
     <div data-kv-tab-body="identity">
@@ -121,7 +122,7 @@ function Identity({ t, s }: { t: Tr; s: GovScheme }) {
         <Fact t={t} k="gov2.id.category" id="category">{shown(t, s.category?.name ?? null)}</Fact>
         <Fact t={t} k="gov2.id.status" id="status">{t.t(activeKey(s))}</Fact>
         <Fact t={t} k="gov2.id.version" id="version">{s.version === null ? t.t('gov2.noPublished') : t.t('gov2.versionN', { n: String(s.version) })}</Fact>
-        <Fact t={t} k="gov2.id.publishedAt" id="published-at">{shown(t, atUtc(s.publishedAt))}</Fact>
+        <Fact t={t} k="gov2.id.publishedAt" id="published-at">{shown(t, ltrOrNull(atUtc(s.publishedAt), lang))}</Fact>
         {p ? (
           <>
             <Fact t={t} k="gov2.id.benefitType" id="benefit-type">{shown(t, p.benefitType)}</Fact>
@@ -153,11 +154,11 @@ function Identity({ t, s }: { t: Tr; s: GovScheme }) {
   );
 }
 
-function Rules({ t, s }: { t: Tr; s: GovScheme }) {
+function Rules({ t, s, lang }: { t: Tr; s: GovScheme; lang: string }) {
   return (
     <div data-kv-tab-body="rules">
       <p>{t.t('gov2.rules.lead')}</p>
-      {s.published ? <RulesInWords t={t} rules={s.published.rules} /> : <p data-kv-empty="no-version">{t.t('gov2.id.noVersion')}</p>}
+      {s.published ? <RulesInWords t={t} rules={s.published.rules} lang={lang} /> : <p data-kv-empty="no-version">{t.t('gov2.id.noVersion')}</p>}
       <p className="kv-muted" data-kv-fact="five-fields">{t.t('gov2.rules.only')}</p>
       <p className="kv-muted" data-kv-fact="not-at-apply">{t.t('gov2.rules.notAtApply')}</p>
       <p className="kv-muted" data-kv-fact="unknown-skipped">{t.t('gov2.rules.unknownSkipped')}</p>
@@ -171,13 +172,13 @@ function Rules({ t, s }: { t: Tr; s: GovScheme }) {
   );
 }
 
-function DiffValue({ t, field, v }: { t: Tr; field: string; v: unknown }) {
-  if (field === 'rules') return v === null || v === undefined ? <>{t.t('common.dash')}</> : <RulesInWords t={t} rules={v as Record<string, unknown>} />;
+function DiffValue({ t, field, v, lang }: { t: Tr; field: string; v: unknown; lang: string }) {
+  if (field === 'rules') return v === null || v === undefined ? <>{t.t('common.dash')}</> : <RulesInWords t={t} rules={v as Record<string, unknown>} lang={lang} />;
   return <>{shown(t, asStored(v))}</>;
 }
 
 export type DiffState = 'ok' | 'error' | 'none';
-function Versions({ t, s, versions, diff, diffState }: { t: Tr; s: GovScheme; versions: GovSchemeVersion[]; diff: GovSchemeVersionDiff | null; diffState: DiffState }) {
+function Versions({ t, s, versions, diff, diffState, lang }: { t: Tr; s: GovScheme; versions: GovSchemeVersion[]; diff: GovSchemeVersionDiff | null; diffState: DiffState; lang: string }) {
   return (
     <div data-kv-tab-body="versions">
       <p className="kv-muted" data-kv-fact="version-rule">{t.t('gov2.versionRule')}</p>
@@ -194,7 +195,7 @@ function Versions({ t, s, versions, diff, diffState }: { t: Tr; s: GovScheme; ve
               <tr key={v.version} data-kv-version={v.version}>
                 <th scope="row">{t.t('gov2.versionN', { n: String(v.version) })}</th>
                 <td data-kv-version-status={v.status}>{t.t(versionStatusKey(v.status))}</td>
-                <td>{shown(t, atUtc(v.publishedAt))}</td>
+                <td>{shown(t, ltrOrNull(atUtc(v.publishedAt), lang))}</td>
                 <td data-kv-second={v.publishedBySecondPerson ? 'yes' : v.isBackfilled ? 'backfilled' : 'no'}>{t.t(secondPersonKey(v))}</td>
                 <td><a className="kv-link" href={`/schemes/${s.id}?tab=versions&v=${v.version}`}>{t.t('gov2.ver.show')}</a></td>
               </tr>
@@ -214,8 +215,8 @@ function Versions({ t, s, versions, diff, diffState }: { t: Tr; s: GovScheme; ve
                 {diff.changes.map((c) => (
                   <tr key={c.field} data-kv-change={c.field}>
                     <th scope="row">{t.t(diffFieldKey(c.field))}</th>
-                    <td data-kv-from=""><DiffValue t={t} field={c.field} v={c.from} /></td>
-                    <td data-kv-to=""><DiffValue t={t} field={c.field} v={c.to} /></td>
+                    <td data-kv-from=""><DiffValue t={t} field={c.field} v={c.from} lang={lang} /></td>
+                    <td data-kv-to=""><DiffValue t={t} field={c.field} v={c.to} lang={lang} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -235,8 +236,10 @@ function Versions({ t, s, versions, diff, diffState }: { t: Tr; s: GovScheme; ve
 const TAB_SURFACE = { identity: 'scheme_identity', rules: 'scheme_rules', versions: 'scheme_versions' } as const;
 
 /** W327 / W328 / W329 — one scheme, three tabs. */
-export function SchemeDetailView({ t, state, id, tab, scheme, versions = [], diff = null, diffState = 'none' }: {
+export function SchemeDetailView({ t, state, id, tab, scheme, versions = [], diff = null, diffState = 'none', lang = 'en' }: {
   t: Tr; state: SchemeState; id: string; tab: SchemeTab; scheme: GovScheme | null; versions?: GovSchemeVersion[]; diff?: GovSchemeVersionDiff | null; diffState?: DiffState;
+  /** PC-56 RTL-1g: the page language (published-at instants and the not-applied rule keys are isolated under Arabic only); 'en' when absent. */
+  lang?: string;
 }) {
   const s = state === 'ok' ? scheme : null;
   return (
@@ -251,9 +254,9 @@ export function SchemeDetailView({ t, state, id, tab, scheme, versions = [], dif
       {s ? (
         <>
           <Tabs t={t} id={s.id} tab={tab} />
-          {tab === 'identity' ? <Identity t={t} s={s} /> : null}
-          {tab === 'rules' ? <Rules t={t} s={s} /> : null}
-          {tab === 'versions' ? <Versions t={t} s={s} versions={versions} diff={diff} diffState={diffState} /> : null}
+          {tab === 'identity' ? <Identity t={t} s={s} lang={lang} /> : null}
+          {tab === 'rules' ? <Rules t={t} s={s} lang={lang} /> : null}
+          {tab === 'versions' ? <Versions t={t} s={s} versions={versions} diff={diff} diffState={diffState} lang={lang} /> : null}
         </>
       ) : null}
       <Gov2Refusals t={t} surface={TAB_SURFACE[tab]} />

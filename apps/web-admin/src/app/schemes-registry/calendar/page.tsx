@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { DataTable, Column } from '../../../components/DataTable';
-import { getTranslator } from '../../../lib/i18n';
+import { getTranslator, getAdminDir } from '../../../lib/i18n';
+import { rangeArrow } from '../../../features/rtl/arrow';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { isMmDd, type SchemeRow } from '../../../features/schemes-registry/scheme';
 import { closeTone, closeKey, type CloseState } from '../../../features/schemes-registry/version';
@@ -26,6 +27,7 @@ export function generateMetadata(): Metadata {
 export default async function CalendarPage({ searchParams }: { searchParams: { onDate?: string; cursor?: string } }) {
   requireAdmin();
   const t = getTranslator();
+  const arrow = rangeArrow(getAdminDir());
   const onDate = isMmDd(searchParams.onDate) ? searchParams.onDate : undefined;
 
   let rows: CalendarRow[] = []; let nextCursor: string | undefined; let effectiveDate: string | undefined; let notice: string | undefined;
@@ -44,7 +46,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: { o
   const cols: Column<CalendarRow>[] = [
     { header: t.t('sr.schemeCode'), cell: (r) => <Link href={`/schemes-registry/schemes/${encodeURIComponent(r.id)}`}>{r.code}</Link> },
     { header: t.t('sr.schemeName'), cell: (r) => r.defaultName },
-    { header: t.t('sr.window'), cell: (r) => (r.applicationWindow ? `${r.applicationWindow.opens} → ${r.applicationWindow.closes}` : t.t('common.dash')) },
+    { header: t.t('sr.window'), cell: (r) => (r.applicationWindow ? `${r.applicationWindow.opens} ${arrow} ${r.applicationWindow.closes}` : t.t('common.dash')) },
     // The derivable half of W073. An always-open scheme (pm_kisan, kcc) gets NO urgency styling — it has no deadline,
     // and colouring it like one would park pm_kisan permanently at the top of somebody's worry list. An unparseable
     // or impossible window DOES read as a failure: both mean a stored date nobody can act on.

@@ -11,7 +11,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireAdmin } from '../../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../../lib/admin-client';
-import { getTranslator } from '../../../../lib/i18n';
+import { getTranslator, getAdminDir } from '../../../../lib/i18n';
+import { rangeArrow } from '../../../../features/rtl/arrow';
 import { attestationTone, attestationKey, claimKey } from '../../../../features/cells/residency-migration';
 
 import {
@@ -37,6 +38,7 @@ interface Result {
 export default async function AttestationPage({ searchParams }: { searchParams: { days?: string } }) {
   requireAdmin();
   const t = getTranslator();
+  const arrow = rangeArrow(getAdminDir());
   const days = searchParams.days && /^\d{1,3}$/.test(searchParams.days) ? searchParams.days : undefined;
 
   let r: Result | null = null; let notice: string | undefined;
@@ -79,7 +81,7 @@ export default async function AttestationPage({ searchParams }: { searchParams: 
             <h2 id="rz-verdict" className="kv-panel__title">{t.t('rz.attest.verdict')}</h2>
             <p>
               <StatusPill tone={attestationTone(a.kind)} label={t.t(attestationKey(a.kind))} />{' '}
-              {a.windowFrom.slice(0, 10)} → {a.windowTo.slice(0, 10)}
+              {a.windowFrom.slice(0, 10)}{` ${arrow} `}{a.windowTo.slice(0, 10)}
             </p>
             {/* THE CLAIM, as one translatable sentence. It ends up in a compliance record and must read identically
                 wherever it appears, which is why it is a key rather than assembled prose. */}

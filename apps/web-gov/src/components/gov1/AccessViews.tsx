@@ -15,7 +15,7 @@ import {
   type AccessDone, type Who,
 } from '../../features/gov1/access';
 import type { Tr } from '../../features/gov1/refusals';
-import { ltrOrNull } from '../../features/rtl/span';
+import { ltrOrNull, ltrText } from '../../features/rtl/span';
 
 type Action = string | ((fd: FormData) => Promise<void>);
 const form = (a: Action) => a as never;
@@ -70,7 +70,7 @@ export function AccessView({ t, state, me, rows, lang = 'en' }: { t: Tr; state: 
               <tbody>
                 {rows.map((m) => (
                   <tr key={m.membershipId} data-kv-member={m.membershipId} data-kv-status={rowStatus(m)}>
-                    <td>{m.userId === me?.person.userId ? t.t('gov1.access.youRow', { name: personLabel(m) }) : personLabel(m)}</td>
+                    <td>{m.userId === me?.person.userId ? t.t('gov1.access.youRow', { name: ltrText(personLabel(m), lang) }) : personLabel(m)}</td>
                     <td>{roleText(t, m.roleCode)}</td>
                     <td>{whoText(t, whoOf(m.requestedBy, rows, me?.person.userId ?? '', m.requestedByPlatform))}</td>
                     <td>{m.approvedAt ? whoText(t, whoOf(m.approvedBy, rows, me?.person.userId ?? '', m.requestedByPlatform && !m.approvedBy)) : t.t('common.dash')}</td>
@@ -121,25 +121,25 @@ export function RequestForm({ t, idemKey, action }: { t: Tr; idemKey: string; ac
   );
 }
 
-function RowFacts({ t, m, rows, me }: { t: Tr; m: GovMembership; rows: readonly GovMembership[]; me: GovMe }) {
+function RowFacts({ t, m, rows, me, lang = 'en' }: { t: Tr; m: GovMembership; rows: readonly GovMembership[]; me: GovMe; lang?: string }) {
   return (
     <dl className="kv-facts">
       <div className="kv-facts__row"><dt>{t.t('gov1.access.col.person')}</dt><dd>{personLabel(m)}</dd></div>
       <div className="kv-facts__row"><dt>{t.t('gov1.access.col.role')}</dt><dd>{roleText(t, m.roleCode)}</dd></div>
       <div className="kv-facts__row"><dt>{t.t('gov1.access.col.askedBy')}</dt><dd>{whoText(t, whoOf(m.requestedBy, rows, me.person.userId, m.requestedByPlatform))}</dd></div>
-      <div className="kv-facts__row"><dt>{t.t('gov1.access.col.ends')}</dt><dd>{endsText(t, m)}</dd></div>
+      <div className="kv-facts__row"><dt>{t.t('gov1.access.col.ends')}</dt><dd>{endsText(t, m, lang)}</dd></div>
     </dl>
   );
 }
 
 /** ?act=confirm&do=approve&id= — approve, offered ONLY to a head who neither asked for it nor would hold it. */
-export function ApproveConfirm({ t, row, rows, me, idemKey, action }: { t: Tr; row: GovMembership | null; rows: readonly GovMembership[]; me: GovMe; idemKey: string; action: Action }) {
+export function ApproveConfirm({ t, row, rows, me, idemKey, action, lang = 'en' }: { t: Tr; row: GovMembership | null; rows: readonly GovMembership[]; me: GovMe; idemKey: string; action: Action; lang?: string }) {
   if (!row || !canOfferApprove(row, me)) return <p className="kv-notice" data-kv-not-offered="approve">{t.t('gov1.access.approveNotOffered')}</p>;
   return (
     <form action={form(action)} className="kv-form" data-kv-form="approve">
       <input type="hidden" name="id" value={row.membershipId} />
       <input type="hidden" name="key" value={idemKey} />
-      <RowFacts t={t} m={row} rows={rows} me={me} />
+      <RowFacts t={t} m={row} rows={rows} me={me} lang={lang} />
       <p className="kv-field__hint">{t.t('gov1.access.form.approveNote', { n: row.termMonths })}</p>
       <button className="kv-btn" type="submit" data-kv-offer="approve">{t.t('gov1.access.form.approve')}</button>
     </form>
@@ -147,13 +147,13 @@ export function ApproveConfirm({ t, row, rows, me, idemKey, action }: { t: Tr; r
 }
 
 /** ?act=confirm&do=remove&id= — remove (or withdraw a pending request), offered ONLY to a head, never on their own row; a reason; at once. */
-export function RemoveForm({ t, row, rows, me, idemKey, action }: { t: Tr; row: GovMembership | null; rows: readonly GovMembership[]; me: GovMe; idemKey: string; action: Action }) {
+export function RemoveForm({ t, row, rows, me, idemKey, action, lang = 'en' }: { t: Tr; row: GovMembership | null; rows: readonly GovMembership[]; me: GovMe; idemKey: string; action: Action; lang?: string }) {
   if (!row || !canOfferRemove(row, me)) return <p className="kv-notice" data-kv-not-offered="remove">{t.t('gov1.access.removeNotOffered')}</p>;
   return (
     <form action={form(action)} className="kv-form" data-kv-form="remove">
       <input type="hidden" name="id" value={row.membershipId} />
       <input type="hidden" name="key" value={idemKey} />
-      <RowFacts t={t} m={row} rows={rows} me={me} />
+      <RowFacts t={t} m={row} rows={rows} me={me} lang={lang} />
       <label htmlFor="rm-reason" className="kv-field__label">{t.t('gov1.access.form.reason')}</label>
       <textarea id="rm-reason" className="kv-textarea" name="reason" minLength={10} maxLength={500} required />
       <p className="kv-field__hint">{t.t('gov1.access.form.removeNote')}</p>
@@ -163,9 +163,9 @@ export function RemoveForm({ t, row, rows, me, idemKey, action }: { t: Tr; row: 
 }
 
 /** ?act=success — what the SERVER did. */
-export function AccessDoneNote({ t, done, expiresAt, sessionsEnded }: { t: Tr; done: AccessDone | null; expiresAt?: string | null; sessionsEnded?: number | null }) {
+export function AccessDoneNote({ t, done, expiresAt, sessionsEnded, lang = 'en' }: { t: Tr; done: AccessDone | null; expiresAt?: string | null; sessionsEnded?: number | null; lang?: string }) {
   if (done === 'requested') return <p className="kv-success" data-kv-done="requested">{t.t('gov1.access.done.requested')}</p>;
-  if (done === 'approved') return <p className="kv-success" data-kv-done="approved">{t.t('gov1.access.done.approved', { at: atUtc(expiresAt) ?? t.t('common.dash') })}</p>;
+  if (done === 'approved') return <p className="kv-success" data-kv-done="approved">{t.t('gov1.access.done.approved', { at: ltrOrNull(atUtc(expiresAt), lang) ?? t.t('common.dash') })}</p>;
   if (done === 'removed') return <p className="kv-success" data-kv-done="removed">{t.t('gov1.access.done.removed', { n: sessionsEnded ?? 0 })}</p>;
   return <p className="kv-muted" data-kv-done="unknown">{t.t('gov1.access.done.unknown')}</p>;
 }

@@ -9,6 +9,7 @@
 // insights) — every key of en.ts, in en.ts key order (the lead's 2 drafted shards, 2,109 keys, plus lang.draft and rtl.draftBanner new in
 // RTL-1e). Like hi.ts / gu.ts, ar is FULL. Founder review is still owed for all of it — tracker row "RTL-1 · Arabic copy review". Assembled by
 // records-scripts/rtl1e_ar_assemble.py; pinned by test/i18n-ar-parity.spec.ts.
+// RTL-1g added lang.comingSoon (the switcher's "Coming soon", which was an English literal in every language) — same rules, same draft.
 import type { Messages } from '@krishalaya/i18n';
 
 export const ar: Messages = {
@@ -2122,5 +2123,6 @@ export const ar: Messages = {
   'ops5.refusal.exportRecordView': 'يُسجَّل كل طلب ورابط وتنزيل على الخادم، لكن لا يُتاح عارض للسجلات في هذه الوحدة.',
   'ops5.refusal.insightsActWrites': 'قراءة الأرقام مجددًا لا تكتب شيئًا.',
   'lang.draft': 'مسودة آلية',
+  'lang.comingSoon': 'قريبًا',
   'rtl.draftBanner': 'هذا النص العربي مسودة آلية ولم تتم مراجعته.',
 };

@@ -13,6 +13,7 @@ import type { DairyBmcMonitor, DairyBmcTile, DairyMcc } from '@krishalaya/sdk-js
 import type { Tr } from '../../features/ops3/refusals';
 import { BMC, atText, type BmcScope, type BmcState, type FormError, type ReadingReason, type RecordedReading } from '../../features/ops3/bmc';
 import { Ops3Refusals } from './Ops3Chain';
+import { ltrText } from '../../features/rtl/span';   // PC-56 RTL-1g: a code inside a sentence, isolated under Arabic only
 
 type Points = NonNullable<DairyBmcMonitor['focus']>['points'];
 
@@ -37,11 +38,11 @@ function Fact({ t, k, children, kv }: { t: Tr; k: string; children: ReactNode; k
 }
 
 /** One cooler, as the monitor reads it. Every value is the server's; the level and the compressor are a person's statements, said so. */
-export function CoolerCard({ t, tile }: { t: Tr; tile: DairyBmcTile }) {
+export function CoolerCard({ t, tile, lang = 'en' }: { t: Tr; tile: DairyBmcTile; lang?: string }) {
   const tel = tile.telemetry;
   return (
     <article className="kv-card" data-kv-cooler={tile.unitId} data-kv-telemetry={tel.state}>
-      <h2 className="kv-card__title">{t.t('ops3.bmc.cooler', { code: tile.mccCode, name: tile.mccName })}</h2>
+      <h2 className="kv-card__title">{t.t('ops3.bmc.cooler', { code: ltrText(tile.mccCode, lang), name: tile.mccName })}</h2>
       {tel.state === 'never' ? <p className="kv-muted" data-kv-telemetry-note="never">{t.t('ops3.bmc.telemetry.never')}</p> : null}
       {tel.state === 'stale' && tel.ageMinutes !== null
         ? <p className="kv-statement" role="status" data-kv-telemetry-note="stale">{t.t('ops3.bmc.telemetry.stale', { minutes: tel.ageMinutes, gap: tel.silenceMinutes })}</p> : null}
@@ -112,8 +113,10 @@ export function ManualReadingForm({ t, tile, value }: { t: Tr; tile: DairyBmcTil
 
 export interface BmcProps {
   t: Tr; state: BmcState; scope: BmcScope; centres: readonly DairyMcc[]; tiles: readonly DairyBmcTile[]; cooler: DairyBmcTile | null; points: Points | null;
+  /** PC-56 RTL-1g: the page language (the cooler's centre code is isolated under Arabic only); 'en' when absent. */
+  lang?: string;
 }
-export function BmcView({ t, state, scope, tiles, cooler, points }: BmcProps) {
+export function BmcView({ t, state, scope, tiles, cooler, points, lang = 'en' }: BmcProps) {
   return (
     <section data-kv-page="bmc">
       <h1>{t.t('ops3.bmc.title')}</h1>
@@ -127,11 +130,11 @@ export function BmcView({ t, state, scope, tiles, cooler, points }: BmcProps) {
               {tiles.length > 1 ? (
                 <nav aria-label={t.t('ops3.bmc.pick')} data-kv-pick="coolers">
                   <ul>{tiles.map((x) => <li key={x.unitId}>{x.unitId === cooler.unitId
-                    ? <span aria-current="true" data-kv-picked={x.unitId}>{t.t('ops3.bmc.cooler', { code: x.mccCode, name: x.mccName })}</span>
-                    : <Link href={`${BMC}?unit=${x.unitId}`} data-kv-pick-unit={x.unitId}>{t.t('ops3.bmc.cooler', { code: x.mccCode, name: x.mccName })}</Link>}</li>)}</ul>
+                    ? <span aria-current="true" data-kv-picked={x.unitId}>{t.t('ops3.bmc.cooler', { code: ltrText(x.mccCode, lang), name: x.mccName })}</span>
+                    : <Link href={`${BMC}?unit=${x.unitId}`} data-kv-pick-unit={x.unitId}>{t.t('ops3.bmc.cooler', { code: ltrText(x.mccCode, lang), name: x.mccName })}</Link>}</li>)}</ul>
                 </nav>
               ) : null}
-              <CoolerCard t={t} tile={cooler} />
+              <CoolerCard t={t} tile={cooler} lang={lang} />
               <ReadingSeries t={t} points={points} />
               <ManualReadingForm t={t} tile={cooler} />
             </>
@@ -151,11 +154,11 @@ export function FormErrorReason({ t, error }: { t: Tr; error: FormError }) {
   return <p className="kv-refusal" role="alert" data-kv-reason={error}>{t.t(`ops3.bmc.formError.${error}`)}</p>;
 }
 /** W3283: the reading as typed and the cooler's band as the monitor sent it — no verdict is guessed here; the SERVER gives it. */
-export function ReadingReview({ t, tile, tempC, action }: { t: Tr; tile: DairyBmcTile; tempC: string; action: (fd: FormData) => Promise<void> }) {
+export function ReadingReview({ t, tile, tempC, action, lang = 'en' }: { t: Tr; tile: DairyBmcTile; tempC: string; action: (fd: FormData) => Promise<void>; lang?: string }) {
   return (
     <form action={action} className="kv-card" data-kv-review={tile.unitId}>
       <dl className="kv-facts">
-        <Fact t={t} k="ops3.bmc.review.cooler" kv={{ 'data-kv-review-cooler': tile.unitId }}>{t.t('ops3.bmc.cooler', { code: tile.mccCode, name: tile.mccName })}</Fact>
+        <Fact t={t} k="ops3.bmc.review.cooler" kv={{ 'data-kv-review-cooler': tile.unitId }}>{t.t('ops3.bmc.cooler', { code: ltrText(tile.mccCode, lang), name: tile.mccName })}</Fact>
         <Fact t={t} k="ops3.bmc.review.typed" kv={{ 'data-kv-review-temp': tempC }}>{t.t('ops3.bmc.review.typedValue', { temp: tempC })}</Fact>
         <Fact t={t} k="ops3.bmc.band" kv={{ 'data-kv-band': `${tile.band.minC}|${tile.band.maxC}` }}>{t.t('ops3.bmc.bandValue', { min: tile.band.minC, max: tile.band.maxC })}</Fact>
       </dl>

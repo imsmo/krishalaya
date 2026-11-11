@@ -13,7 +13,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
-import { getTranslator } from '../../../lib/i18n';
+import { getTranslator, getAdminDir } from '../../../lib/i18n';
+import { rangeArrow } from '../../../features/rtl/arrow';
 import { Callout, EmptyState, StatusPill } from '@krishalaya/ui';
 import {
   formatRate, kindTone, kindKey, overrideRateTone, tileText, type Tile,
@@ -41,6 +42,7 @@ interface Overview {
 export default async function AiOverviewPage() {
   requireAdmin();
   const t = getTranslator();
+  const arrow = rangeArrow(getAdminDir());
 
   let o: Overview | null = null; let notice: string | undefined;
   try {
@@ -159,7 +161,7 @@ export default async function AiOverviewPage() {
                 {o.awaitingChecker.map((a) => (
                   <li key={a.id}>
                     <Link href={`/ai-models/${encodeURIComponent(a.id)}/rollout`}>{a.code} {a.version}</Link>
-                    {' → '}{a.proposedStatus}
+                    {` ${arrow} `}{a.proposedStatus}
                   </li>
                 ))}
               </ul>

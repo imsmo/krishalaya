@@ -1808,6 +1808,13 @@ export const en: Messages = {
   'home.age.days': '{n} days',
   'home.planHealth': 'Plan',
   'home.noPlan': 'No plan chosen yet',
+  // PC-56 RTL-1g · the plan's subscription_status as words (features/console/home PLAN_STATUS_KEYS) — was the raw API code
+  'home.planStatus.trialing': 'on trial',
+  'home.planStatus.active': 'active',
+  'home.planStatus.pastDue': 'payment overdue',
+  'home.planStatus.paused': 'paused',
+  'home.planStatus.cancelled': 'cancelled',
+  'home.planStatus.expired': 'expired',
   'home.membersUsed': '{used} of {limit} members ({pct}%)',
   'home.membersNoLimit': '{used} members · no limit on your plan',
   'home.renews': 'renews {date}',

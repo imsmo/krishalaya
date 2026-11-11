@@ -8,7 +8,7 @@ import type { Metadata } from 'next';
 import { SdkError, type ColdBreach, type ColdLogger, type ColdOverview } from '@krishalaya/sdk-js';
 import { requireSession } from '../../../lib/session';
 import { opsClient } from '../../../lib/api-client';
-import { getTranslator } from '../../../lib/i18n';
+import { getTranslator, getLang } from '../../../lib/i18n';
 import { IotDashboardView } from '../../../components/ops4/IotViews';
 import { Ops4Chain } from '../../../components/ops4/Ops4Chain';
 import { chain4State } from '../../../features/ops4/refusals';
@@ -22,7 +22,7 @@ export function generateMetadata(): Metadata {
 
 export default async function IotDashboardPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
   await requireSession(IOT.dashboard);
-  const t = getTranslator();
+  const t = getTranslator(); const lang = getLang();
   const act = chain4State('iot_act', searchParams);
   if (act) return <Ops4Chain t={t} chain="iot_act" state={act} page={IOT.dashboard} />;
   const c = opsClient();
@@ -37,5 +37,5 @@ export default async function IotDashboardPage({ searchParams }: { searchParams?
     try { loggers = (await c.coldChain.loggers()).items; } catch { loggers = null; }
     try { const d = (await c.twin.overview()).devices; registry = { soilPods: d.soilPods, weatherMasts: d.weatherMasts }; } catch { registry = null; }
   }
-  return <IotDashboardView t={t} state={iotState(status)} readAt={Date.now()} overview={overview} lastBreach={lastBreach} loggers={loggers} registry={registry} />;
+  return <IotDashboardView t={t} lang={lang} state={iotState(status)} readAt={Date.now()} overview={overview} lastBreach={lastBreach} loggers={loggers} registry={registry} />;
 }

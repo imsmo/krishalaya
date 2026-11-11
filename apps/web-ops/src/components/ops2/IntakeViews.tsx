@@ -18,6 +18,7 @@ import { canCancel, canConfirm, canRelease, canStore } from '../../features/ware
 import { assayHref } from '../../features/ops2/receipts';
 import { ReleasePaused } from '../ops1/WithdrawalView';
 import { Ops2Refusals } from './Ops2Chain';
+import { ltrText } from '../../features/rtl/span';   // PC-56 RTL-1g: a code inside a sentence, isolated under Arabic only
 
 const date = (v: string | null | undefined, lang: string, t: Tr) => (v ? formatDate(v, lang) : t.t('ops2.whDash.noDate'));
 /** The booking status in the reader's language (F-19), never a raw enum. */
@@ -66,7 +67,7 @@ export function WhDashboardView({ t, lang, state, groups, status }: WhDashboardV
           ) : groups.map((g) => (
             <div key={g.warehouse.id} className="kv-card" data-kv-warehouse={g.warehouse.id}>
               <h2 className="kv-card__title">{g.warehouse.name}</h2>
-              <p className="kv-muted" data-kv-wdra={g.warehouse.wdraRegNo ? 'entered' : 'none'}>{t.t('ops2.whDash.wdraLabel')} {g.warehouse.wdraRegNo ? t.t('ops2.billing.wdraAsEntered', { wdra: g.warehouse.wdraRegNo }) : t.t('ops2.whDash.wdraNone')}</p>
+              <p className="kv-muted" data-kv-wdra={g.warehouse.wdraRegNo ? 'entered' : 'none'}>{t.t('ops2.whDash.wdraLabel')} {g.warehouse.wdraRegNo ? t.t('ops2.billing.wdraAsEntered', { wdra: ltrText(g.warehouse.wdraRegNo, lang) }) : t.t('ops2.whDash.wdraNone')}</p>
               {g.rows.length === 0 ? (
                 <p className="kv-empty-state" data-kv-empty="bookings">{t.t(status ? 'ops2.whDash.noMatch' : 'ops2.whDash.noBookings')}</p>
               ) : (

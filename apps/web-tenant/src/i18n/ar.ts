@@ -9,6 +9,7 @@
 // two proof pages, 223 keys; RTL-1b-2 assembled the remaining 13,419 from the lead's 8 drafted shards and added rtl.span).
 // Founder review is still owed for all of it — tracker row "RTL-1 · Arabic copy review". VERBATIM by design: br.preview.sample.gu and
 // br.preview.sample.cta.gu are the branding preview's Gujarati sample card (a left-to-right script), equal to en.
+// RTL-1g added the six home.planStatus.* keys (the dashboard's plan status, which printed the raw API code) — same rules, same draft.
 // Pinned by test/i18n-ar-parity.spec.ts (full four-language parity).
 import type { Messages } from '@krishalaya/i18n';
 
@@ -1773,6 +1774,12 @@ export const ar: Messages = {
   'home.age.days': '{n} يوم',
   'home.planHealth': 'الباقة',
   'home.noPlan': 'لم تُختر باقة بعد',
+  'home.planStatus.trialing': 'فترة تجريبية',
+  'home.planStatus.active': 'نشطة',
+  'home.planStatus.pastDue': 'الدفع متأخر',
+  'home.planStatus.paused': 'موقوفة مؤقتًا',
+  'home.planStatus.cancelled': 'ملغاة',
+  'home.planStatus.expired': 'منتهية',
   'home.membersUsed': '{used} من {limit} عضو ({pct}%)',
   'home.membersNoLimit': '{used} عضو · لا حد في باقتك',
   'home.renews': 'تتجدد {date}',

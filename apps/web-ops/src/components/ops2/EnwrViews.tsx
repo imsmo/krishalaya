@@ -14,6 +14,7 @@ import type { Tr } from '../../features/ops2/refusals';
 import { ENWR_ISSUE_PAGE, ENWR_REGISTRY_PAGE, NWR_REACHABLE, NWR_UNREACHABLE, PAGE_SIZES, enwrReceiptHref, isNwrStatus, isQuantityString, isUnitCode,
   registryHref, type RegistryState } from '../../features/ops2/receipts';
 import { Ops2Refusals } from './Ops2Chain';
+import { ltrText } from '../../features/rtl/span';   // PC-56 RTL-1g: a code inside a sentence, isolated under Arabic only
 
 /** The founder's Q3-A words, printed against every receipt record. */
 export function RecordedNotConfirmed({ t }: { t: Tr }) {
@@ -93,7 +94,7 @@ export function EnwrRegistryView({ t, lang, state, receipts, size, nextCursor }:
                   {receipts.map((r) => (
                     <tr key={r.id} data-kv-receipt={r.id}>
                       <td data-kv-cell="number"><Link className="kv-link kv-mono" href={enwrReceiptHref(r.id)} data-kv-real="receipt">{r.enwrNo}</Link></td>
-                      <td data-kv-cell="repository">{t.t('ops2.enwr.repositoryAsRecorded', { repository: r.repository })}</td>
+                      <td data-kv-cell="repository">{t.t('ops2.enwr.repositoryAsRecorded', { repository: ltrText(r.repository, lang) })}</td>
                       <td data-kv-cell="quantity">{isQuantityString(r.quantity) ? <span className="kv-mono" data-kv-quantity={r.quantity}>{r.quantity}</span> : t.t('ops2.enwr.noQuantity')}</td>
                       <td data-kv-cell="status"><NwrStatus t={t} status={r.status} /></td>
                       <td data-kv-cell="recorded">{date(r.issuedAt ?? r.createdAt, lang, t)}</td>
@@ -128,7 +129,7 @@ export function EnwrReceiptView({ t, lang, state, receipt, unitCode }: { t: Tr; 
           <p><RecordedNotConfirmed t={t} /></p>
           <dl className="kv-facts" data-kv-receipt={receipt.id}>
             <div className="kv-facts__row"><dt>{t.t('ops2.enwr.colNumber')}</dt><dd data-kv-cell="number" className="kv-mono">{receipt.enwrNo}</dd></div>
-            <div className="kv-facts__row"><dt>{t.t('ops2.enwr.colRepository')}</dt><dd data-kv-cell="repository">{t.t('ops2.enwr.repositoryAsRecorded', { repository: receipt.repository })}</dd></div>
+            <div className="kv-facts__row"><dt>{t.t('ops2.enwr.colRepository')}</dt><dd data-kv-cell="repository">{t.t('ops2.enwr.repositoryAsRecorded', { repository: ltrText(receipt.repository, lang) })}</dd></div>
             <div className="kv-facts__row"><dt>{t.t('ops2.enwr.colQuantity')}</dt><dd data-kv-cell="quantity">
               {isQuantityString(receipt.quantity) ? <span className="kv-mono" data-kv-quantity={receipt.quantity}>{receipt.quantity}</span> : t.t('ops2.enwr.noQuantity')}{' '}
               <span className="kv-muted" data-kv-unit={isUnitCode(unitCode) ? unitCode : 'none'}>{isUnitCode(unitCode) ? t.t('ops2.enwrReceipt.unitFromBooking', { unit: unitCode }) : t.t('ops2.enwrReceipt.noUnit')}</span>

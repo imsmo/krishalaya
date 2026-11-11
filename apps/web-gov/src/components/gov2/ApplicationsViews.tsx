@@ -103,8 +103,10 @@ function Fact({ t, k, id, children }: { t: Tr; k: string; id: string; children: 
 }
 
 /** W331 — one application: what the read gives, the acts as offers. */
-export function ApplicationDetailView({ t, state, me, id, app, facts = null, decision = null }: {
+export function ApplicationDetailView({ t, state, me, id, app, facts = null, decision = null, lang = 'en' }: {
   t: Tr; state: AppState; me: GovMe; id: string; app: GovApplicationOpened | null; facts?: ActFacts | null; decision?: DecisionFact;
+  /** PC-56 RTL-1g: the page language (the scheme code and the instants are isolated under Arabic only); 'en' when absent. */
+  lang?: string;
 }) {
   const a = state === 'ok' ? app : null;
   const acts: GovActName[] = a ? offeredActs(me, a.status, facts) : [];
@@ -121,11 +123,11 @@ export function ApplicationDetailView({ t, state, me, id, app, facts = null, dec
         <>
           <dl className="kv-facts">
             <Fact t={t} k="gov2.app.number" id="number">{shortId(a.id)}</Fact>
-            <Fact t={t} k="gov2.app.scheme" id="scheme"><a className="kv-link" href={`/schemes/${a.scheme.id}`}>{`${a.scheme.name} (${a.scheme.code})`}</a></Fact>
+            <Fact t={t} k="gov2.app.scheme" id="scheme"><a className="kv-link" href={`/schemes/${a.scheme.id}`}>{`${a.scheme.name} (${ltrText(a.scheme.code, lang)})`}</a></Fact>
             <Fact t={t} k="gov2.app.status" id="status"><span data-kv-app-status={a.status}>{t.t(statusKey(a.status))}</span></Fact>
             <Fact t={t} k="gov2.app.version" id="version">{t.t('gov2.versionN', { n: String(a.schemeVersion) })}</Fact>
-            <Fact t={t} k="gov2.app.submitted" id="submitted">{dash(t, atUtc(a.submittedAt))}</Fact>
-            <Fact t={t} k="gov2.app.decided" id="decided">{dash(t, atUtc(a.decidedAt))}</Fact>
+            <Fact t={t} k="gov2.app.submitted" id="submitted">{dash(t, ltrOrNull(atUtc(a.submittedAt), lang))}</Fact>
+            <Fact t={t} k="gov2.app.decided" id="decided">{dash(t, ltrOrNull(atUtc(a.decidedAt), lang))}</Fact>
           </dl>
           <p className="kv-muted" data-kv-fact="version-pin">{t.t('gov2.app.versionRule', { n: String(a.schemeVersion) })}</p>
           <p className="kv-muted" data-kv-fact="history">{t.t('gov2.app.history')}</p>
@@ -158,13 +160,13 @@ export function ApplicationDetailView({ t, state, me, id, app, facts = null, dec
 
 /** The act's confirm form (W3159): the key minted when it was shown; reject — a listed reason and a sentence; clarify — a sentence. The form
  *  carries the id, the act, the key and (reject / clarify) the reason and the sentence — nothing else. */
-export function ActForm({ t, appId, act, idemKey, action }: { t: Tr; appId: string; act: GovActName; idemKey: string; action: Action }) {
+export function ActForm({ t, appId, act, idemKey, action, lang = 'en' }: { t: Tr; appId: string; act: GovActName; idemKey: string; action: Action; lang?: string }) {
   return (
     <form action={formAction(action)} className="kv-form" data-kv-form={act}>
       <input type="hidden" name="id" value={appId} />
       <input type="hidden" name="act" value={act} />
       <input type="hidden" name="key" value={idemKey} />
-      <p data-kv-form-app="">{t.t('gov2.form.application', { id: shortId(appId) })}</p>
+      <p data-kv-form-app="">{t.t('gov2.form.application', { id: ltrText(shortId(appId), lang) })}</p>
       {act === 'approve' ? <p className="kv-statement" data-kv-statement="gov2.q1">{t.t('gov2.q1')}</p> : null}
       {act === 'reject' ? (
         <>

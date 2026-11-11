@@ -7,7 +7,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireAdmin } from '../../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../../lib/admin-client';
-import { getTranslator } from '../../../../lib/i18n';
+import { getTranslator, getAdminDir } from '../../../../lib/i18n';
+import { rangeArrow } from '../../../../features/rtl/arrow';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { SEVERITIES, type ReconRunDetail } from '../../../../features/recon/recon';
 import { openInvestigationAction } from '../../actions';
@@ -24,6 +25,7 @@ const ERR = new Set(['summary', 'elevation', 'illegal', 'notFound', 'generic']);
 export default async function ReconRunDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { error?: string } }) {
   requireAdmin();
   const t = getTranslator();
+  const arrow = rangeArrow(getAdminDir());
 
   let run: ReconRunDetail | undefined; let notice: string | undefined;
   try { run = (await adminGet<ReconRunDetail>(`recon/runs/${params.id}`)).data; }
@@ -49,7 +51,7 @@ export default async function ReconRunDetailPage({ params, searchParams }: { par
         <div className="kv-facts__row"><dt>{t.t('recon.runStatus')}</dt><dd>{run.status}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('recon.checked')}</dt><dd>{run.checkedCount.toLocaleString()}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('recon.mismatches')}</dt><dd>{mismatchCount > 0 ? <StatusPill tone="danger" label={mismatchCount.toLocaleString()} /> : mismatchCount.toLocaleString()}</dd></div>
-        <div className="kv-facts__row"><dt>{t.t('recon.period')}</dt><dd>{(run.periodStart ?? t.t('common.dash'))} → {(run.periodEnd ?? t.t('common.dash'))}</dd></div>
+        <div className="kv-facts__row"><dt>{t.t('recon.period')}</dt><dd>{(run.periodStart ?? t.t('common.dash'))}{` ${arrow} `}{(run.periodEnd ?? t.t('common.dash'))}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('recon.finishedAt')}</dt><dd>{run.finishedAt ?? t.t('common.dash')}</dd></div>
       </dl>
 

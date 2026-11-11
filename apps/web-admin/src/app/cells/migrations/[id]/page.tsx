@@ -16,7 +16,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireAdmin, adminUserId } from '../../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../../lib/admin-client';
-import { getTranslator } from '../../../../lib/i18n';
+import { getTranslator, getAdminDir } from '../../../../lib/i18n';
+import { rangeArrow } from '../../../../features/rtl/arrow';
 import { runPreflightAction, approveMigrationAction, advanceMigrationAction } from '../../actions';
 import {
   Button, Callout, StatusPill,
@@ -56,6 +57,7 @@ export default async function MigrationDetailPage({ params, searchParams }: {
 }) {
   requireAdmin();
   const t = getTranslator();
+  const arrow = rangeArrow(getAdminDir());
   const me = adminUserId();
 
   let j: Job | null = null; let notice: string | undefined;
@@ -114,7 +116,7 @@ export default async function MigrationDetailPage({ params, searchParams }: {
                 <dd><Link href={`/cells/cells/${encodeURIComponent(j.toCellId)}`}>{j.toCellId.slice(0, 8)}</Link></dd>
               </div>
               <div><dt>{t.t('rz.col.window')}</dt><dd>
-                {j.windowStart ? `${j.windowStart.slice(0, 16).replace('T', ' ')} → ${(j.windowEnd ?? '').slice(11, 16)}` : '—'}
+                {j.windowStart ? `${j.windowStart.slice(0, 16).replace('T', ' ')} ${arrow} ${(j.windowEnd ?? '').slice(11, 16)}` : '—'}
                 {j.inWindow ? ` · ${t.t('rz.window.open')}` : ''}
               </dd></div>
               <div><dt>{t.t('rz.job.reason')}</dt><dd>{j.reason ?? '—'}</dd></div>

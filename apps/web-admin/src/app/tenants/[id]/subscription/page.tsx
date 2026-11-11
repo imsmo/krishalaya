@@ -23,7 +23,8 @@ import { notFound } from 'next/navigation';
 import { TenantTabs } from '../../../../components/TenantTabs';
 import { requireAdmin } from '../../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../../lib/admin-client';
-import { getTranslator } from '../../../../lib/i18n';
+import { getTranslator, getAdminDir } from '../../../../lib/i18n';
+import { rangeArrow } from '../../../../features/rtl/arrow';
 import { adminNoticeKey } from '../../../../features/nav/nav-model';
 import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
 import { invoiceStatusKey } from '../../../../features/billing/billing';
@@ -58,6 +59,7 @@ export default async function SubscriptionPage({ params, searchParams }: {
 }) {
   requireAdmin();
   const t = getTranslator();
+  const arrow = rangeArrow(getAdminDir());
   const tenantId = params.id;
 
   let view: SubscriptionView | null = null; let notice: string | undefined;
@@ -107,7 +109,7 @@ export default async function SubscriptionPage({ params, searchParams }: {
             <dt>{t.t('sub.discount')}</dt>
             <dd>{sub.discountPct ?? '0'}%<span className="kv-detail__muted"> {t.t('sub.discountNote')}</span></dd>
             <dt>{t.t('sub.period')}</dt>
-            <dd>{sub.periodStart ? formatDate(sub.periodStart) : t.t('common.dash')} → {sub.periodEnd ? formatDate(sub.periodEnd) : t.t('common.dash')}</dd>
+            <dd>{sub.periodStart ? formatDate(sub.periodStart) : t.t('common.dash')}{` ${arrow} `}{sub.periodEnd ? formatDate(sub.periodEnd) : t.t('common.dash')}</dd>
             <dt>{t.t('sub.plan')}</dt>
             <dd>{sub.planId ? <Link href={`/plans/${encodeURIComponent(sub.planId)}`}>{sub.planId.slice(0, 8)}</Link> : t.t('common.dash')}</dd>
           </dl>
@@ -168,7 +170,7 @@ export default async function SubscriptionPage({ params, searchParams }: {
                         {t.t('sub.addonQty', { n: String(a.quantity ?? 1) })}
                         {' · '}{formatMoneyMinor(String(a.priceMinor ?? '0'), cur)}
                         {a.startsOn ? ` · ${t.t('sub.from')} ${formatDate(a.startsOn)}` : ''}
-                        {a.endsOn ? ` → ${formatDate(a.endsOn)}` : ''}
+                        {a.endsOn ? ` ${arrow} ${formatDate(a.endsOn)}` : ''}
                       </p>
                     </li>
                   );

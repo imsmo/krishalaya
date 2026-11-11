@@ -25,7 +25,7 @@ import { formatDate, formatNumber } from '@krishalaya/i18n'; // PC-56 RTL-1b-2: 
 import { moneyText } from '../../components/Bidi';
 import type { TenantDashboard, GoLiveState } from '@krishalaya/sdk-js';
 import {
-  gmvTrend, isQuietDay, orderedActions, ageLabel, planUsagePct, planNearLimit, showChecklistFirst,
+  gmvTrend, isQuietDay, orderedActions, ageLabel, planUsagePct, planNearLimit, planStatusLabel, showChecklistFirst,
 } from '../../features/console/home';
 import { NEW_LISTING_HREF } from '../../features/swd/console';
 import { AsOf } from '../../components/AsOf';
@@ -209,7 +209,8 @@ export default async function DashboardPage() {
       <h2 className="kv-section-title">{t.t('home.planHealth')}</h2>
       <p className="kv-fine">
         {d.planHealth.planName ?? t.t('home.noPlan')}
-        {d.planHealth.status ? ` · ${d.planHealth.status}` : ''}
+        {/* PC-56 RTL-1g: the status as words in the page's language (features/console/home planStatusLabel), never the raw API code */}
+        {d.planHealth.status ? ` · ${planStatusLabel(d.planHealth.status, t, lang)}` : ''}
         {' · '}
         {/* **"1,284 of no limit" RATHER THAN "1,284 of -1".** An unlimited plan has no denominator, and -1 on a screen is a
             bug report waiting to happen. */}

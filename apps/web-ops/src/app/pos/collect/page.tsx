@@ -6,7 +6,7 @@ import type { Metadata } from 'next';
 import type { DairyMembership } from '@krishalaya/sdk-js';
 import { requireSession } from '../../../lib/session';
 import { opsClient } from '../../../lib/api-client';
-import { getTranslator } from '../../../lib/i18n';
+import { getTranslator, getLang } from '../../../lib/i18n';
 import { PosCollectView } from '../../../components/ops3/CounterViews';
 import { POS, ROLL_PAGE_SIZE, parseCode, parseId, parseReason } from '../../../features/ops3/counter';
 import { loadCounter } from '../../../features/ops3/counter-load';
@@ -16,7 +16,7 @@ export function generateMetadata(): Metadata { return { title: getTranslator().t
 
 export default async function PosCollectPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
   await requireSession(POS.collect);
-  const t = getTranslator();
+  const t = getTranslator(); const lang = getLang();
   const ctx = await loadCounter(parseId(searchParams?.mcc));
   const code = parseCode(searchParams?.code);
   const cursorRaw = searchParams?.cursor; const cursor = typeof cursorRaw === 'string' && /^[A-Za-z0-9+/=_-]{1,200}$/.test(cursorRaw) ? cursorRaw : undefined;
@@ -28,5 +28,5 @@ export default async function PosCollectPage({ searchParams }: { searchParams?: 
     } catch { roll = null; }
   }
   const error = searchParams?.error ? parseReason({ reason: searchParams.error }) : null;
-  return <PosCollectView t={t} state={ctx.state} centre={ctx.centre} centres={ctx.centres} today={ctx.today} roll={roll} code={code} nextCursor={nextCursor} error={error} />;
+  return <PosCollectView t={t} lang={lang} state={ctx.state} centre={ctx.centre} centres={ctx.centres} today={ctx.today} roll={roll} code={code} nextCursor={nextCursor} error={error} />;
 }

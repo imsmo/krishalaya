@@ -14,7 +14,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
-import { getTranslator } from '../../../lib/i18n';
+import { getTranslator, getAdminDir } from '../../../lib/i18n';
+import { rangeArrow } from '../../../features/rtl/arrow';
 import {
   Button, Callout, Chip, EmptyState, StatusPill,
 } from '@krishalaya/ui';
@@ -50,6 +51,7 @@ export default async function CellChangesPage({ searchParams }: {
 }) {
   requireAdmin();
   const t = getTranslator();
+  const arrow = rangeArrow(getAdminDir());
   const entityType = (ENTITIES as readonly string[]).includes(searchParams.entityType ?? '') ? searchParams.entityType : undefined;
   const action = (ACTIONS as readonly string[]).includes(searchParams.action ?? '') ? searchParams.action : undefined;
   const days = searchParams.days && /^\d{1,2}$/.test(searchParams.days) ? searchParams.days : undefined;
@@ -183,7 +185,7 @@ export default async function CellChangesPage({ searchParams }: {
                   {r.diff.length === 0 ? '—' : orderDiff(r.diff).map((d) => (
                     <div key={d.field}>
                       <StatusPill tone="neutral" icon={false} label={d.field} />{' '}
-                      <code>{diffText(d.from)}</code> → <code>{diffText(d.to)}</code>
+                      <code>{diffText(d.from)}</code>{` ${arrow} `}<code>{diffText(d.to)}</code>
                     </div>
                   ))}
                 </td>

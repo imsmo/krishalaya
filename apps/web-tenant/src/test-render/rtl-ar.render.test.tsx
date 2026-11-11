@@ -18,6 +18,7 @@ import { formatMoneyMinor } from '@krishalaya/i18n';
 import { en } from '../i18n/en';
 import { ar } from '../i18n/ar';
 import { hi } from '../i18n/hi';
+import { gu } from '../i18n/gu'; // RTL-1g: the plan-status labels in every language
 
 // ---- the request: the only thing faked about language ------------------------------------------------------------------
 const mockReq: { cookies: Record<string, string>; headers: Record<string, string> } = { cookies: {}, headers: {} };
@@ -101,6 +102,7 @@ import DashboardPage from '../app/dashboard/page';
 import PeoplePage from '../app/people/page';
 import InvoicesPage from '../app/invoices/page';
 import * as moneyModule from '../features/rtl/money';
+import * as homeModule from '../features/console/home'; // RTL-1g: planStatusLabel, swapped back to the raw code for the before-render
 import { getLang, getLanguageDef } from '../lib/i18n';
 import { rich } from '../components/Bidi';
 
@@ -421,5 +423,60 @@ describe('5 · every amount in the Indian shape, isolated (RTL-1b-3: /dashboard,
     const [arNow, arBefore] = await nowAndBefore('ar', mount);
     expect(arNow).not.toBe(arBefore);
     expect(arBefore).not.toContain(expected[0]);
+  });
+});
+
+// ---- 6 · RTL-1g: the plan status in words (was the raw API code in every language) -----------------------------------------
+describe('6 · /dashboard plan status: a label in the page language, never the raw subscription_status code (RTL-1g)', () => {
+  const CAT: Record<string, Record<string, string>> = { en, hi, gu, ar };
+  const CODES: Array<[string, string]> = [['trialing', 'trialing'], ['active', 'active'], ['past_due', 'pastDue'], ['paused', 'paused'], ['cancelled', 'cancelled'], ['expired', 'expired']];
+  const dashboard = () => DashboardPage();
+  const LRI = '\u2066'; const PDI = '\u2069';
+  /** The page as built, and the same page with planStatusLabel swapped back to the 93aa6915 behaviour (the raw code). */
+  async function nowAndBefore(cookie: string, status: string | null): Promise<[string, string]> {
+    const keep = dash.planHealth.status;
+    dash.planHealth.status = status;
+    jest.useFakeTimers({ now: new Date('2026-10-04T10:00:00.000Z'), doNotFake: ['nextTick', 'setImmediate', 'setTimeout', 'setInterval', 'queueMicrotask'] });
+    try {
+      const now = await page({ cookie }, dashboard);
+      const spy = jest.spyOn(homeModule, 'planStatusLabel').mockImplementation((s) => s);
+      try { return [now, await page({ cookie }, dashboard)]; } finally { spy.mockRestore(); }
+    } finally { jest.useRealTimers(); dash.planHealth.status = keep; }
+  }
+  const planLine = (html: string) => html.match(/<h2 class="kv-section-title">[^<]*<\/h2><p class="kv-fine">([\s\S]*?)<\/p>/)?.[1] ?? '';
+
+  it.each(CODES)('%s: every language prints its own label after the plan name, and never the code (unless en\'s word IS the code)', async (code, key) => {
+    for (const cookie of ['en', 'hi', 'gu', 'ar']) {
+      const [now] = await nowAndBefore(cookie, code);
+      const label = CAT[cookie][`home.planStatus.${key}`];
+      expect(label).toBeTruthy();
+      const line = planLine(now);
+      expect({ cookie, line: line.includes(` · ${esc(label)}`) }).toEqual({ cookie, line: true });
+      if (label !== code) expect({ cookie, raw: line.includes(` · ${code}`) }).toEqual({ cookie, raw: false });
+      expect(line).not.toContain('home.planStatus');
+    }
+  });
+  it.each(CODES)('%s: the page differs from the raw-code render ONLY by the label (en / hi / gu / ar)', async (code, key) => {
+    for (const cookie of ['en', 'hi', 'gu', 'ar']) {
+      const [now, before] = await nowAndBefore(cookie, code);
+      const label = CAT[cookie][`home.planStatus.${key}`];
+      expect(before).toContain(` · ${code}`);
+      expect({ cookie, same: now.replace(` · ${esc(label)}`, ` · ${code}`) === before }).toEqual({ cookie, same: true });
+    }
+  });
+  it('no status (null): the page is byte-identical to the 93aa6915 render in every language', async () => {
+    for (const cookie of ['en', 'hi', 'gu', 'ar']) {
+      const [now, before] = await nowAndBefore(cookie, null);
+      expect({ cookie, same: now === before }).toEqual({ cookie, same: true });
+    }
+  });
+  it('an unknown code (a value added to the enum later) prints as the code: bare under en / hi / gu, LTR-isolated under ar', async () => {
+    for (const cookie of ['en', 'hi', 'gu']) {
+      const [now, before] = await nowAndBefore(cookie, 'grace_hold');
+      expect(planLine(now)).toContain(' · grace_hold');
+      expect({ cookie, same: now === before }).toEqual({ cookie, same: true });
+    }
+    const [arNow] = await nowAndBefore('ar', 'grace_hold');
+    expect(planLine(arNow)).toContain(` · ${LRI}grace_hold${PDI}`);
   });
 });

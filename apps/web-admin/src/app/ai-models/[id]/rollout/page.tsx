@@ -18,7 +18,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireAdmin } from '../../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../../lib/admin-client';
-import { getTranslator } from '../../../../lib/i18n';
+import { getTranslator, getAdminDir } from '../../../../lib/i18n';
+import { rangeArrow } from '../../../../features/rtl/arrow';
 import { approveTransitionAction, proposeTransitionAction, withdrawTransitionAction, runAuditAction } from '../../actions';
 import { Button, Callout, StatusPill } from '@krishalaya/ui';
 import {
@@ -58,6 +59,7 @@ export default async function RolloutPage({ params, searchParams }: {
 }) {
   requireAdmin();
   const t = getTranslator();
+  const arrow = rangeArrow(getAdminDir());
 
   let r: Rollout | null = null; let notice: string | undefined;
   try {
@@ -277,7 +279,7 @@ export default async function RolloutPage({ params, searchParams }: {
                 {r.awaitingChecker.map((a) => (
                   <li key={a.id}>
                     <Link href={`/ai-models/${encodeURIComponent(a.id)}/rollout`}>{a.code} {a.version}</Link>
-                    {' → '}{a.proposedStatus}
+                    {` ${arrow} `}{a.proposedStatus}
                     {a.proposedByAdminId ? ` · ${t.t('ai.maker')} ${a.proposedByAdminId.slice(0, 8)}` : ''}
                   </li>
                 ))}

@@ -8,7 +8,7 @@ import type { Metadata } from 'next';
 import { randomUUID } from 'node:crypto';
 import { SdkError, type GovApplicationOpened, type GovMembership } from '@krishalaya/sdk-js';
 import { requireGov } from '../../../lib/session';
-import { getTranslator } from '../../../lib/i18n';
+import { getLang, getTranslator } from '../../../lib/i18n';
 import { govClient } from '../../../lib/api-client';
 import { ActDoneNote, ActFailureNote, ActForm, ApplicationDetailView } from '../../../components/gov2/ApplicationsViews';
 import { Gov2Chain } from '../../../components/gov2/Gov2Chain';
@@ -54,7 +54,7 @@ export default async function ApplicationPage({ params, searchParams }: { params
     const act = actParam(searchParams.do);
     // the confirm form is shown only for an act this person is OFFERED on this application now (the API decides again)
     if (appState === 'ok' && app && act && offeredActs(me, app.status, null).includes(act)) {
-      return <Gov2Chain t={t} chain={chain} state={state} back={back}><ActForm t={t} appId={app.id} act={act} idemKey={randomUUID()} action={actOnApplicationAction} /></Gov2Chain>;
+      return <Gov2Chain t={t} chain={chain} state={state} back={back}><ActForm t={t} lang={getLang()} appId={app.id} act={act} idemKey={randomUUID()} action={actOnApplicationAction} /></Gov2Chain>;
     }
     return <Gov2Chain t={t} chain={chain} state="failure" back={back}><ActFailureNote t={t} error={appState === 'not_found' ? 'GOV_APPLICATION_NOT_FOUND' : 'GOV_ACT_NOT_NOW'} /></Gov2Chain>;
   }
@@ -63,5 +63,5 @@ export default async function ApplicationPage({ params, searchParams }: { params
   if (appState === 'ok' && me.person.permissions.includes('authority.members.read')) {
     try { rows = await client.gov.members.list(); } catch { rows = null; }
   }
-  return <ApplicationDetailView t={t} state={appState} me={me} id={id} app={app} facts={null} decision={decisionFact(rows, me.person.userId)} />;
+  return <ApplicationDetailView t={t} lang={getLang()} state={appState} me={me} id={id} app={app} facts={null} decision={decisionFact(rows, me.person.userId)} />;
 }

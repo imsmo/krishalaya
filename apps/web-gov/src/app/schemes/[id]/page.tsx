@@ -7,7 +7,7 @@
 import type { Metadata } from 'next';
 import { SdkError, type GovScheme, type GovSchemeVersion, type GovSchemeVersionDiff } from '@krishalaya/sdk-js';
 import { requireGov } from '../../../lib/session';
-import { getTranslator } from '../../../lib/i18n';
+import { getLang, getTranslator } from '../../../lib/i18n';
 import { govClient } from '../../../lib/api-client';
 import { SchemeDetailView, type DiffState } from '../../../components/gov2/SchemesViews';
 import { Gov2Chain } from '../../../components/gov2/Gov2Chain';
@@ -47,5 +47,5 @@ export default async function SchemePage({ params, searchParams }: { params: { i
       try { diff = await client.gov.schemes.diff(id, n); diffState = 'ok'; } catch { diffState = 'error'; }
     }
   }
-  return <SchemeDetailView t={t} state={state} id={id} tab={tab} scheme={scheme} versions={versions} diff={diff} diffState={diffState} />;
+  return <SchemeDetailView t={t} lang={getLang()} state={state} id={id} tab={tab} scheme={scheme} versions={versions} diff={diff} diffState={diffState} />;
 }

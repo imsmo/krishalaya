@@ -48,7 +48,7 @@ export default async function AccessPage({ searchParams }: { searchParams: Recor
     return (
       <Gov1Chain t={t} chain={chain} state={act}>
         {chain === 'access_act' && act === 'success'
-          ? <AccessDoneNote t={t} done={accessDone(searchParams.done)} expiresAt={one(searchParams.ends) ?? null} sessionsEnded={Number(one(searchParams.ended)) || 0} /> : null}
+          ? <AccessDoneNote t={t} lang={getLang()} done={accessDone(searchParams.done)} expiresAt={one(searchParams.ends) ?? null} sessionsEnded={Number(one(searchParams.ended)) || 0} /> : null}
         {chain === 'access_act' && act === 'failure' ? <AccessFailureNote t={t} error={accessErrorCode(searchParams.error)} /> : null}
       </Gov1Chain>
     );
@@ -66,8 +66,8 @@ export default async function AccessPage({ searchParams }: { searchParams: Recor
     return (
       <Gov1Chain t={t} chain="access_act" state="confirm">
         {doing === 'request' ? <RequestForm t={t} idemKey={key} action={requestRoleAction} /> : null}
-        {doing === 'approve' ? <ApproveConfirm t={t} row={row} rows={rows} me={me} idemKey={key} action={approveRoleAction} /> : null}
-        {doing === 'remove' ? <RemoveForm t={t} row={row} rows={rows} me={me} idemKey={key} action={removeRoleAction} /> : null}
+        {doing === 'approve' ? <ApproveConfirm t={t} lang={getLang()} row={row} rows={rows} me={me} idemKey={key} action={approveRoleAction} /> : null}
+        {doing === 'remove' ? <RemoveForm t={t} lang={getLang()} row={row} rows={rows} me={me} idemKey={key} action={removeRoleAction} /> : null}
       </Gov1Chain>
     );
   }

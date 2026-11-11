@@ -7,7 +7,7 @@ import type { Metadata } from 'next';
 import { SdkError, type ColdSubjectDetail } from '@krishalaya/sdk-js';
 import { requireSession } from '../../../lib/session';
 import { opsClient } from '../../../lib/api-client';
-import { getTranslator } from '../../../lib/i18n';
+import { getTranslator, getLang } from '../../../lib/i18n';
 import { IotDeviceView } from '../../../components/ops4/IotViews';
 import { Ops4Chain } from '../../../components/ops4/Ops4Chain';
 import { chain4State } from '../../../features/ops4/refusals';
@@ -21,16 +21,16 @@ export function generateMetadata(): Metadata {
 
 export default async function IotDevicePage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
   await requireSession(IOT.device);
-  const t = getTranslator();
+  const t = getTranslator(); const lang = getLang();
   const type = subjectTypeParam(searchParams?.type);
   const id = uuidParam(searchParams?.id);
   const hours = hoursParam(searchParams?.hours);
   const act = chain4State('iot_act', searchParams);
   if (act) return <Ops4Chain t={t} chain="iot_act" state={act} page={type && id ? deviceHref(type, id, hours) : IOT.device} />;
-  if (!type || !id) return <IotDeviceView t={t} state="notFound" readAt={Date.now()} hours={hours} type={type} id={id} detail={null} />;
+  if (!type || !id) return <IotDeviceView t={t} lang={lang} state="notFound" readAt={Date.now()} hours={hours} type={type} id={id} detail={null} />;
   let status: 'ok' | number | 'failed' = 'ok';
   let detail: ColdSubjectDetail | null = null;
   try { detail = await opsClient().coldChain.subject(type, id, { hours }); } catch (e) { status = e instanceof SdkError ? e.status : 'failed'; }
   const state = status === 400 ? 'notFound' : iotState(status);
-  return <IotDeviceView t={t} state={state} readAt={Date.now()} hours={hours} type={type} id={id} detail={detail} />;
+  return <IotDeviceView t={t} lang={lang} state={state} readAt={Date.now()} hours={hours} type={type} id={id} detail={detail} />;
 }

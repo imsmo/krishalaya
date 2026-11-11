@@ -11,7 +11,7 @@ import { cookies } from 'next/headers';
 import { SdkError, type DairyBmcMonitor, type DairyMcc } from '@krishalaya/sdk-js';
 import { requireSession } from '../../lib/session';
 import { opsClient } from '../../lib/api-client';
-import { getTranslator } from '../../lib/i18n';
+import { getTranslator, getLang } from '../../lib/i18n';
 import { BmcView, FormErrorReason, ManualReadingForm, ReadingFailure, ReadingRecorded, ReadingReview } from '../../components/ops3/BmcViews';
 import { Ops3Chain } from '../../components/ops3/Ops3Chain';
 import { chain3State } from '../../features/ops3/refusals';
@@ -28,7 +28,7 @@ const status = (e: unknown): number | 'failed' => (e instanceof SdkError ? e.sta
 
 export default async function BmcPage({ searchParams }: { searchParams?: SP }) {
   await requireSession(BMC);
-  const t = getTranslator();
+  const t = getTranslator(); const lang = getLang();
   const unit = parseUnit(searchParams?.unit);
   const back = unit ? `${BMC}?unit=${unit}` : BMC;
   const act = chain3State('bmc_act', searchParams);
@@ -52,7 +52,7 @@ export default async function BmcPage({ searchParams }: { searchParams?: SP }) {
   const cooler = state === 'ok' ? pickCooler(tiles, unit, parseUnit(searchParams?.mcc)) : null;
 
   if (form === 'review' || form === 'error') {
-    if (state !== 'ok') return <BmcView t={t} state={state} scope={scope} centres={centres} tiles={[]} cooler={null} points={null} />;
+    if (state !== 'ok') return <BmcView t={t} lang={lang} state={state} scope={scope} centres={centres} tiles={[]} cooler={null} points={null} />;
     const named = unit ? tiles.find((x) => x.unitId === unit) ?? null : null;
     const typed = typedTemp(searchParams?.[form === 'review' ? 'tempC' : 'value']);
     const tempC = parseTemp(typed);
@@ -65,7 +65,7 @@ export default async function BmcPage({ searchParams }: { searchParams?: SP }) {
         </Ops3Chain>
       );
     }
-    return <Ops3Chain t={t} chain="bmc_form" state="review" back={back} backKey="ops3.bmc.back"><ReadingReview t={t} tile={named} tempC={tempC} action={recordBmcReadingAction} /></Ops3Chain>;
+    return <Ops3Chain t={t} chain="bmc_form" state="review" back={back} backKey="ops3.bmc.back"><ReadingReview t={t} lang={lang} tile={named} tempC={tempC} action={recordBmcReadingAction} /></Ops3Chain>;
   }
 
   // the series of the SHOWN cooler, asked for by its id (the first read's focus may be another centre's tank)
@@ -74,5 +74,5 @@ export default async function BmcPage({ searchParams }: { searchParams?: SP }) {
     if (monitor.focus?.unitId === cooler.unitId) points = monitor.focus.points;
     else { try { const f = (await c.dairy.bmcMonitor({ unitId: cooler.unitId, hours: SERIES_HOURS })).focus; points = f?.unitId === cooler.unitId ? f.points : null; } catch { points = null; } }
   }
-  return <BmcView t={t} state={state} scope={scope} centres={centres} tiles={tiles} cooler={cooler} points={points} />;
+  return <BmcView t={t} lang={lang} state={state} scope={scope} centres={centres} tiles={tiles} cooler={cooler} points={points} />;
 }

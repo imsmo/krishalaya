@@ -11,7 +11,8 @@ import { formatMoneyMinor } from '@krishalaya/i18n';
 import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
 import { DataTable, Column } from '../../../components/DataTable';
-import { getTranslator } from '../../../lib/i18n';
+import { getTranslator, getAdminDir } from '../../../lib/i18n';
+import { rangeArrow } from '../../../features/rtl/arrow';
 import { adminNoticeKey } from '../../../features/nav/nav-model';
 import { diffAgainstPrevious, isRegressive, type VersionRow } from '../../../features/plans/version-diff';
 import { planStatusKey, canPublish, canArchive, canReactivate, type PlanDetail, type FeatureCatalogueItem, type PlanChange } from '../../../features/plans/plan';
@@ -30,6 +31,7 @@ const ERR = new Set(['reason', 'price', 'limitCode', 'limitValue', 'featureCode'
 export default async function PlanDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
   requireAdmin();
   const t = getTranslator();
+  const arrow = rangeArrow(getAdminDir());
 
   let plan: PlanDetail | undefined; let notice: string | undefined;
   try { plan = (await adminGet<PlanDetail>(`plans/${params.id}`)).data; }
@@ -236,7 +238,7 @@ export default async function PlanDetailPage({ params, searchParams }: { params:
               <ul className="kv-list" role="list">
                 {diff.limits.map((l) => (
                   <li key={l.code}>
-                    <code>{l.code}</code>: {l.from ?? t.t('plans.diffAbsent')} → {l.to ?? t.t('plans.diffAbsent')}
+                    <code>{l.code}</code>: {l.from ?? t.t('plans.diffAbsent')}{` ${arrow} `}{l.to ?? t.t('plans.diffAbsent')}
                   </li>
                 ))}
               </ul>

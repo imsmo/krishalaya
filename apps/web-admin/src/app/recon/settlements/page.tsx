@@ -15,7 +15,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireAdmin } from '../../../lib/admin-auth';
 import { adminGet, AdminApiError } from '../../../lib/admin-client';
-import { getTranslator } from '../../../lib/i18n';
+import { getTranslator, getAdminDir } from '../../../lib/i18n';
+import { rangeArrow } from '../../../features/rtl/arrow';
 import { requestCycleAction } from '../payouts/actions';
 import { Button, Callout, EmptyState, StatusPill } from '@krishalaya/ui';
 import {
@@ -56,6 +57,7 @@ export default async function SettlementQueuePage({ searchParams }: {
 }) {
   requireAdmin();
   const t = getTranslator();
+  const arrow = rangeArrow(getAdminDir());
   const cycle = searchParams.cycle?.trim() || undefined;
   const tenantId = searchParams.tenantId?.trim() || undefined;
 
@@ -134,7 +136,7 @@ export default async function SettlementQueuePage({ searchParams }: {
           <h2 id="po-cycle" className="kv-panel__title">{t.t('po.cycle.title')}</h2>
           <p>
             <StatusPill tone={outcomeTone(outcome.kind)} label={t.t(outcomeKey(outcome.kind))} />{' '}
-            {meta.run.periodStart} → {meta.run.periodEnd} ·{' '}
+            {meta.run.periodStart}{` ${arrow} `}{meta.run.periodEnd} ·{' '}
             {t.t('po.cycle.counts', {
               scanned: String(meta.run.sellersScanned),
               generated: String(meta.run.generatedCount),
