@@ -139,10 +139,13 @@ describe('4 · dates follow the app\'s language, never the phone\'s (F-H3)', () 
 const SRC = path.resolve(__dirname, '../..');
 const BIDI = path.join(SRC, 'core/i18n/bidi.ts');
 const MONEY = path.join(SRC, 'core/i18n/money.ts');
+const LOCALES = path.join(SRC, 'core/i18n/locales');
 function sources(dir = SRC, out: string[] = []): string[] {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, e.name);
-    if (e.isDirectory()) { if (e.name !== '__tests__' && e.name !== 'node_modules') sources(p, out); }
+    // RTL-1h-3 (lead-authorised): the catalogues under core/i18n/locales/ are excluded — ar.ts carries the REVERSED sentence arrows the
+    // brief requires; they are pinned "every en → / ← reversed exactly" by core/__tests__/rtl1h3-ar-parity.spec.ts.
+    if (e.isDirectory()) { if (e.name !== '__tests__' && e.name !== 'node_modules' && p !== LOCALES) sources(p, out); }
     else if (/\.(ts|tsx)$/.test(e.name) && !/\.(spec|render-spec)\./.test(e.name) && !e.name.endsWith('.d.ts')) out.push(p);
   }
   return out;

@@ -45,8 +45,18 @@ describe('1 · the runtime serves Arabic only on an explicit choice', () => {
     expect(i18n.dir).toBe('rtl');
     expect(i18n.t('shell.draftBanner')).toBe(ar['shell.draftBanner']);
     expect(i18n.t('tabs.home')).toBe('الرئيسية');
-    expect('home.defaultName' in ar).toBe(false);
-    expect(i18n.t('home.defaultName')).toBe((en as Record<string, string>)['home.defaultName']);
+    // RTL-1h-3 (lead-authorised): the catalogue is now whole, so no REAL key is undrafted; the per-key English fallback is proven on a
+    // made-up key placed in the English catalogue only (absent from ar), then removed.
+    const E1 = en as Record<string, string>; const FAKE = 'zz.rtl1h3.englishOnly';
+    expect(FAKE in ar).toBe(false);
+    E1[FAKE] = 'Only in English';
+    try {
+      i18n.setLanguage('en', 'explicit'); i18n.setLanguage('ar', 'explicit');   // rebuild the Translator with the fake key registered
+      expect(i18n.lang).toBe('ar');
+      expect(i18n.t(FAKE)).toBe('Only in English');
+      expect(i18n.t('home.defaultName')).toBe(ar['home.defaultName']);
+      expect(i18n.t('home.defaultName')).not.toBe(E1['home.defaultName']);
+    } finally { delete E1[FAKE]; i18n.setLanguage('en', 'explicit'); i18n.setLanguage('ar', 'explicit'); }
     expect(i18n.english('shell.draftBanner')).toBe('This Arabic text is a machine draft and has not been reviewed.');
   });
   it('en / hi / gu resolve exactly as before, left-to-right, explicit or not; Urdu (not a preview) never serves', () => {
@@ -157,13 +167,9 @@ describe('5 · catalogues', () => {
       expect(placeholders(c[k])).toEqual(placeholders(E[k]));
     }
   });
-  it('the Arabic draft is a subset of English with equal placeholders, Arabic script in every value', () => {
-    for (const [k, v] of Object.entries(ar)) {
-      expect(k in E).toBe(true);
-      expect(placeholders(v)).toEqual(placeholders(E[k]));
-      expect(v).toMatch(/[؀-ۿ]/);
-    }
-  });
+  // RTL-1h-3 (lead-authorised): "the Arabic draft is a subset of English with equal placeholders, Arabic script in every value" moved
+  // into core/__tests__/rtl1h3-ar-parity.spec.ts — equal key sets ×4, placeholders ×4, and Arabic script in every value except the
+  // verbatim values named BY RULE (Indic-script en, no letters, a named list of codes/brands/units).
   it('ar.ts carries the MACHINE DRAFT header', () => {
     expect(read('core/i18n/locales/ar.ts').split('\n')[0]).toContain('MACHINE DRAFT, NOT REVIEWED.');
   });
