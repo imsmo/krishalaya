@@ -8,6 +8,7 @@ import type { ReactNode } from 'react';
 import { Gov1Chain, Gov1Refusals } from './Gov1Chain';
 import { LOGIN_ERRORS, type LoginStep } from '../../features/gov1/login';
 import type { Tr } from '../../features/gov1/refusals';
+import { ltrText } from '../../features/rtl/span';
 
 type Action = string | ((fd: FormData) => Promise<void>);
 export interface LoginActions { requestOtp: Action; verifyOtp: Action; choose: Action; twoFactor: Action; enrol: Action; confirmEnrol: Action; startOver: Action }
@@ -30,6 +31,8 @@ export interface LoginViewProps {
   /** On the success state: the authority the API says this session is in (`GET /v1/gov/me`), or null when it could not be read. */
   signedInTo?: string | null;
   actions: LoginActions;
+  /** PC-56 RTL-1f: the page language — under a preview (rtl) language the masked phone is isolated left-to-right inside its sentence. */
+  lang?: string;
 }
 
 const form = (a: Action) => a as never;
@@ -48,10 +51,10 @@ function PhoneForm({ t, actions }: { t: Tr; actions: LoginActions }) {
     </form>
   );
 }
-function CodeForm({ t, phoneMasked, actions }: { t: Tr; phoneMasked?: string | null; actions: LoginActions }) {
+function CodeForm({ t, phoneMasked, actions, lang = 'en' }: { t: Tr; phoneMasked?: string | null; actions: LoginActions; lang?: string }) {
   return (
     <form action={form(actions.verifyOtp)} className="kv-form" data-kv-form="verify">
-      <p className="kv-muted">{t.t('gov1.login.codeSent', { phone: phoneMasked ?? '' })}</p>
+      <p className="kv-muted">{t.t('gov1.login.codeSent', { phone: phoneMasked ? ltrText(phoneMasked, lang) : '' })}</p>
       <label htmlFor="code" className="kv-field__label">{t.t('login.otpLabel')}</label>
       <input id="code" className="kv-input" name="code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="\d{4,8}" required />
       <button className="kv-btn" type="submit">{t.t('gov1.login.continue')}</button>
@@ -128,7 +131,7 @@ function Enrolled({ t, recoveryCodes, actions }: { t: Tr; recoveryCodes?: string
 /** The form a step shows (also the form a form-error state shows again). */
 export function StepForm(p: LoginViewProps): ReactNode {
   switch (p.step) {
-    case 'verify': return <CodeForm t={p.t} phoneMasked={p.phoneMasked} actions={p.actions} />;
+    case 'verify': return <CodeForm t={p.t} phoneMasked={p.phoneMasked} actions={p.actions} lang={p.lang} />;
     case 'choose': return <ChooseForm t={p.t} choices={p.choices} actions={p.actions} />;
     case '2fa': return <TwoFactorForm t={p.t} actions={p.actions} />;
     case 'enrol': return <EnrolStart t={p.t} actions={p.actions} />;

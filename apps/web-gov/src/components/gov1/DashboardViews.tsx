@@ -14,11 +14,12 @@ import { Gov1Refusals } from './Gov1Chain';
 import { atUtc } from '../../features/gov1/access';
 import { DASH_STATUSES, statusKey, type DashState } from '../../features/gov1/dashboard';
 import type { Tr } from '../../features/gov1/refusals';
+import { ltrOrNull } from '../../features/rtl/span';
 import { Gov6DashboardSections } from '../gov6/DashboardSections';
 
 const num = (n: number) => String(n);
 
-export function DashboardView({ t, state, me, overview }: { t: Tr; state: DashState; me: GovMe | null; overview: GovOverview | null }) {
+export function DashboardView({ t, state, me, overview, lang = 'en' }: { t: Tr; state: DashState; me: GovMe | null; overview: GovOverview | null; lang?: string }) {
   const o = state === 'ok' || state === 'no_scheme' ? overview : null;
   return (
     <section data-kv-page="dashboard" data-kv-state={state}>
@@ -37,7 +38,7 @@ export function DashboardView({ t, state, me, overview }: { t: Tr; state: DashSt
       {o ? (
         <>
           <p className="kv-muted" data-kv-window={o.window.kind}>{t.t('gov1.dash.window')}</p>
-          <p className="kv-muted" data-kv-computed-at={o.computedAt}>{t.t('gov1.dash.computedAt', { at: atUtc(o.computedAt) ?? t.t('common.dash') })}</p>
+          <p className="kv-muted" data-kv-computed-at={o.computedAt}>{t.t('gov1.dash.computedAt', { at: ltrOrNull(atUtc(o.computedAt), lang) ?? t.t('common.dash') })}</p>
           <ul className="kv-facts">
             <li data-kv-count="schemes">{t.t('gov1.dash.schemes', { n: num(o.schemes.count) })}</li>
             <li data-kv-count="applications">{t.t('gov1.dash.applications', { n: num(o.totals.total) })}</li>

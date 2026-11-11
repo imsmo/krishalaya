@@ -11,6 +11,7 @@ import type { ReactNode } from 'react';
 import type { GovApplication, GovApplicationOpened, GovMe, GovScheme } from '@krishalaya/sdk-js';
 import { Gov2Refusals } from './Gov2Chain';
 import { atUtc } from '../../features/gov1/access';
+import { ltrOrNull, ltrText } from '../../features/rtl/span';
 import type { Tr } from '../../features/gov2/refusals';
 import { asStored } from '../../features/gov2/schemes';
 import {
@@ -38,9 +39,11 @@ function States({ t, state, retry, forbiddenKey }: { t: Tr; state: string; retry
 }
 
 /** W330 — applications to the authority's schemes. */
-export function ApplicationsListView({ t, state, me, items, schemes, status, scheme, cursor, nextCursor }: {
+export function ApplicationsListView({ t, state, me, items, schemes, status, scheme, cursor, nextCursor, lang = 'en' }: {
   t: Tr; state: AppsState; me: GovMe | null; items: GovApplication[]; schemes: GovScheme[];
   status?: string; scheme?: string; cursor?: string; nextCursor: string | null;
+  /** PC-56 RTL-1f: the page language — under a preview (rtl) language each scheme code and instant is isolated left-to-right. */
+  lang?: string;
 }) {
   const rows = state === 'ok' ? items : [];
   return (
@@ -54,7 +57,7 @@ export function ApplicationsListView({ t, state, me, items, schemes, status, sch
         <label htmlFor="apps-scheme" className="kv-field__label">{t.t('gov2.apps.filter.scheme')}</label>
         <select id="apps-scheme" className="kv-select" name="scheme" defaultValue={scheme ?? ''}>
           <option value="">{t.t('gov2.apps.filter.allSchemes')}</option>
-          {schemes.map((s) => <option key={s.id} value={s.id}>{`${s.name} (${s.code})`}</option>)}
+          {schemes.map((s) => <option key={s.id} value={s.id}>{`${s.name} (${ltrText(s.code, lang)})`}</option>)}
         </select>
         <label htmlFor="apps-status" className="kv-field__label">{t.t('gov2.apps.filter.status')}</label>
         <select id="apps-status" className="kv-select" name="status" defaultValue={status ?? ''} data-kv-status-filter="">
@@ -76,11 +79,11 @@ export function ApplicationsListView({ t, state, me, items, schemes, status, sch
             {rows.map((a) => (
               <tr key={a.id} data-kv-application={a.id} data-kv-app-status={a.status}>
                 <th scope="row"><a className="kv-link" href={`/applications/${a.id}`} data-kv-open={a.id}>{shortId(a.id)}</a></th>
-                <td>{`${a.scheme.name} (${a.scheme.code})`}</td>
+                <td>{`${a.scheme.name} (${ltrText(a.scheme.code, lang)})`}</td>
                 <td>{t.t('gov2.versionN', { n: String(a.schemeVersion) })}</td>
                 <td>{t.t(statusKey(a.status))}</td>
-                <td>{dash(t, atUtc(a.submittedAt))}</td>
-                <td>{dash(t, atUtc(a.decidedAt))}</td>
+                <td>{dash(t, ltrOrNull(atUtc(a.submittedAt), lang))}</td>
+                <td>{dash(t, ltrOrNull(atUtc(a.decidedAt), lang))}</td>
               </tr>
             ))}
           </tbody>

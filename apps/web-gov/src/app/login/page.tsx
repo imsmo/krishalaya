@@ -5,7 +5,7 @@
 // switched-off sentence instead of a form that would 404. The success state names the authority from `GET /v1/gov/me`. noindex.
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
-import { getTranslator } from '../../lib/i18n';
+import { getLang, getTranslator } from '../../lib/i18n';
 import { anonClient } from '../../lib/api-client';
 import { govGate } from '../../lib/session';
 import { LoginView } from '../../components/gov1/LoginViews';
@@ -58,6 +58,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Record
       enrolKey={json<{ secret: string; otpauthUri: string } | null>('kvg_enrol_key', null)}
       recoveryCodes={json<string[] | null>('kvg_recovery', null)}
       signedInTo={signedInTo}
+      lang={getLang()}
       actions={{ requestOtp: requestOtpAction, verifyOtp: verifyOtpAction, choose: chooseAction, twoFactor: twoFactorAction, enrol: enrolAction, confirmEnrol: confirmEnrolAction, startOver: startOverAction }}
     />
   );

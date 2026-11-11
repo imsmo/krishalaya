@@ -15,6 +15,7 @@ import {
   type AccessDone, type Who,
 } from '../../features/gov1/access';
 import type { Tr } from '../../features/gov1/refusals';
+import { ltrOrNull } from '../../features/rtl/span';
 
 type Action = string | ((fd: FormData) => Promise<void>);
 const form = (a: Action) => a as never;
@@ -31,21 +32,21 @@ export function whoText(t: Tr, w: Who): string {
 }
 export const roleText = (t: Tr, code: string): string => ((GOV_ROLE_CODES as readonly string[]).includes(code) ? t.t(`gov1.access.role.${code}`) : code);
 
-function endsText(t: Tr, m: GovMembership): string {
+function endsText(t: Tr, m: GovMembership, lang = 'en'): string {
   const s = rowStatus(m);
   if (s === 'requested') return t.t('gov1.access.endsAfter', { n: m.termMonths });
-  if (s === 'removed') return m.removedAt ? t.t('gov1.access.removedOn', { at: atUtc(m.removedAt) ?? '' }) : t.t('common.dash');
-  return atUtc(m.expiresAt) ?? t.t('common.dash');
+  if (s === 'removed') return m.removedAt ? t.t('gov1.access.removedOn', { at: ltrOrNull(atUtc(m.removedAt), lang) ?? '' }) : t.t('common.dash');
+  return ltrOrNull(atUtc(m.expiresAt), lang) ?? t.t('common.dash');
 }
 
-export function AccessView({ t, state, me, rows }: { t: Tr; state: AccessState; me: GovMe | null; rows: readonly GovMembership[] }) {
+export function AccessView({ t, state, me, rows, lang = 'en' }: { t: Tr; state: AccessState; me: GovMe | null; rows: readonly GovMembership[]; lang?: string }) {
   const fact = me && state === 'ok' ? approverFact(rows, me.person.userId) : null;
   return (
     <section data-kv-page="access" data-kv-state={state}>
       <h1>{t.t('gov1.access.title')}</h1>
       <p className="kv-statement" data-kv-statement="gov1.access.q4">{t.t('gov1.access.q4')}</p>
       <p className="kv-muted" data-kv-fact="first-head">{t.t('gov1.access.firstHead')}</p>
-      {me ? <p className="kv-muted" data-kv-signed-in="">{t.t('gov1.access.signedIn', { authority: me.authority?.name ?? t.t('common.dash'), ends: atUtc(me.person.accessEndsAt) ?? t.t('common.dash') })}</p> : null}
+      {me ? <p className="kv-muted" data-kv-signed-in="">{t.t('gov1.access.signedIn', { authority: me.authority?.name ?? t.t('common.dash'), ends: ltrOrNull(atUtc(me.person.accessEndsAt), lang) ?? t.t('common.dash') })}</p> : null}
       {state === 'off' ? <p className="kv-notice" data-kv-notice="off">{t.t('gov1.login.off')}</p> : null}
       {state === 'forbidden' ? <p className="kv-notice" data-kv-notice="forbidden">{t.t('gov1.access.forbidden')}</p> : null}
       {state === 'error' ? (
@@ -73,7 +74,7 @@ export function AccessView({ t, state, me, rows }: { t: Tr; state: AccessState; 
                     <td>{roleText(t, m.roleCode)}</td>
                     <td>{whoText(t, whoOf(m.requestedBy, rows, me?.person.userId ?? '', m.requestedByPlatform))}</td>
                     <td>{m.approvedAt ? whoText(t, whoOf(m.approvedBy, rows, me?.person.userId ?? '', m.requestedByPlatform && !m.approvedBy)) : t.t('common.dash')}</td>
-                    <td>{endsText(t, m)}</td>
+                    <td>{endsText(t, m, lang)}</td>
                     <td>{t.t(`gov1.access.status.${rowStatus(m)}`)}</td>
                     <td>
                       {me && canOfferApprove(m, me) ? <a className="kv-link" href={`/access?act=confirm&do=approve&id=${encodeURIComponent(m.membershipId)}`} data-kv-offer="approve">{t.t('gov1.access.approve')}</a> : null}

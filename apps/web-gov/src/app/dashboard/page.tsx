@@ -10,7 +10,7 @@
 import type { Metadata } from 'next';
 import { SdkError, type GovOverview } from '@krishalaya/sdk-js';
 import { requireGov } from '../../lib/session';
-import { getTranslator } from '../../lib/i18n';
+import { getLang, getTranslator } from '../../lib/i18n';
 import { govClient } from '../../lib/api-client';
 import { DashboardView } from '../../components/gov1/DashboardViews';
 import { Gov1Chain } from '../../components/gov1/Gov1Chain';
@@ -39,5 +39,5 @@ export default async function DashboardPage({ searchParams }: { searchParams: Re
   let errorStatus: number | null = null;
   try { overview = await govClient().gov.overview(); }
   catch (e) { errorStatus = e instanceof SdkError ? e.status : 500; }
-  return <DashboardView t={t} state={dashState(overview, errorStatus)} me={me} overview={overview} />;
+  return <DashboardView t={t} state={dashState(overview, errorStatus)} me={me} overview={overview} lang={getLang()} />;
 }

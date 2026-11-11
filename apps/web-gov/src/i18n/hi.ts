@@ -11,6 +11,9 @@ export const hi: Record<string, string> = {
   'common.dash': '—',
   'common.nextPage': 'अगला पेज →',
   'lang.label': 'भाषा',
+  // ── PC-56 RTL-1f · the Arabic machine draft (founder Q1 "Draft all, opt-in only"): the switcher's draft tag and the banner (web-tenant's words) ──
+  'lang.draft': 'मशीन ड्राफ़्ट',
+  'rtl.draftBanner': 'यह अरबी पाठ मशीन से बना ड्राफ़्ट है और इसकी समीक्षा नहीं हुई है।',
   'nav.brand': 'कृषालय सरकारी कंसोल',
   'nav.primary': 'मुख्य',
   'nav.signOut': 'साइन आउट',

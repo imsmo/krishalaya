@@ -9,7 +9,7 @@
 import type { Metadata } from 'next';
 import { randomUUID } from 'node:crypto';
 import { SdkError, type GovMembership } from '@krishalaya/sdk-js';
-import { getTranslator } from '../../lib/i18n';
+import { getLang, getTranslator } from '../../lib/i18n';
 import { govClient } from '../../lib/api-client';
 import { requireGov } from '../../lib/session';
 import { AccessDoneNote, AccessFailureNote, AccessView, ApproveConfirm, RemoveForm, RequestForm, type AccessState } from '../../components/gov1/AccessViews';
@@ -71,5 +71,5 @@ export default async function AccessPage({ searchParams }: { searchParams: Recor
       </Gov1Chain>
     );
   }
-  return <AccessView t={t} state={state} me={me} rows={rows} />;
+  return <AccessView t={t} state={state} me={me} rows={rows} lang={getLang()} />;
 }

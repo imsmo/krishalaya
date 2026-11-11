@@ -11,6 +11,9 @@ export const en: Record<string, string> = {
   'common.dash': '—',
   'common.nextPage': 'Next page →',
   'lang.label': 'Language',
+  // ── PC-56 RTL-1f · the Arabic machine draft (founder Q1 "Draft all, opt-in only"): the switcher's draft tag and the banner (web-tenant's words) ──
+  'lang.draft': 'machine draft',
+  'rtl.draftBanner': 'This Arabic text is a machine draft and has not been reviewed.',
   'nav.brand': 'Krishalaya government console',
   'nav.primary': 'Primary',
   'nav.signOut': 'Sign out',

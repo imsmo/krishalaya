@@ -14,6 +14,7 @@
 // rendered by Gov3Chain like the 3a ones (Back → /dbt).
 import type { GovMe, GovOverview } from '@krishalaya/sdk-js';
 import { atUtc } from '../../features/gov1/access';
+import { ltrOrNull } from '../../features/rtl/span';
 import type { DashState } from '../../features/gov1/dashboard';
 import { DISBURSED_KEY } from '../../features/gov2/applications';
 import { chain3ById, DBT_BACK, GOV3_NOT_DONE, GOV3_NOT_DONE_3B, GOV3_REFUSALS, GOV3_SECTIONS, type Chain3Id, type Gov3Surface, type Tr } from '../../features/gov3/refusals';
@@ -66,7 +67,7 @@ export function Gov3Sections({ t }: { t: Tr }) {
   );
 }
 
-export function DbtView({ t, state, me, overview }: { t: Tr; state: DashState; me: GovMe | null; overview: GovOverview | null }) {
+export function DbtView({ t, state, me, overview, lang = 'en' }: { t: Tr; state: DashState; me: GovMe | null; overview: GovOverview | null; lang?: string }) {
   const o = state === 'ok' || state === 'no_scheme' ? overview : null;
   return (
     <section data-kv-page="dbt" data-kv-state={state}>
@@ -85,7 +86,7 @@ export function DbtView({ t, state, me, overview }: { t: Tr; state: DashState; m
       {o ? (
         <>
           <p className="kv-muted" data-kv-window={o.window.kind}>{t.t('gov1.dash.window')}</p>
-          <p className="kv-muted" data-kv-computed-at={o.computedAt}>{t.t('gov1.dash.computedAt', { at: atUtc(o.computedAt) ?? t.t('common.dash') })}</p>
+          <p className="kv-muted" data-kv-computed-at={o.computedAt}>{t.t('gov1.dash.computedAt', { at: ltrOrNull(atUtc(o.computedAt), lang) ?? t.t('common.dash') })}</p>
           {state === 'no_scheme' ? <p className="kv-muted" data-kv-empty="no-scheme">{t.t('gov1.dash.noScheme')}</p> : null}
           {o.byScheme.length > 0 ? (
             <>

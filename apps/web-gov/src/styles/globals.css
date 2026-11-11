@@ -190,3 +190,8 @@ details.kv-card > summary { cursor: pointer; }
 .kv-shell[data-kv-shell="gov"] { border-block-start: 4px solid var(--kv-info); }
 .kv-gov-pill { display: inline-block; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px; background: var(--kv-info); color: #fff; margin-block-end: 8px; }
 .kv-footer { margin-block-start: 48px; padding-block-start: var(--kv-space); border-block-start: 1px solid var(--kv-neutral-200); }
+/* PC-56 RTL-1f · the Arabic machine draft (founder Q1 "Draft all, opt-in only"): the banner above the shell and the switcher's draft tag
+   (web-tenant's RTL-1b-1 rules) — logical properties only. */
+.kv-md-banner { margin-block-end: 12px; padding-block: 8px; padding-inline: 12px; border: 1px solid var(--kv-neutral-200); border-inline-start-width: 4px; border-radius: var(--kv-radius); background: var(--kv-neutral-100); font-size: 13px; }
+.kv-md-banner p { margin: 0; }
+.kv-locale__draft { font-size: 12px; color: var(--kv-neutral-600); }

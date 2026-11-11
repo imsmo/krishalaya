@@ -9,7 +9,7 @@
 import type { Metadata } from 'next';
 import { SdkError, type GovOverview } from '@krishalaya/sdk-js';
 import { requireGov } from '../../lib/session';
-import { getTranslator } from '../../lib/i18n';
+import { getLang, getTranslator } from '../../lib/i18n';
 import { govClient } from '../../lib/api-client';
 import { DbtView, Gov3Chain } from '../../components/gov3/DbtViews';
 import { dashState } from '../../features/gov1/dashboard';
@@ -32,5 +32,5 @@ export default async function DbtPage({ searchParams }: { searchParams: Record<s
   let errorStatus: number | null = null;
   try { overview = await govClient().gov.overview(); }
   catch (e) { errorStatus = e instanceof SdkError ? e.status : 500; }
-  return <DbtView t={t} state={dashState(overview, errorStatus)} me={me} overview={overview} />;
+  return <DbtView t={t} state={dashState(overview, errorStatus)} me={me} overview={overview} lang={getLang()} />;
 }

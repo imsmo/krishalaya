@@ -11,6 +11,9 @@ export const gu: Record<string, string> = {
   'common.dash': '—',
   'common.nextPage': 'આગલું પેજ →',
   'lang.label': 'ભાષા',
+  // ── PC-56 RTL-1f · the Arabic machine draft (founder Q1 "Draft all, opt-in only"): the switcher's draft tag and the banner (web-tenant's words) ──
+  'lang.draft': 'મશીન ડ્રાફ્ટ',
+  'rtl.draftBanner': 'આ અરબી લખાણ મશીનથી બનેલો ડ્રાફ્ટ છે અને તેની સમીક્ષા થઈ નથી.',
   'nav.brand': 'કૃષાલય સરકારી કન્સોલ',
   'nav.primary': 'મુખ્ય',
   'nav.signOut': 'સાઇન આઉટ',

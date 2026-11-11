@@ -49,10 +49,13 @@ export function GovFooter({ t }: { t: Tr }) {
   );
 }
 
-export function GovShell({ me, sidebar, footer, skipLabel, children }: { me: GovMe | null; sidebar: ReactNode; footer?: ReactNode; skipLabel: string; children: ReactNode }) {
+/** PC-56 RTL-1f: `banner` is the root layout's machine-draft banner (drawn only while a PREVIEW language — Arabic — is the chosen language;
+ *  null otherwise), placed after the skip link and above the shell, on the signed-in shell and the bare page alike. */
+export function GovShell({ me, sidebar, footer, skipLabel, banner, children }: { me: GovMe | null; sidebar: ReactNode; footer?: ReactNode; skipLabel: string; banner?: ReactNode; children: ReactNode }) {
   return (
     <>
       <a href="#main" className="kv-skip">{skipLabel}</a>
+      {banner ?? null}
       <div className="kv-shell" data-kv-shell={me ? 'gov' : 'bare'}>
         {me ? sidebar : null}
         <main className="kv-content" id="main">

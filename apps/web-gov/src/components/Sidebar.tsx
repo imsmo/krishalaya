@@ -8,5 +8,5 @@ import { GovSidebar } from './gov1/GovShell';
 
 export function Sidebar({ me }: { me: GovMe }) {
   const t = getTranslator();
-  return <GovSidebar t={t} me={me} switcher={<LocaleSwitcher active={getLang()} label={t.t('lang.label')} />} />;
+  return <GovSidebar t={t} me={me} switcher={<LocaleSwitcher active={getLang()} label={t.t('lang.label')} draftLabel={t.t('lang.draft')} />} />;
 }

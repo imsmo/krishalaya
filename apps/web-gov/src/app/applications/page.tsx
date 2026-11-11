@@ -6,7 +6,7 @@
 import type { Metadata } from 'next';
 import { SdkError, type GovApplication, type GovScheme } from '@krishalaya/sdk-js';
 import { requireGov } from '../../lib/session';
-import { getTranslator } from '../../lib/i18n';
+import { getLang, getTranslator } from '../../lib/i18n';
 import { govClient } from '../../lib/api-client';
 import { ApplicationsListView } from '../../components/gov2/ApplicationsViews';
 import { Gov2Chain } from '../../components/gov2/Gov2Chain';
@@ -42,5 +42,5 @@ export default async function ApplicationsPage({ searchParams }: { searchParams:
   let schemes: GovScheme[] = [];
   try { schemes = await client.gov.schemes.list(); } catch { schemes = []; }
   return <ApplicationsListView t={t} state={applicationsState(items, err)} me={me} items={items ?? []} schemes={schemes}
-    status={status} scheme={scheme} cursor={cursor} nextCursor={nextCursor} />;
+    status={status} scheme={scheme} cursor={cursor} nextCursor={nextCursor} lang={getLang()} />;
 }
