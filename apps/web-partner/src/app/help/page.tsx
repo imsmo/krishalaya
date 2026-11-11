@@ -5,7 +5,7 @@
 import type { Metadata } from 'next';
 import { requirePartner } from '../../lib/session';
 import { anonClient } from '../../lib/api-client';
-import { getTranslator } from '../../lib/i18n';
+import { getTranslator, getLang } from '../../lib/i18n';
 import { HelpView, type Mailbox } from '../../components/partner1/HelpView';
 import { ChainNotice } from '../../components/partner1/ChainNotice';
 import { chainState } from '../../features/partner1/refusals';
@@ -31,5 +31,5 @@ export default async function HelpPage({ searchParams }: { searchParams?: Record
   } catch {
     mailbox = { kind: 'error' };
   }
-  return <HelpView t={t} mailbox={mailbox} />;
+  return <HelpView t={t} lang={getLang()} mailbox={mailbox} />;
 }

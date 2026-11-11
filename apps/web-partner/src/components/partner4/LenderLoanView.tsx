@@ -15,7 +15,7 @@
 // The borrower, the milk-bill percentage, the herd claim, the ledger anchors, the fee, the term, the plan and every "on time" are refused by
 // name. "Borrower statement (PDF)" is DECOR with the partners-mailbox line — the only trigger of the W2876–W2877 chain.
 import Link from 'next/link';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';
 import type { PartnerBookLoan, PartnerBookRepayment } from '@krishalaya/sdk-js';
 import type { Tr } from '../NotYet';
 import { LenderRefusals, LenderSwitchedOff } from './LenderChain';
@@ -56,7 +56,7 @@ export function LenderLoanView({ t, lang, l, repayments, failure, notFound, comp
       </section>
     );
   }
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => moneyText(m, 'INR', lang);
   const kl = (c: string | null) => { const x = kindLabel(c); return 'key' in x ? t.t(x.key) : x.raw; };
   const mat = maturityText(l.maturityDate);
   const due = nextDueText(l.nextDueDate);

@@ -1929,4 +1929,7 @@ export const hi: Messages = {
   'partner6.refusal.templateParity': 'कंसोल के पाठ की हर पंक्ति अभी हिन्दी और गुजराती में नहीं है: बिना अनुवाद वाला पुराना पाठ अंग्रेज़ी में दिखाया जाता है।',
   'partner6.refusal.languageReviewChecker': 'भाषा की पसंद कोई दूसरा व्यक्ति नहीं जाँचता: यह केवल आपकी है और केवल इस ब्राउज़र को बदलती है।',
   'partner6.refusal.languageNoAudit': 'भाषा की पसंद के लिए कोई ट्रेल प्रविष्टि नहीं लिखी जाती: यह इस ब्राउज़र की सेटिंग है, किसी के बारे में रिकॉर्ड नहीं।',
+  // PC-56 RTL-1d · the Arabic machine draft (opt-in only): the language choice's tag and the banner (web-tenant's / the storefront's words).
+  'lang.draft': 'मशीन ड्राफ़्ट',
+  'rtl.draftBanner': 'यह अरबी पाठ मशीन से बना ड्राफ़्ट है और इसकी समीक्षा नहीं हुई है।',
 };

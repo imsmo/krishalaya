@@ -9,7 +9,7 @@
 // statuses; keyset paging. "Take next" is DECOR (no claim is assigned or taken — the W2857–W2859 chain, `?act=`). The canon's "approved ·
 // paying" chip is the approved COUNT; the payout run, the hour counts, the timers, the roles and the two-person rule are refused by name.
 import Link from 'next/link';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';
 import type { PartnerInsuranceClaim, PartnerInsuranceClaimCounts } from '@krishalaya/sdk-js';
 import type { Tr } from '../NotYet';
 import { InsurerSwitchedOff } from '../partner2/InsurerStates';
@@ -25,7 +25,7 @@ export function InsurerClaimsView({ t, lang, state, items, counts, status, nextC
   t: Tr; lang: string; state: InsurerListState; items: PartnerInsuranceClaim[]; counts: PartnerInsuranceClaimCounts | null; status?: string; nextCursor: string | null; computedAt: string | null;
 }) {
   if (state === 'off' || state === 'insurance_off') return <InsurerSwitchedOff t={t} which={state} page="claims" />;
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => moneyText(m, 'INR', lang);
   const ev = (code: string | null) => { const l = eventLabel(code); return 'key' in l ? t.t(l.key) : l.raw; };
   const win = windowLabel(counts);
   return (

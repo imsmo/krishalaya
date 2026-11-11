@@ -14,7 +14,7 @@
 // screen. THE WHOLE COLLECTIONS CODE OF CONDUCT is refused by name below — the platform enforces none of it.
 // Export is DECOR with the partners-mailbox line (W2994–W2995); "View portfolio" is a real link.
 import Link from 'next/link';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';
 import type { PartnerBookArrears, PartnerBookCollected } from '@krishalaya/sdk-js';
 import type { Tr } from '../NotYet';
 import { LenderRefusals, LenderSwitchedOff } from './LenderChain';
@@ -28,7 +28,7 @@ export function LenderRepaymentsView({ t, lang, state, collected, arrears }: {
   t: Tr; lang: string; state: LenderCountsState; collected: PartnerBookCollected | null; arrears: PartnerBookArrears | null;
 }) {
   if (state === 'off') return <LenderSwitchedOff t={t} page="repayments" />;
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => moneyText(m, 'INR', lang);
   const win = windowLabel(collected);
   const reason = arrearsReason(arrears);
   return (

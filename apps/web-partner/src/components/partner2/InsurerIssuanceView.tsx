@@ -8,7 +8,8 @@
 // (`?form=`); "Reload" → the W2948–W2950 re-read chain (`?act=`). The canon's camp batches, pre-verification, second approver, rejection
 // rate, documents, holds, grid assignment, response clock, roles and the proposal-to-policy time are refused by name below.
 import Link from 'next/link';
-import { formatDate, formatMoneyMinor } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';
 import type { PartnerInsuranceQueueRow } from '@krishalaya/sdk-js';
 import type { Tr } from '../NotYet';
 import { InsurerRefusals } from './InsurerRefusals';
@@ -20,7 +21,7 @@ export function InsurerIssuanceView({ t, lang, state, items, nextCursor, compute
   t: Tr; lang: string; state: InsurerListState; items: PartnerInsuranceQueueRow[]; nextCursor: string | null; computedAt: string | null;
 }) {
   if (state === 'off' || state === 'insurance_off') return <InsurerSwitchedOff t={t} which={state} page="issuance" />;
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => moneyText(m, 'INR', lang);
   const day = (d: string | null) => (d ? formatDate(d, lang, { dateStyle: 'medium', timeZone: 'UTC' }) : t.t('partner2.none'));
   return (
     <section data-kv-insurer="issuance" data-kv-state={state}>

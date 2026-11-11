@@ -17,7 +17,8 @@
 //      table or line of code on this platform (founder 4a-4, refused by name in Phase 1).
 // The terms are the PRODUCT's TODAY, in integer basis points, and the page says so — a filed application stores no rate (founder 4a-6).
 import Link from 'next/link';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';
 import type { PartnerApplication } from '@krishalaya/sdk-js';
 import type { Tr } from '../NotYet';
 import { LenderRefusals, LenderSwitchedOff } from './LenderChain';
@@ -62,7 +63,7 @@ export function LenderApplicationView({ t, lang, a, failure, notFound, perms, id
       </section>
     );
   }
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => moneyText(m, 'INR', lang);
   const status = (isAppStatus(a.status) ? a.status : 'draft') as AppStatus;
   const okKey = ok && OK.has(ok) ? ok : null;
   const errKey = error && ERR.has(error) ? error : null;

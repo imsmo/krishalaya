@@ -6,7 +6,7 @@
 // as RECORDED rates ("nothing is charged against them today", founder Q4), parametric yes / no (the trigger copy refused), active, and the
 // policies on it. "New product" is DECOR (the W2869–W2872 chain): the platform authors products (founder Q7).
 import Link from 'next/link';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';
 import type { PartnerInsuranceProduct } from '@krishalaya/sdk-js';
 import type { Tr } from '../NotYet';
 import { InsurerRefusals } from './InsurerRefusals';
@@ -16,7 +16,7 @@ import { bpsText, formulaText, policiesTotal, type InsurerListState } from '../.
 
 export function formulaLine(t: Tr, lang: string, f: PartnerInsuranceProduct['formula']): string {
   const x = formulaText(f);
-  return x.key === 'partner2.formula.flat' ? t.t(x.key, { amount: formatMoneyMinor(x.vars.amountMinor, 'INR', lang) }) : t.t(x.key, x.vars);
+  return x.key === 'partner2.formula.flat' ? t.t(x.key, { amount: moneyText(x.vars.amountMinor, 'INR', lang) }) : t.t(x.key, x.vars);
 }
 
 export function InsurerProductsView({ t, lang, state, items, computedAt }: { t: Tr; lang: string; state: InsurerListState; items: PartnerInsuranceProduct[]; computedAt: string | null }) {

@@ -10,7 +10,7 @@
 // **NO PERCENTAGE APPEARS ON THIS PAGE.** No PAR, no average ticket, no share of the book, no five-bucket chart, no off-platform comparison
 // and no "honest attribution" block: each is refused by name below. Export is DECOR with the partners-mailbox line (founder 4a-7).
 import Link from 'next/link';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';
 import type { PartnerBookCounts, PartnerBookLoan } from '@krishalaya/sdk-js';
 import type { Tr } from '../NotYet';
 import { LenderRefusals, LenderSwitchedOff } from './LenderChain';
@@ -27,7 +27,7 @@ export function LenderPortfolioView({ t, lang, state, counts, items, status, nex
   status?: string; nextCursor: string | null; computedAt: string | null;
 }) {
   if (state === 'off') return <LenderSwitchedOff t={t} page="portfolio" />;
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => moneyText(m, 'INR', lang);
   const kl = (l: { key: string } | { raw: string }) => ('key' in l ? t.t(l.key) : l.raw);
   const win = windowLabel(counts);
   return (

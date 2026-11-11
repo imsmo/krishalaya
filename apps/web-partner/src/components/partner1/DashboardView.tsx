@@ -11,7 +11,7 @@
 // the partner console yet); error → "computed on the server; nothing is affected" + Reload; off → the console's switched-off sentence
 // ("nothing is broken" — never "unavailable"). The scope state is PARTNER-0's persona gate (requirePartner), before this renders.
 import Link from 'next/link';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';
 import type { PartnerDashboard } from '@krishalaya/sdk-js';
 import type { Tr } from '../NotYet';
 import { RefusalList } from './RefusalList';
@@ -28,7 +28,7 @@ function Tile({ id, label, value, hint }: { id: string; label: string; value: st
 }
 
 export function DashboardView({ t, lang, state, d, orgName }: { t: Tr; lang: string; state: DashboardState; d: PartnerDashboard | null; orgName: string | null }) {
-  const money = (minor: string) => formatMoneyMinor(minor, 'INR', lang);
+  const money = (minor: string) => moneyText(minor, 'INR', lang);
   const head = (
     <>
       <h1>{t.t('partner1.dash.title')}</h1>

@@ -7,13 +7,14 @@
 // chain); off / insurance_off → the switched-off sentences. PC-56 PARTNER-2b: + links to the issuance queue, premiums, reports and the parametric
 // page (the parametric page is linked from here and the products page — not the nav, founder 2b-4).
 import Link from 'next/link';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';
 import type { PartnerInsuranceDashboard } from '@krishalaya/sdk-js';
 import type { Tr } from '../NotYet';
 import { InsurerRefusals } from './InsurerRefusals';
 import { InsurerSwitchedOff } from './InsurerStates';
 import { asOfText } from '../../features/partner1/dashboard';
 import type { InsurerDashboardState } from '../../features/partner2/figures';
+import { ltrText } from '../../features/rtl/span';
 
 function Tile({ id, label, value, hint }: { id: string; label: string; value: string; hint?: string }) {
   return (
@@ -32,7 +33,7 @@ export function InsurerDashboardView({ t, lang, state, d, orgName, regulatorRefM
   const head = (
     <>
       <h1>{t.t('partner2.dash.title')}</h1>
-      <p className="kv-muted">{orgName ?? t.t('partner.shell.orgUnknown')}{regulatorRefMasked ? ` · ${t.t('partner2.regulatorRef', { ref: regulatorRefMasked })}` : ''}</p>
+      <p className="kv-muted">{orgName ?? t.t('partner.shell.orgUnknown')}{regulatorRefMasked ? ` · ${t.t('partner2.regulatorRef', { ref: ltrText(regulatorRefMasked, lang) })}` : ''}</p>
     </>
   );
   if (state === 'error' || !d) {
@@ -68,7 +69,7 @@ export function InsurerDashboardView({ t, lang, state, d, orgName, regulatorRefM
       <p className="kv-muted">{t.t('partner2.dash.lead')}</p>
       <div className="kv-stat-row">
         <Tile id="in_force" label={t.t('partner2.dash.inForce')} value={String(d.inForce.count)}
-          hint={t.t('partner2.dash.inForceHint', { amount: formatMoneyMinor(d.inForce.sumInsuredMinor, 'INR', lang) })} />
+          hint={t.t('partner2.dash.inForceHint', { amount: moneyText(d.inForce.sumInsuredMinor, 'INR', lang) })} />
         <Tile id="proposed" label={t.t('partner2.dash.proposed')} value={String(d.proposed)} hint={t.t('partner2.dash.proposedHint')} />
         <Tile id="fpos" label={t.t('partner2.dash.fpos')} value={String(d.fpos)} hint={t.t('partner2.dash.fposHint')} />
         <Tile id="products" label={t.t('partner2.dash.products')} value={String(d.products)} hint={t.t('partner2.dash.productsHint', { policies: d.policies })} />

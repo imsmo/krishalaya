@@ -43,7 +43,7 @@ export default async function KeysPage({ searchParams }: { searchParams?: SP }) 
     const row = keys.find((k) => k.id === revoke.id) ?? null;
     if (revoke.step === 'success') return <RevokeSuccess t={t} lang={lang} keyRow={row} />;
     if (revoke.step === 'failure') return <RevokeFailure t={t} id={revoke.id} code={revoke.code} />;
-    return <RevokeConfirm t={t} keyRow={row} idempotencyKey={randomUUID()} action={revokeKeyAction} />;
+    return <RevokeConfirm t={t} lang={lang} keyRow={row} idempotencyKey={randomUUID()} action={revokeKeyAction} />;
   }
   const canRevoke = (persona.perms ?? []).includes('partner.keys.revoke');
   return <KeysView t={t} lang={lang} state={state} keys={keys} canRevoke={canRevoke} mailbox={await partnersMailbox()} />;

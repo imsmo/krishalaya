@@ -2389,4 +2389,7 @@ export const en: Messages = {
   'partner6.refusal.templateParity': 'Not every line of console text exists in Hindi and Gujarati yet: older text with no translation is shown in English.',
   'partner6.refusal.languageReviewChecker': 'No second person checks a language choice: it is yours alone and changes only this browser.',
   'partner6.refusal.languageNoAudit': 'No trail entry is written for a language choice: it is a setting of this browser, not a record about anyone.',
+  // PC-56 RTL-1d · the Arabic machine draft (opt-in only): the language choice's tag and the banner (web-tenant's / the storefront's words).
+  'lang.draft': 'machine draft',
+  'rtl.draftBanner': 'This Arabic text is a machine draft and has not been reviewed.',
 };

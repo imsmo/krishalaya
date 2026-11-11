@@ -7,7 +7,7 @@
 // the consented applications in 30 days (a count), added / last changed. "Choose kind" and "Save" are DECOR (the W2980–W2983 chain on this
 // page, founder Q7); "Reload" is the W2984–W2986 re-read chain. Another lender's product or an absent id → "not found".
 import Link from 'next/link';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';
 import type { PartnerLoanProduct } from '@krishalaya/sdk-js';
 import type { Tr } from '../NotYet';
 import type { Mailbox } from '../partner1/HelpView';
@@ -56,7 +56,7 @@ export function LenderProductView({ t, lang, p, failure, notFound, mailbox }: {
         {row('ltv', t.t('partner2.loanProducts.ltv'), bps(p.ltvBps))}
         {row('collateral', t.t('partner2.loanProducts.colCollateral'), collateralLabel(t, p.collateralKind))}
         {row('repayment', t.t('partner2.loanProducts.colRepayment'), repaymentLabel(t, p.repaymentStyle))}
-        {row('fee', t.t('partner2.loanProducts.fee'), t.t('partner2.loanProducts.feeLine', { amount: formatMoneyMinor(fee.minor, fee.currency, lang), bps: fee.bps }))}
+        {row('fee', t.t('partner2.loanProducts.fee'), t.t('partner2.loanProducts.feeLine', { amount: moneyText(fee.minor, fee.currency, lang), bps: fee.bps }))}
         {row('documents', t.t('partner2.loanProducts.documents'), t.t(docs.key, docs.vars))}
         {row('applications30d', t.t('partner2.loanProducts.colApplications', { days }), r.applications30d)}
         {row('status', t.t('partner2.loanProducts.colStatus'), t.t(r.active ? 'partner2.loanProducts.active' : 'partner2.loanProducts.inactive'))}

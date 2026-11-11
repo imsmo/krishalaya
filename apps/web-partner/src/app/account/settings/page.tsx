@@ -48,7 +48,7 @@ export default async function SettingsPage({ searchParams }: { searchParams?: SP
     const subject = team.kind !== 'ok' ? null : act === 'revoke_invite'
       ? (() => { const i = team.team.invites.find((x) => x.id === id); return i ? { phone: i.phoneMasked, role: i.roleCode } : null; })()
       : (() => { const m = team.team.members.find((x) => x.membershipId === id && x.active); return m ? { name: m.name ?? undefined, role: m.roleCode } : null; })();
-    return <ActConfirm t={t} act={act} id={id} subject={subject} action={teamActAction} />;
+    return <ActConfirm t={t} lang={lang} act={act} id={id} subject={subject} action={teamActAction} />;
   }
 
   let sla: PartnerDashboard['sla'] | null = null;

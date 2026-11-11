@@ -6,6 +6,7 @@
 // cookie (apps/web-storefront, STORE-4c's submitPreferencesAction): path `/`, SameSite=Lax, one year, readable by the page (HttpOnly not
 // required — it holds no secret), Secure in production. No API call, no audit row, no person's data: a browser preference.
 import { LANGUAGES, type LanguageDef } from '@krishalaya/i18n';
+import { PREVIEW_LANGUAGES, resolveServable } from '@krishalaya/i18n';
 
 /** The cookie lib/i18n.ts reads first (cookie → Accept-Language → the default). */
 export const LANG_COOKIE = 'kv_lang';
@@ -15,10 +16,26 @@ export const LANGUAGE_PAGE = '/account/notifications/preferences';
 export const LANGUAGE_CHOICES: readonly LanguageDef[] = LANGUAGES;
 export const ONE_YEAR_SEC = 60 * 60 * 24 * 365;
 
+/** PC-56 RTL-1d (founder Q1 "Draft all, opt-in only"): the package's PREVIEW languages (Arabic — a machine draft nobody has reviewed), read
+ *  from `@krishalaya/i18n` (never a literal list). They are offered as a separate, labelled choice ("machine draft"); choosing one sets the
+ *  `kv_lang` cookie ONLY — the act calls no API and writes no account record, so the preview code can never reach a `languages` row. */
+export const PREVIEW_CHOICES: readonly LanguageDef[] = PREVIEW_LANGUAGES.map((c) => resolveServable(c, 'explicit'));
+
+/** True when a language is one of the package's preview (machine-draft) languages. */
+export const isPreviewLanguage = (l: LanguageDef): boolean => PREVIEW_CHOICES.some((p) => p.code === l.code);
+
 /** The posted / queried code → one of the package's live languages, EXACTLY (no 'hi-IN' widening, no case folding), or null. */
 export function pickLanguage(raw: unknown): LanguageDef | null {
   if (typeof raw !== 'string' || raw.length === 0 || raw.length > 8) return null;
   return LANGUAGE_CHOICES.find((l) => l.code === raw) ?? null;
+}
+
+/** PC-56 RTL-1d: the posted / queried code → one of the package's PREVIEW languages, EXACTLY (no 'ar-AE' widening), or null. Kept apart from
+ *  `pickLanguage` on purpose: the live act still accepts only live languages; the machine draft has its own act (`choosePreviewLanguageAction`),
+ *  reached only from the labelled "(machine draft)" choice. */
+export function pickPreviewLanguage(raw: unknown): LanguageDef | null {
+  if (typeof raw !== 'string' || raw.length === 0 || raw.length > 8) return null;
+  return PREVIEW_CHOICES.find((l) => l.code === raw) ?? null;
 }
 
 /** The `kv_lang` cookie's attributes (founder 6c-3). */

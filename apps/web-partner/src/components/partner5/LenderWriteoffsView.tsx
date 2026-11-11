@@ -11,7 +11,7 @@
 // and renders only the named fields of each (the render test smuggles extra fields in and proves they never reach the markup).
 // Export is DECOR with the partners-mailbox line (W3024–W3025); Retry is the PARITY-DECOR re-read (W3026–W3028); "View portfolio" is real.
 import Link from 'next/link';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';
 import type { PartnerBookCounts, PartnerBookLoan } from '@krishalaya/sdk-js';
 import type { Tr } from '../NotYet';
 import { LenderSwitchedOff } from '../partner4/LenderChain';
@@ -28,7 +28,7 @@ export function LenderWriteoffsView({ t, lang, state, counts, items, nextCursor,
   nextCursor: string | null; computedAt: string | null;
 }) {
   if (state === 'off') return <LenderSwitchedOff t={t} page="writeoffs" />;
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => moneyText(m, 'INR', lang);
   const kl = (l: { key: string } | { raw: string }) => ('key' in l ? t.t(l.key) : l.raw);
   const s = writeoffsSummary(counts);
   return (

@@ -15,6 +15,7 @@ import type { Tr } from '../NotYet';
 import { RefusalList } from './RefusalList';
 import { hoursText } from '../../features/partner1/dashboard';
 import { actErrorKey, REASON_MIN, roleKey } from '../../features/partner1/settings';
+import { ltrText } from '../../features/rtl/span';
 
 export type TeamState = { kind: 'ok'; team: PartnerTeam } | { kind: 'admins_only' } | { kind: 'error' };
 export interface SettingsViewProps {
@@ -80,7 +81,7 @@ export function SettingsView({ t, lang, me, sla, team, invite, notice }: Setting
             {team.team.invites.length === 0 ? <p>{t.t('partner1.settings.invitesNone')}</p> : (
               <ul className="kv-list">{team.team.invites.map((i) => (
                 <li key={i.id} data-kv-invite-row={i.id}>
-                  {i.phoneMasked} · {t.t(roleKey(i.roleCode))} · {t.t('partner1.settings.inviteExpires', { date: day(i.expiresAt, lang) })}
+                  {ltrText(i.phoneMasked, lang)} · {t.t(roleKey(i.roleCode))} · {t.t('partner1.settings.inviteExpires', { date: day(i.expiresAt, lang) })}
                   {i.sendFailure === 'platform_handover' && <span className="kv-muted"> · {t.t('partner1.settings.inviteHandover')}</span>}{' '}
                   <Link className="kv-btn--link" href={`/account/settings?act=revoke_invite&id=${encodeURIComponent(i.id)}`}>{t.t('partner1.settings.revoke')}</Link>
                 </li>
@@ -109,8 +110,8 @@ export function SettingsView({ t, lang, me, sla, team, invite, notice }: Setting
 }
 
 /** The revoke-invite / remove-member confirm: what will happen, a reason (≥ REASON_MIN), Confirm posts to the server action; Cancel goes back. */
-export function ActConfirm({ t, act, id, subject, action }: {
-  t: Tr; act: 'revoke_invite' | 'remove_member'; id: string; subject: { phone?: string; name?: string; role: string } | null; action: string | ((fd: FormData) => void);
+export function ActConfirm({ t, act, id, subject, action, lang = 'en' }: {
+  t: Tr; act: 'revoke_invite' | 'remove_member'; id: string; subject: { phone?: string; name?: string; role: string } | null; action: string | ((fd: FormData) => void); lang?: string;
 }) {
   if (!subject) {
     return <section className="kv-card" data-kv-act={act} data-kv-act-missing><p>{t.t('partner1.act.notFound')}</p><p><Link className="kv-btn" href="/account/settings">{t.t('partner1.act.cancel')}</Link></p></section>;
@@ -119,7 +120,7 @@ export function ActConfirm({ t, act, id, subject, action }: {
   return (
     <section className="kv-card kv-chain" data-kv-act={act}>
       <h1>{t.t(revoke ? 'partner1.revoke.title' : 'partner1.remove.title')}</h1>
-      <p>{revoke ? t.t('partner1.revoke.body', { phone: subject.phone ?? '', role: t.t(roleKey(subject.role)), min: REASON_MIN })
+      <p>{revoke ? t.t('partner1.revoke.body', { phone: ltrText(subject.phone ?? '', lang), role: t.t(roleKey(subject.role)), min: REASON_MIN })
         : t.t('partner1.remove.body', { name: subject.name ?? t.t('partner1.settings.unnamed'), role: t.t(roleKey(subject.role)), min: REASON_MIN })}</p>
       <form action={action as never} className="kv-form">
         <input type="hidden" name="act" value={act} />

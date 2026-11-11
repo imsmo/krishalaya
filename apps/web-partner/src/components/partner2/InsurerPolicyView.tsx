@@ -6,7 +6,8 @@
 // chain on this page — founder Q5: nothing is issued, cancelled or endorsed from the partner console); "Download policy document" is refused
 // (W2886–W2887: no document exists — P2-B7). Another insurer's policy or an absent id is "not found" (never "not yours").
 import Link from 'next/link';
-import { formatDate, formatMoneyMinor } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';
 import type { PartnerInsurancePolicy } from '@krishalaya/sdk-js';
 import type { Tr } from '../NotYet';
 import { InsurerRefusals } from './InsurerRefusals';
@@ -29,7 +30,7 @@ export function InsurerPolicyView({ t, lang, p, failure, notFound }: { t: Tr; la
       </section>
     );
   }
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => moneyText(m, 'INR', lang);
   const day = (d: string | null) => (d ? formatDate(d, lang, { dateStyle: 'medium', timeZone: 'UTC' }) : t.t('partner2.none'));
   const self = `/insurer/policies/${encodeURIComponent(p.id)}`;
   const row = (id: string, label: string, value: string) => <div className="kv-facts__row" data-kv-fact={id}><dt>{label}</dt><dd>{value}</dd></div>;

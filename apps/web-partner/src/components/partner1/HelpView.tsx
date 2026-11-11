@@ -10,10 +10,11 @@ import Link from 'next/link';
 import type { Tr } from '../NotYet';
 import { RefusalList } from './RefusalList';
 import { WEBHOOK_CONTRACT as W } from '../../features/partner1/webhook-contract';
+import { ltrText } from '../../features/rtl/span';
 
 export type Mailbox = { kind: 'published'; address: string } | { kind: 'none' } | { kind: 'error' };
 
-export function HelpView({ t, mailbox }: { t: Tr; mailbox: Mailbox }) {
+export function HelpView({ t, mailbox, lang = 'en' }: { t: Tr; mailbox: Mailbox; lang?: string }) {
   return (
     <section data-kv-help={mailbox.kind}>
       <h1>{t.t('partner1.help.title')}</h1>
@@ -38,9 +39,9 @@ export function HelpView({ t, mailbox }: { t: Tr; mailbox: Mailbox }) {
         <h2 className="kv-card__title">{t.t('partner1.help.article.title')}</h2>
         <p>{t.t('partner1.help.article.lead')}</p>
         <ul>
-          <li>{t.t('partner1.help.article.header', { header: W.signatureHeader, legacy: W.legacySignatureHeader })}</li>
-          <li>{t.t('partner1.help.article.format', { format: W.headerFormat })}</li>
-          <li>{t.t('partner1.help.article.algorithm', { algorithm: W.algorithm, signed: W.signedString })}</li>
+          <li>{t.t('partner1.help.article.header', { header: ltrText(W.signatureHeader, lang), legacy: ltrText(W.legacySignatureHeader, lang) })}</li>
+          <li>{t.t('partner1.help.article.format', { format: ltrText(W.headerFormat, lang) })}</li>
+          <li>{t.t('partner1.help.article.algorithm', { algorithm: ltrText(W.algorithm, lang), signed: ltrText(W.signedString, lang) })}</li>
           <li>{t.t('partner1.help.article.tolerance', { seconds: W.toleranceSec })}</li>
           <li>{t.t('partner1.help.article.rotation', { hours: W.rotationOverlapHours })}</li>
           <li>{t.t('partner1.help.article.retries', { ladder: W.retryLadderLabels.join(' · '), attempts: W.maxAttempts })}</li>

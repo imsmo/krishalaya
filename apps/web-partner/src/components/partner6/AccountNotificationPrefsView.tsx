@@ -16,7 +16,11 @@ import { Refusals6 } from './LenderChain6';
 import { AccountSwitchedOff } from './AccountNotificationsView';
 import { NOTIFICATIONS_PAGE, NOTIFICATION_PREFS_PAGE, WEBHOOKS_PAGE, type AccountState } from '../../features/partner6/figures';
 
-export function AccountNotificationPrefsView({ t, state, current, choices }: { t: Tr; state: AccountState; current: LanguageDef; choices: readonly LanguageDef[] }) {
+export function AccountNotificationPrefsView({ t, state, current, choices, previews = [] }: {
+  t: Tr; state: AccountState; current: LanguageDef; choices: readonly LanguageDef[];
+  /** PC-56 RTL-1d: the package's preview languages (Arabic), offered as a real choice LABELLED a machine draft; none: nothing extra. */
+  previews?: readonly LanguageDef[];
+}) {
   if (state === 'off') return <AccountSwitchedOff t={t} page="notification-prefs" />;
   return (
     <section data-kv-account="notification-prefs" data-kv-state={state}>
@@ -40,6 +44,12 @@ export function AccountNotificationPrefsView({ t, state, current, choices }: { t
               <label key={l.code} className="kv-lang-choice__option" lang={l.code} data-kv-lang-option={l.code}>
                 <input type="radio" name="lang" value={l.code} defaultChecked={l.code === current.code} />
                 <span>{l.nameNative}</span>
+              </label>
+            ))}
+            {previews.map((l) => (
+              <label key={l.code} className="kv-lang-choice__option kv-lang-choice__option--draft" data-kv-lang-option={l.code} data-kv-lang-draft="true">
+                <input type="radio" name="lang" value={l.code} defaultChecked={l.code === current.code} />
+                <span><bdi lang={l.code} dir={l.dir}>{l.nameNative}</bdi> <span className="kv-lang-choice__draft">({t.t('lang.draft')})</span></span>
               </label>
             ))}
           </fieldset>

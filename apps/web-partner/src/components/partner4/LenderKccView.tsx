@@ -15,7 +15,7 @@
 // no permission and no form. The lifecycle's four claims, the whole "This season" block, the annual-review block and
 // every state sentence are refused BY NAME. An unknown id and another lender's loan answer the SAME not-found shape.
 import Link from 'next/link';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';
 import type { PartnerBookLoan } from '@krishalaya/sdk-js';
 import type { Tr } from '../NotYet';
 import { LenderRefusals, LenderSwitchedOff } from './LenderChain';
@@ -80,7 +80,7 @@ export function LenderKccView({ t, lang, loanId, l, failure, notFound, computedA
       </section>
     );
   }
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => moneyText(m, 'INR', lang);
   const kl = (c: string | null) => { const x = kindLabel(c); return 'key' in x ? t.t(x.key) : x.raw; };
   const apr = aprLine(l.interestAprBps);
   return (

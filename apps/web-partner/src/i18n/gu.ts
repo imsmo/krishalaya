@@ -1928,4 +1928,7 @@ export const gu: Messages = {
   'partner6.refusal.templateParity': 'કન્સોલના લખાણની દરેક લીટી હજી હિન્દી અને ગુજરાતીમાં નથી: અનુવાદ વગરનું જૂનું લખાણ અંગ્રેજીમાં બતાવાય છે.',
   'partner6.refusal.languageReviewChecker': 'ભાષાની પસંદગી બીજી કોઈ વ્યક્તિ તપાસતી નથી: તે ફક્ત તમારી છે અને ફક્ત આ બ્રાઉઝર બદલે છે.',
   'partner6.refusal.languageNoAudit': 'ભાષાની પસંદગી માટે કોઈ ટ્રેલ નોંધ લખાતી નથી: તે આ બ્રાઉઝરની સેટિંગ છે, કોઈના વિશેનો રેકોર્ડ નથી.',
+  // PC-56 RTL-1d · the Arabic machine draft (opt-in only): the language choice's tag and the banner (web-tenant's / the storefront's words).
+  'lang.draft': 'મશીન ડ્રાફ્ટ',
+  'rtl.draftBanner': 'આ અરબી લખાણ મશીનથી બનેલો ડ્રાફ્ટ છે અને તેની સમીક્ષા થઈ નથી.',
 };

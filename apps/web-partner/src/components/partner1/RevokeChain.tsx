@@ -10,8 +10,9 @@ import { formatDate } from '@krishalaya/i18n';
 import type { PartnerKey } from '@krishalaya/sdk-js';
 import type { Tr } from '../NotYet';
 import { KEY_REVOKE_REASON_MAX, KEY_REVOKE_REASON_MIN, REVOKE_STEP_FILES, revokeErrorKey } from '../../features/partner1/keys';
+import { ltrText } from '../../features/rtl/span';
 
-export function RevokeConfirm({ t, keyRow, idempotencyKey, action }: { t: Tr; keyRow: PartnerKey | null; idempotencyKey: string; action: string | ((fd: FormData) => void) }) {
+export function RevokeConfirm({ t, keyRow, idempotencyKey, action, lang = 'en' }: { t: Tr; keyRow: PartnerKey | null; idempotencyKey: string; action: string | ((fd: FormData) => void); lang?: string }) {
   if (!keyRow || keyRow.status === 'revoked') {
     return (
       <section className="kv-card kv-chain" data-kv-revoke="confirm" data-kv-canon={REVOKE_STEP_FILES.confirm} data-kv-revoke-missing>
@@ -24,7 +25,7 @@ export function RevokeConfirm({ t, keyRow, idempotencyKey, action }: { t: Tr; ke
   return (
     <section className="kv-card kv-chain" data-kv-revoke="confirm" data-kv-canon={REVOKE_STEP_FILES.confirm}>
       <h1>{t.t('partner1.keys.confirm.title')}</h1>
-      <p>{t.t('partner1.keys.confirm.body', { name: keyRow.name, prefix: keyRow.keyPrefix, min: KEY_REVOKE_REASON_MIN })}</p>
+      <p>{t.t('partner1.keys.confirm.body', { name: keyRow.name, prefix: ltrText(keyRow.keyPrefix, lang), min: KEY_REVOKE_REASON_MIN })}</p>
       <form action={action as never} className="kv-form">
         <input type="hidden" name="id" value={keyRow.id} />
         <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
@@ -44,7 +45,7 @@ export function RevokeSuccess({ t, lang, keyRow }: { t: Tr; lang: string; keyRow
     <section className="kv-card kv-chain kv-success" data-kv-revoke="success" data-kv-canon={REVOKE_STEP_FILES.success} role="status">
       <h1>{t.t('partner1.keys.success.title')}</h1>
       {keyRow?.status === 'revoked'
-        ? <p>{t.t('partner1.keys.success.body', { prefix: keyRow.keyPrefix, time })}</p>
+        ? <p>{t.t('partner1.keys.success.body', { prefix: ltrText(keyRow.keyPrefix, lang), time })}</p>
         : <p>{t.t('partner1.keys.success.unread')}</p>}
       <p className="kv-field__hint">{t.t('partner1.keys.success.trail')}</p>
       <p className="kv-pager"><Link className="kv-btn" href="/account/api">{t.t('partner1.keys.back')}</Link></p>

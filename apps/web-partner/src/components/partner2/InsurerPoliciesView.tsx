@@ -6,7 +6,8 @@
 // column exists to fill. Keyset paging (`?cursor=`) and the status filter (the state machine's own list) are the only things that enter the
 // URL. "Export book" is DECOR (W2881–W2882: no partner export plane); there is no bulk bar.
 import Link from 'next/link';
-import { formatDate, formatMoneyMinor } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';
 import type { PartnerInsurancePolicy } from '@krishalaya/sdk-js';
 import type { Tr } from '../NotYet';
 import { InsurerRefusals } from './InsurerRefusals';
@@ -18,7 +19,7 @@ export function InsurerPoliciesView({ t, lang, state, items, status, nextCursor,
   t: Tr; lang: string; state: InsurerListState; items: PartnerInsurancePolicy[]; status?: string; nextCursor: string | null; computedAt: string | null;
 }) {
   if (state === 'off' || state === 'insurance_off') return <InsurerSwitchedOff t={t} which={state} page="policies" />;
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => moneyText(m, 'INR', lang);
   const day = (d: string | null) => (d ? formatDate(d, lang, { dateStyle: 'medium', timeZone: 'UTC' }) : t.t('partner2.none'));
   return (
     <section data-kv-insurer="policies" data-kv-state={state}>

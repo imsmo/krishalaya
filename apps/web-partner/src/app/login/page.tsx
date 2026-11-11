@@ -4,7 +4,7 @@
 // prints the switched-off sentence instead of a form that would 404. All copy via i18n; no inline styles; noindex.
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
-import { getTranslator } from '../../lib/i18n';
+import { getTranslator, getLang } from '../../lib/i18n';
 import { partnerConsoleSwitch } from '../../lib/console-flag';
 import { LoginSteps, type LoginStep } from '../../components/LoginSteps';
 import { maskPhone } from '../../features/partner/mask';
@@ -27,6 +27,7 @@ export default async function LoginPage({ searchParams }: { searchParams: { step
   return (
     <LoginSteps
       t={t}
+      lang={getLang()}
       step={off ? 'off' : asked}
       phoneMasked={maskPhone(cookies().get('kvp_pending_phone')?.value)}
       choices={choices}

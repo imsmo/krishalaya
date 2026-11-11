@@ -15,7 +15,7 @@ import { partnerConsoleSwitch } from '../../../../lib/console-flag';
 import { AccountNotificationPrefsView } from '../../../../components/partner6/AccountNotificationPrefsView';
 import { AccountChain6 } from '../../../../components/partner6/AccountChain6';
 import { chain6State } from '../../../../features/partner6/refusals';
-import { LANGUAGE_CHOICES, pickLanguage } from '../../../../features/partner6/language';
+import { LANGUAGE_CHOICES, PREVIEW_CHOICES, pickLanguage, pickPreviewLanguage } from '../../../../features/partner6/language';
 import { chooseLanguageAction } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -30,11 +30,13 @@ export default async function AccountNotificationPrefsPage({ searchParams }: { s
   const form = chain6State('notification_form', searchParams);
   if (form) {
     const raw = searchParams?.lang;
-    const chosen = form === 'review' ? pickLanguage(Array.isArray(raw) ? raw[0] : raw) : null;
+    const code = Array.isArray(raw) ? raw[0] : raw;
+    // PC-56 RTL-1d: a preview code (Arabic) is named too — and its review button posts to the preview act (AccountChain6), never the live one.
+    const chosen = form === 'review' ? pickLanguage(code) ?? pickPreviewLanguage(code) : null;
     const state = form === 'review' && !chosen ? 'error' : form;
     return <AccountChain6 t={t} chain="notification_form" state={state} chosen={chosen} current={getLanguageDef()} act={chooseLanguageAction} />;
   }
   const act = chain6State('notification_act', searchParams);
   if (act) return <AccountChain6 t={t} chain="notification_act" state={act} />;
-  return <AccountNotificationPrefsView t={t} state={await partnerConsoleSwitch()} current={getLanguageDef()} choices={LANGUAGE_CHOICES} />;
+  return <AccountNotificationPrefsView t={t} state={await partnerConsoleSwitch()} current={getLanguageDef()} choices={LANGUAGE_CHOICES} previews={PREVIEW_CHOICES} />;
 }

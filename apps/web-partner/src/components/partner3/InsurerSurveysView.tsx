@@ -15,7 +15,7 @@
 // is real. The cluster and its rule, the slots and holds, the named surveyors and villages, the survey deadlines, the farmer's message, the
 // instant reschedule notice, the automatic booking and the surveyors' offline copies are refused BY NAME below.
 import Link from 'next/link';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';
 import type { PartnerInsuranceClaim, PartnerInsuranceClaimCounts } from '@krishalaya/sdk-js';
 import type { Tr } from '../NotYet';
 import { InsurerSwitchedOff } from '../partner2/InsurerStates';
@@ -33,7 +33,7 @@ export function InsurerSurveysView({ t, lang, state, items, counts, stage, nextC
   nextCursor: string | null; computedAt: string | null;
 }) {
   if (state === 'off' || state === 'insurance_off') return <InsurerSwitchedOff t={t} which={state} page="surveys" />;
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => moneyText(m, 'INR', lang);
   const ev = (code: string | null) => { const l = eventLabel(code); return 'key' in l ? t.t(l.key) : l.raw; };
   const win = windowLabel(counts);
   return (

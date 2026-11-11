@@ -9,7 +9,8 @@
 // NO "SLA left" column, NO Score column, NO Collateral column, NO borrower name, NO phone, NO place — there is nothing to fill them with.
 // "Take next (SLA order)" is DECOR (the W2878–W2880 chain, `?act=`); the canon's dead "View portfolio" button is built as a REAL link.
 import Link from 'next/link';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';
 import type { PartnerApplication, PartnerBookCounts } from '@krishalaya/sdk-js';
 import type { Tr } from '../NotYet';
 import { LenderRefusals, LenderSwitchedOff } from './LenderChain';
@@ -26,7 +27,7 @@ export function LenderQueueView({ t, lang, state, items, counts, box, status, ne
   box: QueueBox; status?: string; nextCursor: string | null; computedAt: string | null;
 }) {
   if (state === 'off') return <LenderSwitchedOff t={t} page="queue" />;
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => moneyText(m, 'INR', lang);
   const win = windowLabel(counts);
   return (
     <section data-kv-lender="queue" data-kv-state={state}>

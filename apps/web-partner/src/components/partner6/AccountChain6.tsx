@@ -14,11 +14,16 @@ import type { LanguageDef } from '@krishalaya/i18n';
 import type { Tr } from '../NotYet';
 import { Refusals6 } from './LenderChain6';
 import { chain6ById, type Chain6Id } from '../../features/partner6/refusals';
+import { isPreviewLanguage } from '../../features/partner6/language';
+import { choosePreviewLanguageAction } from '../../app/account/notifications/preferences/actions';
 
 export type LanguageAct = (formData: FormData) => Promise<void>;
 
-export function AccountChain6({ t, chain, state, chosen, current, act }: {
+export function AccountChain6({ t, chain, state, chosen, current, act, previewAct = choosePreviewLanguageAction }: {
   t: Tr; chain: Chain6Id; state: string; chosen?: LanguageDef | null; current?: LanguageDef; act?: LanguageAct;
+  /** PC-56 RTL-1d: the preview (machine-draft) language's OWN act — a preview choice posts there, a live one to `act` (default: the real
+   *  Server Action, so the page's wiring is unchanged). */
+  previewAct?: LanguageAct;
 }) {
   const c = chain6ById(chain);
   const k = c.key(state);
@@ -30,8 +35,8 @@ export function AccountChain6({ t, chain, state, chosen, current, act }: {
       <p>{t.t(`${k}.body`)}</p>
       {c.real === 'language' && state === 'review' && chosen && (
         <div className="kv-lang-choice" data-kv-language-review={chosen.code}>
-          <p><span className="kv-muted">{t.t('partner6.language.chosen')}</span> <strong lang={chosen.code} data-kv-language-chosen={chosen.code}>{chosen.nameNative}</strong></p>
-          <form action={act as never} className="kv-inline-form">
+          <p><span className="kv-muted">{t.t('partner6.language.chosen')}</span> <strong lang={chosen.code} data-kv-language-chosen={chosen.code}>{chosen.nameNative}</strong>{isPreviewLanguage(chosen) && <> <span className="kv-lang-choice__draft" data-kv-lang-draft="true">({t.t('lang.draft')})</span></>}</p>
+          <form action={(isPreviewLanguage(chosen) ? previewAct : act) as never} className="kv-inline-form">
             <button type="submit" name="lang" value={chosen.code} className="kv-btn">{t.t('partner6.language.use')}</button>
           </form>
         </div>

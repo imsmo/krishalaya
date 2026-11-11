@@ -20,6 +20,7 @@ import { RefusalList } from './RefusalList';
 import { DeliveriesTable } from './DeliveriesTable';
 import { WEBHOOK_CONTRACT as W } from '../../features/partner1/webhook-contract';
 import { kib } from '../../features/partner1/webhooks';
+import { ltrText } from '../../features/rtl/span';
 
 export type HooksState = 'ok' | 'error' | 'off' | 'forbidden';
 export interface WebhooksViewProps {
@@ -80,7 +81,7 @@ export function WebhooksView({ t, lang, state, endpoints, events, deliveries, fi
       <article className="kv-card kv-article" data-kv-contract>
         <h2 className="kv-card__title">{t.t('partner1.hooks.contractTitle')}</h2>
         <ul>
-          <li>{t.t('partner1.hooks.contract.signature', { header: W.signatureHeader, legacy: W.legacySignatureHeader, format: W.headerFormat, algorithm: W.algorithm, signed: W.signedString })}</li>
+          <li>{t.t('partner1.hooks.contract.signature', { header: ltrText(W.signatureHeader, lang), legacy: ltrText(W.legacySignatureHeader, lang), format: ltrText(W.headerFormat, lang), algorithm: ltrText(W.algorithm, lang), signed: ltrText(W.signedString, lang) })}</li>
           <li>{t.t('partner1.hooks.contract.ladder', { ladder: W.retryLadderLabels.join(' · '), attempts: W.maxAttempts })}</li>
           <li>{t.t('partner1.hooks.contract.timeout', { seconds: W.sendTimeoutSec, kib: kib(W.responseBodyCapBytes) })}</li>
           <li>{t.t('partner1.hooks.contract.delivered')}</li>

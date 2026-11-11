@@ -7,7 +7,7 @@
 // applicant), active. "New product" is DECOR (the W2980–W2983 chain): the platform authors loan products (founder Q7) — write to the partners
 // mailbox to propose a change (the mailbox FACT, never a literal). "Reload" is the W2984–W2986 re-read chain.
 import Link from 'next/link';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';
 import type { PartnerLoanProduct } from '@krishalaya/sdk-js';
 import type { Tr } from '../NotYet';
 import type { Mailbox } from '../partner1/HelpView';
@@ -24,7 +24,7 @@ export const collateralLabel = (t: Tr, code: string | null) => (code === null ? 
 
 /** The amount range in the product's own currency — formatMoneyMinor is bigint-exact (no float). */
 export function amountRangeText(t: Tr, lang: string, a: { min: string; max: string; currency: string }): string {
-  return t.t('partner2.loanProducts.amountRange', { min: formatMoneyMinor(a.min, a.currency, lang), max: formatMoneyMinor(a.max, a.currency, lang) });
+  return t.t('partner2.loanProducts.amountRange', { min: moneyText(a.min, a.currency, lang), max: moneyText(a.max, a.currency, lang) });
 }
 
 export function LenderProductsView({ t, lang, state, items, computedAt, windowDays, mailbox }: {

@@ -9,7 +9,8 @@
 // description, media, surveyor, survey note, vet certificate, payout id, village, parcel, creator or tenant id in the SDK type to print.
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { formatDate, formatMoneyMinor } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';
 import type { PartnerInsuranceClaim } from '@krishalaya/sdk-js';
 import type { Tr } from '../NotYet';
 import { asOfText } from '../../features/partner1/dashboard';
@@ -29,7 +30,7 @@ export function ClaimStatusPill({ t, status }: { t: Tr; status: string }) {
 
 /** The fact block. `damage` = false leaves the damage row out (W259 prints it in its own report block instead, with its three branches). */
 export function ClaimFacts({ t, lang, c, damage = true }: { t: Tr; lang: string; c: PartnerInsuranceClaim; damage?: boolean }) {
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => moneyText(m, 'INR', lang);
   const day = (d: string | null) => (d ? formatDate(d, lang, { dateStyle: 'medium', timeZone: 'UTC' }) : t.t('partner3.none'));
   const at = (d: string | null) => (d ? asOfText(d, lang) : t.t('partner3.none'));
   const dmg = damage ? damageText(c.damagePercent) : null;

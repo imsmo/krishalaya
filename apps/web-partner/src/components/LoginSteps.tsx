@@ -4,6 +4,7 @@
 // set by the Server Action; this markup shows it only MASKED, and no link, action or field here carries it. The chooser's single-use token
 // is likewise a cookie, never a field. All copy via i18n; no inline styles.
 import type { Tr } from './NotYet';
+import { ltrText } from '../features/rtl/span';
 
 export type LoginStep = 'phone' | 'verify' | 'choose' | '2fa' | 'off';
 type Action = string | ((fd: FormData) => Promise<void>);
@@ -26,7 +27,7 @@ const ERRORS: Record<string, string> = {
 };
 export const loginErrorKey = (code?: string | null): string | null => (code ? ERRORS[code] ?? 'login.failed' : null);
 
-export function LoginSteps({ t, step, phoneMasked, choices, error, actions }: LoginStepsProps) {
+export function LoginSteps({ t, step, phoneMasked, choices, error, actions, lang = 'en' }: LoginStepsProps & { lang?: string }) {
   const errKey = loginErrorKey(error);
   if (step === 'off') {
     return (
@@ -50,7 +51,7 @@ export function LoginSteps({ t, step, phoneMasked, choices, error, actions }: Lo
       )}
       {step === 'verify' && (
         <form action={actions.verifyOtp as never} className="kv-form">
-          <p className="kv-muted">{t.t('partner.login.verifyLead', { phone: phoneMasked ?? '' })}</p>
+          <p className="kv-muted">{t.t('partner.login.verifyLead', { phone: ltrText(phoneMasked ?? '', lang) })}</p>
           <label htmlFor="code" className="kv-field__label">{t.t('login.verify')}</label>
           <input id="code" className="kv-input" name="code" inputMode="numeric" autoComplete="one-time-code" required />
           <button className="kv-btn" type="submit">{t.t('login.verify')}</button>

@@ -12,7 +12,7 @@
 // would list the loans behind — refused). Export is DECOR with the partners-mailbox line (W2929–W2930); Retry is the PARITY-DECOR re-read
 // (W2931–W2933); "View portfolio" is a real link.
 import Link from 'next/link';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';
 import type { PartnerBookArrears, PartnerBookCounts } from '@krishalaya/sdk-js';
 import type { Tr } from '../NotYet';
 import { LenderSwitchedOff } from '../partner4/LenderChain';
@@ -25,7 +25,7 @@ export function LenderAgingView({ t, lang, state, dpd, counts }: {
   t: Tr; lang: string; state: Lender5State; dpd: PartnerBookArrears | null; counts: PartnerBookCounts | null;
 }) {
   if (state === 'off') return <LenderSwitchedOff t={t} page="aging" />;
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => moneyText(m, 'INR', lang);
   const rows = agingRows(dpd);
   const check = agingSumCheck(dpd, counts);
   const win = windowLabel(counts);
