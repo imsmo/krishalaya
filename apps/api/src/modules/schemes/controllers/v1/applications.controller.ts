@@ -1,5 +1,6 @@
 // modules/schemes/controllers/v1/applications.controller.ts · scheme application lifecycle + DBT records. `schemes` flag.
-// apply/submit/resubmit/appeal = applicant (scheme.apply); field visits = officer (scheme.process);
+// apply/submit/resubmit/appeal = applicant (scheme.apply). Field visits: schedule and submit are CLOSED (PC-56 GOV-4a, GOV-4 Q2-A —
+// FIELD_VISITS_ARE_NOT_RECORDED_HERE); KEPT: GET :id/field-visits — the applicant's (or a scheme.process holder's) read of visits recorded before.
 // verify/approve/reject/close are CLOSED here (PC-56 GOV-2a — the authority checks and decides: SCHEME_DECISIONS_ARE_THE_AUTHORITYS); clarify too (PC-56 GOV-2c).
 // Every DBT act and read but one is CLOSED (PC-56 GOV-3a, GOV-3 Q2-A / Q4-A — nobody records payments here: DBT_IS_NOT_RECORDED_HERE): record a
 // credit, record / resolve / list a returned payment, one application's returns, the returns desk, the monitor, the recent list and the
@@ -18,15 +19,7 @@ import { SchemeApplicationService } from '../../services/scheme-application.serv
 import { FieldVerificationService } from '../../services/field-verification.service';
 import { GovExportService } from '../../services/gov-export.service';
 import { DbtBounceService } from '../../services/dbt-bounce.service';
-import { z } from 'zod';
 
-// PC-54 W54-3 `scheme-field-visits` DTOs (zod .strict(); evidence = media ids, never blobs).
-const ScheduleVisitSchema = z.object({ scheduledFor: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }).strict();
-const SubmitVisitSchema = z.object({
-  geotag: z.array(z.object({ mediaId: z.string().uuid(), lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180), capturedAt: z.string().datetime() }).strict()).min(1).max(50),
-  measuredValues: z.record(z.unknown()).default({}),
-  walkTraceMediaId: z.string().uuid().optional(),
-}).strict();
 import { DbtTransferService } from '../../services/dbt-transfer.service';
 import { SchemeDocumentService } from '../../services/scheme-document.service';
 import { ApplySchemeSchema, ApplySchemeDto, ClarifySchema, ClarifyDto, ApproveSchema, ApproveDto, RejectSchema, RejectDto } from '../../dto/create-scheme-application.dto';
@@ -93,17 +86,20 @@ export class ApplicationsController {
   // is read or written. Their addresses stay so an old caller hears the name instead of a 404.
   @Post(':id/dbt')
   recordDbt(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @Body() dto: unknown) { return this.dbt.record(ctx.tenantId, this.actor(ctx), id, dto as never, ipOf(r)).then((data) => ({ data })); }
-  // --- PC-54 W54-3 field visits (0066) — Process-gated writes; the read is the applicant's or a Process holder's, else 404 (HOTFIX-15) ---
-  @Post(':id/field-visits') @RequirePermissions(SchemesPermissions.Process)
-  scheduleVisit(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(ScheduleVisitSchema) dto: { scheduledFor?: string }) {
-    return this.visits.schedule(ctx.tenantId, this.actor(ctx), id, dto.scheduledFor).then((data) => ({ data }));
+  // --- PC-54 W54-3 field visits (0066). PC-56 GOV-4a (GOV-4 Q2-A, lead-applied; the founder may reopen): schedule and submit are CLOSED —
+  // refused by name (FIELD_VISITS_ARE_NOT_RECORDED_HERE) for EVERY signed-in caller, so no permission and no body shape is asked first (either
+  // would hide the name). The service refuses before anything is read or written. Their addresses stay so an old caller hears the name. ---
+  @Post(':id/field-visits')
+  scheduleVisit(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @Body() _dto: unknown) {
+    return this.visits.schedule(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data }));
   }
+  // KEPT (GOV-4a): the applicant's own read of visits recorded before; a scheme.process holder's too; anyone else 404 (HOTFIX-15).
   @Get(':id/field-visits')
   listVisits(@CurrentContext() ctx: RequestContext, @Param('id') id: string) {
     return this.visits.list(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data }));
   }
-  @Post('field-visits/:visitId/submit') @RequirePermissions(SchemesPermissions.Process)
-  submitVisit(@CurrentContext() ctx: RequestContext, @Param('visitId') visitId: string, @ZodBody(SubmitVisitSchema) dto: { geotag: Array<{ mediaId: string; lat: number; lng: number; capturedAt: string }>; measuredValues: Record<string, unknown>; walkTraceMediaId?: string }) {
+  @Post('field-visits/:visitId/submit')
+  submitVisit(@CurrentContext() ctx: RequestContext, @Param('visitId') visitId: string, @Body() dto: unknown) {
     return this.visits.submit(ctx.tenantId, this.actor(ctx), visitId, dto).then((data) => ({ data }));
   }
 

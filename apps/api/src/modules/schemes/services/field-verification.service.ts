@@ -1,29 +1,26 @@
-// modules/schemes/services/field-verification.service.ts · PC-54 W54-3 `scheme-field-visits`.
-// Canon rules (Appendix 6 + 0066 header): officer-of-record only may submit; evidence = media ids
-// (geotag [{mediaId,lat,lng,capturedAt}], walk-trace media ref); one open visit per application (DB unique);
-// OTP sign-off remains a recorded STATUS (the farmer-side OTP leg is its own future wave). Process-gated.
+// modules/schemes/services/field-verification.service.ts · PC-54 W54-3 `scheme-field-visits` (0066).
+// PC-56 GOV-4a (GOV-4 Q2-A, lead-applied 2026-11-11 — the founder may reopen): field visits are not done through the platform for now.
+// `schedule` and `submit` are CLOSED — FIELD_VISITS_ARE_NOT_RECORDED_HERE for every caller (a scheme.process holder included), before
+// anything is read or written: no visit row, no status move. Until GOV-4a the comment here said "OTP sign-off remains a recorded STATUS";
+// nothing ever wrote it (survey_gov4.md C-4) — a visit could be "submitted" with no farmer sign-off. What stays: the read of one
+// application's visits recorded before GOV-4a, by its applicant or a `scheme.process` holder only (HOTFIX-15).
 import { Inject, Injectable } from '@nestjs/common';
 import { UNIT_OF_WORK, UnitOfWork } from '../../../core/database/unit-of-work';
-import { uuidv7 } from '../../../core/database/uuid.util';
-import { ConflictError, ForbiddenError, NotFoundError } from '../../../shared/errors/app-error';
 import { FieldVerificationRepository, FieldVisit } from '../repositories/field-verification.repository';
 import { SchemeApplicationRepository } from '../repositories/scheme-application.repository';
-import { ApplicationNotFoundError } from '../domain/schemes.errors';
+import { ApplicationNotFoundError, FieldVisitsAreNotRecordedHereError } from '../domain/schemes.errors';
 
 export interface VisitActor { userId: string; canProcess: boolean }
 
 @Injectable()
 export class FieldVerificationService {
+  // The unit of work stays injected (the module's provider shape is unchanged); since GOV-4a nothing here opens a transaction.
   constructor(@Inject(UNIT_OF_WORK) private readonly uow: UnitOfWork, private readonly repo: FieldVerificationRepository, private readonly applications: SchemeApplicationRepository) {}
 
-  async schedule(tenantId: string, actor: VisitActor, applicationId: string, scheduledFor?: string) {
-    if (!actor.canProcess) throw new ForbiddenError('requires scheme.process');
-    const id = uuidv7();
-    await this.uow.run(tenantId, async (tx) => {
-      try { await this.repo.schedule(tx, { id, tenantId, applicationId, officerId: actor.userId, scheduledFor }); }
-      catch (e: any) { if (e?.code === '23505') throw new ConflictError('an open field visit already exists for this application'); throw e; }
-    }, { userId: actor.userId });
-    return { id, status: 'scheduled' as const };
+  /** PC-56 GOV-4a (Q2-A): CLOSED — refused by name for every caller (no permission is asked first, so the name is heard), before the
+   *  application is read and before anything is written. */
+  async schedule(_tenantId: string, _actor: VisitActor, _applicationId: string, _scheduledFor?: string): Promise<never> {
+    throw new FieldVisitsAreNotRecordedHereError('schedule_visit');
   }
 
   /**
@@ -31,6 +28,7 @@ export class FieldVerificationService {
    * it is read ONLY by the application's applicant or a `scheme.process` holder of this organisation — anyone else, and an unknown id,
    * gets the same 404 with no body (`ApplicationNotFoundError`, exactly as `SchemeApplicationService.getById`) — no existence oracle.
    * The refusal comes BEFORE any visit is read. Until this wave the route had no permission and passed no actor.
+   * KEPT by PC-56 GOV-4a: the applicant's own read of the visits recorded before (it writes nothing).
    */
   async list(tenantId: string, actor: VisitActor, applicationId: string): Promise<FieldVisit[]> {
     const app = await this.applications.getById(tenantId, applicationId);
@@ -39,17 +37,9 @@ export class FieldVerificationService {
     return this.repo.listForApplication(tenantId, applicationId);
   }
 
-  /** Officer-of-record submits findings; optimistic lock; server enforces the identity rule (W335/W337). */
-  async submit(tenantId: string, actor: VisitActor, id: string, dto: { geotag: Array<{ mediaId: string; lat: number; lng: number; capturedAt: string }>; measuredValues: Record<string, unknown>; walkTraceMediaId?: string }) {
-    if (!actor.canProcess) throw new ForbiddenError('requires scheme.process');
-    return this.uow.run(tenantId, async (tx) => {
-      const visit = await this.repo.getForUpdate(tx, tenantId, id);
-      if (!visit) throw new NotFoundError('field visit not found');
-      if (visit.officerId !== actor.userId) throw new ForbiddenError('officer-of-record only (W335/W337)');
-      const geotag = dto.geotag.map((g) => ({ media_id: g.mediaId, lat: g.lat, lng: g.lng, captured_at: g.capturedAt }));
-      const ok = await this.repo.submit(tx, tenantId, id, visit.version, { geotag, measuredValues: dto.measuredValues, walkTrace: dto.walkTraceMediaId });
-      if (!ok) throw new ConflictError('visit is not submittable in its current state');
-      return { id, status: 'submitted' as const };
-    }, { userId: actor.userId });
+  /** PC-56 GOV-4a (Q2-A): CLOSED — refused by name for every caller, before the visit is read or locked and before anything is written.
+   *  (Before GOV-4a: officer-of-record only, optimistic lock, and no farmer sign-off was ever asked.) */
+  async submit(_tenantId: string, _actor: VisitActor, _id: string, _dto: unknown): Promise<never> {
+    throw new FieldVisitsAreNotRecordedHereError('submit_visit');
   }
 }

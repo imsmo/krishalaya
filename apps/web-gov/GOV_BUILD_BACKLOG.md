@@ -13,7 +13,8 @@ page, `/access` reads the authority's people. (2) "THE GOV CONSOLE IS NOW 100%" 
 organisation sign-in, not canon screens — 0 of 159 gov canon files were recorded when GOV-1 was surveyed. Those GW-1…GW-5 pages
 (`/schemes`, `/registers`, `/verification`, `/mgnrega`) read an organisation and cannot work under an authority's session: GOV-1a deleted
 them (307 → /dashboard); their pure logic (`features/schemes`, `features/verification`, `features/mgnrega`) and its unit specs are kept for
-GOV-2…GOV-5. The PC-56 tracker (`Development_Program/PC56_WEB_PARITY_PROGRAM/06_GOV.md`) is the record of what is built.
+GOV-2…GOV-5. (PC-56 GOV-4a: `features/verification` and its spec are deleted — the KYC desk is the organisation's, and field visits are not
+done through this platform; `/verification` is now the authority's "Field visits" page and its 307 is gone.) The PC-56 tracker (`Development_Program/PC56_WEB_PARITY_PROGRAM/06_GOV.md`) is the record of what is built.
 
 **Binding spec:** Ledger Part 3 (FLOWMAP_gov): 83 owed rows — 72 BACKEND-READY, 11 gated (`mgnrega-program`).
 **Export law:** every export any GW wave ships must return an audit-stamped receipt (who/when/what-filter), never a bare file.

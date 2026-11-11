@@ -46,9 +46,10 @@ const nextConfig = {
   // PC-56 GOV-1a (brief §E, survey GOV1_DELTAS `old_pages`): the pre-canon GW-1…GW-5 pages read ONE ORGANISATION through the tenant sign-in;
   // under a government authority's session they cannot work. Their pages, actions and the evidence route are deleted; their addresses answer
   // a TEMPORARY redirect (307, permanent: false) to /dashboard (since GOV-1b: the authority's overview, counts only — W325). PC-56 GOV-2b builds
-  // /schemes for the AUTHORITY (W326–W329), so its redirect is removed; the other three stay until their waves.
+  // /schemes for the AUTHORITY (W326–W329), so its redirect is removed; the other three stay until their waves. PC-56 GOV-4a builds
+  // /verification for the AUTHORITY (W335–W338: field visits are not done through this platform — it says so), so its redirect is removed too.
   async redirects() {
-    return ['/registers', '/verification', '/mgnrega'].flatMap((p) => [
+    return ['/registers', '/mgnrega'].flatMap((p) => [
       { source: p, destination: '/dashboard', permanent: false },
       { source: `${p}/:path*`, destination: '/dashboard', permanent: false },
     ]);

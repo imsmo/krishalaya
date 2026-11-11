@@ -32,6 +32,10 @@ a rejection needs a listed code and a sentence; approval carries no amount. The 
 `verify` / `approve` / `reject` / `close` here are CLOSED (`SCHEME_DECISIONS_ARE_THE_AUTHORITYS`, 403, every caller).
 **PC-56 GOV-2c:** the organisation's `clarify` is CLOSED the same way (the lead's conservative call carried from GOV-2a; the
 authority asks for a clarification through its own act). The field visits and the DBT record are unchanged (GOV-3 / GOV-4 own them).
+**PC-56 GOV-4a (GOV-4 Q2-A, lead-applied 2026-11-11; the founder may reopen): field visits are not done through the platform for now.**
+`POST /:id/field-visits` (schedule) and `POST field-visits/:visitId/submit` are refused by name `FIELD_VISITS_ARE_NOT_RECORDED_HERE` (403)
+for every caller, before anything is read or written. Kept: `GET /:id/field-visits` (the applicant's own read of visits recorded before;
+a `scheme.process` holder's too; anyone else 404 — HOTFIX-15). Nothing ever wrote the farmer's sign-off (survey_gov4.md C-4).
 **PC-56 GOV-3a (GOV-3 Q2-A / Q4-A, lead-applied 2026-11-11; the founder may reopen): nobody records payments here.** Every DBT act and read
 of this module but one is refused by name `DBT_IS_NOT_RECORDED_HERE` (403) for every caller, before anything is read or written: `POST /:id/dbt`,
 `GET dbt/monitor`, `GET dbt/recent`, `POST exports`, `POST dbt/:transferId/bounce`, `POST dbt/bounces/:id/resolve`, `GET dbt/bounces`,

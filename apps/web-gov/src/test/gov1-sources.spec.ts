@@ -71,10 +71,15 @@ describe('PC-56 GOV-1a · what these pages never hold', () => {
       expect([rel, /formatMoneyMinor|from '[^']*\/money'|\.members\.roster|\.users\.|formData\.(form|applicant)|form_data/.test(code(read(rel)))]).toEqual([rel, false]);
     }
   });
-  it('the old organisation pages are deleted and their addresses redirect (307) to /dashboard — /schemes rebuilt for the authority by GOV-2b', () => {
-    for (const d of ['app/registers', 'app/verification', 'app/mgnrega']) expect([d, fs.existsSync(path.join(SRC, d))]).toEqual([d, false]);
+  it('the old organisation pages are deleted and their addresses redirect (307) to /dashboard — /schemes rebuilt for the authority by GOV-2b, /verification by GOV-4a', () => {
+    for (const d of ['app/registers', 'app/mgnrega']) expect([d, fs.existsSync(path.join(SRC, d))]).toEqual([d, false]);
     const cfg = fs.readFileSync(path.join(SRC, '..', 'next.config.js'), 'utf8');
-    expect(cfg).toMatch(/\['\/registers', '\/verification', '\/mgnrega'\]/); expect(cfg).toMatch(/permanent: false/);
+    // NAMED UPDATE, PC-56 GOV-4a (brief §E first commit): the /verification 307 is removed and /verification is the AUTHORITY's page (gated;
+    // reads nothing — test/gov4-sources.spec.ts); the old organisation page it replaced stays deleted (app/verification holds page.tsx only).
+    expect(cfg).toMatch(/\['\/registers', '\/mgnrega'\]/); expect(cfg).toMatch(/permanent: false/);
+    expect(cfg).not.toMatch(/'\/verification'/);
+    expect(fs.readdirSync(path.join(SRC, 'app', 'verification'))).toEqual(['page.tsx']);
+    expect(code(read('app/verification/page.tsx'))).toMatch(/await requireGov\('\/verification'\)/);
     // PC-56 GOV-2b: the /schemes 307 is removed and /schemes is the AUTHORITY's page (gated; gov realm only — test/gov2-sources.spec.ts)
     expect(cfg).not.toMatch(/'\/schemes'/);
     expect(code(read('app/schemes/page.tsx'))).toMatch(/await requireGov\('\/schemes'\)/);

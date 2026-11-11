@@ -138,14 +138,23 @@ export class SchemesResource {
     return (await this.http.request<DbtTransfer>('POST', `schemes/applications/${encodeURIComponent(id)}/dbt`, { body: input })).data;
   }
 
-  // --- PC-54 W54-3 `scheme-field-visits` (0066) — evidence rides MEDIA IDS ---
+  // --- PC-54 W54-3 `scheme-field-visits` (0066) — schedule and submit CLOSED (PC-56 GOV-4a); the applicant's read (`fieldVisits`) kept ---
+  /**
+   * Schedule a field visit on an application.
+   * @deprecated PC-56 GOV-4a (GOV-4 Q2-A): CLOSED — the API refuses it by name for every caller: `SdkError` code `FIELD_VISITS_ARE_NOT_RECORDED_HERE`
+   * (403). Field visits are not scheduled or recorded on this platform. Kept so existing callers compile and surface the refusal.
+   */
   async scheduleFieldVisit(applicationId: string, scheduledFor?: string): Promise<{ id: string; status: string }> {
     return (await this.http.request<{ id: string; status: string }>('POST', `schemes/applications/${encodeURIComponent(applicationId)}/field-visits`, { body: scheduledFor ? { scheduledFor } : {} })).data;
   }
   async fieldVisits(applicationId: string, signal?: AbortSignal): Promise<Array<Record<string, unknown>>> {
     return (await this.http.request<Array<Record<string, unknown>>>('GET', `schemes/applications/${encodeURIComponent(applicationId)}/field-visits`, { signal })).data;
   }
-  /** Officer-of-record only (server-enforced). geotag = [{mediaId,lat,lng,capturedAt}]. */
+  /**
+   * Submit a field visit's findings.
+   * @deprecated PC-56 GOV-4a (GOV-4 Q2-A): CLOSED — the API refuses it by name for every caller: `SdkError` code `FIELD_VISITS_ARE_NOT_RECORDED_HERE`
+   * (403). Field visits are not scheduled or recorded on this platform. Kept so existing callers compile and surface the refusal.
+   */
   async submitFieldVisit(visitId: string, dto: { geotag: Array<{ mediaId: string; lat: number; lng: number; capturedAt: string }>; measuredValues?: Record<string, unknown>; walkTraceMediaId?: string }): Promise<{ id: string; status: string }> {
     return (await this.http.request<{ id: string; status: string }>('POST', `schemes/applications/field-visits/${encodeURIComponent(visitId)}/submit`, { body: { measuredValues: {}, ...dto } })).data;
   }

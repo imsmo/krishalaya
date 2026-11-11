@@ -2,7 +2,7 @@
 // render tests). The sidebar is drawn ONLY when `me` is present — the answer of `GET /v1/gov/me` to this session's token (lib/session.ts
 // `govGate`) — never from a cookie's presence: an anonymous visitor, an organisation's or a partner's session, a lapsed or ended session all
 // see the bare page. The sidebar names the AUTHORITY first (the API's name for it) and the platform small after it; it links only to the
-// routes GOV-1a builds (Dashboard — rebuilt in GOV-1b — and Access) and, since PC-56 GOV-2b, Schemes (W326); since GOV-2c, Applications (W330); since GOV-3a, Benefit payments (W332). All copy via i18n; no inline styles; no physical direction.
+// routes GOV-1a builds (Dashboard — rebuilt in GOV-1b — and Access) and, since PC-56 GOV-2b, Schemes (W326); since GOV-2c, Applications (W330); since GOV-3a, Benefit payments (W332); since GOV-4a, Field visits (W335 — the canon has no sidebar entry for it; the page says field visits are not done here). All copy via i18n; no inline styles; no physical direction.
 // PC-56 GOV-1b · E12 (W358): beside the authority's name, the GOV mark; a signed-in shell carries the blue top edge (globals.css,
 // `.kv-shell[data-kv-shell="gov"]`); a footer links to the console's rules (`/canon/chrome`) — from the footer, never the sidebar. No emblem,
 // no glyph, no image: the authority's name is text.
@@ -15,6 +15,7 @@ export const GOV_NAV: ReadonlyArray<{ href: string; labelKey: string }> = Object
   { href: '/schemes', labelKey: 'gov2.nav.schemes' },
   { href: '/applications', labelKey: 'gov2.nav.applications' },
   { href: '/dbt', labelKey: 'gov3.nav.dbt' },
+  { href: '/verification', labelKey: 'gov4.nav.verification' },
   { href: '/access', labelKey: 'gov1.nav.access' },
 ]);
 

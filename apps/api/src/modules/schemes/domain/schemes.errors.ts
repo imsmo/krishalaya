@@ -24,3 +24,9 @@ export class SchemeDecisionsAreTheAuthoritysError extends DomainError {
 export class DbtIsNotRecordedHereError extends DomainError {
   constructor(act: string) { super('DBT_IS_NOT_RECORDED_HERE', 'Payments and returned payments are not recorded on this platform. Benefits are paid by PFMS and the banks, outside this platform.', 403, { act }); }
 }
+/** PC-56 GOV-4a (GOV-4 Q2-A, lead-applied 2026-11-11 — the founder may reopen): field visits are not done through the platform for now. The
+ *  organisation's schedule and submit are CLOSED, refused by name for every caller, before anything is read or written. The applicant's own
+ *  read of the visits recorded before (HOTFIX-15) stays. */
+export class FieldVisitsAreNotRecordedHereError extends DomainError {
+  constructor(act: string) { super('FIELD_VISITS_ARE_NOT_RECORDED_HERE', 'Field visits are not scheduled or recorded on this platform.', 403, { act }); }
+}
