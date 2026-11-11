@@ -6,12 +6,15 @@
 // helper. No application id, organisation, applicant or place exists in what it is given. Q1-A's sentence is NOT printed (the government
 // axis cannot read credits); Q3-A's is, verbatim, with the fact that this page opens no application.
 // THE CHROME CANON states the rules this console keeps; it shows no emblem (none is ever shown) and no image of any kind.
+// PC-56 GOV-6a: the dashboard also carries the sections "Analytics" (W333) and "Reports" (W357) — components/gov6/DashboardSections.tsx,
+// given ONLY the translator (never the overview), so nothing on this page is summed, relabelled or derived.
 // All copy via i18n; no inline styles; no physical direction.
 import type { GovMe, GovOverview } from '@krishalaya/sdk-js';
 import { Gov1Refusals } from './Gov1Chain';
 import { atUtc } from '../../features/gov1/access';
 import { DASH_STATUSES, statusKey, type DashState } from '../../features/gov1/dashboard';
 import type { Tr } from '../../features/gov1/refusals';
+import { Gov6DashboardSections } from '../gov6/DashboardSections';
 
 const num = (n: number) => String(n);
 
@@ -79,6 +82,8 @@ export function DashboardView({ t, state, me, overview }: { t: Tr; state: DashSt
           ) : null}
         </>
       ) : null}
+      {/* GOV-6a: W333 "Analytics" and W357 "Reports" — given only the translator, in every state (they print no number). */}
+      <Gov6DashboardSections t={t} />
       <p className="kv-muted" data-kv-decor="define">
         <a className="kv-link" href="/dashboard?do=define&act=review">{t.t('gov1.dash.define')}</a>{' '}{t.t('gov1.dash.defineRefused')}
       </p>

@@ -119,7 +119,7 @@ export const GOV1_REFUSALS: readonly Gov1Refusal[] = Object.freeze([
   { id: 'dash_view_only', canon: 'W325 state "View-only role — Dashboards are visible to all authority staff; defining and deciding need the officer roles. Every role\'s powers are listed in [records] → roles."', surfaces: ['dashboard'],
     key: 'gov1.refusal.dashViewOnly', why: 'FALSE: no decision is made in the gov realm (GOV-0 has no write on an application); no roles page exists' },
   { id: 'dash_analytics', canon: 'W325 "Full analytics" (→ W333)', surfaces: ['dashboard'],
-    key: 'gov1.refusal.dashAnalytics', why: 'GOV-6: not built' },
+    key: 'gov1.refusal.dashAnalytics', why: 'GOV-6a (named update): W333 is the section "Analytics" of this page (components/gov6/DashboardSections.tsx); /analytics has no route' },
   // ══ GOV-1b · W358 (the chrome canon) ══
   { id: 'emblem', canon: 'W358 §1 "The emblem rule" — "slot rendered only from the authority\'s attested upload" · the auth shell\'s "[emblem slot]" · the console chrome\'s glyph', surfaces: ['chrome_canon'],
     key: 'gov1.refusal.emblem', why: 'LEGAL (the State Emblem of India (Prohibition of Improper Use) Act, 2005 — named, not interpreted): no emblem is ever shown and no upload exists (GOV1-B6 refused)' },
