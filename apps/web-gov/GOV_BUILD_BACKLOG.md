@@ -48,6 +48,11 @@ done through this platform; `/verification` is now the authority's "Field visits
       so W337's "Send OTP"/"needs farmer OTP" buttons are NOT drawn — the form states that the record carries the
       officer's attestation, not the farmer's confirmation. Dashboard: verification is now Live; nav links it.
 - [x] **GW-5 · MGNREGA** ✅ **BUILT 2026-08-06 (PC-55 B2)** — **THE GOV CONSOLE IS NOW 100%: GW-0..GW-5 all built.** *(FALSE — see the PC-56 GOV-1a correction at the top.)*
+      *(PC-56 GOV-5a, 2026-11-11 — survey_gov5.md C-8: every page this entry describes below (/mgnrega dashboard, /mgnrega/job-cards,
+      /mgnrega/job-cards/[id], /mgnrega/demands) was deleted at GOV-1a and is described here in the past, not the present. Since GOV-5a
+      `/mgnrega` is the AUTHORITY's page and reads nothing: MGNREGA's register is NREGASoft; this console records no work demand and does not
+      connect to NREGASoft (GOV-5 Q3-A); it shows no job card, worker, household, attendance, worksite, wage or payment figure (Q2-A, Q1-A).
+      Its builders (features/mgnrega/program.ts) are deleted. The organisation's MGNREGA routes are behind `labour` + `mgnrega` (HOTFIX-16).)*
       /mgnrega dashboard (job cards, works by status, attendance days observed, demand counts incl. OVERDUE — all
       counted in SQL over the whole register, never over a page) · /mgnrega/job-cards register + **audit-stamped
       exports** (job_cards | works | demands: receipt id + row count + time written to the audit ledger in the same

@@ -48,8 +48,10 @@ const nextConfig = {
   // a TEMPORARY redirect (307, permanent: false) to /dashboard (since GOV-1b: the authority's overview, counts only — W325). PC-56 GOV-2b builds
   // /schemes for the AUTHORITY (W326–W329), so its redirect is removed; the other three stay until their waves. PC-56 GOV-4a builds
   // /verification for the AUTHORITY (W335–W338: field visits are not done through this platform — it says so), so its redirect is removed too.
+  // PC-56 GOV-5a builds /mgnrega for the AUTHORITY (W345–W348, W440: MGNREGA's register is NREGASoft; this console records nothing for it — it says
+  // so), so its redirect is removed as well; /mgnrega/* other than the page has no route and answers not found.
   async redirects() {
-    return ['/registers', '/mgnrega'].flatMap((p) => [
+    return ['/registers'].flatMap((p) => [
       { source: p, destination: '/dashboard', permanent: false },
       { source: `${p}/:path*`, destination: '/dashboard', permanent: false },
     ]);
