@@ -36,7 +36,7 @@ export default async function QcQueuePage({ searchParams }: { searchParams: { ok
       <div className="kv-page-head">
         <h1>{t.t('qc.title')}</h1>
         <p className="kv-muted">{t.t('qc.sub', { target: String(QC_TARGET_HOURS) })}</p>
-        <p className="kv-fine"><Link href="/listings" className="kv-link">← {t.t('listings.title')}</Link></p>
+        <p className="kv-fine"><Link href="/listings" className="kv-link">{t.t('listings.title')}</Link></p>
       </div>
 
       {searchParams.ok === 'approved' && <p className="kv-success" role="status">{t.t('qc.ok.approved')}</p>}

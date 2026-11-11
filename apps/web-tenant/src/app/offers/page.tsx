@@ -58,7 +58,7 @@ export default async function OffersPage({ searchParams }: { searchParams: { lis
     <section>
       <div className="kv-page-head">
         <h1>{t.t('offers.inboxTitle')}</h1>
-        <Link href="/offers" className="kv-btn--link">← {t.t('offers.allListings')}</Link>
+        <Link href="/offers" className="kv-btn--link">{t.t('offers.allListings')}</Link>
       </div>
       {failed ? <p className="kv-error" role="alert">{t.t('offers.loadError')}</p> : (
         <DataTable

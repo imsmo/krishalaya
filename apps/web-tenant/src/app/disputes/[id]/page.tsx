@@ -103,7 +103,7 @@ export default async function DisputeDetailPage({ params, searchParams }: { para
     <section>
       <div className="kv-page-head">
         <h1>{t.t('disputeDetail.heading')}</h1>
-        <Link href="/disputes" className="kv-btn--link">← {t.t('disputes.title')}</Link>
+        <Link href="/disputes" className="kv-btn--link">{t.t('disputes.title')}</Link>
       </div>
 
       {okKey && <p className="kv-success" role="status">{t.t('disputeDetail.done')}</p>}

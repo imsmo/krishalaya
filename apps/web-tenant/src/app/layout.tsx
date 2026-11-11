@@ -22,6 +22,8 @@ import { tenantClient } from '../lib/api-client';
 import { getThemeHtmlAttrs, getSeniorMode } from '../lib/mechanism';
 import type { UserProfile } from '@krishalaya/sdk-js';
 import { AppShell, KvUiGlobalStyles } from '@krishalaya/ui';
+import { PREVIEW_LANGUAGES } from '@krishalaya/i18n';
+import { en } from '../i18n/en';
 import { Sidebar } from '../components/Sidebar';
 import { ConsoleTopbar, type BellState } from '../components/ConsoleTopbar';
 import { SdkError } from '@krishalaya/sdk-js';
@@ -54,6 +56,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // SSR-strategy rationale). `data-senior` mirrors the same cookie-driven, zero-client-JS pattern.
   const themeAttrs = getThemeHtmlAttrs();
   const senior = getSeniorMode();
+  // PC-56 RTL-1b-1 (founder Q1): while a PREVIEW language (Arabic — a machine draft nobody has reviewed) is the chosen
+  // language, every page says so, in that language AND in English (canon lang-ar/W128 `.md-banner-ar`). Under en/hi/gu
+  // nothing is drawn. The English line reads the en catalogue directly, never the active language's.
+  const draftBanner = PREVIEW_LANGUAGES.includes(lang.code) ? (
+    <div className="kv-md-banner" role="note" data-kv-md-banner={lang.code}>
+      <p lang={lang.code} dir={lang.dir}>{t.t('rtl.draftBanner')}</p>
+      <p lang="en" dir="ltr">{en['rtl.draftBanner']}</p>
+    </div>
+  ) : null;
   return (
     <html lang={lang.code} dir={lang.dir} data-theme={themeAttrs['data-theme']} className={themeAttrs.className} data-senior={senior ? 'true' : undefined}>
       <head>
@@ -61,6 +72,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body>
         <a href="#main" className="kv-skip">{t.t('common.skipToContent')}</a>
+        {draftBanner}
         {authed ? (
           <AppShell sidebar={<Sidebar me={me} />} topbar={<ConsoleTopbar me={me} bell={bell} />}>
             <div id="main"><OnlineGuard labels={signalLabels(t)} />{children}</div>

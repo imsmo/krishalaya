@@ -54,7 +54,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Reco
         {v && v.isSelf && <Link href={editProfileHref()} className="kv-btn">{t.t('profile.save')}</Link>}
       </div>
       <p className="kv-field__hint">{t.t('profile.lead')}</p>
-      <p className="kv-field__hint"><Link href={studioHref()} className="kv-btn--link">← {t.t('studio.title')}</Link></p>
+      <p className="kv-field__hint"><Link href={studioHref()} className="kv-btn--link">{t.t('studio.title')}</Link></p>
       {done && <p className="kv-success" role="status">{t.t(`profile.done.${done}`) || t.t('mutate.step.success')}</p>}
 
       {state !== null && (

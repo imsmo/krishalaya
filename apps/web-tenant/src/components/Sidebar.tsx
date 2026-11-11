@@ -113,7 +113,7 @@ export function Sidebar({ me }: { me: UserProfile | null }) {
       sections={sections}
       footer={
         <>
-          <LocaleSwitcher active={lang} label={t.t('lang.label')} />
+          <LocaleSwitcher active={lang} label={t.t('lang.label')} comingSoonLabel={t.t('lang.comingSoon')} draftLabel={t.t('lang.draft')} />
           <form action="/api/session" method="post">
             <input type="hidden" name="_action" value="logout" />
             <button type="submit" className="kv-btn kv-btn--muted">{t.t('nav.signOut')}</button>

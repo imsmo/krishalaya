@@ -19,6 +19,7 @@ import {
   BRANDING_HREF, DOMAINS_HREF, DOMAIN_NEW_HREF, PLANS_HREF, domainActHref, domainActs, domainProposalHref, domainTypeKey, domainsStateKey, pageState,
   statusKey, tlsKey,
 } from '../../../../features/branding/branding';
+import { DirArrow } from '../../../../components/DirArrow'; // PC-56 RTL-1b-1: the arrow flips under dir="rtl"
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -83,7 +84,7 @@ export default async function DomainsPage({ searchParams }: { searchParams: { cu
                   {d.verification.expiresAt && <><br /><span className="kv-field__hint">{t.t('dom.expires', { at: when(d.verification.expiresAt) })}</span></>}
                   {d.kind === 'custom' && d.verification.status !== 'verified' && (
                     <details><summary>{t.t('dom.records')}</summary>
-                      <ul className="kv-list">{d.verification.records.map((r) => <li key={r.type}><code>{r.type}</code> <code>{r.name}</code> → <code>{r.value}</code></li>)}</ul>
+                      <ul className="kv-list">{d.verification.records.map((r) => <li key={r.type}><code>{r.type}</code> <code>{r.name}</code> <DirArrow /> <code>{r.value}</code></li>)}</ul>
                     </details>
                   )}
                 </td>

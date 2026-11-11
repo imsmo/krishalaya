@@ -29,6 +29,7 @@ import {
 import { NEW_LISTING_HREF } from '../../features/swd/console';
 import { AsOf } from '../../components/AsOf';
 import { asOfLabels } from '../../features/swf/console';
+import { DirArrow } from '../../components/DirArrow'; // PC-56 RTL-1b-1: the arrow flips under dir="rtl"
 
 export const dynamic = 'force-dynamic'; // per-request (session-scoped); never statically cached
 
@@ -68,8 +69,8 @@ export default async function DashboardPage() {
         <h1>{t.t('dashboard.title')}</h1>
         <p className="kv-notice" role="status">{t.t('home.restricted')}</p>
         <div className="kv-cards">
-          <Link href="/listings" className="kv-card">{t.t('dashboard.manageListings')} →</Link>
-          <Link href="/orders" className="kv-card">{t.t('dashboard.viewOrders')} →</Link>
+          <Link href="/listings" className="kv-card">{t.t('dashboard.manageListings')} <DirArrow /></Link>
+          <Link href="/orders" className="kv-card">{t.t('dashboard.viewOrders')} <DirArrow /></Link>
         </div>
       </section>
     );
@@ -81,8 +82,8 @@ export default async function DashboardPage() {
         {/* W117: "Your operations continue server-side; only this summary view failed." */}
         <p className="kv-error" role="alert">{t.t('home.loadError')}</p>
         <div className="kv-cards">
-          <Link href="/listings" className="kv-card">{t.t('dashboard.manageListings')} →</Link>
-          <Link href="/orders" className="kv-card">{t.t('dashboard.viewOrders')} →</Link>
+          <Link href="/listings" className="kv-card">{t.t('dashboard.manageListings')} <DirArrow /></Link>
+          <Link href="/orders" className="kv-card">{t.t('dashboard.viewOrders')} <DirArrow /></Link>
         </div>
       </section>
     );

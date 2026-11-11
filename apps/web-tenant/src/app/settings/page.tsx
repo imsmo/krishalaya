@@ -13,6 +13,7 @@ import { getThemePreference, getSeniorMode } from '../../lib/mechanism';
 import { formatMoneyMinor } from '@krishalaya/i18n';
 import { formatBps } from '../../features/settings/config';
 import type { CommissionRule, DeliveryZone } from '@krishalaya/sdk-js';
+import { DirArrow } from '../../components/DirArrow'; // PC-56 RTL-1b-1: the arrow flips under dir="rtl"
 
 export const dynamic = 'force-dynamic';
 
@@ -46,7 +47,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: { o
   return (
     <section>
       <h1>{t.t('settings.title')}</h1>
-      <p className="kv-muted">{t.t('settings.subtitle')} · <Link href="/settings/integrations">{t.t('integrations.title')} →</Link> · <Link href="/settings/developers/webhooks">{t.t('webhooks.title')} →</Link></p>
+      <p className="kv-muted">{t.t('settings.subtitle')} · <Link href="/settings/integrations">{t.t('integrations.title')} <DirArrow /></Link> · <Link href="/settings/developers/webhooks">{t.t('webhooks.title')} <DirArrow /></Link></p>
       {okKey && <p className="kv-success" role="status">{t.t('settings.ok')}</p>}
       {errorKey && <p className="kv-error" role="alert">{t.t('settings.error')}: {errorKey}</p>}
 
@@ -146,8 +147,8 @@ export default async function SettingsPage({ searchParams }: { searchParams: { o
           The languages panel moved to /settings/org: it writes tenant_languages, the store every consumer reads (F-14) — the old
           form here wrote two settings nothing read. The typed registry (W186) and desks (W185) live on their canon routes. */}
       <h2 className="kv-section-title">{t.t('settings.languages.title')}</h2>
-      <p className="kv-muted">{t.t('settings.moved.languages')} <Link href="/settings/org#languages">{t.t('os.title')} →</Link></p>
-      <p className="kv-muted">{t.t('settings.moved.org')} <Link href="/settings/org">{t.t('os.title')} →</Link> · <Link href="/settings/team/desks">{t.t('dk.title')} →</Link></p>
+      <p className="kv-muted">{t.t('settings.moved.languages')} <Link href="/settings/org#languages">{t.t('os.title')} <DirArrow /></Link></p>
+      <p className="kv-muted">{t.t('settings.moved.org')} <Link href="/settings/org">{t.t('os.title')} <DirArrow /></Link> · <Link href="/settings/team/desks">{t.t('dk.title')} <DirArrow /></Link></p>
     </section>
   );
 }

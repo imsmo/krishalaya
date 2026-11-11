@@ -35,6 +35,10 @@ export const en: Messages = {
   'nav.primary': 'Console',
   'nav.signOut': 'Sign out',
   'lang.label': 'Language',
+  // PC-56 RTL-1b-1 · the Arabic preview: the picker's draft tag, the coming-soon group label (was an English default), the banner
+  'lang.draft': 'machine draft',
+  'lang.comingSoon': 'Coming soon',
+  'rtl.draftBanner': 'This Arabic text is a machine draft and has not been reviewed.',
 
   'common.loading': 'Loading…',
   'common.errorTitle': 'Something went wrong',

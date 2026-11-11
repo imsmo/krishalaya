@@ -17,6 +17,7 @@ import { mutateStep, mutateStepKey } from '../../../../../features/mutate/chain'
 import { ORG_HREF, isUuid, pageState, parseCodes, proposalHref, refusalKey, showValue } from '../../../../../features/org-settings/org-settings';
 import { AuditEntryCard } from '../../../../people/ambassadors/AuditEntryCard';
 import { proposalActAction } from '../../actions';
+import { DirArrow } from '../../../../../components/DirArrow'; // PC-56 RTL-1b-1: the arrow flips under dir="rtl"
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -53,7 +54,7 @@ export default async function ProposalActPage({ params, searchParams }: { params
       {p && (
         <dl className="kv-facts">
           <div className="kv-facts__row"><dt>{t.t('os.col.key')}</dt><dd><code>{p.key}</code></dd></div>
-          <div className="kv-facts__row"><dt>{t.t('os.form.before')} → {t.t('os.form.after')}</dt><dd><code>{showValue(p.oldValue)}</code> → <code>{showValue(p.newValue)}</code></dd></div>
+          <div className="kv-facts__row"><dt>{t.t('os.form.before')} <DirArrow /> {t.t('os.form.after')}</dt><dd><code>{showValue(p.oldValue)}</code> <DirArrow /> <code>{showValue(p.newValue)}</code></dd></div>
           <div className="kv-facts__row"><dt>{t.t('os.act.proposedBy')}</dt><dd>{t.t('os.proposals.by', { name: p.proposedByName ?? t.t('os.proposals.someone'), at: when(p.proposedAt) })}</dd></div>
           <div className="kv-facts__row"><dt>{t.t('os.act.why')}</dt><dd>{p.reason}</dd></div>
           {p.floor && (p.floor.min !== null || p.floor.max !== null) && <div className="kv-facts__row"><dt>{t.t('os.form.floor')}</dt><dd>{t.t('os.row.floor', { min: showValue(p.floor.min), max: showValue(p.floor.max) })}</dd></div>}

@@ -15,11 +15,12 @@ import { requireSession } from '../../lib/session';
 import { tenantHasPerm } from '../../lib/auth';
 import { tenantClient } from '../../lib/api-client';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatMoneyMinor, formatRelative } from '@krishalaya/i18n';
+import { formatRelative } from '@krishalaya/i18n';
 import type { ListingCard, ConsoleListingRow, ConsoleCounts } from '@krishalaya/sdk-js';
 import { PageHeader } from '@krishalaya/ui';
 import type { DataTableState } from '@krishalaya/ui';
 import { ListingsTable } from '../../components/ListingsTable';
+import { Money } from '../../components/Bidi';
 import { CONSOLE_TABS, isConsoleTab, tabHref, statusClass, BULK_MAX } from '../../features/listings/console';
 import { bulkListingsAction } from './actions';
 
@@ -129,7 +130,7 @@ export default async function ListingsPage({ searchParams }: {
                   </td>
                   <td>{r.sellerName ?? t.t('common.dash')}</td>
                   <td>{r.quantityAvailable} / {r.quantityTotal} {r.unitCode}</td>
-                  <td>{formatMoneyMinor(r.priceMinor, r.currencyCode, lang)} / {r.unitCode}</td>
+                  <td><Money minor={r.priceMinor} currency={r.currencyCode} lang={lang} /> / {r.unitCode}</td>
                   <td>{r.saleType}</td>
                   <td>
                     <span className={statusClass(r.status)}>{t.t(`lc.tab.${r.status}` as never)}</span>

@@ -30,6 +30,7 @@ import {
   STUDIO_TILES, completenessDone, completenessKey, coursesByState, editProfileHref, fromTemplateHref, instructorsHref, profileHref, refusedKey, studioHref, studioState, studioStateKey,
   tileKey, tileMeasured, verifiedBadge, watchHoursText,
 } from '../../features/studio/instructor';
+import { DirArrow } from '../../components/DirArrow'; // PC-56 RTL-1b-1: the arrow flips under dir="rtl"
 
 export const dynamic = 'force-dynamic';
 
@@ -53,7 +54,7 @@ export default async function StudioPage() {
     <section>
       <div className="kv-page-head">
         <h1>{t.t('studio.title')}</h1>
-        {state === 'ready' && <span><Link href={NEW_COURSE_HREF} className="kv-btn">{t.t('courses.new')}</Link> <Link href={liveHref()} className="kv-btn--link">{t.t('live.title')} →</Link></span>}
+        {state === 'ready' && <span><Link href={NEW_COURSE_HREF} className="kv-btn">{t.t('courses.new')}</Link> <Link href={liveHref()} className="kv-btn--link">{t.t('live.title')} <DirArrow /></Link></span>}
       </div>
       <p className="kv-field__hint">{t.t('studio.lead')}</p>
 

@@ -48,7 +48,7 @@ export default async function InvoiceDetailPage({ params, searchParams }: { para
     <section>
       <div className="kv-page-head">
         <h1>{t.t('invd.heading', { no: inv.invoiceNo })}</h1>
-        <Link href="/invoices" className="kv-btn--link">← {t.t('inv.title')}</Link>
+        <Link href="/invoices" className="kv-btn--link">{t.t('inv.title')}</Link>
       </div>
       <p className="kv-field__hint">{t.t('invd.immutable')}</p>
 

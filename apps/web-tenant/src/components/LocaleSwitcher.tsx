@@ -8,10 +8,17 @@
 // (`screens/187-language-switcher.html` — a ✓ on the active live row, a disabled "SOON" badge row for a
 // not-yet-live language). `COMING_SOON_LANGUAGES` is the FULL 11-language target set from the shared registry
 // (was previously not rendered here at all) — never fabricated, always the registry's own truth.
+//
+// PC-56 RTL-1b-1 (founder Q1 "Draft all, opt-in only"): a PREVIEW language (`PREVIEW_LANGUAGES` — Arabic) is offered as
+// a real choice, labelled as a machine draft beside its native name; pressing it is the explicit act that serves it.
+// It is taken out of the "coming soon" group (it is choosable now) and never reached from a browser language.
 import { usePathname, useSearchParams } from 'next/navigation';
-import { LANGUAGES, COMING_SOON_LANGUAGES } from '@krishalaya/i18n';
+import { LANGUAGES, COMING_SOON_LANGUAGES, PREVIEW_LANGUAGES } from '@krishalaya/i18n';
 
-export function LocaleSwitcher({ active, label, comingSoonLabel }: { active: string; label: string; comingSoonLabel?: string }) {
+const PREVIEW = COMING_SOON_LANGUAGES.filter((l) => PREVIEW_LANGUAGES.includes(l.code));
+const SOON = COMING_SOON_LANGUAGES.filter((l) => !PREVIEW_LANGUAGES.includes(l.code));
+
+export function LocaleSwitcher({ active, label, comingSoonLabel, draftLabel }: { active: string; label: string; comingSoonLabel: string; draftLabel: string }) {
   const pathname = usePathname() || '/dashboard';
   const qs = useSearchParams()?.toString();
   const from = qs ? `${pathname}?${qs}` : pathname;
@@ -23,10 +30,16 @@ export function LocaleSwitcher({ active, label, comingSoonLabel }: { active: str
         <button key={l.code} type="submit" name="lang" value={l.code} lang={l.code} aria-pressed={l.code === active}
           className={`kv-locale__btn${l.code === active ? ' is-active' : ''}`}>{l.nameNative}</button>
       ))}
-      {COMING_SOON_LANGUAGES.length > 0 && (
-        <span className="kv-locale__soon-group" aria-label={comingSoonLabel ?? 'Coming soon'}>
-          {COMING_SOON_LANGUAGES.map((l) => (
-            <span key={l.code} lang={l.code} dir={l.dir} className="kv-locale__soon" aria-disabled="true" title={comingSoonLabel ?? 'Coming soon'}>
+      {PREVIEW.map((l) => (
+        <button key={l.code} type="submit" name="lang" value={l.code} aria-pressed={l.code === active}
+          className={`kv-locale__btn kv-locale__btn--draft${l.code === active ? ' is-active' : ''}`}>
+          <bdi lang={l.code} dir={l.dir}>{l.nameNative}</bdi> <span className="kv-locale__draft">({draftLabel})</span>
+        </button>
+      ))}
+      {SOON.length > 0 && (
+        <span className="kv-locale__soon-group" aria-label={comingSoonLabel}>
+          {SOON.map((l) => (
+            <span key={l.code} lang={l.code} dir={l.dir} className="kv-locale__soon" aria-disabled="true" title={comingSoonLabel}>
               {l.nameNative}
             </span>
           ))}

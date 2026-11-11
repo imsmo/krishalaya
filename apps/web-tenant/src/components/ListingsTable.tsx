@@ -15,8 +15,8 @@
 import Link from 'next/link';
 import { DataTable } from '@krishalaya/ui';
 import type { DataTableColumn, DataTableState } from '@krishalaya/ui';
-import { formatMoneyMinor } from '@krishalaya/i18n';
 import type { ListingCard } from '@krishalaya/sdk-js';
+import { Money } from './Bidi';
 
 export interface ListingsTableProps {
   items: ListingCard[];
@@ -45,7 +45,8 @@ export function ListingsTable({
     },
     {
       key: 'price', header: colPrice, isMoney: true,
-      render: (l) => `${formatMoneyMinor(l.priceMinor, l.currencyCode, lang)} / ${l.unitCode}`,
+      // PC-56 RTL-1b-1: the amount in an LTR isolate (Indian shape under Arabic) — never reordered by an rtl page
+      render: (l) => <><Money minor={l.priceMinor} currency={l.currencyCode} lang={lang} /> / {l.unitCode}</>,
     },
     { key: 'available', header: colAvailable, render: (l) => `${l.quantityAvailable} ${l.unitCode}` },
     { key: 'type', header: colType, render: (l) => l.saleType },

@@ -52,7 +52,7 @@ export default async function QcReviewPage({ params, searchParams }: { params: {
           {' · '}{t.t('qcr.history', { n: String(d.sellerHistory.previousListings), rej: String(d.sellerHistory.rejections) })}
           {' · '}{age.kind === 'aged' ? t.t('qc.ageH', { h: String(age.hours) }) : t.t('qc.beforeClock')}
         </p>
-        <p className="kv-fine"><Link href="/listings/qc" className="kv-link">← {t.t('qc.title')}</Link></p>
+        <p className="kv-fine"><Link href="/listings/qc" className="kv-link">{t.t('qc.title')}</Link></p>
       </div>
 
       {searchParams.error && ERR.has(searchParams.error) && <p className="kv-error" role="alert">{t.t(`qcr.error.${searchParams.error}` as never)}</p>}

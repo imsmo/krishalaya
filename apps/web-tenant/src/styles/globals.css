@@ -252,3 +252,12 @@ button[data-kv-signal="held"] { opacity: 0.6; cursor: not-allowed; }
    A range arrow (components/DirArrow) points the reading direction: U+2192 is not Bidi_Mirrored, so it is flipped here
    under an ancestor dir="rtl". No effect under ltr. */
 [dir="rtl"] .kv-dir-flip { display: inline-block; transform: scaleX(-1); }
+
+/* ── PC-56 RTL-1b-1 · Arabic (machine draft, opt-in only) ──────────────────────────────────────────────────────────
+   The machine-draft banner (canon lang-ar/W128 `.md-banner-ar`): shown on every page while Arabic is the chosen language.
+   Money, IDs, file names and hashes sit in <bdi dir="ltr"> (components/Bidi.tsx — the canon's `.bidi{direction:ltr;
+   unicode-bidi:isolate}` as markup): "₹1,23,456.50" or a hash is a left-to-right run the right-to-left page never reorders.
+   Logical properties only. */
+.kv-md-banner { margin-block-end: 12px; padding-block: 8px; padding-inline: 12px; border: 1px solid var(--kv-neutral-200); border-inline-start-width: 4px; border-radius: var(--kv-radius); background: var(--kv-neutral-100); font-size: 13px; }
+.kv-md-banner p { margin: 0; }
+.kv-locale__draft { font-size: 12px; color: var(--kv-neutral-600); }

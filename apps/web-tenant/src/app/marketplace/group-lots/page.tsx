@@ -25,6 +25,7 @@ import {
   GROUP_LOTS_HREF, LOT_TABS, MARKETPLACE_HREF, NEW_LOT_HREF, actHref, auctionHref, consoleState, cursorFrom, isTab, lotHref, pageHref, progressPct, qtyText,
   rowRally, statusKey, tabHref,
 } from '../../../features/group-lots/console';
+import { DirArrow } from '../../../components/DirArrow'; // PC-56 RTL-1b-1: the arrow flips under dir="rtl"
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -109,8 +110,8 @@ export default async function GroupLotsPage({ searchParams }: { searchParams: Re
                   <td>{when(g.pledgeDeadline)}{g.extendedOnce && <div className="kv-field__hint">{t.t('gl.extendedOnce')}</div>}</td>
                   <th scope="row"><Link href={lotHref(g.id)} className="kv-link">{g.lotNo ?? g.id.slice(0, 8)}</Link>
                     <div className="kv-field__hint">{g.productName ?? t.t('gl.productUnknown')}</div>
-                    {g.auction ? <div className="kv-field__hint"><Link href={auctionHref(g.auction.id)} className="kv-btn--link">→ {g.auction.auctionNo}</Link></div>
-                      : g.listing ? <div className="kv-field__hint"><Link href={`/listings/${encodeURIComponent(g.listing.id)}`} className="kv-btn--link">→ {t.t('gl.listingLink')}</Link></div> : null}</th>
+                    {g.auction ? <div className="kv-field__hint"><Link href={auctionHref(g.auction.id)} className="kv-btn--link"><DirArrow /> {g.auction.auctionNo}</Link></div>
+                      : g.listing ? <div className="kv-field__hint"><Link href={`/listings/${encodeURIComponent(g.listing.id)}`} className="kv-btn--link"><DirArrow /> {t.t('gl.listingLink')}</Link></div> : null}</th>
                   <td>{g.coordinatorShortName ?? t.t('gl.nameNotRecorded')}</td>
                   <td>{t.t('gl.pledgedOfTarget', { pledged: qtyText(g.pledgedQuantity), target: qtyText(g.targetQuantity), unit: g.unitCode, pct: progressPct(g.progressBps) })}</td>
                   <td>{n(g.memberCount ?? 0)}</td>

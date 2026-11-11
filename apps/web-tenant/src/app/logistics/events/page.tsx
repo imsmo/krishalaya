@@ -24,6 +24,7 @@ import { getTranslator, getLang } from '../../../lib/i18n';
 import { formatDate } from '@krishalaya/i18n';
 import { EVENT_FILTERS, eventsHref, isEventFilter, precisionKey, windowKey } from '../../../features/logistics/shipments';
 import type { ShipmentEventPage } from '@krishalaya/sdk-js';
+import { DirArrow } from '../../../components/DirArrow'; // PC-56 RTL-1b-1: the arrow flips under dir="rtl"
 
 export const dynamic = 'force-dynamic';
 
@@ -70,7 +71,7 @@ export default async function ShipmentEventsPage({ searchParams }: { searchParam
       ) : (
         <>
           <p className={page.window.clamped ? 'kv-card kv-card--notice' : 'kv-field__hint'} role={page.window.clamped ? 'status' : undefined}>
-            {t.t(windowKey(page.window))} {page.window.from} → {page.window.to}
+            {t.t(windowKey(page.window))} {page.window.from} <DirArrow /> {page.window.to}
           </p>
           <p className="kv-field__hint">{t.t(precisionKey(page.precisionDp))}</p>
           {filter === 'gps_gap' && <p className="kv-field__hint">{t.t('ship.events.gapNote')}</p>}

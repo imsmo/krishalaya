@@ -16,6 +16,7 @@ import { getTranslator } from '../../../../../lib/i18n';
 import { chainStep, chainStepKey, chainHref } from '../../../../../features/forms/chain';
 import { DOMAINS_HREF, DOMAIN_NEW_HREF, PLANS_HREF, domainRefusalKey, failureCodesFrom, isUuid, parseCodes } from '../../../../../features/branding/branding';
 import { addDomainAction } from '../actions';
+import { DirArrow } from '../../../../../components/DirArrow'; // PC-56 RTL-1b-1: the arrow flips under dir="rtl"
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -72,7 +73,7 @@ export default async function AddDomainPage({ searchParams }: { searchParams: Re
               {review.records.length > 0 && (
                 <>
                   <p>{t.t('dom.new.recordsLede')}</p>
-                  <ul className="kv-list">{review.records.map((r) => <li key={r.type}><code>{r.type}</code> <code>{r.name}</code> → <code>{r.type === 'TXT' ? t.t('dom.new.tokenOnAdd') : r.value}</code></li>)}</ul>
+                  <ul className="kv-list">{review.records.map((r) => <li key={r.type}><code>{r.type}</code> <code>{r.name}</code> <DirArrow /> <code>{r.type === 'TXT' ? t.t('dom.new.tokenOnAdd') : r.value}</code></li>)}</ul>
                 </>
               )}
               <p className="kv-field__hint">{t.t('dom.new.window', { days: String(review.claimWindowDays) })} · {review.tls.note}</p>
@@ -94,7 +95,7 @@ export default async function AddDomainPage({ searchParams }: { searchParams: Re
           {added && (
             <>
               <p>{t.t('dom.new.success.records', { domain: added.domain })}</p>
-              <ul className="kv-list">{added.verification.records.map((r) => <li key={r.type}><code>{r.type}</code> <code>{r.name}</code> → <code>{r.value}</code></li>)}</ul>
+              <ul className="kv-list">{added.verification.records.map((r) => <li key={r.type}><code>{r.type}</code> <code>{r.name}</code> <DirArrow /> <code>{r.value}</code></li>)}</ul>
             </>
           )}
           <p>{t.t('dom.new.success.checks')}</p>

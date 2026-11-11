@@ -17,6 +17,7 @@ import type { RoyaltyRuleView } from '@krishalaya/sdk-js';
 import { MAX_REASON, auditHref, canLinkAudit, carryValues, confirmHref, failureKey, mutateStep, mutateStepKey, readCarried, repeatedFailuresGapKey, retryToConfirm, valuesLostKey } from '../../../../features/mutate/chain';
 import { RULE_FIELDS, RULE_PATH, earningsHref, earningsRefusedKey, percentToBps, ruleChainAct, shareText } from '../../../../features/studio/earnings';
 import { ruleAction } from './actions';
+import { DirArrow } from '../../../../components/DirArrow'; // PC-56 RTL-1b-1: the arrow flips under dir="rtl"
 
 export const dynamic = 'force-dynamic';
 
@@ -78,7 +79,7 @@ export default async function RulePage({ searchParams }: { searchParams: Record<
             <h2>{t.t('earnings.rule.history')}</h2>
             {view.history.length === 0 ? <p className="kv-field__hint">{t.t('earnings.rule.historyEmpty')}</p> : (
               <ul className="kv-list">
-                {view.history.map((r) => <li key={r.id}>{shareText(r.instructorShareBps)} / {shareText(r.tenantShareBps)} / {shareText(r.platformShareBps)} · {t.t(`earnings.rule.status.${r.status}`)} · {when(r.proposedAt, lang)}{r.decidedAt && <> → {when(r.decidedAt, lang)}</>}{r.decisionNote && <span className="kv-field__hint"> · {r.decisionNote}</span>}</li>)}
+                {view.history.map((r) => <li key={r.id}>{shareText(r.instructorShareBps)} / {shareText(r.tenantShareBps)} / {shareText(r.platformShareBps)} · {t.t(`earnings.rule.status.${r.status}`)} · {when(r.proposedAt, lang)}{r.decidedAt && <> <DirArrow /> {when(r.decidedAt, lang)}</>}{r.decisionNote && <span className="kv-field__hint"> · {r.decisionNote}</span>}</li>)}
               </ul>
             )}
           </div>

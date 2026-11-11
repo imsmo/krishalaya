@@ -20,6 +20,7 @@ import { DataTable } from '../../../components/DataTable';
 import { closedMonths, pdfStateKey, periodKindKey, refusalKey, rowNeedsAttention } from '../../../features/settlements/console';
 import { orgStatementAction } from '../actions';
 import type { SettlementStatementsPage } from '@krishalaya/sdk-js';
+import { DirArrow } from '../../../components/DirArrow'; // PC-56 RTL-1b-1: the arrow flips under dir="rtl"
 
 export const dynamic = 'force-dynamic';
 
@@ -97,7 +98,7 @@ export default async function StatementsPage({ searchParams }: {
               header: t.t('stl.colPeriod'),
               cell: (r) => (
                 <>
-                  {r.periodStart} → {r.periodEnd}
+                  {r.periodStart} <DirArrow /> {r.periodEnd}
                   {/* A daily statement is NEVER presented as a cycle one. */}
                   <span className="kv-badge">{t.t(periodKindKey(r.periodKind), { days: String(r.dayCount) })}</span>
                 </>

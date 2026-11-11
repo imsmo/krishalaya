@@ -43,6 +43,7 @@ import { DAIRY_NAV, dairyNavLabelKey, dairyUnbuiltCount } from '../../../feature
 // [PC-56 HOTFIX-11] the refusals as sentences (a second person on every milk bill, and the cycle's own maker-checker).
 import { dairyRefusalKey } from '../../../features/dairy/calc';
 import { approveCycleAction, previewCycleAction } from './actions';
+import { DirArrow } from '../../../components/DirArrow'; // PC-56 RTL-1b-1: the arrow flips under dir="rtl"
 
 export const dynamic = 'force-dynamic';
 
@@ -246,9 +247,9 @@ export default async function DairyCyclesPage({ searchParams }: {
             {/* W169's timeline alert, with this tenant's own numbers in it. */}
             <p className="kv-field__hint">
               {t.t('dairy.cycles.timeline.closes')} {formatDate(view.cycle.closesAt, lang)}
-              {' → '}{t.t('dairy.cycles.timeline.previewed')}
-              {' → '}{t.t('dairy.cycles.timeline.approved')}
-              {' → '}{t.t('dairy.cycles.timeline.paid')}
+              {' '}<DirArrow />{' '}{t.t('dairy.cycles.timeline.previewed')}
+              {' '}<DirArrow />{' '}{t.t('dairy.cycles.timeline.approved')}
+              {' '}<DirArrow />{' '}{t.t('dairy.cycles.timeline.paid')}
             </p>
             {consent && (
               <p className="kv-field__hint">

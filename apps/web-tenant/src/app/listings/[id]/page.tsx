@@ -70,7 +70,7 @@ export default async function ListingDetailPage({ params, searchParams }: { para
     <section>
       <div className="kv-page-head">
         <h1>{listing.title}</h1>
-        <Link href="/listings" className="kv-btn--link">← {t.t('listings.title')}</Link>
+        <Link href="/listings" className="kv-btn--link">{t.t('listings.title')}</Link>
       </div>
 
       {okKey && <p className="kv-success" role="status">{t.t(`listingManage.ok.${okKey}` as never)}</p>}

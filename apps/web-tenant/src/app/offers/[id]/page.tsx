@@ -50,7 +50,7 @@ export default async function OfferDetailPage({ params, searchParams }: { params
     <section>
       <div className="kv-page-head">
         <h1>{t.t('offerDetail.heading')}</h1>
-        <Link href={`/offers?listingId=${encodeURIComponent(offer.listingId)}`} className="kv-btn--link">← {t.t('offers.inboxTitle')}</Link>
+        <Link href={`/offers?listingId=${encodeURIComponent(offer.listingId)}`} className="kv-btn--link">{t.t('offers.inboxTitle')}</Link>
       </div>
 
       {okKey && <p className="kv-success" role="status">{t.t(`offerDetail.ok.${okKey}`)}</p>}

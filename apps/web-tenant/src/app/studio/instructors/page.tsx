@@ -36,7 +36,7 @@ export default async function InstructorsPage({ searchParams }: { searchParams: 
     <section>
       <div className="kv-page-head"><h1>{t.t('instructors.title')}</h1></div>
       <p className="kv-field__hint">{t.t('instructors.lead')}</p>
-      <p className="kv-field__hint"><Link href={studioHref()} className="kv-btn--link">← {t.t('studio.title')}</Link></p>
+      <p className="kv-field__hint"><Link href={studioHref()} className="kv-btn--link">{t.t('studio.title')}</Link></p>
 
       {state !== null && (
         <div className={state === 'error' ? 'kv-error' : 'kv-card kv-card--notice'} role={state === 'error' ? 'alert' : 'status'}>

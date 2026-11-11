@@ -22,6 +22,7 @@ import {
 } from '../../../../features/org-settings/org-settings';
 import { AuditEntryCard } from '../../../people/ambassadors/AuditEntryCard';
 import { saveSettingAction } from '../actions';
+import { DirArrow } from '../../../../components/DirArrow'; // PC-56 RTL-1b-1: the arrow flips under dir="rtl"
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -137,7 +138,7 @@ export default async function EditSettingPage({ searchParams }: { searchParams: 
           {proposal ? (
             <dl className="kv-facts">
               <div className="kv-facts__row"><dt>{t.t('os.col.key')}</dt><dd><code>{proposal.key}</code></dd></div>
-              <div className="kv-facts__row"><dt>{t.t('os.form.before')} → {t.t('os.form.after')}</dt><dd><code>{showValue(proposal.oldValue)}</code> → <code>{showValue(proposal.newValue)}</code></dd></div>
+              <div className="kv-facts__row"><dt>{t.t('os.form.before')} <DirArrow /> {t.t('os.form.after')}</dt><dd><code>{showValue(proposal.oldValue)}</code> <DirArrow /> <code>{showValue(proposal.newValue)}</code></dd></div>
               <div className="kv-facts__row"><dt>{t.t('os.form.confirmer')}</dt><dd>{t.t('os.form.confirmerRule', { n: formatNumber(proposal.admins, lang) })}</dd></div>
               <div className="kv-facts__row"><dt>{t.t('os.form.takesEffect')}</dt><dd>{t.t('os.form.takesEffectRule')}</dd></div>
               <div className="kv-facts__row"><dt>{t.t('os.form.expires')}</dt><dd>{when(proposal.expiresAt)}</dd></div>

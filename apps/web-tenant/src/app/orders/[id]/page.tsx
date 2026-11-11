@@ -76,7 +76,7 @@ export default async function OrderDetailPage({ params, searchParams }: { params
     <section>
       <div className="kv-page-head">
         <h1>{t.t('orderDetail.heading', { orderNo: order.orderNo })}</h1>
-        <Link href="/orders" className="kv-btn--link">← {t.t('orders.title')}</Link>
+        <Link href="/orders" className="kv-btn--link">{t.t('orders.title')}</Link>
       </div>
       <p className="kv-muted"><span className="kv-badge">{order.status}</span>{order.createdAt ? ` · ${formatDate(order.createdAt, lang)}` : ''}</p>
 

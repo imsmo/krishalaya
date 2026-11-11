@@ -33,6 +33,7 @@ import { BMC_HREF } from '../../../../features/dairy/bmc';
 import { CENTRES_HREF } from '../../../../features/dairy/centres';
 import { diversionNoticePromiseKey, diversionShiftKey } from '../../../../features/dairy/diversion';
 import { requestDiversionAction } from './actions';
+import { DirArrow } from '../../../../components/DirArrow'; // PC-56 RTL-1b-1: the arrow flips under dir="rtl"
 
 export const dynamic = 'force-dynamic';
 
@@ -111,7 +112,7 @@ export default async function DivertShiftPage({ searchParams }: { searchParams: 
             <>
               <div className="kv-card">
                 <h2>
-                  {preview.fromCode ?? t.t('common.dash')} → {preview.toCode ?? t.t('common.dash')}
+                  {preview.fromCode ?? t.t('common.dash')} <DirArrow /> {preview.toCode ?? t.t('common.dash')}
                   {' · '}{t.t(diversionShiftKey(shift))}{' '}{preview.divertedOn}
                 </h2>
                 {/* THE SIZE OF THE DECISION. W170 prints "87 pourers" and means it. */}

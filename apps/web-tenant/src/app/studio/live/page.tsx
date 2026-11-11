@@ -10,6 +10,7 @@ import { DataTable } from '../../../components/DataTable';
 import { getTranslator } from '../../../lib/i18n';
 import { registerChannelAction } from '../actions';
 import type { EduChannel } from '@krishalaya/sdk-js';
+import { DirArrow } from '../../../components/DirArrow'; // PC-56 RTL-1b-1: the arrow flips under dir="rtl"
 
 export const dynamic = 'force-dynamic';
 
@@ -36,13 +37,13 @@ export default async function LiveStudioPage({ searchParams }: { searchParams: {
     <section>
       <div className="kv-page-head">
         <h1>{t.t('channels.title')}</h1>
-        <Link href="/studio" className="kv-btn--link">← {t.t('studio.title')}</Link>
+        <Link href="/studio" className="kv-btn--link">{t.t('studio.title')}</Link>
       </div>
       {okKey && <p className="kv-success" role="status">{t.t(`channels.ok.${okKey}`)}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`channels.error.${errKey}`)}</p>}
 
       {/* PC-56 TENANT-7c: the live class is its own record and chains at /live (W414/W415); this page keeps PC-26b's channels. */}
-      <p className="kv-field__hint"><Link href="/live" className="kv-btn--link">{t.t('channels.toLive')} →</Link></p>
+      <p className="kv-field__hint"><Link href="/live" className="kv-btn--link">{t.t('channels.toLive')} <DirArrow /></Link></p>
 
       <h2>{t.t('channels.yours')}</h2>
       {channelsFailed ? <p className="kv-error" role="alert">{t.t('channels.loadError')}</p> : (

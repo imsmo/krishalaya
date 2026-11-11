@@ -4,30 +4,36 @@
 // framework-free, so there is no client provider and no per-request bundle cost.
 import 'server-only';
 import { cookies, headers } from 'next/headers';
-import { Translator, resolveLanguage, DEFAULT_LANGUAGE, type LanguageDef } from '@krishalaya/i18n';
+import { Translator, resolveServable, DEFAULT_LANGUAGE, type LanguageDef } from '@krishalaya/i18n';
 import { en } from '../i18n/en';
 import { hi } from '../i18n/hi';
 import { gu } from '../i18n/gu';
+import { ar } from '../i18n/ar';
 
 // DEV-26/Q16: this exact string is ALSO hardcoded (disclosed, not re-imported — see that file's own comment) in
 // `../middleware.ts`, which cannot safely import this `server-only` + `next/headers` module. Keep both in sync.
 export const LANG_COOKIE = 'kvt_lang';
 
-/** The active language code for this request (cookie → Accept-Language → default). */
+/** The active language code for this request (cookie → Accept-Language → default).
+ *  PC-56 RTL-1b-1 (founder Q1 "Draft all, opt-in only"): the cookie is a person's own choice (the switcher, or `?lang=`
+ *  persisted by middleware), so it resolves as EXPLICIT and may serve the Arabic machine draft; Accept-Language is a
+ *  browser preference, so it resolves as IMPLICIT and can never serve Arabic — an `ar` browser gets English. */
 export function getLang(): string {
   const cookieLang = cookies().get(LANG_COOKIE)?.value;
-  if (cookieLang) return resolveLanguage(cookieLang).code;
+  if (cookieLang) return resolveServable(cookieLang, 'explicit').code;
   const accept = headers().get('accept-language') ?? '';
   const first = accept.split(',')[0]?.trim();
-  return resolveLanguage(first || DEFAULT_LANGUAGE).code;
+  return resolveServable(first || DEFAULT_LANGUAGE, 'implicit').code;
 }
 
-/** Resolved language definition (code, native name, dir, intlLocale) for the active request. */
+/** Resolved language definition (code, native name, dir, intlLocale) for the active request. `getLang()` has already
+ *  applied the explicit/implicit rule, so its code is served as it stands (an `ar` here came from the cookie). */
 export function getLanguageDef(): LanguageDef {
-  return resolveLanguage(getLang());
+  return resolveServable(getLang(), 'explicit');
 }
 
-/** A translator bound to the active language, with all catalogs registered (missing keys fall back to en). */
+/** A translator bound to the active language, with all catalogs registered (missing keys fall back to en). `ar` is the
+ *  RTL-1b-1 machine draft (shell + /listings + /listings/import); every other key falls back to English. */
 export function getTranslator(langCode = getLang()): Translator {
-  return new Translator(langCode).register('en', en).register('hi', hi).register('gu', gu);
+  return new Translator(langCode).register('en', en).register('hi', hi).register('gu', gu).register('ar', ar);
 }

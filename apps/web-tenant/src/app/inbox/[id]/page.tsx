@@ -41,7 +41,7 @@ export default async function InboxThreadPage({ params, searchParams }: { params
     <section>
       <div className="kv-page-head">
         <h1>{t.t('inbox.threadTitle')}</h1>
-        <Link href="/inbox" className="kv-btn--link">← {t.t('inbox.title')}</Link>
+        <Link href="/inbox" className="kv-btn--link">{t.t('inbox.title')}</Link>
       </div>
       {searchParams.ok === 'sent' && <p className="kv-success" role="status">{t.t('inbox.ok.sent')}</p>}
       {errKey && <p className="kv-error" role="alert">{t.t(`inbox.error.${errKey}`)}</p>}

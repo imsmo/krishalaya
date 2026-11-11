@@ -60,7 +60,7 @@ export default async function ShipmentDetailPage({ params, searchParams }: { par
     <section>
       <div className="kv-page-head">
         <h1>{t.t('logistics.detailTitle')}</h1>
-        <Link href="/logistics" className="kv-btn--link">← {t.t('logistics.title')}</Link>
+        <Link href="/logistics" className="kv-btn--link">{t.t('logistics.title')}</Link>
       </div>
 
       <dl className="kv-facts">

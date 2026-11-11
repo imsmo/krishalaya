@@ -45,7 +45,7 @@ export default async function LiveHostPage({ params, searchParams }: { params: {
     <section>
       <div className="kv-page-head">
         <h1>{v ? v.session.title : t.t('live.host.title')}</h1>
-        <Link href={liveHref()} className="kv-btn--link">← {t.t('live.title')}</Link>
+        <Link href={liveHref()} className="kv-btn--link">{t.t('live.title')}</Link>
       </div>
 
       {registered && <p className="kv-success" role="status">{t.t('live.host.registeredOk')}</p>}

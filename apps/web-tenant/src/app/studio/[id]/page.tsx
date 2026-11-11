@@ -39,7 +39,7 @@ export default async function StudioCoursePage({ params }: { params: { id: strin
     <section>
       <div className="kv-page-head">
         <h1>{course.defaultTitle}</h1>
-        <Link href="/studio" className="kv-btn--link">← {t.t('studio.title')}</Link>
+        <Link href="/studio" className="kv-btn--link">{t.t('studio.title')}</Link>
       </div>
 
       <dl className="kv-facts">

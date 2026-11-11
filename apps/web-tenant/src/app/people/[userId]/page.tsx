@@ -31,6 +31,7 @@ import {
 } from '../../../features/people/suspension';
 import { suspendMemberAction, reinstateMemberAction } from './actions';
 import { RevealField } from '../RevealField';
+import { DirArrow } from '../../../components/DirArrow'; // PC-56 RTL-1b-1: the arrow flips under dir="rtl"
 
 export const dynamic = 'force-dynamic';
 
@@ -408,7 +409,7 @@ function SuspensionPanel(
               <li key={h.id} className="kv-notif-item">
                 <span className="kv-notif-title">{h.reason}</span>
                 <span className="kv-notif-meta">
-                  {formatDate(h.createdAt, lang)} → {formatDate(h.liftedAt!, lang)}
+                  {formatDate(h.createdAt, lang)} <DirArrow /> {formatDate(h.liftedAt!, lang)}
                   {h.liftReason ? ` · ${h.liftReason}` : ''}
                 </span>
               </li>

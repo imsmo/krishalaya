@@ -25,6 +25,7 @@ import { formatDate } from '@krishalaya/i18n';
 import { LISTING_IMPORT_COLUMNS, listingImportTemplateCsv, type BulkImportJob } from '@krishalaya/sdk-js';
 import { importStage, issueSummary, canConfirm, hashShort } from '../../../features/people/import';
 import { validateListingJobAction, confirmListingJobAction, cancelListingJobAction } from './actions';
+import { Ltr, rich } from '../../../components/Bidi';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,7 +70,7 @@ export default async function ListingImportPage({ searchParams }: { searchParams
       </div>
 
       <h2 className="kv-section-title">{t.t('limport.templateHeading')}</h2>
-      <p className="kv-fine">{t.t('limport.templateNote', { columns: LISTING_IMPORT_COLUMNS.join(', ') })}</p>
+      <p className="kv-fine">{rich(t.t('limport.templateNote'), { columns: <Ltr>{LISTING_IMPORT_COLUMNS.join(', ')}</Ltr> })}</p>
       <p className="kv-fine">{t.t('limport.templateRequired')}</p>
       <p><a className="kv-btn" href={templateHref} download="krishalaya_listings_template.csv">{t.t('limport.templateDownload')}</a></p>
 
@@ -87,7 +88,8 @@ export default async function ListingImportPage({ searchParams }: { searchParams
               return (
                 <li key={j.id} className="kv-notif-item">
                   <span className="kv-notif-title">
-                    {j.originalFilename ?? t.t('limport.unnamedFile')}
+                    {/* PC-56 RTL-1b-1: a file name is never translated and never reordered — an LTR isolate */}
+                    {j.originalFilename ? <Ltr>{j.originalFilename}</Ltr> : t.t('limport.unnamedFile')}
                     {' · '}<span className="kv-badge">{t.t(`import.stage.${stage}` as never)}</span>
                   </span>
 
@@ -101,7 +103,7 @@ export default async function ListingImportPage({ searchParams }: { searchParams
                   {/* The file hash — the bytes that were validated are the bytes that get applied. */}
                   {j.fileSha256 && (
                     <span className="kv-fine">
-                      {t.t('limport.hash', { hash: hashShort(j.fileSha256) })}
+                      {rich(t.t('limport.hash'), { hash: <Ltr>{hashShort(j.fileSha256)}</Ltr> })}
                       {j.validatedAt ? ` · ${t.t('limport.validatedAt', { at: formatDate(j.validatedAt, lang) })}` : ''}
                     </span>
                   )}
@@ -113,8 +115,9 @@ export default async function ListingImportPage({ searchParams }: { searchParams
                       <ul className="kv-prefs-list">
                         {v.issues.map((iss) => (
                           <li key={iss.rowIndex} className="kv-prefs-row">
-                            {t.t('limport.issueRow', { row: iss.rowIndex, message: iss.message })}
-                            {iss.suggestion ? ` — ${t.t('limport.issueSuggestion', { suggestion: iss.suggestion })}` : ''}
+                            {/* the server's message and suggestion are not catalogue copy: isolated, direction from their own text */}
+                            {rich(t.t('limport.issueRow'), { row: String(iss.rowIndex), message: <bdi>{iss.message}</bdi> })}
+                            {iss.suggestion ? <> — {rich(t.t('limport.issueSuggestion'), { suggestion: <bdi>{iss.suggestion}</bdi> })}</> : ''}
                           </li>
                         ))}
                       </ul>

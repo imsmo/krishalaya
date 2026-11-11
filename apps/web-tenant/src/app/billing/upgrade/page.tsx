@@ -13,7 +13,7 @@ import type { PlanChangePreview, PlanCompareView } from '@krishalaya/sdk-js';
 import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatMoneyMinor, formatDate, formatNumber } from '@krishalaya/i18n'; // PC-56 RTL-1b-1: counts via formatNumber (the language's pinned Intl locale), never a bare-code toLocaleString
 import {
   actionLabel, breachSummary, canConfirm, directionOf, featureCell, invoiceRows, limitCell,
   offerablePlans, orderedLimitCodes, pendingNotice, showsCustomPricingNotice, taxPct,
@@ -128,11 +128,11 @@ export default async function UpgradePage({ searchParams }: {
                     return (
                       <td key={p.id}>
                         {/* "—" for absent, never 0: a quota of zero is a different claim from "not included". */}
-                        {cell.kind === 'number' ? Number(cell.text).toLocaleString(lang) : cell.text}
+                        {cell.kind === 'number' ? formatNumber(Number(cell.text), lang) : cell.text}
                         {/* The tenant's own usage sits beside their current plan's cell, which is where the question
                             "would I still fit?" is actually asked. */}
                         {p.isCurrent && view.usage[code] !== undefined ? (
-                          <div className="kv-detail__muted">{t.t('upg.using', { n: Number(view.usage[code]).toLocaleString(lang) })}</div>
+                          <div className="kv-detail__muted">{t.t('upg.using', { n: formatNumber(Number(view.usage[code]), lang) })}</div>
                         ) : null}
                       </td>
                     );
@@ -219,8 +219,8 @@ export default async function UpgradePage({ searchParams }: {
                         <li key={b.limitCode}>
                           {t.t('upg.breach.row', {
                             what: t.t(`upg.limit.${b.limitCode}`) || b.limitCode,
-                            have: Number(b.currentUsage).toLocaleString(lang),
-                            cap: Number(b.limitValue).toLocaleString(lang),
+                            have: formatNumber(Number(b.currentUsage), lang),
+                            cap: formatNumber(Number(b.limitValue), lang),
                           })}
                         </li>
                       ))}

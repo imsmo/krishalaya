@@ -34,6 +34,10 @@ export const gu: Messages = {
   'nav.primary': 'કન્સોલ',
   'nav.signOut': 'સાઇન આઉટ',
   'lang.label': 'ભાષા',
+  // PC-56 RTL-1b-1 · the Arabic preview: the picker's draft tag, the coming-soon group label (was an English default), the banner
+  'lang.draft': 'મશીન ડ્રાફ્ટ',
+  'lang.comingSoon': 'ટૂંક સમયમાં',
+  'rtl.draftBanner': 'આ અરબી લખાણ મશીનથી બનેલો ડ્રાફ્ટ છે અને તેની સમીક્ષા થઈ નથી.',
 
   'common.loading': 'લોડ થઈ રહ્યું છે…',
   'common.errorTitle': 'કંઈક ખોટું થયું',

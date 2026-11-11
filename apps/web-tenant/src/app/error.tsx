@@ -4,18 +4,19 @@
 // picks the matching catalog (falling back to English), keeping the error page localized too. `reset()` retries
 // the segment. No PII/secret is shown — just a friendly message (degrade, never die).
 import { useEffect } from 'react';
-import { resolveLanguage } from '@krishalaya/i18n';
+import { resolveServable } from '@krishalaya/i18n';
 import { en } from '../i18n/en';
 import { hi } from '../i18n/hi';
 import { gu } from '../i18n/gu';
+import { ar } from '../i18n/ar';
 
-const CATALOGS: Record<string, Record<string, string>> = { en, hi, gu };
+const CATALOGS: Record<string, Record<string, string>> = { en, hi, gu, ar };
 
 function pick(key: string): string {
   const cookie = typeof document !== 'undefined'
     ? document.cookie.split('; ').find((c) => c.startsWith('kvt_lang='))?.split('=')[1]
     : undefined;
-  const lang = resolveLanguage(cookie).code;
+  const lang = resolveServable(cookie, 'explicit').code; // the cookie is a person's choice (PC-56 RTL-1b-1: Arabic is opt-in only)
   return CATALOGS[lang]?.[key] ?? en[key] ?? key;
 }
 

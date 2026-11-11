@@ -34,6 +34,10 @@ export const hi: Messages = {
   'nav.primary': 'कंसोल',
   'nav.signOut': 'साइन आउट',
   'lang.label': 'भाषा',
+  // PC-56 RTL-1b-1 · the Arabic preview: the picker's draft tag, the coming-soon group label (was an English default), the banner
+  'lang.draft': 'मशीन ड्राफ़्ट',
+  'lang.comingSoon': 'जल्द आ रहा है',
+  'rtl.draftBanner': 'यह अरबी पाठ मशीन से बना ड्राफ़्ट है और इसकी समीक्षा नहीं हुई है।',
 
   'common.loading': 'लोड हो रहा है…',
   'common.errorTitle': 'कुछ गड़बड़ हो गई',

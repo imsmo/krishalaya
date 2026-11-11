@@ -22,6 +22,7 @@ import {
 } from '../../features/charges/console';
 import { proposeChargeAction, decideChargeAction, applyChargeAction } from './actions';
 import type { ChargeOverview } from '@krishalaya/sdk-js';
+import { DirArrow } from '../../components/DirArrow'; // PC-56 RTL-1b-1: the arrow flips under dir="rtl"
 
 export const dynamic = 'force-dynamic';
 
@@ -107,7 +108,7 @@ export default async function ChargesPage({ searchParams }: { searchParams: { ok
                   <td>{t.t(`chg.surface.${surfaceKey(c.surface)}`)}</td>
                   <td>{amountText(c.calcMethod, c.config)}</td>
                   <td>
-                    {formatDate(c.effectiveFrom, lang)} →{c.effectiveTo ? ` ${formatDate(c.effectiveTo, lang)}` : ''}
+                    {formatDate(c.effectiveFrom, lang)} <DirArrow />{c.effectiveTo ? ` ${formatDate(c.effectiveTo, lang)}` : ''}
                   </td>
                   <td><span className="kv-badge">{t.t(`chg.state.${state}`)}</span></td>
                   <td>{blocked ? <span className="kv-detail__muted">{t.t(`chg.blocked.${blocked}`)}</span> : null}</td>

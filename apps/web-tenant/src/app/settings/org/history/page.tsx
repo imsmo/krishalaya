@@ -10,6 +10,7 @@ import { requireSession } from '../../../../lib/session';
 import { tenantClient } from '../../../../lib/api-client';
 import { getLang, getTranslator } from '../../../../lib/i18n';
 import { HISTORY_HREF, ORG_HREF, isSettingKey, pageState, showValue } from '../../../../features/org-settings/org-settings';
+import { DirArrow } from '../../../../components/DirArrow'; // PC-56 RTL-1b-1: the arrow flips under dir="rtl"
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -35,13 +36,13 @@ export default async function SettingHistoryPage({ searchParams }: { searchParam
       {!state && rows.length === 0 && <p className="kv-card">{t.t('os.history.empty')}</p>}
       {rows.length > 0 && (
         <table className="kv-table">
-          <thead><tr><th scope="col">{t.t('os.history.when')}</th><th scope="col">{t.t('os.col.key')}</th><th scope="col">{t.t('os.form.before')} → {t.t('os.form.after')}</th><th scope="col">{t.t('os.history.who')}</th><th scope="col">{t.t('os.history.why')}</th></tr></thead>
+          <thead><tr><th scope="col">{t.t('os.history.when')}</th><th scope="col">{t.t('os.col.key')}</th><th scope="col">{t.t('os.form.before')} <DirArrow /> {t.t('os.form.after')}</th><th scope="col">{t.t('os.history.who')}</th><th scope="col">{t.t('os.history.why')}</th></tr></thead>
           <tbody>
             {rows.map((h) => (
               <tr key={h.id}>
                 <td>{formatDate(h.appliedAt, lang, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' })}</td>
                 <td><code>{h.key}</code></td>
-                <td><code>{showValue(h.oldValue)}</code> → <code>{showValue(h.newValue)}</code></td>
+                <td><code>{showValue(h.oldValue)}</code> <DirArrow /> <code>{showValue(h.newValue)}</code></td>
                 <td>{t.t(h.source === 'proposal' ? 'os.history.twoPeople' : 'os.history.onePerson')}</td>
                 <td>{h.reason ?? t.t('os.history.noReason')}</td>
               </tr>

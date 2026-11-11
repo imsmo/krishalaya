@@ -24,6 +24,7 @@ import {
   ORG_HREF, editHref, historyHref, pageState, parseCodes, proposalHref, refusalKey, riskKey, routeKey, showValue, splitRows,
 } from '../../../features/org-settings/org-settings';
 import { saveLanguagesAction } from './actions';
+import { DirArrow } from '../../../components/DirArrow'; // PC-56 RTL-1b-1: the arrow flips under dir="rtl"
 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata {
@@ -127,7 +128,7 @@ export default async function OrgSettingsPage({ searchParams }: { searchParams: 
           <ul className="kv-list">
             {pending.map(({ row, p }) => (
               <li key={p.id}>
-                <code>{row.key}</code>: <code>{showValue(p.oldValue)}</code> → <code>{showValue(p.newValue)}</code> · {t.t('os.proposals.by', { name: p.proposedByName ?? t.t('os.proposals.someone'), at: when(p.proposedAt) })}
+                <code>{row.key}</code>: <code>{showValue(p.oldValue)}</code> <DirArrow /> <code>{showValue(p.newValue)}</code> · {t.t('os.proposals.by', { name: p.proposedByName ?? t.t('os.proposals.someone'), at: when(p.proposedAt) })}
                 <br /><span className="kv-field__hint">{p.status === 'confirmed'
                   ? t.t('os.proposals.confirmed', { name: p.confirmedByName ?? t.t('os.proposals.someone'), at: when(p.effectiveAt) })
                   : t.t('os.proposals.waiting', { at: when(p.expiresAt) })}</span>
