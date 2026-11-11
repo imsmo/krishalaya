@@ -71,10 +71,13 @@ describe('PC-56 GOV-1a · what these pages never hold', () => {
       expect([rel, /formatMoneyMinor|from '[^']*\/money'|\.members\.roster|\.users\.|formData\.(form|applicant)|form_data/.test(code(read(rel)))]).toEqual([rel, false]);
     }
   });
-  it('the old organisation pages are deleted and their addresses redirect (307) to /dashboard', () => {
-    for (const d of ['app/schemes', 'app/registers', 'app/verification', 'app/mgnrega']) expect([d, fs.existsSync(path.join(SRC, d))]).toEqual([d, false]);
+  it('the old organisation pages are deleted and their addresses redirect (307) to /dashboard — /schemes rebuilt for the authority by GOV-2b', () => {
+    for (const d of ['app/registers', 'app/verification', 'app/mgnrega']) expect([d, fs.existsSync(path.join(SRC, d))]).toEqual([d, false]);
     const cfg = fs.readFileSync(path.join(SRC, '..', 'next.config.js'), 'utf8');
-    expect(cfg).toMatch(/\['\/schemes', '\/registers', '\/verification', '\/mgnrega'\]/); expect(cfg).toMatch(/permanent: false/);
+    expect(cfg).toMatch(/\['\/registers', '\/verification', '\/mgnrega'\]/); expect(cfg).toMatch(/permanent: false/);
+    // PC-56 GOV-2b: the /schemes 307 is removed and /schemes is the AUTHORITY's page (gated; gov realm only — test/gov2-sources.spec.ts)
+    expect(cfg).not.toMatch(/'\/schemes'/);
+    expect(code(read('app/schemes/page.tsx'))).toMatch(/await requireGov\('\/schemes'\)/);
   });
   it('C-7: the middleware persists ?lang= into the console\'s own cookie, the one lib/i18n.ts reads', () => {
     expect(LANG_COOKIE_FOR_TEST(read('middleware.ts'))).toBe('kvg_lang');
