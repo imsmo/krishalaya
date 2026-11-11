@@ -107,9 +107,11 @@ export class SchemeApplicationService {
 
   // PC-56 GOV-2a (GOV-2 Q2-A): the organisation's verify / approve / reject / close are CLOSED — refused by name before anything is read, for
   // every caller (web-tenant, SDK; mobile has none). The authority checks and decides (`/v1/gov/applications/:id/act`, a second person).
-  // clarify / resubmit / appeal and the field visits / DBT record are unchanged (the brief names only these four; GOV-3 / GOV-4 own the rest).
+  // PC-56 GOV-2c (the lead's conservative call carried from GOV-2a): the organisation's CLARIFY is closed too, the same way — asking the farmer
+  // for a clarification is a step of the check, and the check is the authority's (its own `clarify` act, with a sentence of 10–500).
+  // resubmit / appeal and the field visits / DBT record are unchanged (GOV-3 / GOV-4 own the last two).
   async startVerification(_tenantId: string, _actor: SchemesActor, _id: string): Promise<never> { throw new SchemeDecisionsAreTheAuthoritysError('verify'); }
-  async requestClarification(tenantId: string, actor: SchemesActor, id: string, dto: ClarifyDto) { return this.transition(tenantId, actor, id, (a) => a.requestClarification(dto.note ?? null), { officer: true, note: dto.note ?? null }); }
+  async requestClarification(_tenantId: string, _actor: SchemesActor, _id: string, _dto: ClarifyDto): Promise<never> { throw new SchemeDecisionsAreTheAuthoritysError('clarify'); }
   async resubmit(tenantId: string, actor: SchemesActor, id: string) { return this.transition(tenantId, actor, id, (a) => a.resubmit(), { applicant: true }); }
   async approve(_tenantId: string, _actor: SchemesActor, _id: string, _dto: ApproveDto, _ip: string | null): Promise<never> { throw new SchemeDecisionsAreTheAuthoritysError('approve'); }
   async reject(_tenantId: string, _actor: SchemesActor, _id: string, _dto: RejectDto, _ip: string | null): Promise<never> { throw new SchemeDecisionsAreTheAuthoritysError('reject'); }

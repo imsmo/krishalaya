@@ -4,6 +4,8 @@
 // confirm state's one link IS the re-read of the page that opened it. Every state prints Q5-A's sentence and its refusals BY NAME (the
 // canon's shared chain sentences refused in their own words, NEVER printed) and links Back to the page that opened it (`back`, from
 // `chain2Back`: a chain opened on a scheme returns to THAT scheme, never the list). All copy via i18n; no inline styles.
+// PC-56 GOV-2c: the same component draws the application chains — the act (REAL: its confirm state carries the act's form as `children`,
+// its success / failure the API's answer), the file chain (DECOR, Q4-A) and the re-reads (PARITY-DECOR); Back → the application or the list.
 import type { ReactNode } from 'react';
 import { chain2ById, GOV2_REFUSALS, type Chain2Id, type Gov2Surface, type Tr } from '../../features/gov2/refusals';
 
@@ -21,7 +23,8 @@ export function Gov2Refusals({ t, surface }: { t: Tr; surface: Gov2Surface }) {
 export function Gov2Chain({ t, chain, state, back, children }: { t: Tr; chain: Chain2Id; state: string; back: string; children?: ReactNode }) {
   const c = chain2ById(chain);
   const k = c.key(state);
-  const backKey = back === '/schemes' ? 'gov2.chain.backList' : 'gov2.chain.backScheme';
+  const backKey = back === '/schemes' ? 'gov2.chain.backList' : back === '/applications' ? 'gov2.chain.backApplications'
+    : back.startsWith('/applications/') ? 'gov2.chain.backApplication' : 'gov2.chain.backScheme';
   return (
     <section className="kv-card kv-chain" data-kv-chain={chain} data-kv-chain-kind={c.kind} data-kv-chain-state={state} role="status">
       <h1>{t.t(`${k}.title`)}</h1>

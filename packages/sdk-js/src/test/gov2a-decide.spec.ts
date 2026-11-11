@@ -45,11 +45,12 @@ describe('PC-56 GOV-2a · SDK gov act + schemes', () => {
     expect(Object.getOwnPropertyNames(Object.getPrototypeOf(c.gov.schemes)).sort()).toEqual(['constructor', 'diff', 'get', 'list', 'versions']);
   });
 
-  it('the tenant verify / approve / reject / close surface SCHEME_DECISIONS_ARE_THE_AUTHORITYS as an SdkError code', async () => {
+  // NAMED UPDATE, PC-56 GOV-2c: the tenant clarify is closed too — it joins the list; nothing else in this test changed.
+  it('the tenant verify / clarify / approve / reject / close surface SCHEME_DECISIONS_ARE_THE_AUTHORITYS as an SdkError code', async () => {
     const refusal = { error: { code: 'SCHEME_DECISIONS_ARE_THE_AUTHORITYS', message: 'Applications are checked and decided by the government authority that runs the scheme, not by the organisation.' } };
     const { fn } = fakeFetch(refusal, 403);
     const c = createClient({ ...base, fetchImpl: fn, getToken: () => 'tok' });
-    for (const call of [() => c.schemes.verifyApplication('a1'), () => c.schemes.approveApplication('a1'), () => c.schemes.rejectApplication('a1', 'x'), () => c.schemes.closeApplication('a1')]) {
+    for (const call of [() => c.schemes.verifyApplication('a1'), () => c.schemes.requestClarification('a1', 'Please upload the page again.'), () => c.schemes.approveApplication('a1'), () => c.schemes.rejectApplication('a1', 'x'), () => c.schemes.closeApplication('a1')]) {
       const e = await call().then(() => null, (x: unknown) => x);
       expect(e).toBeInstanceOf(SdkError);
       expect([(e as SdkError).code, (e as SdkError).status]).toEqual(['SCHEME_DECISIONS_ARE_THE_AUTHORITYS', 403]);

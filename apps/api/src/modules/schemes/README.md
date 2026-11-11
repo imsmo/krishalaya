@@ -30,14 +30,15 @@ scheme's **rule version** at filing (integrity, PRD R18). Every transition appen
 or head, approve / reject by a head who did not check it, never by the applicant or the assister (CHECKs on the row);
 a rejection needs a listed code and a sentence; approval carries no amount. The organisation's own
 `verify` / `approve` / `reject` / `close` here are CLOSED (`SCHEME_DECISIONS_ARE_THE_AUTHORITYS`, 403, every caller).
-`clarify`, the field visits and the DBT record are unchanged (GOV-3 / GOV-4 own the last two).
+**PC-56 GOV-2c:** the organisation's `clarify` is CLOSED the same way (the lead's conservative call carried from GOV-2a; the
+authority asks for a clarification through its own act). The field visits and the DBT record are unchanged (GOV-3 / GOV-4 own them).
 
 ## Endpoints
 - `GET /v1/schemes/authorities` · `GET /v1/schemes[?categoryId&activeOnly]` · `GET /v1/schemes/:id` — read-only catalogue.
 - `POST /v1/schemes/:id/eligibility` — explainable eligibility check (any authenticated user).
 - `POST /v1/schemes/applications` (apply, idempotent, `scheme.apply`) · `GET` (?box=mine|queue|all) · `GET /:id`
   · `POST /:id/submit` (idempotent — collects fee) · `POST /:id/{resubmit,appeal}` (applicant)
-  · `POST /:id/{verify,clarify,approve,reject,close}` (`scheme.process`) · `POST /:id/dbt` (record) · `GET /:id/dbt`.
+  · `POST /:id/{verify,clarify,approve,reject,close}` (CLOSED — `SCHEME_DECISIONS_ARE_THE_AUTHORITYS`, PC-56 GOV-2a/2c) · `POST /:id/dbt` (record, `scheme.process`) · `GET /:id/dbt`.
 
 ## Threats considered
 - **No cross-party IDOR**: applications, DBT records and (since PC-56 HOTFIX-15 — survey GOV-1 C-11/F-3; until then this line was false of

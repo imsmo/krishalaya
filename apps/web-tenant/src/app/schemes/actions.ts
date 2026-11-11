@@ -29,6 +29,8 @@ export async function verifyApplicationAction(formData: FormData): Promise<void>
   redirect(`${back(id)}&ok=verify`);
 }
 
+// PC-56 GOV-2c: the API refuses the organisation's clarify by name (SCHEME_DECISIONS_ARE_THE_AUTHORITYS); `fail` carries the code to the
+// page, which states the refusal in en / hi / gu (NAMED_REFUSALS).
 export async function clarifyApplicationAction(formData: FormData): Promise<void> {
   await requireSession(PATH);
   const id = String(formData.get('id') ?? '').trim();

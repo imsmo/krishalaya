@@ -1,9 +1,11 @@
 // apps/web-gov/src/test/gov2-refusals.spec.ts · PC-56 GOV-2b · E5 — the GOV-2 registry (features/gov2/refusals.ts): ALL 28 canon files, one
-// verdict each (2b decides its 18; 2c's 10 are `pending_2c`); the 22 chain files in exactly one group each; every 2b group built by a chain;
+// verdict each (2b decided its 18; NAMED UPDATE, PC-56 GOV-2c: 2c decides its 10 — 28 decided, 0 pending, `pending_2c` gone from the type); the 22 chain files in exactly one group each; every 2b group built by a chain;
 // every refusal / chain key in en, hi and gu; the chains' query states and Backs (a chain opened on a scheme returns to THAT scheme). Plus the
 // scheme pages' pure state pickers and the stored-value printer (features/gov2/schemes.ts).
 import { chain2Back, chain2For, chain2Href, chain2State, GOV2_CANON_FILES, GOV2_CHAIN_GROUPS, GOV2_CHAINS, GOV2_DELTAS, GOV2_REFUSALS, isSchemeId, schemeTab, SURFACES_2B, SURFACES_2C } from '../features/gov2/refusals';
 import { activeKey, asStored, diffFieldKey, diffVersion, schemesState, schemeState, secondPersonKey, versionStatusKey, DIFF_FIELDS } from '../features/gov2/schemes';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { en } from '../i18n/en';
 import { hi } from '../i18n/hi';
 import { gu } from '../i18n/gu';
@@ -12,20 +14,25 @@ const CATS = { en, hi, gu } as const;
 const ID = '0192d2c4-c000-7000-8000-00000000000a';
 
 describe('PC-56 GOV-2 · the registry', () => {
-  it('28 canon files, each once, one verdict; 2b decides 18; 2c\'s 10 pending', () => {
+  it('28 canon files, each once, one verdict; 2b decided 18; 2c decides 10 — 28 decided, 0 pending (NAMED UPDATE, GOV-2c)', () => {
     expect(GOV2_CANON_FILES).toHaveLength(28);
     expect(new Set(GOV2_CANON_FILES.map((f) => f.file)).size).toBe(28);
     const b = GOV2_CANON_FILES.filter((f) => f.wave === '2b');
     const c = GOV2_CANON_FILES.filter((f) => f.wave === '2c');
     expect([b.length, c.length]).toEqual([18, 10]);
-    expect(c.every((f) => f.verdict === 'pending_2c')).toBe(true);
-    expect(b.filter((f) => f.verdict === 'pending_2c')).toEqual([]);
+    const DECIDED = ['BUILT (honest)', 'BUILT (read)', 'REAL', 'PARITY-DECOR', 'DECOR'];
+    expect(GOV2_CANON_FILES.filter((f) => DECIDED.includes(f.verdict))).toHaveLength(28);
+    expect(GOV2_CANON_FILES.filter((f) => !DECIDED.includes(f.verdict))).toEqual([]);
     expect(Object.fromEntries(b.map((f) => [f.file.split('-')[0], f.verdict]))).toEqual({
       W326: 'BUILT (read)', W327: 'BUILT (honest)', W328: 'BUILT (honest)', W329: 'BUILT (read)',
       W3172: 'DECOR', W3173: 'DECOR', W3174: 'DECOR', W3175: 'DECOR', W3176: 'DECOR', W3177: 'DECOR', W3178: 'DECOR',
       W3182: 'DECOR', W3183: 'DECOR', W3184: 'DECOR', W3185: 'DECOR', W3186: 'DECOR', W3187: 'DECOR', W3188: 'DECOR',
     });
-    expect(c.map((f) => f.file.split('-')[0]).sort()).toEqual(['W3159', 'W3160', 'W3161', 'W3162', 'W3163', 'W3164', 'W3165', 'W3166', 'W330', 'W331']);
+    expect(Object.fromEntries(c.map((f) => [f.file.split('-')[0], f.verdict]))).toEqual({
+      W330: 'BUILT (read)', W331: 'BUILT (read)', W3159: 'REAL', W3160: 'REAL', W3161: 'REAL', W3162: 'DECOR', W3163: 'DECOR',
+      W3164: 'PARITY-DECOR', W3165: 'PARITY-DECOR', W3166: 'PARITY-DECOR',
+    });
+    expect(fs.readFileSync(path.join(__dirname, '..', 'features', 'gov2', 'refusals.ts'), 'utf8')).not.toMatch(/'pending_2c'/);
   });
   it('22 chain files in 7 groups, each file exactly once; each group\'s files are canon files of the same wave; 6 real screens', () => {
     expect(GOV2_CHAIN_GROUPS).toHaveLength(7);
@@ -37,24 +44,25 @@ describe('PC-56 GOV-2 · the registry', () => {
     }
     expect(GOV2_CANON_FILES.length - all.length).toBe(6);
   });
-  it('each built chain belongs to a 2b group; every 2b group is built; no 2c group is built yet', () => {
+  it('each built chain belongs to a group of its own wave; EVERY group is built (NAMED UPDATE, GOV-2c: the three 2c groups too)', () => {
     for (const c of GOV2_CHAINS) expect([c.id, GOV2_CHAIN_GROUPS.find((g) => g.id === c.group)?.wave]).toEqual([c.id, c.wave]);
-    for (const g of GOV2_CHAIN_GROUPS) expect([g.id, GOV2_CHAINS.some((c) => c.group === g.id)]).toEqual([g.id, g.wave === '2b']);
+    for (const g of GOV2_CHAIN_GROUPS) expect([g.id, GOV2_CHAINS.some((c) => c.group === g.id)]).toEqual([g.id, true]);
+    expect(GOV2_CHAINS.filter((c) => c.wave === '2c').map((c) => [c.id, c.kind])).toEqual([['application_act', 'REAL'], ['application_reread', 'PARITY-DECOR'],
+      ['applications_file', 'DECOR'], ['applications_reread', 'PARITY-DECOR']]);
   });
-  it('every refusal id once; every refusal and chain key in en/hi/gu; every 2b surface prints at least one refusal; no 2c surface yet', () => {
+  it('every refusal id once; every refusal and chain key in en/hi/gu; every surface prints at least one refusal (NAMED UPDATE, GOV-2c: the 2c surfaces too)', () => {
     expect(new Set(GOV2_REFUSALS.map((r) => r.id)).size).toBe(GOV2_REFUSALS.length);
     expect(new Set(GOV2_DELTAS.map((d) => d.id)).size).toBe(GOV2_DELTAS.length);
     for (const [l, cat] of Object.entries(CATS)) {
       for (const r of GOV2_REFUSALS) expect([l, r.key, typeof cat[r.key]]).toEqual([l, r.key, 'string']);
       for (const c of GOV2_CHAINS) {
-        for (const k of [c.statement, c.rereadKey, 'gov2.chain.backList', 'gov2.chain.backScheme']) expect([l, k, typeof cat[k]]).toEqual([l, k, 'string']);
+        for (const k of [c.statement, c.rereadKey, 'gov2.chain.backList', 'gov2.chain.backScheme', 'gov2.chain.backApplications', 'gov2.chain.backApplication']) expect([l, k, typeof cat[k]]).toEqual([l, k, 'string']);
         for (const st of c.states) for (const part of ['title', 'body']) expect([l, c.id, st, part, typeof cat[`${c.key(st)}.${part}`]]).toEqual([l, c.id, st, part, 'string']);
       }
       for (const f of DIFF_FIELDS) expect([l, f, typeof cat[diffFieldKey(f)]]).toEqual([l, f, 'string']);
     }
-    for (const r of GOV2_REFUSALS) for (const s of r.surfaces) expect([r.id, SURFACES_2B.includes(s)]).toEqual([r.id, true]);
-    for (const s of SURFACES_2B) expect([s, GOV2_REFUSALS.some((r) => r.surfaces.includes(s))]).toEqual([s, true]);
-    for (const s of SURFACES_2C) expect([s, GOV2_REFUSALS.some((r) => r.surfaces.includes(s))]).toEqual([s, false]);
+    for (const r of GOV2_REFUSALS) for (const s of r.surfaces) expect([r.id, SURFACES_2B.includes(s) || SURFACES_2C.includes(s)]).toEqual([r.id, true]);
+    for (const s of [...SURFACES_2B, ...SURFACES_2C]) expect([s, GOV2_REFUSALS.some((r) => r.surfaces.includes(s))]).toEqual([s, true]);
   });
   it('every English refusal says no (the negative-word rule)', () => {
     const NEG = /\b(no|not|never|nobody|nothing|cannot|only)\b|n't\b/i;

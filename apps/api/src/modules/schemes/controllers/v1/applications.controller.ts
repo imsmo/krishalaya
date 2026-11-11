@@ -1,6 +1,6 @@
 // modules/schemes/controllers/v1/applications.controller.ts · scheme application lifecycle + DBT records. `schemes` flag.
 // apply/submit/resubmit/appeal = applicant (scheme.apply); clarify + DBT record + field visits = officer (scheme.process);
-// verify/approve/reject/close are CLOSED here (PC-56 GOV-2a — the authority checks and decides: SCHEME_DECISIONS_ARE_THE_AUTHORITYS).
+// verify/approve/reject/close are CLOSED here (PC-56 GOV-2a — the authority checks and decides: SCHEME_DECISIONS_ARE_THE_AUTHORITYS); clarify too (PC-56 GOV-2c).
 // Money route (submit, collects the processing fee) requires an Idempotency-Key.
 import { Controller, Delete, Get, Headers, Param, Post, Req, UseGuards, Query } from '@nestjs/common';
 import type { Request } from 'express';
@@ -91,10 +91,11 @@ export class ApplicationsController {
   appeal(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.appeal(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
 
   // PC-56 GOV-2a (GOV-2 Q2-A): verify / approve / reject / close are the AUTHORITY's — refused by name (SCHEME_DECISIONS_ARE_THE_AUTHORITYS) for
-  // every signed-in caller, so no permission is asked first (a permission refusal would hide the name). clarify keeps its permission.
+  // every signed-in caller, so no permission is asked first (a permission refusal would hide the name). PC-56 GOV-2c: clarify is closed the
+  // same way (the lead's conservative call carried from GOV-2a) — its permission is no longer asked, so every caller hears the name.
   @Post(':id/verify')
   verify(@CurrentContext() ctx: RequestContext, @Param('id') id: string) { return this.svc.startVerification(ctx.tenantId, this.actor(ctx), id).then((data) => ({ data })); }
-  @Post(':id/clarify') @RequirePermissions(SchemesPermissions.Process)
+  @Post(':id/clarify')
   clarify(@CurrentContext() ctx: RequestContext, @Param('id') id: string, @ZodBody(ClarifySchema) dto: ClarifyDto) { return this.svc.requestClarification(ctx.tenantId, this.actor(ctx), id, dto).then((data) => ({ data })); }
   @Post(':id/approve')
   approve(@CurrentContext() ctx: RequestContext, @Req() r: Request, @Param('id') id: string, @ZodBody(ApproveSchema) dto: ApproveDto) { return this.svc.approve(ctx.tenantId, this.actor(ctx), id, dto, ipOf(r)).then((data) => ({ data })); }

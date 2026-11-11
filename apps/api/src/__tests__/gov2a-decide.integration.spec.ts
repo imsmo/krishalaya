@@ -442,14 +442,17 @@ run('PC-56 GOV-2a · the authority decides, on declared fields (integration, rea
       expect([m, p, (await (request(http) as any)[m](p).set(as('H')).send({})).status]).toEqual([m, p, 404]);
   });
 
-  it('(tenant) the organisation\'s verify / approve / reject / close → SCHEME_DECISIONS_ARE_THE_AUTHORITYS for every signed-in member; clarify keeps its permission', async () => {
+  // NAMED UPDATE, PC-56 GOV-2c (brief_gov2c.md §D: the organisation's clarify closes too): the clarify line below asserted a bare 403 (then
+  // PERMISSION_DENIED — scheme.process); it now asserts the NAME, which is stricter. Nothing else in this test changed.
+  it('(tenant) the organisation\'s verify / approve / reject / close — and since GOV-2c clarify — → SCHEME_DECISIONS_ARE_THE_AUTHORITYS for every signed-in member', async () => {
     const h = await tenantTok('M', X);
     a.t1 = await application(X, s.s1, 'F', 'submitted', { cropName: 'til' });
     for (const [p, body] of [['verify', {}], ['approve', {}], ['reject', { reason: 'not eligible for this' }], ['close', {}]] as const) {
       const r = await request(http).post(`/v1/schemes/applications/${a.t1}/${p}`).set(h).send(body);
       expect([p, r.status, r.body.error?.code]).toEqual([p, 403, 'SCHEME_DECISIONS_ARE_THE_AUTHORITYS']);
     }
-    expect((await request(http).post(`/v1/schemes/applications/${a.t1}/clarify`).set(h).send({ note: 'x' })).status).toBe(403);   // PERMISSION_DENIED (scheme.process)
+    const cl = await request(http).post(`/v1/schemes/applications/${a.t1}/clarify`).set(h).send({ note: 'x' });
+    expect([cl.status, cl.body.error?.code]).toEqual([403, 'SCHEME_DECISIONS_ARE_THE_AUTHORITYS']);
     expect((await admin.query(`SELECT status::text AS s FROM scheme_applications WHERE id = $1`, [a.t1])).rows[0].s).toBe('submitted');
   });
 

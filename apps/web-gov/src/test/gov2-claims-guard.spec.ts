@@ -55,14 +55,31 @@ const GUARDS: ReadonlyArray<[string, RegExp, string]> = [
   ['back to confirm', /back to confirm/i, 'Retry — back to confirm'],
   ['SLA', /\bSLA\b/, 'appeal SLA'],
   ['plan settings', /plan settings/i, 'See plan settings.'],
+  // NAMED UPDATE, PC-56 GOV-2c (survey E8 — the application pages' canon words)
+  ['export', /export/i, 'Export (audit-stamped)'],
+  ['fast lane', /fast lane/i, 'fast lane'],
+  ['auto-rout', /auto-?rout/i, 'auto-routed on high confidence'],
+  ['EXIF', /EXIF/i, 'doc uploaded, EXIF plausible'],
+  ['target', /\btarget\b/i, '10-day target'],
+  ['due by', /due by/i, 'next: officer decision due by Mon 20 Jul'],
+  ['pre-check', /pre-?check/i, 'AI pre-check · confidence'],
+  ['ambassador', /ambassador/i, 'assisted by ambassador (recorded)'],
+  ['govt ref', /govt ref/i, 'govt ref GJ-AGR-26-88••41'],
+  ['fixable', /fixable/i, 'fixable reasons auto-offer the clarification path instead'],
+  ['read everything', /read everything|visibility is not authority/i, 'You can read everything; visibility is not authority'],
+  ['claimed', /\d+(\.\d+)?\s*(ha|acres?) claimed/i, '1.2 ha claimed'],
+  ['model', /\bmodel\b/i, "the model's reasoning is preserved beside it"],
 ];
 const BRAND: ReadonlyArray<[RegExp, string]> = [
   [/Directorate/i, 'Directorate of Agriculture, Gujarat'], [/Gujarat/i, 'Gujarat Micro-Irrigation Support'], [/GMISS/i, 'GMISS-2026'],
   [/guj_/i, 'guj_pond_2026'], [/Trivedi/i, 'R. Trivedi'], [/Kapadia/i, 'Dr. D. Kapadia'], [/Junagadh|Dahod|Anand\b|Rajkot|Vanthali/i, 'Junagadh'],
   [/PM-?Kisan|PMFBY/i, 'PM-Kisan, PMFBY'], [/\bDK\b/, 'avatar "DK"'], [/GM26-/i, 'GM26-104487'],
+  [/SR-JND|GJ-AGR/i, 'SR-JND-44••7'], [/[A-Z]••• [A-Z]\./, 'B••• D.'],
 ];
 const SOURCES_2B = ['components/gov2/SchemesViews.tsx', 'components/gov2/Gov2Chain.tsx', 'features/gov2/schemes.ts', 'features/gov2/rules-format.ts',
-  'app/schemes/page.tsx', 'app/schemes/[id]/page.tsx'];   // (refusals.ts quotes the canon, anonymised in brackets — held to BRAND below too)
+  'app/schemes/page.tsx', 'app/schemes/[id]/page.tsx',
+  // NAMED UPDATE, PC-56 GOV-2c
+  'components/gov2/ApplicationsViews.tsx', 'features/gov2/applications.ts', 'app/applications/page.tsx', 'app/applications/[id]/page.tsx', 'app/applications/[id]/actions.ts'];   // (refusals.ts quotes the canon, anonymised in brackets — held to BRAND below too)
 
 describe('PC-56 GOV-2b · the claims guard (gov2. scope)', () => {
   it.each(GUARDS.map((g) => [g[0], g] as const))('the guard "%s" matches the canon phrase it exists to stop', (_n, g) => {
@@ -73,7 +90,7 @@ describe('PC-56 GOV-2b · the claims guard (gov2. scope)', () => {
   });
   it.each(Object.entries(CATS))('%s: no gov2. value trips a guard or a brand regex', (_l, cat) => {
     const vals = scoped(cat);
-    expect(vals.length).toBe(183);
+    expect(vals.length).toBe(320);   // NAMED UPDATE, PC-56 GOV-2c: 183 (2b) + 137 (2c)
     for (const [k, v] of vals) {
       for (const [name, re] of GUARDS) expect([k, name, re.test(v)]).toEqual([k, name, false]);
       for (const [re] of BRAND) expect([k, String(re), re.test(v)]).toEqual([k, String(re), false]);
@@ -83,6 +100,21 @@ describe('PC-56 GOV-2b · the claims guard (gov2. scope)', () => {
     expect(en['gov2.q5']).toBe('Schemes are written by the platform\'s team, not from this console. Each version is drafted by one person and published by another.');
     expect(/प्लेटफ़ॉर्म की टीम/.test(hi['gov2.q5']) && /कंसोल से नहीं/.test(hi['gov2.q5']) && /एक व्यक्ति तैयार/.test(hi['gov2.q5']) && /दूसरा व्यक्ति प्रकाशित/.test(hi['gov2.q5'])).toBe(true);
     expect(/પ્લેટફોર્મની ટીમ/.test(gu['gov2.q5']) && /કન્સોલમાંથી નહીં/.test(gu['gov2.q5']) && /એક વ્યક્તિ તૈયાર/.test(gu['gov2.q5']) && /બીજી વ્યક્તિ પ્રકાશિત/.test(gu['gov2.q5'])).toBe(true);
+  });
+  it('GOV-2c: Q1-A, Q2-A, Q3-A and Q4-A verbatim (en) and by meaning in hi and gu', () => {
+    expect(en['gov2.q1']).toBe('Approving records the decision. It pays nothing: the benefit is paid by the government\'s own systems, outside this platform.');
+    expect(en['gov2.q2']).toBe('A decision is made by a different person from the one who checked the application. Every step is recorded, and the farmer\'s organisation can see it.');
+    expect(en['gov2.q3']).toBe('You see only what this scheme asks for. A farmer\'s personal details are hidden, and an application she has not sent is never shown.');
+    expect(en['gov2.q4']).toBe('Applications cannot be downloaded from this console. Each one is opened here, and every opening is recorded.');
+    expect(/निर्णय दर्ज/.test(hi['gov2.q1']) && /कोई भुगतान नहीं/.test(hi['gov2.q1']) && /प्लेटफ़ॉर्म के बाहर/.test(hi['gov2.q1'])).toBe(true);
+    expect(/નિર્ણય નોંધાય/.test(gu['gov2.q1']) && /કોઈ ચુકવણી થતી નથી/.test(gu['gov2.q1']) && /પ્લેટફોર્મની બહાર/.test(gu['gov2.q1'])).toBe(true);
+    expect(/दूसरा व्यक्ति/.test(hi['gov2.q2']) && /जाँच नहीं की/.test(hi['gov2.q2']) && /किसान का संगठन/.test(hi['gov2.q2'])).toBe(true);
+    expect(/બીજી વ્યક્તિ/.test(gu['gov2.q2']) && /તપાસ કરી નથી/.test(gu['gov2.q2']) && /ખેડૂતનું સંગઠન/.test(gu['gov2.q2'])).toBe(true);
+    expect(/छिपी रहती/.test(hi['gov2.q3']) && /कभी नहीं दिखाया/.test(hi['gov2.q3'])).toBe(true);
+    expect(/છુપાયેલી રહે/.test(gu['gov2.q3']) && /ક્યારેય બતાવાતી નથી/.test(gu['gov2.q3'])).toBe(true);
+    expect(/डाउनलोड नहीं/.test(hi['gov2.q4']) && /दर्ज होता/.test(hi['gov2.q4'])).toBe(true);
+    expect(/ડાઉનલોડ કરી શકાતી નથી/.test(gu['gov2.q4']) && /નોંધાય છે/.test(gu['gov2.q4'])).toBe(true);
+    for (const cat of [hi, gu]) for (const k of ['gov2.q1', 'gov2.q2', 'gov2.q3', 'gov2.q4']) expect([k, cat[k] !== en[k]]).toEqual([k, true]);
   });
   it('the facts printed beside Q5-A are the ones the code proves (pinned)', () => {
     expect(en['gov2.versionRule']).toBe('A published version can never be changed. An application records the version number it was made under.');

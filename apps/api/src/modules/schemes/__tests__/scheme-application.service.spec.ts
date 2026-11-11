@@ -45,13 +45,15 @@ describe('submit — processing-fee money path', () => {
 });
 
 // PC-56 GOV-2a (GOV-2 Q2-A): the organisation's verify / approve / reject / close are CLOSED — refused by name for EVERY caller (an officer
-// holding scheme.process included), before any transaction is opened or any row read. clarify is unchanged (the brief names four acts).
+// holding scheme.process included), before any transaction is opened or any row read. NAMED UPDATE, PC-56 GOV-2c: clarify is closed too
+// (the lead's conservative call carried from GOV-2a) — it joins the list; nothing else in this test changed.
 describe('GOV-2a — the organisation\'s decision acts are the authority\'s', () => {
   const officer = { userId: 'o1', canApply: false, canProcess: true };
-  it('verify / approve / reject / close → SCHEME_DECISIONS_ARE_THE_AUTHORITYS (403), nothing read, nothing written', async () => {
+  it('verify / clarify / approve / reject / close → SCHEME_DECISIONS_ARE_THE_AUTHORITYS (403), nothing read, nothing written', async () => {
     const { svc, repo } = harness(0n);
     const calls: Array<[string, () => Promise<unknown>]> = [
       ['verify', () => svc.startVerification('t1', officer, 'a1')],
+      ['clarify', () => svc.requestClarification('t1', officer, 'a1', { note: 'Please upload the page again.' })],
       ['approve', () => svc.approve('t1', officer, 'a1', { govtAppRef: 'GOV-1' } as any, null)],
       ['reject', () => svc.reject('t1', officer, 'a1', { reason: 'not eligible at all', reasonCode: 'other' } as any, null)],
       ['close', () => svc.close('t1', officer, 'a1')],

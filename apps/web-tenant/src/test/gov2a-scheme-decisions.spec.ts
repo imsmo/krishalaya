@@ -25,7 +25,8 @@ describe('PC-56 GOV-2a · web-tenant states the authority\'s refusal ×3', () =>
     expect(page).toMatch(/t\.t\(`scm\.err\.\$\{errorKey\}`\)/);
     const actions = src('app/schemes/actions.ts');
     expect(actions).toMatch(/e instanceof SdkError \? \(e\.code \|\| 'save'\)/);
-    for (const fn of ['verifyApplicationAction', 'approveApplicationAction', 'rejectApplicationAction', 'closeApplicationAction']) {
+    // NAMED UPDATE, PC-56 GOV-2c: the organisation's clarify is closed too; its Server Action forwards the code the same way.
+    for (const fn of ['verifyApplicationAction', 'clarifyApplicationAction', 'approveApplicationAction', 'rejectApplicationAction', 'closeApplicationAction']) {
       const body = actions.slice(actions.indexOf(`export async function ${fn}`));
       expect([fn, /catch \(e\) \{ fail\(e, id\); \}/.test(body.slice(0, 900))]).toEqual([fn, true]);
     }

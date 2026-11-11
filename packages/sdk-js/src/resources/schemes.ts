@@ -78,7 +78,12 @@ export class SchemesResource {
   async verifyApplication(id: string): Promise<SchemeApplication> {
     return (await this.http.request<SchemeApplication>('POST', `schemes/applications/${encodeURIComponent(id)}/verify`, {})).data;
   }
-  /** Ask the applicant for clarification (optionally with a note). */
+  /**
+   * Ask the applicant for clarification (optionally with a note).
+   * @deprecated PC-56 GOV-2c (the lead's conservative call carried from GOV-2a): CLOSED — the API refuses it by name for every caller:
+   * `SdkError` code `SCHEME_DECISIONS_ARE_THE_AUTHORITYS` (403). The government authority that runs the scheme asks for a clarification
+   * (`gov.applications.act` with `act: 'clarify'` and a sentence of 10–500 characters). Kept so existing callers compile and surface the refusal.
+   */
   async requestClarification(id: string, note?: string): Promise<SchemeApplication> {
     return (await this.http.request<SchemeApplication>('POST', `schemes/applications/${encodeURIComponent(id)}/clarify`, { body: { note } })).data;
   }
