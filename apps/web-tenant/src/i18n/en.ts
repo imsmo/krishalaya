@@ -39,6 +39,9 @@ export const en: Messages = {
   'lang.draft': 'machine draft',
   'lang.comingSoon': 'Coming soon',
   'rtl.draftBanner': 'This Arabic text is a machine draft and has not been reviewed.',
+  // PC-56 RTL-1b-2 · a span "a → b" (a settlement period, a diversion's two centres): the arrow is copy, so it points the
+  // reader's way — Arabic reverses it. Callers isolate each end (features/rtl/span.ts).
+  'rtl.span': '{from} → {to}',
 
   'common.loading': 'Loading…',
   'common.errorTitle': 'Something went wrong',

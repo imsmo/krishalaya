@@ -7,15 +7,20 @@ import { join } from 'node:path';
 import { en } from '../i18n/en';
 import { hi } from '../i18n/hi';
 import { gu } from '../i18n/gu';
+import { ar } from '../i18n/ar';
 
-describe('i18n parity (en/hi/gu)', () => {
+// PC-56 RTL-1b-2 · ×4: the Arabic MACHINE DRAFT (ar.ts) now covers the whole console, so the same gate holds it to en's
+// exact key set. (Its own rules — header, Western digits, reversed arrows, every placeholder — live in i18n-ar-parity.spec.ts.)
+
+describe('i18n parity (en/hi/gu/ar)', () => {
   const kEn = Object.keys(en).sort();
   it('hi mirrors en exactly', () => expect(Object.keys(hi).sort()).toEqual(kEn));
   it('gu mirrors en exactly', () => expect(Object.keys(gu).sort()).toEqual(kEn));
+  it('ar mirrors en exactly', () => expect(Object.keys(ar).sort()).toEqual(kEn));
   it('no empty values anywhere', () => {
     // an empty string is indistinguishable from a missing translation, and an empty label is silence to a screen
     // reader — if a slot genuinely needs no text, the page should omit it rather than the catalogue carry a blank.
-    for (const cat of [en, hi, gu]) for (const [k, v] of Object.entries(cat)) {
+    for (const cat of [en, hi, gu, ar]) for (const [k, v] of Object.entries(cat)) {
       expect(typeof v).toBe('string');
       expect(v.length).toBeGreaterThan(0);
       void k;
@@ -26,7 +31,7 @@ describe('i18n parity (en/hi/gu)', () => {
   // so the key sets still match while a label renders the wrong string (this happened once, to the OW-7 breach-window
   // tabs). The catalogues are therefore also read as TEXT, where a collapse is still detectable.
   it('no key is declared twice in any catalog', () => {
-    for (const f of ['en', 'hi', 'gu'] as const) {
+    for (const f of ['en', 'hi', 'gu', 'ar'] as const) {
       const src = readFileSync(join(__dirname, '..', 'i18n', `${f}.ts`), 'utf8');
       const keys = [...src.matchAll(/^\s*'([^']+)':/gm)].map((m) => m[1]);
       const seen = new Set<string>();
@@ -41,7 +46,7 @@ describe('i18n parity (en/hi/gu)', () => {
   // does so ONLY in the languages nobody on the team reads, which is exactly the bug this repo must not ship
   // (three real mismatches were found this way, in en/hi/gu at once). So: read the app's own sources, find every
   // interpolated call, and require the token in all three catalogues.
-  it('every interpolated key carries its {token} in all three languages', () => {
+  it('every interpolated key carries its {token} in all four languages — t.t(k, {…}) AND rich(t.t(k), {…})', () => {
     const dir = join(__dirname, '..');
     const files: string[] = [];
     const walk = (d: string) => {
@@ -53,14 +58,17 @@ describe('i18n parity (en/hi/gu)', () => {
     };
     walk(dir);
 
-    const cats: Array<[string, Record<string, string>]> = [['en', en], ['hi', hi], ['gu', gu]];
+    const cats: Array<[string, Record<string, string>]> = [['en', en], ['hi', hi], ['gu', gu], ['ar', ar]];
     const problems: string[] = [];
-    for (const f of files) {
+    const seen = new Set<string>();
+    // PC-56 RTL-1b-2: RTL-1b-1 moved 4 keys to `rich(t.t('k'), { name: <node> })` (React nodes into the template), which the
+    // t.t('k', { regex no longer saw. Both call shapes are scanned now, and the 4 are asserted seen below.
+    for (const f of files) for (const re of [/t\.t\(\s*'([^']+)'\s*,\s*\{/g, /\brich\(\s*t\.t\(\s*'([^']+)'\s*\)\s*,\s*\{/g]) {
       const src = readFileSync(f, 'utf8');
-      const re = /t\.t\(\s*'([^']+)'\s*,\s*\{/g;
       let m: RegExpExecArray | null;
       while ((m = re.exec(src))) {
         const key = m[1];
+        seen.add(key);
         // scan the balanced object literal that starts at the '{' the regex just consumed
         let depth = 1, i = re.lastIndex;
         while (i < src.length && depth > 0) {
@@ -90,5 +98,6 @@ describe('i18n parity (en/hi/gu)', () => {
       }
     }
     expect([...new Set(problems)].sort()).toEqual([]);
+    expect(['limport.hash', 'limport.issueRow', 'limport.issueSuggestion', 'limport.templateNote'].filter((k) => !seen.has(k))).toEqual([]);
   });
 });

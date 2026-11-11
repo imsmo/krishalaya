@@ -85,7 +85,7 @@ export default async function EndpointActPage({ params, searchParams }: { params
           {blocking.map((r) => <p key={r} className="kv-error" role="alert">{t.t(refusalKey(r))}</p>)}
           <p className="kv-field__hint">{t.t('wh.act.confirm.audit')}</p>
           {blocking.length === 0 && act === 'rotate' && (
-            <RotateSecretConfirm id={params.id} labels={labels} idempotencyKey={randomUUID()} backHref={WEBHOOKS_HREF}
+            <RotateSecretConfirm id={params.id} labels={labels} lang={lang} idempotencyKey={randomUUID()} backHref={WEBHOOKS_HREF}
               auditHref={auditHref('webhook_endpoint', params.id)} minReason={MIN_REASON} maxReason={MAX_REASON} />
           )}
           {blocking.length === 0 && act !== 'rotate' && (

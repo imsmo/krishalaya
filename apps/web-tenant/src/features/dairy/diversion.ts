@@ -7,6 +7,7 @@
 //   • a diversion is not a transfer. The member's route, card and history are untouched — they belong to Vanthali and
 //     will pour there tomorrow morning — and a screen that blurred the two would be describing TENANT-6d-3's act.
 import type { DairyDiversion, DairyDiversionRow, DairyNoticeState, DairyShift } from '@krishalaya/sdk-js';
+import { spanText, type SpanT } from '../rtl/span';
 
 export const DIVERT_HREF = '/dairy/bmc/divert';
 export const DIVERSIONS_HREF = '/dairy/diversions';
@@ -94,7 +95,8 @@ export function diversionNoteKey(c: { divertedIn: number; divertedOut: number })
  */
 export function unionPickupGapKey(): string { return 'dairy.bmc.playbook.unionPickupUnbuilt'; }
 
-/** The register's row label: two villages and an evening, never two ids. */
-export function diversionRowText(r: DairyDiversionRow): string {
-  return `${r.fromCode} → ${r.toCode}`;
+/** The register's row label: two villages and an evening, never two ids.
+ *  PC-56 RTL-1b-2: the arrow is the catalogue's `rtl.span` (reversed in Arabic), each code an isolated LTR run. */
+export function diversionRowText(r: DairyDiversionRow, t: SpanT): string {
+  return spanText(t, r.fromCode, r.toCode);
 }

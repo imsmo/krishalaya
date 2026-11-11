@@ -38,6 +38,9 @@ export const hi: Messages = {
   'lang.draft': 'मशीन ड्राफ़्ट',
   'lang.comingSoon': 'जल्द आ रहा है',
   'rtl.draftBanner': 'यह अरबी पाठ मशीन से बना ड्राफ़्ट है और इसकी समीक्षा नहीं हुई है।',
+  // PC-56 RTL-1b-2 · a span "a → b" (a settlement period, a diversion's two centres): the arrow is copy, so it points the
+  // reader's way — Arabic reverses it. Callers isolate each end (features/rtl/span.ts).
+  'rtl.span': '{from} → {to}',
 
   'common.loading': 'लोड हो रहा है…',
   'common.errorTitle': 'कुछ गड़बड़ हो गई',

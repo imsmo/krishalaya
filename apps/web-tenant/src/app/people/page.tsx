@@ -17,7 +17,7 @@ import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { getTranslator, getLang } from '../../lib/i18n';
 import type { Translator } from '@krishalaya/i18n';
-import { formatMoneyMinor, formatRelative } from '@krishalaya/i18n';
+import { formatMoneyMinor, formatRelative, formatNumber } from '@krishalaya/i18n'; // PC-56 RTL-1b-2: counts via formatNumber, never a bare-code toLocaleString
 import { rosterKycLabel, type RosterMember, type RosterCensus } from '@krishalaya/sdk-js';
 import {
   parseRosterFilters, rosterHref, isFiltered, sharePct, hasRoleLabel, hasKycLabel,
@@ -106,11 +106,11 @@ export default async function PeoplePage({ searchParams }: { searchParams: RawPa
         <div className="kv-cards">
           <div className="kv-card">
             <span className="kv-card__title">{t.t('people.tile.active')}</span>
-            <strong>{census.activeMembers.toLocaleString(lang)}</strong>
+            <strong>{formatNumber(Number(census.activeMembers), lang)}</strong>
           </div>
           <div className="kv-card">
             <span className="kv-card__title">{t.t('people.tile.verified')}</span>
-            <strong>{census.fullyVerified.toLocaleString(lang)}</strong>
+            <strong>{formatNumber(Number(census.fullyVerified), lang)}</strong>
             {/* The worst-status reading, stated on the tile: this is the number the money gate agrees with. */}
             <span className="kv-fine">
               {verifiedPct === null ? t.t('common.dash') : `${verifiedPct}%`} · {t.t('people.tile.verifiedNote')}
@@ -118,12 +118,12 @@ export default async function PeoplePage({ searchParams }: { searchParams: RawPa
           </div>
           <div className="kv-card">
             <span className="kv-card__title">{t.t('people.tile.active30')}</span>
-            <strong>{census.activeLast30d.toLocaleString(lang)}</strong>
+            <strong>{formatNumber(Number(census.activeLast30d), lang)}</strong>
             <span className="kv-fine">{activePct === null ? t.t('common.dash') : `${activePct}%`}</span>
           </div>
           <div className="kv-card">
             <span className="kv-card__title">{t.t('people.tile.dormant')}</span>
-            <strong>{census.dormant.toLocaleString(lang)}</strong>
+            <strong>{formatNumber(Number(census.dormant), lang)}</strong>
             <span className="kv-fine">{t.t('people.tile.dormantNote')}</span>
           </div>
           {/*

@@ -12,6 +12,10 @@ import * as ts from 'typescript';
 //   • a physical CSS rule (margin-left, padding-right, left:, text-align:right, float:left …) does not mirror.
 //   • the proof pages print money only through <Money> (the <bdi> isolate), never a bare formatMoneyMinor.
 //   • /billing/upgrade's counts go through formatNumber (the language's pinned Intl locale), never toLocaleString(code).
+//   • RTL-1b-2: NO page or component under app/ calls toLocaleString( — a count goes through formatNumber, a date through
+//     formatDate (both pin the language's Intl locale; a bare code or no code at all does not pin the digits).
+//   • RTL-1b-2: the two feature-level spans (settlements periodLabel, dairy diversionRowText) carry no arrow glyph in code —
+//     the arrow is catalogue copy (rtl.span) so Arabic reverses it.
 const SRC = join(__dirname, '..');
 const isTest = (p: string) => /\/(test|test-render)\//.test(p) || /\.(spec|test)\.tsx?$/.test(p);
 const isCatalogue = (p: string) => /\/i18n\/(en|hi|gu|ar)\.ts$/.test(p);
@@ -85,5 +89,57 @@ describe('money and counts on the RTL-1b-1 surfaces', () => {
     const src = readFileSync(join(SRC, 'app', 'billing', 'upgrade', 'page.tsx'), 'utf8');
     expect(src).not.toMatch(/\.toLocaleString\(/);
     expect(src.match(/formatNumber\(Number\(/g)).toHaveLength(4);
+  });
+});
+
+/** Every `x.toLocaleString(…)` CALL in a source, as `file:line` (comments and strings are not calls, so never counted). */
+export function toLocaleStringCalls(file: string, text: string): string[] {
+  const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const hits: string[] = [];
+  const visit = (n: ts.Node) => {
+    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && n.expression.name.text === 'toLocaleString') {
+      hits.push(`${file}:${sf.getLineAndCharacterOfPosition(n.getStart()).line + 1}`);
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(sf);
+  return hits;
+}
+
+/** Every string/template literal carrying a horizontal arrow, anywhere in a source (not only JSX), as `file:line`. */
+function anyArrowLiterals(file: string, text: string): string[] {
+  const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const hits: string[] = [];
+  const visit = (n: ts.Node) => {
+    if ((ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n) || ts.isTemplateHead(n) || ts.isTemplateMiddle(n) || ts.isTemplateTail(n)) && ARROW.test(n.text)) {
+      hits.push(`${file}:${sf.getLineAndCharacterOfPosition(n.getStart()).line + 1}`);
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(sf);
+  return hits;
+}
+
+describe('counts, dates and spans app-wide (RTL-1b-2)', () => {
+  it('the toLocaleString scanner finds a call and ignores comments and strings', () => {
+    expect(toLocaleStringCalls('a.tsx', 'const A = () => <b>{n.toLocaleString(lang)}</b>;')).toEqual(['a.tsx:1']);
+    expect(toLocaleStringCalls('a.tsx', "// n.toLocaleString(lang)\nconst s = 'toLocaleString(';")).toEqual([]);
+  });
+  it('no .tsx under app/ calls toLocaleString( (counts → formatNumber, dates → formatDate; was 11 + 1 at 07332bb4)', () => {
+    const appTsx = SOURCES.filter((p) => p.startsWith(join(SRC, 'app') + '/') && p.endsWith('.tsx'));
+    expect(appTsx.length).toBeGreaterThan(300);
+    expect(appTsx.flatMap((p) => toLocaleStringCalls(relative(SRC, p), readFileSync(p, 'utf8')))).toEqual([]);
+  });
+  it('the 11 RTL-1b-2 counts go through formatNumber(Number(…), lang)', () => {
+    for (const [f, n] of [['app/dashboard/page.tsx', 4], ['app/people/page.tsx', 4], ['app/governance/register/page.tsx', 3]] as const) {
+      expect({ f, n: (readFileSync(join(SRC, f), 'utf8').match(/formatNumber\(Number\(/g) ?? []).length }).toEqual({ f, n });
+    }
+  });
+  it('settlements periodLabel and dairy diversionRowText build no arrow in code (the arrow is rtl.span copy)', () => {
+    for (const f of ['features/settlements/console.ts', 'features/dairy/diversion.ts']) {
+      const src = readFileSync(join(SRC, f), 'utf8');
+      expect(anyArrowLiterals(f, src)).toEqual([]);
+      expect(src).toMatch(/spanText\(t, /);
+    }
   });
 });

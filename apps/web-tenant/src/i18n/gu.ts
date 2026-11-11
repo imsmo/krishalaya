@@ -38,6 +38,9 @@ export const gu: Messages = {
   'lang.draft': 'મશીન ડ્રાફ્ટ',
   'lang.comingSoon': 'ટૂંક સમયમાં',
   'rtl.draftBanner': 'આ અરબી લખાણ મશીનથી બનેલો ડ્રાફ્ટ છે અને તેની સમીક્ષા થઈ નથી.',
+  // PC-56 RTL-1b-2 · a span "a → b" (a settlement period, a diversion's two centres): the arrow is copy, so it points the
+  // reader's way — Arabic reverses it. Callers isolate each end (features/rtl/span.ts).
+  'rtl.span': '{from} → {to}',
 
   'common.loading': 'લોડ થઈ રહ્યું છે…',
   'common.errorTitle': 'કંઈક ખોટું થયું',

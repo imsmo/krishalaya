@@ -21,7 +21,7 @@ import Link from 'next/link';
 import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatMoneyMinor, formatDate, formatNumber } from '@krishalaya/i18n'; // PC-56 RTL-1b-2: counts via formatNumber (the language's pinned Intl locale), never a bare-code toLocaleString
 import type { TenantDashboard, GoLiveState } from '@krishalaya/sdk-js';
 import {
   gmvTrend, isQuietDay, orderedActions, ageLabel, planUsagePct, planNearLimit, showChecklistFirst,
@@ -144,7 +144,7 @@ export default async function DashboardPage() {
 
         <div className="kv-card">
           <span className="kv-card__title">{t.t('home.tile.listings')}</span>
-          <strong>{d.tiles.liveListings.toLocaleString(lang)}</strong>
+          <strong>{formatNumber(Number(d.tiles.liveListings), lang)}</strong>
           <span className="kv-fine">
             {t.t('home.tile.listingsNote', { today: d.tiles.listingsNewToday, qc: d.tiles.listingsInQc })}
           </span>
@@ -152,7 +152,7 @@ export default async function DashboardPage() {
 
         <div className="kv-card">
           <span className="kv-card__title">{t.t('home.tile.disputes')}</span>
-          <strong>{d.tiles.openDisputes.toLocaleString(lang)}</strong>
+          <strong>{formatNumber(Number(d.tiles.openDisputes), lang)}</strong>
           <span className="kv-fine">
             {d.tiles.openDisputes === 0
               ? t.t('home.tile.disputesNone')
@@ -165,12 +165,12 @@ export default async function DashboardPage() {
       <div className="kv-cards">
         <Link href="/orders" className="kv-card">
           <span className="kv-card__title">{t.t('swd.home.tile.ordersToday')}</span>
-          <strong>{d.tiles.ordersToday.toLocaleString(lang)}</strong>
+          <strong>{formatNumber(Number(d.tiles.ordersToday), lang)}</strong>
           <span className="kv-fine">{t.t('swd.home.tile.ordersTodayNote')}</span>
         </Link>
         <Link href="/people/verification" className="kv-card">
           <span className="kv-card__title">{t.t('swd.home.tile.kyc')}</span>
-          <strong>{d.tiles.kycPending.toLocaleString(lang)}</strong>
+          <strong>{formatNumber(Number(d.tiles.kycPending), lang)}</strong>
           <span className="kv-fine">{t.t('swd.home.tile.kycNote')}</span>
         </Link>
         <Link href="/wallet" className="kv-card">

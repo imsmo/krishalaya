@@ -13,7 +13,7 @@
 //      shape with Western digits only, the file name and hash isolated, no bare arrow, every aria-label filled and Arabic.
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import type { BulkImportJob, ConsoleCounts, ConsoleListingRow, ListingCard, NotificationBell } from '@krishalaya/sdk-js';
+import type { BulkImportJob, ConsoleCounts, ConsoleListingRow, ListingCard, NotificationBell, RosterCensus, RosterMember, TenantDashboard } from '@krishalaya/sdk-js';
 import { en } from '../i18n/en';
 import { ar } from '../i18n/ar';
 import { hi } from '../i18n/hi';
@@ -35,6 +35,7 @@ jest.mock('../lib/auth', () => ({ tenantHasPerm: () => mockPerm.staff, hasSessio
 jest.mock('../lib/env', () => ({ env: { appName: 'Krishalaya' } }));
 jest.mock('../app/listings/actions', () => ({ bulkListingsAction: async () => undefined }));
 jest.mock('../app/listings/import/actions', () => ({ validateListingJobAction: async () => undefined, confirmListingJobAction: async () => undefined, cancelListingJobAction: async () => undefined }));
+jest.mock('../app/people/actions', () => ({ revealFieldAction: async () => undefined })); // RTL-1b-2: /people's reveal control
 
 const U = (n: number) => `0190a8b2-0000-7000-8000-${String(n).padStart(12, '0')}`;
 const AT = '2026-10-04T09:48:00.000Z';
@@ -56,17 +57,33 @@ const jobs: BulkImportJob[] = [{
     issues: [{ rowIndex: 4, code: 'PRICE_UNIT', message: 'price looks per-kilo on a per-quintal sheet', suggestion: '₹2,450 / qtl' }] },
 }];
 const bell: NotificationBell = { unread: 3, latest: [], held: 0, nextRelease: null, releaseStopped: false, zone: 'Asia/Kolkata', today: '2026-10-04' };
+// RTL-1b-2 · /dashboard and /people fixtures. The counts are chosen ≥ 100,000 where it matters, so the digit SHAPE is visible:
+// Arabic (ar-AE-u-nu-latn) groups "128,456"; English (en-IN, the console's en locale) "1,28,456".
+const dash: TenantDashboard = {
+  tiles: { gmvThisMonthMinor: '481260000', gmvPrevMonthSameDayMinor: '408000000', gmvChangeBp: 1795, payoutsPendingMinor: '34218000', payoutsPendingFarmers: 42,
+    liveListings: 218, listingsNewToday: 12, listingsInQc: 3, openDisputes: 2, oldestDisputeHours: 9.4, currencyCode: 'INR', currencyMixed: false,
+    ordersToday: 128456, kycPending: 7, walletMainMinor: null },
+  needsYouToday: [{ kind: 'dispute', count: 2, oldestHours: 9.4, amountMinor: null, href: '/disputes' }],
+  planHealth: { planCode: null, planName: null, status: null, membersUsed: 1284, memberLimit: 2000, currentPeriodEnd: AT },
+};
+const census: RosterCensus = { activeMembers: 128456, fullyVerified: 1000, activeLast30d: 900, dormant: 77, voiceFirstShare: null };
+const roster: RosterMember[] = [{ userId: U(7), fullName: 'Asha Patel', phoneMasked: '+91 96••• ••114', villageName: 'Pimpalgaon', languageCode: 'mr',
+  roles: [{ roleCode: 'farmer', kycStatus: 'verified', isActive: true }], lastActiveAt: AT, lifetimeReceivedMinor: '1234500' }];
 const mockClient = {
   auth: { me: async () => ({ id: U(2), displayName: 'Asha Patel' }) },
   notifications: { bell: async () => bell },
   listings: { consoleCounts: async () => counts, consoleList: async () => ({ items: rows, nextCursor: 'c1' }), browse: async () => ({ items: cards, nextCursor: null }) },
   bulkImports: { list: async () => ({ items: jobs, nextCursor: null }) },
+  consoleHome: { dashboard: async () => dash, goLive: async () => null },
+  members: { roster: async () => ({ items: roster, census, nextCursor: null }) },
 };
 jest.mock('../lib/api-client', () => ({ tenantClient: () => mockClient }));
 
 import RootLayout from '../app/layout';
 import ListingsPage from '../app/listings/page';
 import ListingImportPage from '../app/listings/import/page';
+import DashboardPage from '../app/dashboard/page';
+import PeoplePage from '../app/people/page';
 import { getLang, getLanguageDef } from '../lib/i18n';
 import { rich } from '../components/Bidi';
 
@@ -224,5 +241,81 @@ describe('3 · /listings and /listings/import in Arabic inside the real chrome',
 describe('the rich() interpolation the isolates use', () => {
   it('substitutes nodes for tokens, keeps unknown tokens literal, keeps text order', () => {
     expect(renderToStaticMarkup(<p>{rich('file {hash} · {x}', { hash: <bdi dir="ltr">abc</bdi> })}</p>)).toBe('<p>file <bdi dir="ltr">abc</bdi> · {x}</p>');
+  });
+});
+
+// ---- 4 · RTL-1b-2: the whole catalogue — /dashboard and /people in Arabic ------------------------------------------------
+// Two pages outside RTL-1b-1's scope, rendered in the real chrome: before 1b-2 every string on them fell back to English.
+// "Every visible string is Arabic" is checked two ways: (a) a named handful of en strings must be ABSENT, and (b) EVERY en
+// value of the page's own namespaces that differs from its ar value must be absent from the markup (a whole-namespace
+// fallback to English, or one key left behind, turns this red). Counts must be Western digits in the ar locale's grouping.
+describe('4 · /dashboard and /people in Arabic (RTL-1b-2: the whole catalogue)', () => {
+  const dashboard = () => DashboardPage();
+  const people = () => PeoplePage({ searchParams: {} });
+  /** The page body only (inside <main>), so the chrome's own checks (section 2) are not re-counted here. */
+  const main = (html: string) => html.match(/<main[^>]*>([\s\S]*)<\/main>/)?.[1] ?? '';
+  /** The VISIBLE text (tags and their attributes removed — a `?kyc=verified` href is not copy), one node per line. */
+  const visible = (html: string) => html.replace(/<[^>]*>/g, '\n');
+  /** Every en value of these namespaces that differs from ar and is long enough to be a word, found in the visible text. */
+  const enLeaks = (html: string, prefixes: string[]) => Object.keys(en)
+    .filter((k) => prefixes.some((p) => k.startsWith(p)) && en[k] !== ar[k] && en[k].length >= 6 && !/\{/.test(en[k]))
+    .filter((k) => visible(html).includes(esc(en[k])));
+  const PAGES: Array<[string, () => Promise<React.ReactNode>, string, string[], string[]]> = [
+    ['/dashboard', dashboard, 'dashboard.title', ['dashboard.', 'home.', 'swd.home.'],
+      ['home.tile.gmv', 'home.tile.payoutsNoSchedule', 'home.needsYou', 'home.planHealth', 'home.absentPanels', 'swd.home.tile.ordersToday', 'swd.home.newListing']],
+    ['/people', people, 'people.title', ['people.'],
+      ['people.subtitle', 'people.tile.active', 'people.tile.voiceAbsent', 'people.colMember', 'people.pagerNote', 'people.searchGo', 'people.tableCaption']],
+  ];
+
+  it.each(PAGES)('%s under ?lang=ar: dir="rtl", the banner, the h1 and the page copy in Arabic, no en string leaking', async (_n, mount, titleKey, prefixes, named) => {
+    const html = await page({ cookie: 'ar' }, mount);
+    expect(htmlTag(html)).toMatch(/ lang="ar"/);
+    expect(htmlTag(html)).toMatch(/ dir="rtl"/);
+    expect(html).toMatch(BANNER);
+    expect(h1(html)).toBe(esc(ar[titleKey]));
+    expect(ARABIC.test(h1(html))).toBe(true);
+    const body = main(html);
+    expect(body.length).toBeGreaterThan(1000);
+    for (const k of named) {
+      expect({ k, en: body.includes(esc(en[k])) }).toEqual({ k, en: false });
+      expect({ k, ar: body.includes(esc(ar[k])) }).toEqual({ k, ar: true });
+    }
+    expect(enLeaks(body, prefixes)).toEqual([]);
+    // and no visible English at all: once the fixture's own data (a name, a village) and the never-translated codes are
+    // removed, no Latin word is left in the page body
+    const NOT_COPY = /Asha Patel|Pimpalgaon|\bKYC\b|\bAadhaar\b|\bIST\b/g;
+    const latin = visible(body.replace(/<style[\s\S]*?<\/style>/g, '')).split('\n').map((x) => x.trim())
+      .filter((x) => /[A-Za-z]{2,}/.test(x.replace(NOT_COPY, '')));
+    expect(latin).toEqual([]);
+    // no raw key id leaked (a key with no value anywhere renders as itself)
+    expect(Object.keys(ar).filter((k) => body.includes(`>${k}<`) || body.includes(`"${k}"`))).toEqual([]);
+    expect(ARABIC_INDIC_DIGIT.test(html)).toBe(false);
+    expect(bareArrows(html)).toBe(0);
+    const labels = [...html.matchAll(/ aria-label="([^"]*)"/g)].map((m) => m[1]);
+    expect(labels.filter((l) => l.trim() === '' || !ARABIC.test(l))).toEqual([]);
+  });
+
+  it('/dashboard counts under ar: Western digits, the ar grouping, through formatNumber (128,456 — never ١٢٨٬٤٥٦)', async () => {
+    const html = main(await page({ cookie: 'ar' }, dashboard));
+    for (const n of ['218', '2', '128,456', '7']) expect(html).toContain(`<strong>${n}</strong>`);
+  });
+
+  it('/people census under ar: Western digits, the ar grouping (128,456 · 1,000 · 900 · 77)', async () => {
+    const html = main(await page({ cookie: 'ar' }, people));
+    for (const n of ['128,456', '1,000', '900', '77']) expect(html).toContain(`<strong>${n}</strong>`);
+    expect(html).toContain('<span class="kv-muted">+91 96••• ••114</span>'); // the masked phone is data, untouched
+  });
+
+  it('the same pages under en are unchanged English: dir="ltr", no banner, en copy, en-IN counts', async () => {
+    for (const [, mount, titleKey, , named] of PAGES) {
+      const html = await page({ cookie: 'en' }, mount);
+      expect(htmlTag(html)).toMatch(/ dir="ltr"/);
+      expect(html).not.toContain('kv-md-banner');
+      expect(h1(html)).toBe(esc(en[titleKey]));
+      for (const k of named) expect({ k, en: main(html).includes(esc(en[k])) }).toEqual({ k, en: true });
+      expect(ARABIC.test(main(html))).toBe(false);
+    }
+    expect(main(await page({ cookie: 'en' }, dashboard))).toContain('<strong>1,28,456</strong>');
+    expect(main(await page({ cookie: 'en' }, people))).toContain('<strong>1,28,456</strong>');
   });
 });

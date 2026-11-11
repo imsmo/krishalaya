@@ -1,6 +1,8 @@
 // apps/web-tenant/src/features/settlements/console.ts · W147's cycle and W148's statements as PURE rules
 // (PC-56 TENANT-4c). No React, no I/O — unit- and mutation-tested, and the API re-enforces every one.
 
+import { spanText, type SpanT } from '../rtl/span';
+
 export const CYCLE_STATUSES = ['open', 'pending_close', 'closing', 'closed', 'rejected'] as const;
 export type CycleStatus = (typeof CYCLE_STATUSES)[number];
 
@@ -10,9 +12,10 @@ export function cycleStatusKey(status: string): string {
 
 /** W147's cycle card. The period is a set of DAYS and is rendered in the reader's own locale — the backend
  *  stores dates, never a wall-clock boundary, because a fortnight boundary in one timezone is a different
- *  fortnight in another and this platform ships to five countries by Y7. */
-export function periodLabel(startIso: string, endIso: string): string {
-  return `${startIso} → ${endIso}`;
+ *  fortnight in another and this platform ships to five countries by Y7.
+ *  PC-56 RTL-1b-2: the arrow is the catalogue's `rtl.span` (reversed in Arabic), each date an isolated LTR run. */
+export function periodLabel(startIso: string, endIso: string, t: SpanT): string {
+  return spanText(t, startIso, endIso);
 }
 
 export function hasPeriodEnded(endIso: string, now: Date): boolean {

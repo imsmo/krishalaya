@@ -21,6 +21,9 @@ import {
 } from '../features/dairy/diversion';
 import { mutateRefusalKey, mutateStep, reasonState } from '../features/mutate/chain';
 import type { DairyDiversionRow } from '@krishalaya/sdk-js';
+import { Translator } from '@krishalaya/i18n';
+import { en as enCat } from '../i18n/en';
+import { ar as arCat } from '../i18n/ar';
 
 const LOCALES = ['en', 'hi', 'gu'] as const;
 const dict = (l: string) => fs.readFileSync(path.join(__dirname, `../i18n/${l}.ts`), 'utf8');
@@ -205,6 +208,11 @@ describe('TENANT-6d-6 · one chain, two acts', () => {
 
   it('names a register href and a row by its two villages', () => {
     expect(DIVERSIONS_HREF).toBe('/dairy/diversions');
-    expect(diversionRowText({ fromCode: 'MCC-VNT', toCode: 'MCC-BHE' } as DairyDiversionRow)).toBe('MCC-VNT → MCC-BHE');
+    // PC-56 RTL-1b-2 · the arrow is catalogue copy (rtl.span), reversed in Arabic; each code is LRI…PDI isolated so two Latin
+    // codes cannot pull the arrow into a left-to-right run on an rtl page (UAX #9 N1).
+    const row = { fromCode: 'MCC-VNT', toCode: 'MCC-BHE' } as DairyDiversionRow;
+    const tr = (l: 'en' | 'ar') => new Translator(l).register('en', enCat).register('ar', arCat);
+    expect(diversionRowText(row, tr('en'))).toBe('\u2066MCC-VNT\u2069 → \u2066MCC-BHE\u2069');
+    expect(diversionRowText(row, tr('ar'))).toBe('\u2066MCC-VNT\u2069 ← \u2066MCC-BHE\u2069');
   });
 });

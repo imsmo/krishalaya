@@ -7,6 +7,13 @@ import {
   hasPeriodEnded, isClosedMonth, isMonthPeriod, isNoteLongEnough, pdfStateKey, periodKindKey, periodLabel,
   progressKey, refusalKey, rejectBlockedBy, requestBlockedBy, rowNeedsAttention,
 } from '../features/settlements/console';
+import { Translator } from '@krishalaya/i18n';
+import { en } from '../i18n/en';
+import { ar } from '../i18n/ar';
+
+// PC-56 RTL-1b-2 · the period's arrow is catalogue copy (rtl.span): en reads "a → b", ar "a ← b"; each date is LRI…PDI isolated.
+const tr = (lang: 'en' | 'ar') => new Translator(lang).register('en', en).register('ar', ar);
+const LRI = '\u2066', PDI = '\u2069';
 
 const NOW = new Date('2026-07-16T06:00:00Z');
 
@@ -17,7 +24,8 @@ describe('TENANT-4c · the cycle card', () => {
     expect(cycleStatusKey('something_new')).toBe('stl.status.unknown');
   });
   it('the period reads as a span of days, and ends at the END of its last day', () => {
-    expect(periodLabel('2026-07-01', '2026-07-15')).toBe('2026-07-01 → 2026-07-15');
+    expect(periodLabel('2026-07-01', '2026-07-15', tr('en'))).toBe(`${LRI}2026-07-01${PDI} → ${LRI}2026-07-15${PDI}`);
+    expect(periodLabel('2026-07-01', '2026-07-15', tr('ar'))).toBe(`${LRI}2026-07-01${PDI} ← ${LRI}2026-07-15${PDI}`);
     expect(hasPeriodEnded('2026-07-15', new Date('2026-07-15T23:59:00Z'))).toBe(false);
     expect(hasPeriodEnded('2026-07-15', NOW)).toBe(true);
     expect(hasPeriodEnded('nope', NOW)).toBe(false);

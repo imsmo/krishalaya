@@ -15,7 +15,7 @@ import type { ShareRegisterView } from '@krishalaya/sdk-js';
 import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatMoneyMinor, formatDate, formatNumber } from '@krishalaya/i18n'; // PC-56 RTL-1b-2: counts via formatNumber, never a bare-code toLocaleString
 import {
   bylawRows, eligiblePct, registerCaption, sortRegister, turnoutTile, verdictLabel,
 } from '../../../features/governance/register';
@@ -69,7 +69,7 @@ export default async function ShareRegisterPage({ searchParams }: { searchParams
           <div className="kv-stat-grid">
             <div className="kv-stat">
               <span className="kv-stat__label">{t.t('reg.tile.shareholders')}</span>
-              <strong className="kv-stat__value">{view.tiles.shareholders.toLocaleString(lang)}</strong>
+              <strong className="kv-stat__value">{formatNumber(Number(view.tiles.shareholders), lang)}</strong>
               <span className="kv-stat__hint">
                 {t.t('reg.tile.shareholdersHint', { members: view.tiles.members, pending: view.tiles.pendingAllotment })}
               </span>
@@ -86,7 +86,7 @@ export default async function ShareRegisterPage({ searchParams }: { searchParams
             </div>
             <div className="kv-stat">
               <span className="kv-stat__label">{t.t('reg.tile.eligible')}</span>
-              <strong className="kv-stat__value">{view.tiles.votingEligible.toLocaleString(lang)}</strong>
+              <strong className="kv-stat__value">{formatNumber(Number(view.tiles.votingEligible), lang)}</strong>
               <span className="kv-stat__hint">
                 {ePct === null ? t.t('reg.tile.eligibleNoBase') : t.t('reg.tile.eligibleHint', { pct: ePct })}
               </span>
@@ -134,7 +134,7 @@ export default async function ShareRegisterPage({ searchParams }: { searchParams
                         </div>
                       ) : null}
                     </td>
-                    <td>{r.sharesHeld.toLocaleString(lang)}</td>
+                    <td>{formatNumber(Number(r.sharesHeld), lang)}</td>
                     <td>{formatMoneyMinor(r.valueMinor, 'INR', lang)}</td>
                     <td>
                       <span className={`kv-badge kv-badge--${v.tone === 'ok' ? 'success' : v.tone === 'stop' ? 'danger' : 'muted'}`}>{v.label}</span>

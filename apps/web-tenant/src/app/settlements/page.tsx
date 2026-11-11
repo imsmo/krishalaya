@@ -82,7 +82,7 @@ export default async function SettlementsPage({ searchParams }: { searchParams: 
           <div className="kv-card kv-card--money">
             <h2 className="kv-card__title">{t.t('stl.currentCycle')}</h2>
             <p className="kv-card__figure">{formatMoneyMinor(ov.cycleGrossMinor, 'INR', lang)}</p>
-            <p className="kv-field__hint">{t.t('stl.cycleGrossHint', { sellers: String(ov.sellerCount), period: periodLabel(c.periodStart, c.periodEnd) })}</p>
+            <p className="kv-field__hint">{t.t('stl.cycleGrossHint', { sellers: String(ov.sellerCount), period: periodLabel(c.periodStart, c.periodEnd, t) })}</p>
             <p className="kv-badge">{t.t(cycleStatusKey(c.status))}</p>
           </div>
           <div className="kv-card">

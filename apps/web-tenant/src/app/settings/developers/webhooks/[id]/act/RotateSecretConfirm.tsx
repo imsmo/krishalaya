@@ -4,11 +4,12 @@
 // A client component for one reason: the new secret comes back in the server action's response body and must live in React state only
 // (F-5 — never a URL, a cookie or storage). The reason is typed before anything is requested; the Idempotency-Key is the page's.
 import { useState, useTransition } from 'react';
+import { formatDate } from '@krishalaya/i18n'; // PC-56 RTL-1b-2: the window's end date in the page's language, never the browser's default locale
 import { rotateSecretAction, type RotateResult } from '../../actions';
 import { fill } from '../../../../../../features/webhooks/webhooks';
 
-export function RotateSecretConfirm({ id, labels, idempotencyKey, backHref, auditHref, minReason, maxReason }: {
-  id: string; labels: Record<string, string>; idempotencyKey: string; backHref: string; auditHref: string; minReason: number; maxReason: number;
+export function RotateSecretConfirm({ id, labels, lang, idempotencyKey, backHref, auditHref, minReason, maxReason }: {
+  id: string; labels: Record<string, string>; lang: string; idempotencyKey: string; backHref: string; auditHref: string; minReason: number; maxReason: number;
 }) {
   const L = (k: string, v?: Record<string, string | number>) => fill(labels[k] ?? (k.startsWith('wh.refusal.') ? labels['wh.refusal.unknown'] ?? k : k), v);
   const [reason, setReason] = useState('');
@@ -33,7 +34,7 @@ export function RotateSecretConfirm({ id, labels, idempotencyKey, backHref, audi
             </p>
           </>
         ) : <p>{L('wh.form.success.replayed')}</p>}
-        <p>{L('wh.rotate.success.window', { until: new Date(result.previousSecretSignsUntil).toLocaleString() })}</p>
+        <p>{L('wh.rotate.success.window', { until: formatDate(result.previousSecretSignsUntil, lang, { dateStyle: 'medium', timeStyle: 'short' }) })}</p>
         <p className="kv-field__hint">{L('wh.form.success.hint', { mask: `whsec_••••${result.secretHint}` })}</p>
         <p><a href={auditHref} className="kv-btn--link">{L('wh.form.success.audit')}</a>{' · '}<a href={backHref} className="kv-btn--link">{L('wh.form.backToScreen')}</a></p>
       </div>
