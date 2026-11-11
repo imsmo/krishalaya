@@ -4,13 +4,14 @@
 // THE PAGE takes NO data but the signed-in authority's name (`me`, the shell's own read): there is nothing about a job card, a worker, a
 // household, a day of attendance, a worksite, a demand for work or a wage that it could print. Q3's, Q2's and Q1's sentences verbatim and the
 // download sentence; "What this console does not do" names W345's acts and W346, W347, W348 and W440's features once each, in plain words; the
-// refusals BY NAME. No list, table, count, form, button or write; the chains are reached by address only. All copy via i18n; no inline styles;
+// refusals BY NAME. GOV-5b adds the sections "Wages" (W349, Q1-A) and "Social audit" (W350, Q5-A). No list, table, count, form, button or write; the chains are reached by address only. All copy via i18n; no inline styles;
 // no physical direction.
 import type { GovMe } from '@krishalaya/sdk-js';
-import { chain5ById, GOV5_NOT_DONE, GOV5_REFUSALS, type Chain5Id, type Gov5Surface, type Tr } from '../../features/gov5/refusals';
+import { chain5ById, GOV5_NOT_DONE, GOV5_REFUSALS, GOV5_SECTIONS_5B, type Chain5Id, type Gov5Surface, type Tr } from '../../features/gov5/refusals';
 
-/** The page's sentences, in the order printed (Q3 first: whose register MGNREGA's is). */
-export const GOV5_STATEMENTS = ['gov5.q3', 'gov5.q2', 'gov5.q1'] as const;
+/** The page's opening sentences, in the order printed (Q3 first: whose register MGNREGA's is). Q1's (the wage sentence) heads the
+ *  GOV-5b section "Wages" and Q5's the section "Social audit" (GOV5_SECTIONS_5B) — each printed once. */
+export const GOV5_STATEMENTS = ['gov5.q3', 'gov5.q2'] as const;
 
 export function Gov5Refusals({ t, surface }: { t: Tr; surface: Gov5Surface }) {
   const rows = GOV5_REFUSALS.filter((r) => r.surfaces.includes(surface));
@@ -50,6 +51,15 @@ export function MgnregaView({ t, me }: { t: Tr; me: GovMe | null }) {
         <h2 id="kv-not-done" className="kv-card__title">{t.t('gov5.notDone.title')}</h2>
         <ul>{GOV5_NOT_DONE.map((n) => <li key={n.id} data-kv-not-done-item={n.id}>{t.t(n.key)}</li>)}</ul>
       </section>
+      {/* GOV-5b: W349 "Wages" (Q1-A) and W350 "Social audit" (Q5-A) — a statement, each feature named once as not done, the refusals. */}
+      {GOV5_SECTIONS_5B.map((s) => (
+        <section key={s.id} className="kv-card" data-kv-not-done="" data-kv-section={s.id} aria-labelledby={`kv-section-${s.id}`}>
+          <h2 id={`kv-section-${s.id}`} className="kv-card__title">{t.t(s.title)}</h2>
+          <p className="kv-statement" data-kv-statement={s.statement}>{t.t(s.statement)}</p>
+          <ul>{s.items.map((n) => <li key={n.id} data-kv-not-done-item={n.id}>{t.t(n.key)}</li>)}</ul>
+          <Gov5Refusals t={t} surface={s.surface} />
+        </section>
+      ))}
       <p className="kv-statement" data-kv-statement="gov5.download">{t.t('gov5.download')}</p>
       <Gov5Refusals t={t} surface="mgnrega" />
     </section>

@@ -7,6 +7,8 @@
 //     read in the view or the page;
 //   • E3: web-gov's residue features/mgnrega/program.ts and its spec are deleted; nothing names them or their builders;
 //   • the gate; GOV_NAV carries /mgnrega; the GOV-1a 307 for /mgnrega is gone.
+// PC-56 GOV-5b: still ONE route — the W349 / W350 addresses (/mgnrega/wages, /audit, /social-audit, /fto, /grievances, /wall) have no route;
+// the "Wages" and "Social audit" sections are part of the same view and read nothing; no publish act, no SDK write.
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -31,11 +33,11 @@ describe('PC-56 GOV-5a · E1 — one route', () => {
     expect(walk(path.join(SRC, 'app', 'mgnrega'))).toEqual(['app/mgnrega/page.tsx']);
   });
   it('the canon\'s other addresses have no route: /mgnrega/dashboard, /job-cards, /demand, /musters, /musters/[id], /wages, /audit — and no route anywhere is named for them', () => {
-    for (const rel of ['dashboard', 'job-cards', 'demand', 'demands', 'musters', 'musters/[id]', 'works', 'works/[id]', 'wages', 'audit'])
+    for (const rel of ['dashboard', 'job-cards', 'demand', 'demands', 'musters', 'musters/[id]', 'works', 'works/[id]', 'wages', 'audit', 'social-audit', 'fto', 'grievances', 'wall'])
       expect([rel, fs.existsSync(path.join(SRC, 'app', 'mgnrega', rel))]).toEqual([rel, false]);
     for (const rel of walk(path.join(SRC, 'app'))) {
       if (rel === 'app/mgnrega/page.tsx') continue;
-      expect([rel, /mgnrega|job-?cards?|muster|demand|wage|works?\/|social-?audit|panchayat|ranking|leaderboard/i.test(rel)]).toEqual([rel, false]);
+      expect([rel, /mgnrega|job-?cards?|muster|demand|wage|works?\/|social-?audit|panchayat|ranking|leaderboard|\bfto\b|grievance|complaint|\bwall\b|publish/i.test(rel)]).toEqual([rel, false]);
     }
   });
 });
@@ -65,11 +67,21 @@ describe('PC-56 GOV-5a · E2 — /mgnrega reads nothing and writes nothing', () 
     expect(v).toMatch(/export function MgnregaView\(\{ t, me \}: \{ t: Tr; me: GovMe \| null \}\)/);
     expect(v).toMatch(/export function Gov5Chain\(\{ t, chain, state \}: \{ t: Tr; chain: Chain5Id; state: string \}\)/);
     expect([...v.matchAll(/\bme\.(\w+)/g)].map((m) => m[1])).toEqual(['authority']);
-    expect([...v.matchAll(/\.map\(/g)].length).toBe(3);   // the statements, the "does not do" items, the refusals — all from the registry
+    expect([...v.matchAll(/\.map\(/g)].length).toBe(5);   // the statements, the "does not do" items, the refusals, GOV-5b's sections and their items — all from the registry
+    expect(v).toMatch(/GOV5_SECTIONS_5B\.map\(\(s\) =>/); expect(v).toMatch(/s\.items\.map\(\(n\) =>/);
   });
   it('the chains are answered before nothing else is read: the page renders a chain or the view, and makes no other call', () => {
     const p = code(read('app/mgnrega/page.tsx'));
     expect([...p.matchAll(/await (\w+)\(/g)].map((m) => m[1])).toEqual(['requireGov']);
+  });
+});
+
+describe('PC-56 GOV-5b · no publish act, no write', () => {
+  it('no gov5 file names a publish, wall, social-audit or complaint ACT (only the registry\'s refusals quote the canon), and nothing writes', () => {
+    for (const rel of GOV5_FILES.filter((r) => r !== 'features/gov5/refusals.ts')) {
+      const c = code(read(rel));
+      expect([rel, /publish\w*\(|compile\w*\(|grievance\w*\(|complaint\w*\(|\.post\(|\.patch\(|\.put\(|method:\s*'(POST|PATCH|PUT|DELETE)'/i.test(c)]).toEqual([rel, false]);
+    }
   });
 });
 

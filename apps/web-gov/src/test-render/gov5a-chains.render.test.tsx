@@ -23,8 +23,8 @@ const hrefs = (h: string) => [...h.matchAll(/href="([^"]*)"/g)].map((m) => m[1])
 const FALSE_CHAIN = /₹|%|\bsync|mirror|job.?card|GJ-|household|attendance|worksite|panchayat|clock|allowance|compensation|wage|export|audit|reconcile|zero-sum|on-call|back to confirm|signed URL|sha256|position and ETA|maker-checker|diff against|values you entered|publish|\bwall\b/i;
 
 describe('PC-56 GOV-5a · the MGNREGA chains', () => {
-  it('six chains, all 5a, on /mgnrega: file, sync and demand DECOR; job, muster and work re-reads PARITY-DECOR', () => {
-    expect(GOV5_CHAINS.map((c) => [c.id, c.kind, c.back])).toEqual([
+  it('six 5a chains on /mgnrega: file, sync and demand DECOR; job, muster and work re-reads PARITY-DECOR (GOV-5b\'s three: gov5b-chains)', () => {
+    expect(GOV5_CHAINS.filter((c) => c.wave === '5a').map((c) => [c.id, c.kind, c.back])).toEqual([
       ['job_file', 'DECOR', '/mgnrega'], ['job_reread', 'PARITY-DECOR', '/mgnrega'], ['sync_act', 'DECOR', '/mgnrega'],
       ['muster_reread', 'PARITY-DECOR', '/mgnrega'], ['demand_form', 'DECOR', '/mgnrega'], ['work_reread', 'PARITY-DECOR', '/mgnrega'],
     ]);

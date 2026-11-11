@@ -5,7 +5,8 @@
 // words out of every `gov5.` value.
 //
 // GOV-5 is HOTFIX-16 → GOV-5a → GOV-5b (survey §4; GOV-5 Q1-A, Q2-A, Q3-A and Q4-A applied by the lead under the founder's instructions —
-// 06_GOV.md "GOV-5 SPLIT"; his to reopen). This registry carries ALL 33 canon files: GOV-5a decides its 23; GOV-5b's 10 stay `pending_5b`.
+// 06_GOV.md "GOV-5 SPLIT"; his to reopen). This registry carries ALL 33 canon files: GOV-5a decided its 23; GOV-5b decides its 10 (Q1-A,
+// Q5-A) — 33 decided, 0 pending (`pending_5b` is deleted from the verdict type: the 4c-7 rule).
 //
 // WHAT MGNREGA IS ON THE PLATFORM (survey §1): an organisation's own notes (job-card claims, works, musters, demands — tenant realm, behind
 // `labour` + `mgnrega` since HOTFIX-16). The government realm has NOTHING of it (no gov route, no kv_gov grant on any mgnrega_* table) and the
@@ -23,19 +24,35 @@
 //     (W3233–W3235) DECOR — "Sync now" refused (Q3-A); muster re-read (W3236–W3238) PARITY-DECOR; the demand form (W3275–W3278) DECOR — no
 //     demand is recorded here (Q3-A); work re-read (W3279–W3281) PARITY-DECOR. The page reads nothing, so it has no load-error state: the
 //     re-read chains are reached by address only, and each one's confirm state has ONE extra link — a re-read of /mgnrega.
+//
+// GOV-5b · WAGES AND SOCIAL AUDIT adds no route; `/mgnrega` gains two sections (GOV5_SECTIONS_5B):
+//   • W349 (Wages & FTO) — BUILT (honest) as the section "Wages" (Q1-A): GOV-5a's wage sentence (`gov5.q1`, moved into this section so it
+//     is printed once) and each canon feature named once as not done here — the wage list, the payment order (FTO) and the watch on a bank
+//     payment, compensation for late wages, the unemployment allowance, a date promised to a worker. No figure of any kind.
+//   • W350 (Social audit & the public wall) — BUILT (honest) as the section "Social audit" (Q5-A): "This console publishes nothing, compiles
+//     no social-audit pack and takes no complaints." — each clause verified at 8051ba28: the gov realm's controllers are auth / me / members /
+//     applications / schemes / overview (no publish act — `published` there only READS a scheme's published version); no migration
+//     creates a social-audit table; the only complaint table (`labour_grievances`, 0008) is the marketplace's, with no gov route and no
+//     kv_gov grant (0239 / 0240 grant kv_gov nothing on it).
+//   • Their canon addresses (`/mgnrega/wages`, `/mgnrega/audit`, `/mgnrega/social-audit`) have no route and answer not found.
+//   • the chains (`?do=…&act=`; Back → `/mgnrega`): wage export (W3270–W3271, `do=wage-file`) DECOR; wage re-read (W3272–W3274,
+//     `do=wage-reread`) PARITY-DECOR; social mutate (W3267–W3269, `do=publish`) DECOR — "Publish this month's wall" refused (Q5-A).
 export interface Tr { t(key: string, vars?: Record<string, string | number>): string }
 
 export type Gov5Surface =
   // GOV-5a · the page and its chains
-  | 'mgnrega' | 'job_file' | 'job_reread' | 'sync_act' | 'muster_reread' | 'demand_form' | 'work_reread';
+  | 'mgnrega' | 'job_file' | 'job_reread' | 'sync_act' | 'muster_reread' | 'demand_form' | 'work_reread'
+  // GOV-5b · the page's two sections and their chains
+  | 'wages' | 'social_audit' | 'wage_file' | 'wage_reread' | 'publish_act';
 export interface Gov5Refusal { id: string; canon: string; surfaces: readonly Gov5Surface[]; key: string; why: string }
 
 /** The surfaces GOV-5a builds. */
 export const SURFACES_5A: readonly Gov5Surface[] = ['mgnrega', 'job_file', 'job_reread', 'sync_act', 'muster_reread', 'demand_form', 'work_reread'];
-/** The surfaces GOV-5b builds (none yet: W349 and W350 are pending_5b). */
-export const SURFACES_5B: readonly Gov5Surface[] = [];
+/** The surfaces GOV-5b builds: the sections "Wages" (W349) and "Social audit" (W350) of /mgnrega, and their three chains. */
+export const SURFACES_5B: readonly Gov5Surface[] = ['wages', 'social_audit', 'wage_file', 'wage_reread', 'publish_act'];
 const REREADS_5A: readonly Gov5Surface[] = ['job_reread', 'muster_reread', 'work_reread'];
 const WRITE_CHAINS_5A: readonly Gov5Surface[] = ['sync_act', 'demand_form', 'job_reread', 'muster_reread', 'work_reread'];
+const WRITE_CHAINS_5B: readonly Gov5Surface[] = ['publish_act', 'wage_reread'];
 
 export const GOV5_REFUSALS: readonly Gov5Refusal[] = Object.freeze([
   // ══ the console chrome on W345–W348, W440 ══
@@ -105,6 +122,47 @@ export const GOV5_REFUSALS: readonly Gov5Refusal[] = Object.freeze([
     key: 'gov5.refusal.chainBackForm', why: 'canon defect (survey §1, F-10): no form exists; Back returns to the page' },
   { id: 'reread_writes_5a', canon: 'W3226 / W3236 / W3279 "confirming writes an [record] entry" (opened by "Retry")', surfaces: REREADS_5A,
     key: 'gov5.refusal.rereadWrites', why: 'a re-read writes nothing' },
+  // ══ GOV-5b · W349 (the section "Wages", Q1-A) ══
+  { id: 'wage_rows', canon: 'W349 rows "[n] days left (due [date]) · [muster ref] · [money] · wage list generated · FTO pending signature" · "[n] days late … FTO signed · credit pending at bank · [money] ([money] × [rate] × [n] days — accrues daily until credit)" · "paid on day [n] … credited [date] (day [n]) · [n] pd × [money]"', surfaces: ['wages'],
+    key: 'gov5.refusal.noPayRows', why: 'MONEY · LEGAL, FALSE ×3 (Q1-A): no payment stage, bank credit or late-pay sum exists in any realm (grep fto|compensation → 0)' },
+  { id: 'late_rule', canon: 'W349 "Compensation ([rate] of unpaid wages per day of delay) is the Act\'s rule, not ours — this console computes it in the open so a worker never has to argue arithmetic" · title "the 15-day promise, tracked … late means compensation, computed automatically, not claimed"', surfaces: ['wages'],
+    key: 'gov5.refusal.noLateRule', why: 'LEGAL: the rate is a statement of law not verified here and not printed; nothing is computed' },
+  { id: 'worker_promise', canon: 'W349 "Workers see the same clock in their own app/[text message] in [language]: [a promise of the date wages will arrive]"', surfaces: ['wages'],
+    key: 'gov5.refusal.noPayMessage', why: 'FALSE: no app shows MGNREGA and no message exists (survey §1); a payment promise on the platform\'s behalf' },
+  { id: 'pay_empty', canon: 'W349 states "No wage payments tracked yet" · "No open wage cycles — Every muster credited within its window … nothing was late, which is the win"', surfaces: ['wages'],
+    key: 'gov5.refusal.emptyNotPaid', why: 'FALSE as a claim: nothing is tracked, so empty is not success (the GOV-3 rule)' },
+  { id: 'stage_mirror', canon: 'W349 states "Stage feed stale — Stages shown as-of the last sync; the [late-pay] accrual runs on OUR clock from muster closure" · "Observed, not operated — [payment order] signing happens in [register] with its own signatories; this page is the [panchayat]\'s honest mirror plus the arithmetic nobody else shows"', surfaces: ['wages'],
+    key: 'gov5.refusal.noStages', why: 'FALSE: no stage feed, sync or observation exists (the state-ledger provider is a noop); who signs in the state system is not shown by code' },
+  { id: 'pay_paging', canon: 'W349 "Showing 3 of [n] wage cycles this FY · Page size · Page 1 of [n]" · filter "paid on day [n]" · "[n] days late" (no target) · row menus ×3', surfaces: ['wages'],
+    key: 'gov5.refusal.noPayPaging', why: 'no rows, so nothing to page, filter or open (FM :155, :159, :160 DECOR)' },
+  { id: 'pay_file', canon: 'W349 "Export (audit-stamped)" (→ W3270)', surfaces: ['wages', 'wage_file'],
+    key: 'gov5.refusal.noPayFile', why: 'applied from GOV-2/3/4 Q4-A: no gov file plane; the download sentence is printed' },
+  // ══ GOV-5b · W350 (the section "Social audit", Q5-A) ══
+  { id: 'public_wall', canon: 'W350 "Social audit & the public wall — … everything here is also on the physical wall and the public page, in [language] first" · "Printed [size], pasted at the [panchayat] office and the [place] worksite, [scan code] to the same page online"', surfaces: ['social_audit'],
+    key: 'gov5.refusal.noWall', why: 'FALSE: no wall, public page or code exists; Q5-A' },
+  { id: 'publish', canon: 'W350 "Publish this month\'s wall" (→ W3267) · state "Publishing is the [headman] + secretary — Two-person publish (maker-checker)"', surfaces: ['social_audit', 'publish_act'],
+    key: 'gov5.refusal.noPublish', why: 'Q5-A: nothing is published; no such roles (0239:25-28)' },
+  { id: 'wall_contents', canon: 'W350 "The wall — what the village sees: Works in progress ([n]) with [budget] vs [spend] · every muster, worker-by-worker, wages and dates · the demand register with its clocks · [late pay] paid for delays ([money] accruing is PUBLIC — embarrassment is the enforcement mechanism the Act intended)"', surfaces: ['social_audit'],
+    key: 'gov5.refusal.noShowing', why: 'PII · MONEY · LEGAL, FALSE: named workers\' days and pay put on public show; a budget figure from a typed number (F-7)' },
+  { id: 'audit_pack', canon: 'W350 "[village assembly] audit — next: [date] · Audit pack auto-compiles: all musters, wage lists, [payment orders], delay [late pay], photos with dates. Findings … land back here with owners and due dates" · state "Couldn\'t compile the pack — … Retry"', surfaces: ['social_audit'],
+    key: 'gov5.refusal.noMeeting', why: 'FALSE: no pack, photo, meeting date or findings object exists' },
+  { id: 'grievance_rows', canon: 'W350 "Grievances — open register · any channel · dated receipt · public status" · rows "[a worker\'s own words] · [date] · voice line · [muster ref] attendance (worker [masked]) · query opened with [register] record — worker keeps the receipt" · "[a worksite facility] absent … fixed [date]"', surfaces: ['social_audit'],
+    key: 'gov5.refusal.noComplaintRows', why: 'PII · TRUST, FALSE: no complaint route in the gov realm; a worker\'s words and card digits in a "public status" register' },
+  { id: 'held_line', canon: 'W350 "One worker\'s dispute never delays [n] colleagues\' wages — the disputed line holds, the muster pays. The same freeze-only-the-disputed-value rule the marketplace uses ([screen])"', surfaces: ['social_audit'],
+    key: 'gov5.refusal.noHeldPay', why: 'FALSE for MGNREGA: no wage list exists; the marketplace rule is not verified here' },
+  { id: 'complaints_empty', canon: 'W350 states "No grievances open — Concerns raised at the [village assembly] or on the public wall will appear here" · "No open grievances — The register being empty is only good news if the channels are genuinely open"', surfaces: ['social_audit'],
+    key: 'gov5.refusal.emptyNotHeard', why: 'FALSE as a claim: nothing is taken here, so an empty section says nothing about complaints' },
+  // ══ GOV-5b · the chains' shared sentences (W3267–W3274) — refused BY NAME ══
+  { id: 'chain_file_5b', canon: 'W3270 / W3271 "queued with a position and [time to ready] … [stamped], [checked], delivered by [time-limited link]" · "file name, row count, [file hash] … [n]-min [link], every fetch logged"', surfaces: ['wage_file'],
+    key: 'gov5.refusal.chainFile', why: 'no file is queued, made or handed out in this realm (GOV-2 Q4-A)' },
+  { id: 'chain_record_5b', canon: 'W3267 / W3272 "confirming writes an [record] entry with actor, time and reason" · W3268 / W3273 "the [record] has the entry (actor · time · reason · before/after)" · "View [the record]"', surfaces: WRITE_CHAINS_5B,
+    key: 'gov5.refusal.chainRecord', why: 'nothing is written from these pages, so there is no entry to view' },
+  { id: 'chain_money_5b', canon: 'W3268 / W3273 "Money-adjacent actions reconcile [to zero] before this page ever shows"', surfaces: WRITE_CHAINS_5B,
+    key: 'gov5.refusal.chainMoney', why: 'no money moves on this console' },
+  { id: 'chain_paging_5b', canon: 'W3269 / W3274 "repeated failures page the [duty person]" · "Retry — back to confirm"', surfaces: WRITE_CHAINS_5B,
+    key: 'gov5.refusal.chainPaging', why: 'no paging exists; Back returns to /mgnrega' },
+  { id: 'reread_writes_5b', canon: 'W3272 "confirming writes an [record] entry" (opened by "Retry")', surfaces: ['wage_reread'],
+    key: 'gov5.refusal.rereadWrites', why: 'a re-read writes nothing' },
 ]);
 export function gov5RefusalKeys(surface: Gov5Surface): string[] { return GOV5_REFUSALS.filter((r) => r.surfaces.includes(surface)).map((r) => r.key); }
 
@@ -117,6 +175,24 @@ export const GOV5_NOT_DONE: readonly { id: string; file: 'W345' | 'W346' | 'W347
   { id: 'musters', file: 'W440', canon: 'W440 "Muster rolls — [panchayat]" (rows: work, place, dates, workers, days, money, status)', key: 'gov5.notDone.musters' },
 ]);
 
+/** GOV-5b · `/mgnrega`'s two sections — W349 "Wages" (Q1-A; GOV-5a's wage sentence) and W350 "Social audit" (Q5-A): each canon feature
+ *  named ONCE as not done here. Each section prints its statement, its items and its own refusals (surface). */
+export interface Gov5Section { id: 'wages' | 'social_audit'; file: 'W349' | 'W350'; surface: Gov5Surface; title: string; statement: string; items: readonly { id: string; canon: string; key: string }[] }
+export const GOV5_SECTIONS_5B: readonly Gov5Section[] = Object.freeze([
+  { id: 'wages', file: 'W349', surface: 'wages', title: 'gov5.wages.title', statement: 'gov5.q1', items: [
+    { id: 'wage_list', canon: 'W349 "wage list generated"', key: 'gov5.notDone.wageList' },
+    { id: 'payment_order', canon: 'W349 "FTO pending signature" · "FTO signed · credit pending at bank" · "credited [date]"', key: 'gov5.notDone.paymentOrder' },
+    { id: 'compensation', canon: 'W349 "late means compensation, computed automatically" · "[money] (… accrues daily until credit)"', key: 'gov5.notDone.compensation' },
+    { id: 'allowance', canon: 'W345 / W347 "unemployment allowance … state liability" (the wage-side figure W349 sits beside)', key: 'gov5.notDone.allowance' },
+    { id: 'pay_date', canon: 'W349 "[n] days left (due [date])" · the worker-facing promise of a pay date', key: 'gov5.notDone.payDate' },
+  ] },
+  { id: 'social_audit', file: 'W350', surface: 'social_audit', title: 'gov5.social.title', statement: 'gov5.q5', items: [
+    { id: 'public_notice', canon: 'W350 "the physical wall and the public page" · "Publish this month\'s wall"', key: 'gov5.notDone.publicNotice' },
+    { id: 'audit_papers', canon: 'W350 "Audit pack auto-compiles … photos with dates" · "Findings … with owners and due dates"', key: 'gov5.notDone.auditPapers' },
+    { id: 'complaints', canon: 'W350 "Grievances — open register · any channel · dated receipt · public status"', key: 'gov5.notDone.complaints' },
+  ] },
+]);
+
 /** What was built differently from the canon, and why (DELTAs). */
 export const GOV5_DELTAS: readonly { id: string; canon: string; built: string }[] = Object.freeze([
   { id: 'one_route', canon: 'W345 /mgnrega/dashboard · W346 /mgnrega/job-cards · W347 /mgnrega/demand · W348 /mgnrega/musters/[id] · W440 /mgnrega/musters', built: 'E1: one route, /mgnrega; W346, W347, W348, W440 are its "does not do" section; the other addresses have no route (not found); the GOV-1a 307 for /mgnrega is removed' },
@@ -125,12 +201,16 @@ export const GOV5_DELTAS: readonly { id: string; canon: string; built: string }[
   { id: 'q4_not_printed', canon: 'brief Q4-A "The organisation\'s MGNREGA records are switched off on this platform."', built: 'NOT printed: the page reads nothing and the gov realm has no flag read; a flag can be ON for one organisation (its allowlist) — the page cannot know the state, so it does not claim it' },
   { id: 'q1_own_sentence', canon: 'GOV-3\'s money sentence ("…Benefits are paid by PFMS and the banks…")', built: 'not reused: its PFMS clause is about scheme benefits and is not shown true for MGNREGA wages by any code here; Q1\'s own sentence is printed' },
   { id: 'no_retry_opener', canon: 'load-error "Retry" on W345–W348, W440 → the mutate-confirm pages', built: 'the page reads nothing, so it has no load-error state; the re-read chains (PARITY-DECOR) are reached by address; each confirm state\'s one extra link re-reads /mgnrega' },
+  { id: 'two_sections', canon: 'W349 /mgnrega/wages · W350 /mgnrega/audit (each its own page in the slice\'s own sidebar)', built: 'GOV-5b: no route; the sections "Wages" and "Social audit" of /mgnrega; /mgnrega/wages, /mgnrega/audit and /mgnrega/social-audit answer not found' },
+  { id: 'q1_moved', canon: 'GOV-5a printed Q1\'s sentence among the page\'s opening statements', built: 'GOV-5b moves it (same key, same words) to the head of the "Wages" section, so it is printed ONCE (Q1-A: reuse GOV-5a\'s wage sentence)' },
+  { id: 'chrome_5b', canon: 'W349 / W350 "[initials]" avatar · "Search [wage cycles / grievances]… ⌘K" · bell · state "Flagged off — [page] disabled … See plan settings"', built: 'covered by the page\'s own refusals (gov5.refusal.consoleChrome, gov5.refusal.pageSwitch) — one page, not printed twice' },
+  { id: 'no_retry_opener_5b', canon: 'W349 "Stage feed stale … Retry" (→ W3272) · W350 "Couldn\'t compile the pack … Retry" (→ W3267)', built: 'no load-error state (the page reads nothing); the wage re-read chain is reached by address; the social chain is DECOR (Publish refused)' },
 ]);
 
-/** The verdict values (`pending_5b` until GOV-5b decides W349, W350 and their chains — the 4c-7 rule deletes it then). */
-export type Gov5Verdict = 'BUILT (honest)' | 'BUILT (read)' | 'REAL' | 'PARITY-DECOR' | 'DECOR' | 'pending_5b';
+/** The verdict values (GOV-5b deleted `pending_5b`: all 33 are decided — the 4c-7 rule). */
+export type Gov5Verdict = 'BUILT (honest)' | 'BUILT (read)' | 'REAL' | 'PARITY-DECOR' | 'DECOR';
 export type Gov5Wave = '5a' | '5b';
-/** Every canon file of GOV-5 (33), each with ONE verdict: 5a decides its 23; 5b's 10 are pending. */
+/** Every canon file of GOV-5 (33), each with ONE verdict: 5a decided its 23; 5b decides its 10. */
 export const GOV5_CANON_FILES: readonly { file: string; wave: Gov5Wave; verdict: Gov5Verdict; note: string }[] = Object.freeze([
   // ── 5a · MGNREGA, SAID TRULY (23) — decided (Q1-A, Q2-A, Q3-A lead-applied; Q4-A's sentence not printed) ──
   { file: 'W345-gov-mgnrega-dashboard.html', wave: '5a', verdict: 'BUILT (honest)', note: '/mgnrega — reads nothing; Q3, Q2, Q1 and the download sentence verbatim; no row, count, clock, card, person, place or figure' },
@@ -156,17 +236,17 @@ export const GOV5_CANON_FILES: readonly { file: string; wave: Gov5Wave; verdict:
   { file: 'W3279-gov-work-mutate-confirm.html', wave: '5a', verdict: 'PARITY-DECOR', note: '/mgnrega?do=work-reread&act=confirm — the one extra link IS a re-read of /mgnrega' },
   { file: 'W3280-gov-work-mutate-success.html', wave: '5a', verdict: 'PARITY-DECOR', note: '/mgnrega?do=work-reread&act=success — nothing changed' },
   { file: 'W3281-gov-work-mutate-failure.html', wave: '5a', verdict: 'PARITY-DECOR', note: '/mgnrega?do=work-reread&act=failure — nothing changed; Back → /mgnrega' },
-  // ── 5b · WAGES AND THE WALL (10) — pending (Q1's wage section, Q5) ──
-  { file: 'W349-gov-wage-tracking.html', wave: '5b', verdict: 'pending_5b', note: 'GOV-5b' },
-  { file: 'W350-gov-social-audit.html', wave: '5b', verdict: 'pending_5b', note: 'GOV-5b' },
-  { file: 'W3267-gov-social-mutate-confirm.html', wave: '5b', verdict: 'pending_5b', note: 'GOV-5b' },
-  { file: 'W3268-gov-social-mutate-success.html', wave: '5b', verdict: 'pending_5b', note: 'GOV-5b' },
-  { file: 'W3269-gov-social-mutate-failure.html', wave: '5b', verdict: 'pending_5b', note: 'GOV-5b' },
-  { file: 'W3270-gov-wage-export-queued.html', wave: '5b', verdict: 'pending_5b', note: 'GOV-5b' },
-  { file: 'W3271-gov-wage-export-ready.html', wave: '5b', verdict: 'pending_5b', note: 'GOV-5b' },
-  { file: 'W3272-gov-wage-mutate-confirm.html', wave: '5b', verdict: 'pending_5b', note: 'GOV-5b' },
-  { file: 'W3273-gov-wage-mutate-success.html', wave: '5b', verdict: 'pending_5b', note: 'GOV-5b' },
-  { file: 'W3274-gov-wage-mutate-failure.html', wave: '5b', verdict: 'pending_5b', note: 'GOV-5b' },
+  // ── 5b · WAGES AND SOCIAL AUDIT (10) — decided (Q1-A, Q5-A lead-applied) ──
+  { file: 'W349-gov-wage-tracking.html', wave: '5b', verdict: 'BUILT (honest)', note: '/mgnrega section "Wages" — Q1\'s sentence (GOV-5a\'s, moved); wage list, payment order (FTO), compensation, allowance and pay date named once as not done; /mgnrega/wages has no route' },
+  { file: 'W350-gov-social-audit.html', wave: '5b', verdict: 'BUILT (honest)', note: '/mgnrega section "Social audit" — Q5\'s sentence; notice and public page, audit papers, complaints named once as not done; /mgnrega/audit has no route' },
+  { file: 'W3267-gov-social-mutate-confirm.html', wave: '5b', verdict: 'DECOR', note: '/mgnrega?do=publish&act=confirm — "Publish this month\'s wall" refused BY NAME (Q5-A)' },
+  { file: 'W3268-gov-social-mutate-success.html', wave: '5b', verdict: 'DECOR', note: '/mgnrega?do=publish&act=success — nothing was published' },
+  { file: 'W3269-gov-social-mutate-failure.html', wave: '5b', verdict: 'DECOR', note: '/mgnrega?do=publish&act=failure — nothing was sent; Back → /mgnrega' },
+  { file: 'W3270-gov-wage-export-queued.html', wave: '5b', verdict: 'DECOR', note: '/mgnrega?do=wage-file&act=queued — no file is made; reached by address only' },
+  { file: 'W3271-gov-wage-export-ready.html', wave: '5b', verdict: 'DECOR', note: '/mgnrega?do=wage-file&act=ready — no file exists to hand out' },
+  { file: 'W3272-gov-wage-mutate-confirm.html', wave: '5b', verdict: 'PARITY-DECOR', note: '/mgnrega?do=wage-reread&act=confirm — the one extra link IS a re-read of /mgnrega' },
+  { file: 'W3273-gov-wage-mutate-success.html', wave: '5b', verdict: 'PARITY-DECOR', note: '/mgnrega?do=wage-reread&act=success — nothing changed' },
+  { file: 'W3274-gov-wage-mutate-failure.html', wave: '5b', verdict: 'PARITY-DECOR', note: '/mgnrega?do=wage-reread&act=failure — nothing changed; Back → /mgnrega' },
 ]);
 
 /** The canon chain groups (survey §1H–§1R; the canon's route comments "B2 shared chain: <m> × chain-<x>"), 26 files, each exactly once. */
@@ -186,7 +266,7 @@ export const GOV5_CHAIN_GROUPS: readonly { id: string; donor: string; wave: Gov5
 export const MGNREGA_BACK = '/mgnrega';
 
 // ── THE BUILT CHAINS: each is a query state (`?do=…&act=`) of /mgnrega (Back → /mgnrega). ──
-export type Chain5Id = 'job_file' | 'job_reread' | 'sync_act' | 'muster_reread' | 'demand_form' | 'work_reread';
+export type Chain5Id = 'job_file' | 'job_reread' | 'sync_act' | 'muster_reread' | 'demand_form' | 'work_reread' | 'wage_file' | 'wage_reread' | 'publish_act';
 export interface Chain5Def {
   id: Chain5Id; wave: Gov5Wave; kind: 'PARITY-DECOR' | 'DECOR'; group: string; surface: Gov5Surface; states: readonly string[];
   back: string; doing: string; key: (state: string) => string; statement: string;
@@ -204,12 +284,20 @@ export const GOV5_CHAINS: readonly Chain5Def[] = Object.freeze([
     key: (s: string) => `gov5.chain.demand.${s}`, statement: 'gov5.q3' },
   { id: 'work_reread', wave: '5a', kind: 'PARITY-DECOR', group: 'work_mutate', surface: 'work_reread', states: ['confirm', 'success', 'failure'], back: MGNREGA_BACK, doing: 'work-reread',
     key: (s: string) => `gov5.chain.workReread.${s}`, statement: 'gov5.q3' },
+  // GOV-5b
+  { id: 'wage_file', wave: '5b', kind: 'DECOR', group: 'wage_export', surface: 'wage_file', states: ['queued', 'ready'], back: MGNREGA_BACK, doing: 'wage-file',
+    key: (s: string) => `gov5.chain.wageFile.${s}`, statement: 'gov5.download' },
+  { id: 'wage_reread', wave: '5b', kind: 'PARITY-DECOR', group: 'wage_mutate', surface: 'wage_reread', states: ['confirm', 'success', 'failure'], back: MGNREGA_BACK, doing: 'wage-reread',
+    key: (s: string) => `gov5.chain.wageReread.${s}`, statement: 'gov5.q1' },
+  { id: 'publish_act', wave: '5b', kind: 'DECOR', group: 'social_mutate', surface: 'publish_act', states: ['confirm', 'success', 'failure'], back: MGNREGA_BACK, doing: 'publish',
+    key: (s: string) => `gov5.chain.publish.${s}`, statement: 'gov5.q5' },
 ]);
 export function chain5ById(id: Chain5Id): Chain5Def { return GOV5_CHAINS.find((c) => c.id === id) as Chain5Def; }
 
 type Params = Record<string, string | string[] | undefined> | undefined;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
-/** Which chain a query opens on /mgnrega: `do=job-file` / `job-reread` / `sync` / `muster-reread` / `demand` / `work-reread`; anything else → null. */
+/** Which chain a query opens on /mgnrega: `do=job-file` / `job-reread` / `sync` / `muster-reread` / `demand` / `work-reread` (5a) /
+ *  `wage-file` / `wage-reread` / `publish` (5b); anything else → null. */
 export function chain5For(searchParams: Params): Chain5Id | null {
   const d = one(searchParams?.do);
   const c = GOV5_CHAINS.find((x) => x.doing === d);
