@@ -8,7 +8,8 @@ import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../components/Bidi';
 import { MEMBERSHIP_STATUSES, isMembershipStatus } from '../../features/members/form';
 import { createTierAction, setTierActiveAction, cancelMembershipAction } from './actions';
 import type { MembershipTier, UserMembership } from '@krishalaya/sdk-js';
@@ -96,8 +97,8 @@ export default async function MembersPage({ searchParams }: { searchParams: { st
           columns={[
             { header: t.t('members.colTier'), cell: (x) => x.defaultName },
             { header: t.t('members.colCode'), cell: (x) => <span className="kv-mono">{x.code}</span> },
-            { header: t.t('members.colMonthly'), cell: (x) => (x.monthlyFeeMinor === '0' ? t.t('members.free') : formatMoneyMinor(x.monthlyFeeMinor, x.currencyCode ?? 'INR', lang)) },
-            { header: t.t('members.colAnnual'), cell: (x) => (x.annualFeeMinor ? formatMoneyMinor(x.annualFeeMinor, x.currencyCode ?? 'INR', lang) : t.t('common.dash')) },
+            { header: t.t('members.colMonthly'), cell: (x) => (x.monthlyFeeMinor === '0' ? t.t('members.free') : moneyText(x.monthlyFeeMinor, x.currencyCode ?? 'INR', lang)) },
+            { header: t.t('members.colAnnual'), cell: (x) => (x.annualFeeMinor ? moneyText(x.annualFeeMinor, x.currencyCode ?? 'INR', lang) : t.t('common.dash')) },
             {
               header: t.t('members.colActions'),
               cell: (x) => (

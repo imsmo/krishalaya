@@ -16,6 +16,9 @@ import * as ts from 'typescript';
 //     formatDate (both pin the language's Intl locale; a bare code or no code at all does not pin the digits).
 //   • RTL-1b-2: the two feature-level spans (settlements periodLabel, dairy diversionRowText) carry no arrow glyph in code —
 //     the arrow is catalogue copy (rtl.span) so Arabic reverses it.
+//   • RTL-1b-3: NO source under app/, components/, features/ touches formatMoneyMinor except the one helper
+//     (features/rtl/money.ts `moneyText`, and `<Money>` in components/Bidi.tsx) — every amount prints in the Indian shape,
+//     isolated, under ar, and byte-identical under en/hi/gu.
 const SRC = join(__dirname, '..');
 const isTest = (p: string) => /\/(test|test-render)\//.test(p) || /\.(spec|test)\.tsx?$/.test(p);
 const isCatalogue = (p: string) => /\/i18n\/(en|hi|gu|ar)\.ts$/.test(p);
@@ -141,5 +144,67 @@ describe('counts, dates and spans app-wide (RTL-1b-2)', () => {
       expect(anyArrowLiterals(f, src)).toEqual([]);
       expect(src).toMatch(/spanText\(t, /);
     }
+  });
+});
+
+/** Every use of `formatMoneyMinor` in a source — a call (bare or `x.formatMoneyMinor(`) or an import of the name (also an
+ *  aliased one, `{ formatMoneyMinor as f }`) — as `file:line kind`. Comments and strings are not code, so never counted. */
+export function formatMoneyMinorUses(file: string, text: string): string[] {
+  const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const hits: string[] = [];
+  const at = (n: ts.Node) => `${file}:${sf.getLineAndCharacterOfPosition(n.getStart()).line + 1}`;
+  const visit = (n: ts.Node) => {
+    if (ts.isCallExpression(n)) {
+      const e = n.expression;
+      if ((ts.isIdentifier(e) && e.text === 'formatMoneyMinor') || (ts.isPropertyAccessExpression(e) && e.name.text === 'formatMoneyMinor')) hits.push(`${at(n)} call`);
+    }
+    if (ts.isImportSpecifier(n) && (n.propertyName ?? n.name).text === 'formatMoneyMinor') hits.push(`${at(n)} import`);
+    ts.forEachChild(n, visit);
+  };
+  visit(sf);
+  return hits;
+}
+/** Every `moneyText(` call, as `file:line`. */
+function moneyTextCalls(file: string, text: string): string[] {
+  const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const hits: string[] = [];
+  const visit = (n: ts.Node) => {
+    if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === 'moneyText') hits.push(`${file}:${sf.getLineAndCharacterOfPosition(n.getStart()).line + 1}`);
+    ts.forEachChild(n, visit);
+  };
+  visit(sf);
+  return hits;
+}
+
+// RTL-1b-3: every amount app-wide goes through ONE helper — `moneyText` (text, features/rtl/money.ts) or `<Money>` (the
+// <bdi> element, components/Bidi.tsx). Those two files are the only ones under app/, components/, features/ allowed to
+// touch formatMoneyMinor; a bare call anywhere else prints the Arabic locale's own shape, unisolated, on an ar page.
+const MONEY_HELPERS = ['features/rtl/money.ts', 'components/Bidi.tsx'];
+describe('money app-wide goes through the one helper (RTL-1b-3)', () => {
+  it('the formatMoneyMinor scanner finds calls and imports (also aliased / namespaced); ignores comments and strings', () => {
+    expect(formatMoneyMinorUses('a.tsx', "import { formatDate, formatMoneyMinor } from '@krishalaya/i18n';\nconst A = () => <b>{formatMoneyMinor(m, 'INR', lang)}</b>;"))
+      .toEqual(['a.tsx:1 import', 'a.tsx:2 call']);
+    expect(formatMoneyMinorUses('a.ts', "import { formatMoneyMinor as f } from 'x';\nconst s = i18n.formatMoneyMinor(m);")).toEqual(['a.ts:1 import', 'a.ts:2 call']);
+    expect(formatMoneyMinorUses('a.ts', "// formatMoneyMinor(m)\nconst s = 'formatMoneyMinor(';\nconst t = moneyText(m, 'INR', lang);")).toEqual([]);
+  });
+  it('no formatMoneyMinor anywhere under app/, components/, features/ outside the helper (was 200 calls in 102 files at 2f55aa37)', () => {
+    const scoped = SOURCES.filter((p) => ['app', 'components', 'features'].some((d) => p.startsWith(join(SRC, d) + '/')));
+    expect(scoped.length).toBeGreaterThan(500);
+    const hits = scoped.filter((p) => !MONEY_HELPERS.includes(relative(SRC, p)))
+      .flatMap((p) => formatMoneyMinorUses(relative(SRC, p), readFileSync(p, 'utf8')));
+    expect(hits).toEqual([]);
+  });
+  it('the helper files hold exactly one call each: moneyText (through moneyLang, isolated under rtl) and <Money>', () => {
+    const money = readFileSync(join(SRC, 'features', 'rtl', 'money.ts'), 'utf8');
+    expect(formatMoneyMinorUses('features/rtl/money.ts', money).filter((h) => h.endsWith('call'))).toHaveLength(1);
+    expect(money).toContain('const text = formatMoneyMinor(minor, currency, moneyLang(lang));');
+    expect(money).toContain('return PREVIEW_LANGUAGES.includes(lang) ? ltrRun(text) : text;');
+    const bidi = readFileSync(join(SRC, 'components', 'Bidi.tsx'), 'utf8');
+    expect(formatMoneyMinorUses('components/Bidi.tsx', bidi).filter((h) => h.endsWith('call'))).toHaveLength(1);
+    expect(bidi).toContain("export { moneyLang, moneyText } from '../features/rtl/money';");
+  });
+  it('the swap happened: at least 200 moneyText( calls under app/ (the 200 formatMoneyMinor calls of 2f55aa37)', () => {
+    const app = SOURCES.filter((p) => p.startsWith(join(SRC, 'app') + '/'));
+    expect(app.flatMap((p) => moneyTextCalls(relative(SRC, p), readFileSync(p, 'utf8'))).length).toBeGreaterThanOrEqual(200);
   });
 });

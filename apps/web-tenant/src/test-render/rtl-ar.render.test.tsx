@@ -13,7 +13,8 @@
 //      shape with Western digits only, the file name and hash isolated, no bare arrow, every aria-label filled and Arabic.
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import type { BulkImportJob, ConsoleCounts, ConsoleListingRow, ListingCard, NotificationBell, RosterCensus, RosterMember, TenantDashboard } from '@krishalaya/sdk-js';
+import type { BulkImportJob, ConsoleCounts, ConsoleListingRow, InvoiceMonthKpis, ListingCard, NotificationBell, RosterCensus, RosterMember, TenantDashboard, TradeInvoiceRow } from '@krishalaya/sdk-js';
+import { formatMoneyMinor } from '@krishalaya/i18n';
 import { en } from '../i18n/en';
 import { ar } from '../i18n/ar';
 import { hi } from '../i18n/hi';
@@ -36,6 +37,7 @@ jest.mock('../lib/env', () => ({ env: { appName: 'Krishalaya' } }));
 jest.mock('../app/listings/actions', () => ({ bulkListingsAction: async () => undefined }));
 jest.mock('../app/listings/import/actions', () => ({ validateListingJobAction: async () => undefined, confirmListingJobAction: async () => undefined, cancelListingJobAction: async () => undefined }));
 jest.mock('../app/people/actions', () => ({ revealFieldAction: async () => undefined })); // RTL-1b-2: /people's reveal control
+jest.mock('../app/invoices/actions', () => ({ exportGstr1Action: async () => undefined })); // RTL-1b-3: /invoices' GSTR-1 form
 
 const U = (n: number) => `0190a8b2-0000-7000-8000-${String(n).padStart(12, '0')}`;
 const AT = '2026-10-04T09:48:00.000Z';
@@ -69,6 +71,18 @@ const dash: TenantDashboard = {
 const census: RosterCensus = { activeMembers: 128456, fullyVerified: 1000, activeLast30d: 900, dormant: 77, voiceFirstShare: null };
 const roster: RosterMember[] = [{ userId: U(7), fullName: 'Asha Patel', phoneMasked: '+91 96••• ••114', villageName: 'Pimpalgaon', languageCode: 'mr',
   roles: [{ roleCode: 'farmer', kycStatus: 'verified', isActive: true }], lastActiveAt: AT, lifetimeReceivedMinor: '1234500' }];
+// RTL-1b-3 · /invoices: the money-heavy page. KPIs in crores and lakhs, a partly credited invoice (its remainder is money
+// INSIDE a t.t() sentence, inv.remaining), a zero-tax row (₹0.00 is a real amount there) and a NULL-tax row (never ₹0).
+const invKpis: InvoiceMonthKpis = { count: 3, taxableMinor: '1234565000', taxMinor: '22222050', exemptMinor: '0', withoutBreakdown: 1, incompleteBasis: 0,
+  windowFromIso: '2026-10-01T00:00:00.000Z', windowToIso: '2026-11-01T00:00:00.000Z' };
+const invRows: TradeInvoiceRow[] = [
+  { id: U(8), invoiceNo: 'INV-2026-000417', orderId: U(9), orderNo: 'ORD-88417', buyerGstin: '24AAAAA0000A1Z5', totalMinor: '12345650', taxMinor: '588000',
+    taxableMinor: '11757650', exemptMinor: '0', supplyType: 'intra', placeOfSupplyCode: '24', taxBasisComplete: true, issuedAt: AT, createdAt: AT, creditedMinor: '345650' },
+  { id: U(10), invoiceNo: 'INV-2026-000418', orderId: U(11), orderNo: 'ORD-88418', buyerGstin: null, totalMinor: '845000', taxMinor: '0',
+    taxableMinor: '0', exemptMinor: '845000', supplyType: 'inter', placeOfSupplyCode: '27', taxBasisComplete: true, issuedAt: AT, createdAt: AT, creditedMinor: '0' },
+  { id: U(12), invoiceNo: 'INV-2025-009001', orderId: U(13), orderNo: null, buyerGstin: null, totalMinor: '99', taxMinor: null,
+    taxableMinor: null, exemptMinor: null, supplyType: null, placeOfSupplyCode: null, taxBasisComplete: null, issuedAt: null, createdAt: AT, creditedMinor: '0' },
+];
 const mockClient = {
   auth: { me: async () => ({ id: U(2), displayName: 'Asha Patel' }) },
   notifications: { bell: async () => bell },
@@ -76,6 +90,7 @@ const mockClient = {
   bulkImports: { list: async () => ({ items: jobs, nextCursor: null }) },
   consoleHome: { dashboard: async () => dash, goLive: async () => null },
   members: { roster: async () => ({ items: roster, census, nextCursor: null }) },
+  payments: { invoices: { list: async () => ({ items: invRows, kpis: invKpis, nextCursor: null }) } },
 };
 jest.mock('../lib/api-client', () => ({ tenantClient: () => mockClient }));
 
@@ -84,6 +99,8 @@ import ListingsPage from '../app/listings/page';
 import ListingImportPage from '../app/listings/import/page';
 import DashboardPage from '../app/dashboard/page';
 import PeoplePage from '../app/people/page';
+import InvoicesPage from '../app/invoices/page';
+import * as moneyModule from '../features/rtl/money';
 import { getLang, getLanguageDef } from '../lib/i18n';
 import { rich } from '../components/Bidi';
 
@@ -317,5 +334,92 @@ describe('4 · /dashboard and /people in Arabic (RTL-1b-2: the whole catalogue)'
     }
     expect(main(await page({ cookie: 'en' }, dashboard))).toContain('<strong>1,28,456</strong>');
     expect(main(await page({ cookie: 'en' }, people))).toContain('<strong>1,28,456</strong>');
+  });
+});
+
+// ---- 5 · RTL-1b-3: every amount app-wide — the Indian shape, isolated ----------------------------------------------------
+// Before 1b-3 every page but /listings printed the Arabic locale's own money shape (an RLM, then "4,812,600.00 ₹"),
+// unisolated. Now every amount goes through `moneyText` (LRI…PDI in text) or `<Money>` (<bdi dir="ltr">). Checked here:
+// EVERY "₹" in the rendered page body sits inside one of the two isolates, and every isolated amount is the Indian shape
+// with Western digits. Under en/hi/gu the page is BYTE-IDENTICAL to what it rendered before: the same render with
+// `moneyText` swapped back to a bare `formatMoneyMinor(…, lang)` (the 2f55aa37 call) gives the same markup.
+describe('5 · every amount in the Indian shape, isolated (RTL-1b-3: /dashboard, /people, /invoices)', () => {
+  const main = (html: string) => html.match(/<main[^>]*>([\s\S]*)<\/main>/)?.[1] ?? '';
+  const LRI = '\u2066'; const PDI = '\u2069';
+  /** Every money run in the page body: the isolated ones (LRI…PDI or <bdi dir="ltr" class="kv-money">), and how many "₹"
+   *  are left over OUTSIDE any isolate (must be 0). */
+  function amounts(html: string): { isolated: string[]; bare: number } {
+    const body = main(html).replace(/<style[\s\S]*?<\/style>/g, '');
+    const runs: Array<[number, string]> = [];
+    for (const m of body.matchAll(/\u2066([^\u2066\u2069]*)\u2069/g)) runs.push([m.index ?? 0, m[1]]);
+    for (const m of body.matchAll(/<bdi dir="ltr" class="kv-money">([^<]*)<\/bdi>/g)) runs.push([m.index ?? 0, m[1]]);
+    const rest = body.replace(/\u2066[^\u2066\u2069]*\u2069/g, '').replace(/<bdi dir="ltr" class="kv-money">[^<]*<\/bdi>/g, '');
+    return { isolated: runs.sort((a, b) => a[0] - b[0]).map((r) => r[1]).filter((r) => r.includes('₹')), bare: (rest.match(/₹/g) ?? []).length };
+  }
+  /** The Indian (en-IN) shape: optional sign, symbol first, lakh grouping (last group of 3, then groups of 2), 2 decimals. */
+  const INDIAN = /^-?₹(?:\d{1,2},(?:\d{2},)*\d{3}|\d{1,3})\.\d{2}$/;
+  const dashboard = () => DashboardPage();
+  const people = () => PeoplePage({ searchParams: {} });
+  const invoices = () => InvoicesPage({ searchParams: {} });
+  const PAGES: Array<[string, () => Promise<React.ReactNode>, string[]]> = [
+    ['/dashboard', dashboard, ['₹48,12,600.00', '₹3,42,180.00']],
+    ['/people', people, ['₹12,345.00']],
+    ['/invoices', invoices, ['₹1,23,45,650.00', '₹2,22,220.50', '₹1,23,456.50', '₹1,20,000.00', '₹5,880.00', '₹8,450.00', '₹0.00', '₹0.99']],
+  ];
+
+  it.each(PAGES)('%s under ar: every amount is isolated, in the Indian shape, Western digits (never "4,812,600.00 ₹")', async (_n, mount, expected) => {
+    const html = await page({ cookie: 'ar' }, mount);
+    expect(htmlTag(html)).toMatch(/ dir="rtl"/);
+    const a = amounts(html);
+    expect(a.isolated).toEqual(expected);
+    expect(a.bare).toBe(0);
+    expect(a.isolated.filter((x) => !INDIAN.test(x))).toEqual([]);
+    expect(main(html)).not.toMatch(/\d\s*₹/); // never the ar locale's trailing symbol
+    expect(main(html)).not.toMatch(/\u200f-?\d[\d,]*\.\d{2}/); // nor its RLM-led amount (an ar DATE keeps its own RLMs)
+    expect(ARABIC_INDIC_DIGIT.test(html)).toBe(false);
+  });
+
+  it('/invoices under ar: the money INSIDE a sentence (inv.remaining) carries its isolate, in the Arabic sentence', async () => {
+    const body = main(await page({ cookie: 'ar' }, invoices));
+    expect(body).toContain(esc(ar['inv.remaining'].replace('{amount}', `${LRI}₹1,20,000.00${PDI}`)));
+    expect(body).toContain(`<span class="kv-kpi__value">${LRI}₹1,23,45,650.00${PDI}</span>`);
+    expect(body).toContain(`<span>${LRI}₹0.00${PDI}</span>`); // a recorded zero tax is a real amount, isolated like any other
+    expect(body).toContain(esc(ar['inv.taxNotRecorded'])); // and a NULL tax is still words, never ₹0
+  });
+
+  it('/dashboard under ar: the tiles carry the isolate inside <strong>', async () => {
+    const body = main(await page({ cookie: 'ar' }, dashboard));
+    expect(body).toContain(`<strong>${LRI}₹48,12,600.00${PDI}</strong>`);
+    expect(body).toContain(`<strong>${LRI}₹3,42,180.00${PDI}</strong>`);
+  });
+
+  it.each(PAGES)('%s under en: the same amounts, en-IN, NO isolation marks', async (_n, mount, expected) => {
+    const html = await page({ cookie: 'en' }, mount);
+    const body = main(html);
+    expect(body).not.toMatch(/[\u2066-\u2069]/);
+    expect(amounts(html)).toEqual({ isolated: [], bare: expected.length });
+    for (const x of expected) expect(body).toContain(x);
+  });
+
+  /** The whole rendered page, with moneyText as built and with moneyText swapped back to the bare 2f55aa37 call. The
+   *  clock is pinned (the /dashboard "as of" line prints the render time) so the two renders compare byte for byte. */
+  async function nowAndBefore(cookie: string, mount: () => Promise<React.ReactNode>): Promise<[string, string]> {
+    jest.useFakeTimers({ now: new Date('2026-10-04T10:00:00.000Z'), doNotFake: ['nextTick', 'setImmediate', 'setTimeout', 'setInterval', 'queueMicrotask'] });
+    try {
+      const now = await page({ cookie }, mount);
+      const spy = jest.spyOn(moneyModule, 'moneyText').mockImplementation((m, c, l) => formatMoneyMinor(m, c, l));
+      try { return [now, await page({ cookie }, mount)]; } finally { spy.mockRestore(); }
+    } finally { jest.useRealTimers(); }
+  }
+  it.each(PAGES)('%s under en / hi / gu is BYTE-IDENTICAL to the bare formatMoneyMinor render (2f55aa37)', async (_n, mount, expected) => {
+    for (const cookie of ['en', 'hi', 'gu']) {
+      const [now, before] = await nowAndBefore(cookie, mount);
+      expect({ cookie, same: now === before }).toEqual({ cookie, same: true });
+      expect(now).toContain(expected[0]);
+    }
+    // and the comparison can see a difference: under ar the bare call renders a different page, in the ar locale's shape
+    const [arNow, arBefore] = await nowAndBefore('ar', mount);
+    expect(arNow).not.toBe(arBefore);
+    expect(arBefore).not.toContain(expected[0]);
   });
 });

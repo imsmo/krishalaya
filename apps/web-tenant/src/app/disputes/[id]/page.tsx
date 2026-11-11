@@ -21,7 +21,8 @@ import { notFound } from 'next/navigation';
 import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { canReview, canEscalate, canResolve, canRespond, messageAuthorRole, RESOLUTION_TYPES } from '../../../features/disputes/manage';
 import { reviewDisputeAction, escalateDisputeAction, resolveDisputeAction, respondDisputeAction, postDisputeMessageAction, proposeRefundAction, decideRefundAction } from '../actions';
 import { moneyBasisKey, gateView, canSign, disputedValue } from '../../../features/disputes/console';
@@ -89,12 +90,12 @@ export default async function DisputeDetailPage({ params, searchParams }: { para
     [t.t('disputeDetail.order'), dispute.orderId],
     [t.t('disputeDetail.description'), dispute.description ?? t.t('common.dash')],
     [t.t('disputeDetail.resolution'), dispute.resolutionType ?? t.t('common.dash')],
-    [t.t('disputeDetail.resolutionAmount'), dispute.resolutionAmountMinor ? formatMoneyMinor(dispute.resolutionAmountMinor, 'INR', lang) : t.t('common.dash')],
+    [t.t('disputeDetail.resolutionAmount'), dispute.resolutionAmountMinor ? moneyText(dispute.resolutionAmountMinor, 'INR', lang) : t.t('common.dash')],
     [t.t('disputeDetail.sla'), dispute.slaDueAt ? formatDate(dispute.slaDueAt, lang) : t.t('common.dash')],
     // W141's "disputed value ₹12,820 (2 of 10 qtl)". An unrecorded scope says so — it is not zero, and it is not the
     // whole order (0139 never backfills the column).
     [t.t('dsp.disputedValue'), scope.kind === 'amount'
-      ? formatMoneyMinor(scope.minor, moneyBox?.currencyCode ?? 'INR', lang)
+      ? moneyText(scope.minor, moneyBox?.currencyCode ?? 'INR', lang)
         + (dispute.disputedQuantity ? ` (${dispute.disputedQuantity})` : '')
       : t.t('dsp.scopeNotRecorded')],
   ];
@@ -167,12 +168,12 @@ export default async function DisputeDetailPage({ params, searchParams }: { para
             <dl className="kv-facts">
               <div className="kv-facts__row">
                 <dt>{t.t('dsp.heldNow')}</dt>
-                <dd>{moneyBox.heldMinor ? formatMoneyMinor(moneyBox.heldMinor, moneyBox.currencyCode ?? 'INR', lang) : t.t('common.dash')}</dd>
+                <dd>{moneyBox.heldMinor ? moneyText(moneyBox.heldMinor, moneyBox.currencyCode ?? 'INR', lang) : t.t('common.dash')}</dd>
               </div>
               {moneyBox.scopeRecorded && moneyBox.undisputedMinor && (
                 <div className="kv-facts__row">
                   <dt>{t.t('dsp.undisputed')}</dt>
-                  <dd>{formatMoneyMinor(moneyBox.undisputedMinor, moneyBox.currencyCode ?? 'INR', lang)}</dd>
+                  <dd>{moneyText(moneyBox.undisputedMinor, moneyBox.currencyCode ?? 'INR', lang)}</dd>
                 </div>
               )}
               {moneyBox.resolutionTxnId && (
@@ -197,8 +198,8 @@ export default async function DisputeDetailPage({ params, searchParams }: { para
           ) : (
             <>
               <p>{t.t(`dsp.gate.${gv.key}`, {
-                amount: formatMoneyMinor(gateAmount, moneyBox?.currencyCode ?? 'INR', lang),
-                threshold: formatMoneyMinor(gate.thresholdMinor, moneyBox?.currencyCode ?? 'INR', lang),
+                amount: moneyText(gateAmount, moneyBox?.currencyCode ?? 'INR', lang),
+                threshold: moneyText(gate.thresholdMinor, moneyBox?.currencyCode ?? 'INR', lang),
               })}</p>
               {gate.usedDefaultThreshold && <p className="kv-field__hint">{t.t('dsp.thresholdDefault')}</p>}
 
@@ -218,7 +219,7 @@ export default async function DisputeDetailPage({ params, searchParams }: { para
                   <form action={decideRefundAction} className="kv-form">
                     <input type="hidden" name="id" value={dispute.id} />
                     <input type="hidden" name="approvalId" value={openProposal.id} />
-                    <p>{t.t('dsp.proposalBy', { amount: formatMoneyMinor(openProposal.amountMinor, moneyBox?.currencyCode ?? 'INR', lang) })}</p>
+                    <p>{t.t('dsp.proposalBy', { amount: moneyText(openProposal.amountMinor, moneyBox?.currencyCode ?? 'INR', lang) })}</p>
                     <p className="kv-review__body">{openProposal.proposalNote}</p>
                     <label className="kv-field__label" htmlFor="decisionNote">{t.t('dsp.decisionNote')}</label>
                     <textarea id="decisionNote" name="note" className="kv-textarea" rows={2} maxLength={2000} />
@@ -238,7 +239,7 @@ export default async function DisputeDetailPage({ params, searchParams }: { para
               {approvals.map((a) => (
                 <li key={a.id} className="kv-thread__item">
                   <span className="kv-badge">{t.t(`dsp.approval.${a.status}`)}</span>
-                  <span>{formatMoneyMinor(a.amountMinor, moneyBox?.currencyCode ?? 'INR', lang)}</span>
+                  <span>{moneyText(a.amountMinor, moneyBox?.currencyCode ?? 'INR', lang)}</span>
                   <span className="kv-muted">{formatDate(a.proposedAt, lang)}</span>
                   {a.decisionNote && <p className="kv-review__body">{a.decisionNote}</p>}
                 </li>

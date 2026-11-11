@@ -17,7 +17,7 @@ import { requireSession } from '../../../lib/session';
 import { tenantHasPerm } from '../../../lib/auth';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { MediaUploader } from '../../../components/MediaUploader';
 import { createListingAction } from './actions';
 import { encodeProductChoice, decodeProductChoice, LISTING_SALE_TYPES, LISTING_ORGANIC, LISTING_VISIBILITY } from '../../../features/listings/form';
@@ -184,9 +184,9 @@ export default async function NewListingPage({ searchParams }: { searchParams: S
             <p className="kv-fine" role="note">
               {guide.band
                 ? t.t('listingNew.bandRow', {
-                    low: formatMoneyMinor(guide.band.lowMinor, 'INR', lang),
-                    modal: formatMoneyMinor(guide.band.modalMinor, 'INR', lang),
-                    high: formatMoneyMinor(guide.band.highMinor, 'INR', lang),
+                    low: moneyText(guide.band.lowMinor, 'INR', lang),
+                    modal: moneyText(guide.band.modalMinor, 'INR', lang),
+                    high: moneyText(guide.band.highMinor, 'INR', lang),
                     n: String(guide.band.sampleSize),
                   })
                 : guide.regionId

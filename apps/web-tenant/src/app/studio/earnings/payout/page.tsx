@@ -16,7 +16,7 @@ import Link from 'next/link';
 import { requireSession } from '../../../../lib/session';
 import { tenantClient } from '../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../lib/i18n';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../../../components/Bidi';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { EarningsView, RoyaltyPayoutReview } from '@krishalaya/sdk-js';
 import { auditHref, canLinkAudit, carryValues, failureKey, mutateStep, mutateStepKey, readCarried, repeatedFailuresGapKey, retryToConfirm, valuesLostKey } from '../../../../features/mutate/chain';
@@ -71,7 +71,7 @@ export default async function RoyaltyPayoutPage({ searchParams }: { searchParams
             <h2>{t.t('earnings.payout.object')}</h2>
             {tile ? (
               <>
-                <p>{t.t('earnings.tile.available')}: <strong>{formatMoneyMinor(tile.available, tile.currencyCode, lang)}</strong> · {t.t('earnings.tile.held')}: {formatMoneyMinor(tile.lifetime.held, tile.currencyCode, lang)} · {t.t('earnings.tile.paidOut')}: {formatMoneyMinor(tile.paidOut, tile.currencyCode, lang)}</p>
+                <p>{t.t('earnings.tile.available')}: <strong>{moneyText(tile.available, tile.currencyCode, lang)}</strong> · {t.t('earnings.tile.held')}: {moneyText(tile.lifetime.held, tile.currencyCode, lang)} · {t.t('earnings.tile.paidOut')}: {moneyText(tile.paidOut, tile.currencyCode, lang)}</p>
                 <p className="kv-field__hint">{t.t('earnings.payout.rides')}</p>
                 <p className="kv-field__hint">{t.t(earningsRefusedKey('monthlyLaneClock'))}</p>
               </>
@@ -104,7 +104,7 @@ export default async function RoyaltyPayoutPage({ searchParams }: { searchParams
           {review && (
             <div className="kv-card">
               <h2>{t.t('earnings.payout.review')}</h2>
-              <p>{formatMoneyMinor(review.amountMinor, review.currencyCode, lang)} · {t.t('earnings.payout.purpose')} · {t.t('earnings.payout.agreementVersion', { version: review.agreementVersion === null ? t.t('common.dash') : String(review.agreementVersion) })}</p>
+              <p>{moneyText(review.amountMinor, review.currencyCode, lang)} · {t.t('earnings.payout.purpose')} · {t.t('earnings.payout.agreementVersion', { version: review.agreementVersion === null ? t.t('common.dash') : String(review.agreementVersion) })}</p>
               {review.refusals.map((r) => <div className="kv-error" role="alert" key={r}><p>{t.t(payoutRefusalKey(r))}</p></div>)}
               <p className="kv-field__hint">{t.t('earnings.payout.planeGates')}</p>
               {review.ready ? (

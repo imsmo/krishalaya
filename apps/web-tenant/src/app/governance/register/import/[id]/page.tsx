@@ -6,7 +6,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { RegisterImport, RegisterImportLine } from '@krishalaya/sdk-js';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../../../../components/Bidi';
 import { requireSession } from '../../../../../lib/session';
 import { tenantClient } from '../../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../../lib/i18n';
@@ -66,7 +66,7 @@ export default async function RegisterImportPreviewPage({ params, searchParams }
           {lines.length === 0 ? <p className="kv-field__hint">{t.t('swd.import.noLines')}</p> : (
             <table className="kv-table"><thead><tr><th>{t.t('swd.import.col.line')}</th><th>{t.t('swd.import.col.phone')}</th><th>{t.t('swd.import.col.folio')}</th><th>{t.t('swd.import.col.shares')}</th><th>{t.t('swd.import.col.paidUp')}</th><th>{t.t('swd.import.col.status')}</th></tr></thead>
               <tbody>{lines.map((l) => (
-                <tr key={l.lineNo}><td>{l.lineNo}</td><td>{l.phoneMasked}</td><td>{l.folio ?? '—'}</td><td>{l.shares ?? '—'}</td><td>{l.paidUpMinor !== null ? (currency ? formatMoneyMinor(l.paidUpMinor, currency, lang) : l.paidUpMinor) : '—'}</td>
+                <tr key={l.lineNo}><td>{l.lineNo}</td><td>{l.phoneMasked}</td><td>{l.folio ?? '—'}</td><td>{l.shares ?? '—'}</td><td>{l.paidUpMinor !== null ? (currency ? moneyText(l.paidUpMinor, currency, lang) : l.paidUpMinor) : '—'}</td>
                   <td>{t.t(lineStatusKey(l.status))}{l.errorCode && <> · {t.t(rowErrorKey(l.errorCode), { line: l.lineNo })}</>}</td></tr>))}</tbody></table>
           )}
           {nextAfter !== null && <p><Link href={`${importHref(params.id)}?${new URLSearchParams({ after: String(nextAfter), ...(status ? { status } : {}) }).toString()}`} className="kv-btn--link">{t.t('swd.more')}</Link></p>}

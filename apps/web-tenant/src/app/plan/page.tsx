@@ -18,7 +18,7 @@ import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { tenantHasPerm } from '../../lib/auth';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../components/Bidi';
 import {
   METER_ORDER, annualSavingMinor, barPct, hasAnnualSaving, limitLabelKey, limitsApplyKey, memberLimitOf,
   meterBadgeKey, needsAttention, noticeRuleKey, projectedMonth, projectionKey, refusalKey, showsBar, verdictKey,
@@ -135,12 +135,12 @@ export default async function PlanPage({ searchParams }: { searchParams: { error
             return (
               <div key={`${p.code}-${p.version}`} className="kv-card kv-plan">
                 <h3 className="kv-card__title">{p.name}</h3>
-                <p className="kv-card__figure">{formatMoneyMinor(p.monthlyPriceMinor, p.currencyCode, lang)}</p>
+                <p className="kv-card__figure">{moneyText(p.monthlyPriceMinor, p.currencyCode, lang)}</p>
                 <p className="kv-field__hint">{t.t('pu.perMonth', { version: String(p.version) })}</p>
                 {/* The annual saving is the difference between the two STORED prices, so a card can never
                     advertise a discount the invoice will not honour. */}
                 {hasAnnualSaving(p) && (
-                  <p className="kv-field__hint">{t.t('pu.annualSaving', { amount: formatMoneyMinor(annualSavingMinor(p), p.currencyCode, lang) })}</p>
+                  <p className="kv-field__hint">{t.t('pu.annualSaving', { amount: moneyText(annualSavingMinor(p), p.currencyCode, lang) })}</p>
                 )}
                 <p>{t.t(limitLabelKey(limit), { count: String(limit ?? 0) })}</p>
               </div>

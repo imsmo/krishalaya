@@ -13,7 +13,7 @@ import { tenantClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
 import { env } from '../../lib/env';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../components/Bidi';
 import { APPLICATION_STATUSES, officerActions, canRecordDbt, totalDbtMinor } from '../../features/schemes/operator';
 import {
   verifyApplicationAction, clarifyApplicationAction, approveApplicationAction,
@@ -64,7 +64,7 @@ export default async function SchemesPage({ searchParams }: { searchParams: { ok
   const okKey = searchParams.ok && OK.has(searchParams.ok) ? searchParams.ok : null;
   const errorKey = searchParams.error || null;
   const elig = decodeElig(searchParams.elig);
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => moneyText(m, 'INR', lang);
 
   return (
     <section>

@@ -13,7 +13,8 @@ import { notFound } from 'next/navigation';
 import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { sellerActions } from '../../../features/orders/lifecycle';
 import { orderTransitionAction, deliverShipmentAction } from './actions';
 import { MediaUploader } from '../../../components/MediaUploader';
@@ -54,7 +55,7 @@ export default async function OrderDetailPage({ params, searchParams }: { params
   const actions = sellerActions(order.status);
   const okKey = searchParams.ok ?? null;
   const errorKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
-  const money = (m: string) => formatMoneyMinor(m, order.currencyCode, lang);
+  const money = (m: string) => moneyText(m, order.currencyCode, lang);
 
   const totals: Array<[string, string]> = [
     [t.t('orderDetail.subtotal'), money(order.subtotalMinor)],
@@ -181,14 +182,14 @@ export default async function OrderDetailPage({ params, searchParams }: { params
               <div key={l.key} className="kv-facts__row">
                 <dt>{t.t(`od.line.${l.key}` as never)}</dt>
                 <dd>
-                  {formatMoneyMinor(l.minor, moneyBox!.currencyCode, lang)}
+                  {moneyText(l.minor, moneyBox!.currencyCode, lang)}
                   <div className="kv-detail__muted">{t.t(`od.basis.${basisKey(l.basis)}` as never)}</div>
                 </dd>
               </div>
             ))}
           </dl>
-          <p className="kv-fine">{t.t('od.buyerPaid', { total: formatMoneyMinor(moneyBox.buyerPaidMinor, moneyBox.currencyCode, lang) })}</p>
-          <p className="kv-fine">{t.t('od.sellerGross', { gross: formatMoneyMinor(moneyBox.sellerGrossMinor, moneyBox.currencyCode, lang) })}</p>
+          <p className="kv-fine">{t.t('od.buyerPaid', { total: moneyText(moneyBox.buyerPaidMinor, moneyBox.currencyCode, lang) })}</p>
+          <p className="kv-fine">{t.t('od.sellerGross', { gross: moneyText(moneyBox.sellerGrossMinor, moneyBox.currencyCode, lang) })}</p>
           {/* The snapshot verdict — including the one that cannot be recovered. */}
           <p className="kv-fine kv-note">{t.t(`od.snapshot.${snapshotKey(moneyBox.snapshot)}` as never)}</p>
           <p className="kv-fine">{t.t('od.tdsNote')}</p>

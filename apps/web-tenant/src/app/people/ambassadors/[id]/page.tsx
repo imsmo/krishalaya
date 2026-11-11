@@ -12,7 +12,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { AmbassadorEarning, AmbassadorDetail } from '@krishalaya/sdk-js';
-import { formatDate, formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatDate, formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../../../components/Bidi';
 import { requireSession } from '../../../../lib/session';
 import { tenantClient } from '../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../lib/i18n';
@@ -38,7 +39,7 @@ export default async function AmbassadorDetailPage({ params, searchParams }: { p
   await requireSession(base);
   const t = getTranslator();
   const lang = getLang();
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => moneyText(m, 'INR', lang);
   if (!env.featureAmbassadors) {
     return <section><h1>{t.t('amb.detail.title')}</h1><div className="kv-card kv-card--notice" role="status"><strong>{t.t('amb.state.flaggedOff.title')}</strong><p>{t.t('amb.state.flaggedOff.body')}</p></div></section>;
   }

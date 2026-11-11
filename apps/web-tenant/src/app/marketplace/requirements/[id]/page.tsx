@@ -18,7 +18,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { MemberStock, Requirement, RequirementResponse, ResponseGroup } from '@krishalaya/sdk-js';
-import { formatDate, formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatDate, formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../../../components/Bidi';
 import { requireSession } from '../../../../lib/session';
 import { tenantClient } from '../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../lib/i18n';
@@ -39,7 +40,7 @@ export default async function RequirementDetailPage({ params, searchParams }: { 
   const t = getTranslator();
   const lang = getLang();
   const n = (v: number) => formatNumber(v, lang);
-  const money = (m: string | null | undefined) => formatMoneyMinor(m ?? '0', 'INR', lang);
+  const money = (m: string | null | undefined) => moneyText(m ?? '0', 'INR', lang);
   const when = (iso: string) => formatDate(iso, lang, { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
   const whenTime = (iso: string) => formatDate(iso, lang, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' });
   const day = (d: string) => when(`${d}T00:00:00+05:30`);

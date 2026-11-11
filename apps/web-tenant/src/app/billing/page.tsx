@@ -24,7 +24,8 @@ import { tenantClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { tenantHasPerm } from '../../lib/auth';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../components/Bidi';
 import { planPriceMinor, mergeUsageRows } from '../../features/billing/plan';
 import {
   MECHANISM_ORDER, TABS, anyMechanismMissing, balanceKey, balanceState, gapReasonKey, graceAdviceKey,
@@ -119,7 +120,7 @@ export default async function BillingPage({ searchParams }: { searchParams: { ok
                   <p className="kv-card__figure">
                     {bs.kind === 'mixed'
                       ? t.t('bill.balance.mixedFigure', { currencies: bs.currencies.join(', ') })
-                      : formatMoneyMinor(view!.openBalanceMinor ?? '0', view!.openBalanceCurrency || 'INR', lang)}
+                      : moneyText(view!.openBalanceMinor ?? '0', view!.openBalanceCurrency || 'INR', lang)}
                   </p>
                   {/* Each state has its own sentence: "nothing owed", "N open", "at least N open (bounded
                       read)", "more than one currency — we will not add them". */}
@@ -139,7 +140,7 @@ export default async function BillingPage({ searchParams }: { searchParams: { ok
                 <p className="kv-field__hint">
                   {t.t(taxLineKey(view.oldestOpen.taxLine), {
                     pct: view.oldestOpen.taxBp === null ? '—' : (view.oldestOpen.taxBp / 100).toFixed(2),
-                    amount: formatMoneyMinor(view.oldestOpen.taxMinor, view.oldestOpen.currencyCode, lang),
+                    amount: moneyText(view.oldestOpen.taxMinor, view.oldestOpen.currencyCode, lang),
                   })}
                 </p>
                 {payBtn.show && payQuote?.payable ? (
@@ -148,7 +149,7 @@ export default async function BillingPage({ searchParams }: { searchParams: { ok
                     {/* NO amount field, deliberately: the server resolves it from the invoice and refuses a
                         mismatch, so there is nothing here for a client to name. */}
                     <button type="submit" className="kv-btn">
-                      {t.t('bill.pay.button', { amount: formatMoneyMinor(payQuote.amountMinor, payQuote.currencyCode, lang) })}
+                      {t.t('bill.pay.button', { amount: moneyText(payQuote.amountMinor, payQuote.currencyCode, lang) })}
                     </button>
                   </form>
                 ) : (
@@ -160,7 +161,7 @@ export default async function BillingPage({ searchParams }: { searchParams: { ok
 
           <div className="kv-card">
             <h2 className="kv-card__title">{t.t('bill.ptdTitle', { year: String(view.paidToDate.year) })}</h2>
-            <p className="kv-card__figure">{formatMoneyMinor(view.paidToDate.minor, view.paidToDate.currencyCode || 'INR', lang)}</p>
+            <p className="kv-card__figure">{moneyText(view.paidToDate.minor, view.paidToDate.currencyCode || 'INR', lang)}</p>
             {/* "all on time" is EARNED, not assumed: one invoice with no payment date makes it "partly unknown". */}
             <p className="kv-field__hint">
               {t.t(paidToDateKey(view.paidToDate), {
@@ -188,9 +189,9 @@ export default async function BillingPage({ searchParams }: { searchParams: { ok
             columns={[
               { header: t.t('bill.col.no'), cell: (r) => <Link href={`/billing/invoices/${encodeURIComponent(r.id)}`} className="kv-btn--link">{r.invoiceNo}</Link> },
               { header: t.t('bill.col.status'), cell: (r) => <span className="kv-badge">{t.t(`bill.status.${r.status}`)}</span> },
-              { header: t.t('bill.col.total'), cell: (r) => formatMoneyMinor(r.totalMinor, r.currencyCode, lang) },
+              { header: t.t('bill.col.total'), cell: (r) => moneyText(r.totalMinor, r.currencyCode, lang) },
               // Outstanding is total − RECEIVED, which is the number a tenant is actually asked for.
-              { header: t.t('bill.col.outstanding'), cell: (r) => formatMoneyMinor(r.outstandingMinor, r.currencyCode, lang) },
+              { header: t.t('bill.col.outstanding'), cell: (r) => moneyText(r.outstandingMinor, r.currencyCode, lang) },
               { header: t.t('bill.col.due'), cell: (r) => formatDate(r.dueDate, lang) },
             ]}
           />
@@ -220,7 +221,7 @@ export default async function BillingPage({ searchParams }: { searchParams: { ok
         <dl className="kv-facts">
           <div className="kv-facts__row"><dt>{t.t('billing.status')}</dt><dd><span className="kv-badge">{sub.status}</span></dd></div>
           <div className="kv-facts__row"><dt>{t.t('billing.cycle')}</dt><dd>{t.t(`billing.cycle.${sub.billingCycle}`)}</dd></div>
-          <div className="kv-facts__row"><dt>{t.t('billing.price')}</dt><dd>{formatMoneyMinor(sub.priceMinor, sub.currencyCode, lang)}</dd></div>
+          <div className="kv-facts__row"><dt>{t.t('billing.price')}</dt><dd>{moneyText(sub.priceMinor, sub.currencyCode, lang)}</dd></div>
           <div className="kv-facts__row"><dt>{t.t('billing.periodEnd')}</dt><dd>{sub.currentPeriodEnd ? formatDate(sub.currentPeriodEnd, lang) : t.t('common.dash')}</dd></div>
         </dl>
       ) : (
@@ -266,8 +267,8 @@ export default async function BillingPage({ searchParams }: { searchParams: { ok
                the preview, and only the FIRST subscription (nothing to prorate against) is applied from here. */
             <form key={p.id} action={applyPlanAction} className="kv-card kv-plan">
               <h3 className="kv-card__title">{p.defaultName}</h3>
-              <p className="kv-plan__price">{formatMoneyMinor(planPriceMinor(p, 'monthly'), p.currencyCode, lang)} / {t.t('billing.perMonth')}</p>
-              <p className="kv-field__hint">{t.t('billing.annual')}: {formatMoneyMinor(planPriceMinor(p, 'annual'), p.currencyCode, lang)} · {t.t('billing.setup')}: {formatMoneyMinor(p.setupFeeMinor, p.currencyCode, lang)}</p>
+              <p className="kv-plan__price">{moneyText(planPriceMinor(p, 'monthly'), p.currencyCode, lang)} / {t.t('billing.perMonth')}</p>
+              <p className="kv-field__hint">{t.t('billing.annual')}: {moneyText(planPriceMinor(p, 'annual'), p.currencyCode, lang)} · {t.t('billing.setup')}: {moneyText(p.setupFeeMinor, p.currencyCode, lang)}</p>
               <input type="hidden" name="planId" value={p.id} />
               {sub && <input type="hidden" name="subscriptionId" value={sub.id} />}
               {!sub && (
@@ -300,7 +301,7 @@ export default async function BillingPage({ searchParams }: { searchParams: { ok
             columns={[
               { header: t.t('billing.status'), cell: (s) => <span className="kv-badge">{s.status}</span> },
               { header: t.t('billing.cycle'), cell: (s) => t.t(`billing.cycle.${s.billingCycle}`) },
-              { header: t.t('billing.price'), cell: (s) => formatMoneyMinor(s.priceMinor, s.currencyCode, lang) },
+              { header: t.t('billing.price'), cell: (s) => moneyText(s.priceMinor, s.currencyCode, lang) },
               { header: t.t('billing.started'), cell: (s) => (s.currentPeriodStart ? formatDate(s.currentPeriodStart, lang) : t.t('common.dash')) },
             ]}
           />

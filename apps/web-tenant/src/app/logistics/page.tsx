@@ -25,7 +25,8 @@ import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../components/Bidi';
 import { TABS, driverGapKey, listHref, milestoneKey, statusesForTab, tabOf } from '../../features/logistics/shipments';
 // PC-56 TENANT-5b · W225's sub-nav ("Overview · Shipments · Carriers · Vehicles · Routes · Zones · Cold chain"),
 // which the canon prints on every logistics screen. Two of its entries now exist; the four with no screen are
@@ -105,7 +106,7 @@ export default async function LogisticsPage({ searchParams }: { searchParams: { 
               },
               // Money via formatMoneyMinor, never client math (Law 2). A shipment with no charge recorded
               // prints a dash — not ₹0, which would assert a free run somebody decided on.
-              { header: t.t('ship.colCharge'), cell: (s) => (s.chargeMinor ? formatMoneyMinor(s.chargeMinor, 'INR', lang) : t.t('common.dash')) },
+              { header: t.t('ship.colCharge'), cell: (s) => (s.chargeMinor ? moneyText(s.chargeMinor, 'INR', lang) : t.t('common.dash')) },
               { header: t.t('logistics.colStatus'), cell: (s) => <span className="kv-badge">{t.t(`logistics.status.${s.status}`) || s.status}</span> },
               {
                 header: t.t('ship.colNextMilestone'),

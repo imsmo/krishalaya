@@ -10,7 +10,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { Promotion } from '@krishalaya/sdk-js';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../../../../components/Bidi';
 import { requireSession } from '../../../../../lib/session';
 import { tenantClient } from '../../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../../lib/i18n';
@@ -60,7 +60,7 @@ export default async function PromotionActPage({ params, searchParams }: { param
             <>
               <div className="kv-card">
                 <p><strong>{row.defaultName}</strong> · {t.t(promoStatusKey(row.status))}</p>
-                <p className="kv-field__hint">{t.t('promo.col.budget')}: {row.budgetMinor === null ? t.t('promo.budget.uncappedLegacy') : formatMoneyMinor(row.budgetMinor, 'INR', lang)} · {t.t('promo.col.spent')}: {formatMoneyMinor(row.spentMinor, 'INR', lang)}</p>
+                <p className="kv-field__hint">{t.t('promo.col.budget')}: {row.budgetMinor === null ? t.t('promo.budget.uncappedLegacy') : moneyText(row.budgetMinor, 'INR', lang)} · {t.t('promo.col.spent')}: {moneyText(row.spentMinor, 'INR', lang)}</p>
                 <p>{t.t(`promo.act.rule.${act}`)}</p>
                 <p className="kv-field__hint">{t.t('mutate.reason.recorded')}</p>
               </div>

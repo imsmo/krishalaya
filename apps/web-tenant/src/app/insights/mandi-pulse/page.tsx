@@ -9,7 +9,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { MemberPulse } from '@krishalaya/sdk-js';
-import { formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
@@ -62,7 +63,7 @@ export default async function MandiPulsePage({ searchParams }: { searchParams: R
             <DataTable rows={p.crops.items} empty={t.t('swf.mandi.empty.title')} columns={[
               { header: t.t('swf.mandi.col.crop'), cell: (c) => <span>{c.crop} <span className="kv-detail__muted">· {[c.listed ? t.t('swf.mandi.fromListing') : null, c.declared ? t.t('swf.mandi.fromSeason') : null].filter(Boolean).join(' · ')}</span></span> },
               { header: t.t('swf.mandi.col.mandi'), cell: (c) => (c.mandis.length ? <ul className="kv-list">{c.mandis.map((m) => <li key={m.mandiId}>{m.mandi} <span className="kv-detail__muted">· {m.priceDate}</span></li>)}</ul> : t.t('swf.mandi.noPrice')) },
-              { header: t.t('swf.mandi.col.modal'), cell: (c) => (c.mandis.length ? <ul className="kv-list">{c.mandis.map((m) => <li key={m.mandiId} className="kv-money">{formatMoneyMinor(m.modalMinor, m.currency, lang)} <span className="kv-detail__muted">/ {m.unit}</span></li>)}</ul> : t.t('common.dash')) },
+              { header: t.t('swf.mandi.col.modal'), cell: (c) => (c.mandis.length ? <ul className="kv-list">{c.mandis.map((m) => <li key={m.mandiId} className="kv-money">{moneyText(m.modalMinor, m.currency, lang)} <span className="kv-detail__muted">/ {m.unit}</span></li>)}</ul> : t.t('common.dash')) },
               { header: t.t('swf.mandi.col.change'), cell: (c) => (c.mandis.length ? <ul className="kv-list">{c.mandis.map((m) => <li key={m.mandiId}>{m.change ? bpsPercent(m.change.changeBps) : t.t('swf.mandi.noPrevious')}</li>)}</ul> : t.t('common.dash')) },
               { header: t.t('swf.mandi.col.stock'), cell: (c) => (c.listedStock.length ? c.listedStock.map((s) => `${s.quantity} ${s.unit}`).join(' · ') : t.t('swf.mandi.noListedStock')) },
             ]} />

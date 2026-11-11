@@ -11,7 +11,8 @@ import Link from 'next/link';
 import { randomUUID } from 'node:crypto';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { AmbassadorRunDetail } from '@krishalaya/sdk-js';
-import { formatMoneyMinor, formatNumber, formatDate } from '@krishalaya/i18n';
+import { formatNumber, formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../../../../components/Bidi';
 import { requireSession } from '../../../../../lib/session';
 import { tenantClient } from '../../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../../lib/i18n';
@@ -39,7 +40,7 @@ export default async function RunActPage({ searchParams }: { searchParams: Recor
   await requireSession(EARNINGS_ACT_HREF);
   const t = getTranslator();
   const lang = getLang();
-  const money = (m: string | null | undefined) => formatMoneyMinor(m && /^\d+$/.test(m) ? m : '0', 'INR', lang);
+  const money = (m: string | null | undefined) => moneyText(m && /^\d+$/.test(m) ? m : '0', 'INR', lang);
   const act = isRunAct(searchParams.act) ? searchParams.act : 'confirm';
   const step = mutateStep(searchParams.step);
   const runId = isUuid(searchParams.run) ? searchParams.run : null;

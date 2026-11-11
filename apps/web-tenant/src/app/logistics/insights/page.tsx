@@ -27,7 +27,8 @@ import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { DataTable } from '../../../components/DataTable';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { LogisticsInsights } from '@krishalaya/sdk-js';
 import {
@@ -155,7 +156,7 @@ export default async function LogisticsInsightsPage({ searchParams }: { searchPa
                   <strong className="kv-stat__value">
                     {ins.freightRecovered.length === 0
                       ? t.t('common.dash')
-                      : ins.freightRecovered.map((r) => formatMoneyMinor(r.recoveredMinor, r.currencyCode, lang)).join(' · ')}
+                      : ins.freightRecovered.map((r) => moneyText(r.recoveredMinor, r.currencyCode, lang)).join(' · ')}
                   </strong>
                   <span className="kv-field__hint">{t.t('logistics.tile.freightRecoveredHow')}</span>
                 </div>

@@ -21,7 +21,8 @@ import { tenantClient } from '../../lib/api-client';
 import { tenantHasPerm } from '../../lib/auth';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../components/Bidi';
 import { DISPUTE_TABS, DisputeTab, isDisputeTab, disputeTabHref, slaCell, disputedValue, medianText } from '../../features/disputes/console';
 import type { DisputeKpis, DisputeQueueRow, ReviewSummary, ReviewItem, UserProfile } from '@krishalaya/sdk-js';
 import { respondToReviewAction, flagReviewAction } from './actions';
@@ -85,7 +86,7 @@ export default async function DisputesPage({ searchParams }: { searchParams: { v
     errQ === 'review' ? { kind: 'err', msg: t.t('disputes.reviewError') } : null;
 
   const median = medianText(kpis?.medianResolutionHours ?? null);
-  const money = (minor: string | null, ccy: string | null) => (minor ? formatMoneyMinor(minor, ccy ?? 'INR', lang) : t.t('common.dash'));
+  const money = (minor: string | null, ccy: string | null) => (minor ? moneyText(minor, ccy ?? 'INR', lang) : t.t('common.dash'));
 
   return (
     <section>

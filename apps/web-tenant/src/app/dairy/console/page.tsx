@@ -17,7 +17,7 @@ import { tenantClient } from '../../../lib/api-client';
 import { DataTable } from '../../../components/DataTable';
 import { getTranslator, getLang } from '../../../lib/i18n';
 import { env } from '../../../lib/env';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { ANIMAL_TYPES, PRICING_MODELS, PAYMENT_CYCLES, MILK_SHIFTS, nextBillActions, dairyRefusalKey, rateCardStateKey, canApproveRateCard } from '../../../features/dairy/calc';
 import {
   createMccAction, setMccActiveAction, enrolMemberAction, createRateCardAction, approveRateCardAction,
@@ -56,7 +56,7 @@ export default async function DairyOperatorConsolePage({ searchParams }: { searc
   // [PC-56 HOTFIX-11] A second person on every milk bill: the API's refusals are printed as the sentence, in the member desk's own
   // language, instead of the raw code (survey F-6). Any code without a sentence keeps today's line.
   const refusalKey = dairyRefusalKey(errorKey);
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => moneyText(m, 'INR', lang);
 
   return (
     <section>

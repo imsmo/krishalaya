@@ -14,7 +14,8 @@ import { notFound } from 'next/navigation';
 import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatMoneyMinor, formatRelative } from '@krishalaya/i18n';
+import { formatRelative } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { minorToMajor } from '../../../features/listings/form';
 import { canPublish, canChangePrice, canSubmitQc, canRedraft, canPause, canArchive } from '../../../features/listings/manage';
 import { canBoost } from '../../../features/listings/boost';
@@ -56,7 +57,7 @@ export default async function ListingDetailPage({ params, searchParams }: { para
 
   const facts: Array<[string, string]> = [
     [t.t('listingManage.status'), t.t(`listingManage.status.${status}` as never)],
-    [t.t('listingManage.price'), `${formatMoneyMinor(listing.priceMinor, listing.currencyCode, lang)} / ${listing.unitCode}`],
+    [t.t('listingManage.price'), `${moneyText(listing.priceMinor, listing.currencyCode, lang)} / ${listing.unitCode}`],
     [t.t('listingManage.available'), `${listing.quantityAvailable} ${listing.unitCode}`],
     [t.t('listingManage.saleType'), listing.saleType],
     [t.t('listingManage.organic'), listing.organicClaim ? t.t('listings.organicYes') : t.t('common.dash')],
@@ -148,12 +149,12 @@ export default async function ListingDetailPage({ params, searchParams }: { para
               <li key={i}>
                 {h.oldPriceMinor
                   ? t.t('listingManage.historyRow', {
-                      from: formatMoneyMinor(h.oldPriceMinor, listing.currencyCode, lang),
-                      to: formatMoneyMinor(h.newPriceMinor, listing.currencyCode, lang),
+                      from: moneyText(h.oldPriceMinor, listing.currencyCode, lang),
+                      to: moneyText(h.newPriceMinor, listing.currencyCode, lang),
                       who: h.changedByName ?? t.t('common.dash'), when: formatRelative(h.at, lang),
                     })
                   : t.t('listingManage.historyFirst', {
-                      to: formatMoneyMinor(h.newPriceMinor, listing.currencyCode, lang),
+                      to: moneyText(h.newPriceMinor, listing.currencyCode, lang),
                       who: h.changedByName ?? t.t('common.dash'), when: formatRelative(h.at, lang),
                     })}
               </li>
@@ -192,7 +193,7 @@ export default async function ListingDetailPage({ params, searchParams }: { para
                 <input type="radio" name="boostTierId" value={tier.id} defaultChecked={i === 0} required />
                 <span>{t.t('listingManage.boostTierLabel', {
                   name: tier.name,
-                  price: formatMoneyMinor(tier.priceMinor, listing.currencyCode, lang),
+                  price: moneyText(tier.priceMinor, listing.currencyCode, lang),
                   days: String(tier.days),
                 })}</span>
               </label>

@@ -12,7 +12,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { ResponseGroup } from '@krishalaya/sdk-js';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../../../../components/Bidi';
 import { requireSession } from '../../../../../lib/session';
 import { tenantClient } from '../../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../../lib/i18n';
@@ -33,7 +33,7 @@ export default async function LinePage({ params, searchParams }: { params: { id:
   await requireSession(base);
   const t = getTranslator();
   const lang = getLang();
-  const money = (m: string | null | undefined) => formatMoneyMinor(m ?? '0', 'INR', lang);
+  const money = (m: string | null | undefined) => moneyText(m ?? '0', 'INR', lang);
   const step = chainStep(typeof searchParams.step === 'string' ? searchParams.step : undefined);
   const values = carried(LINE_KEYS, (k) => searchParams[k]);
   const v = (k: string) => values[k] ?? '';

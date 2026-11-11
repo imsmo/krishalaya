@@ -3,7 +3,8 @@
 // its field, the entries kept, nothing written. Money fields are paise from the API and are formatted, never re-typed.
 import type { DairyReviewField, DairyReviewRefusal } from '@krishalaya/sdk-js';
 import type { Translator } from '@krishalaya/i18n';
-import { formatDate, formatMoneyMinor } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { nothingStoredKey, refusalsFor, generalRefusals, normalisedKey } from '../../../features/forms/chain';
 import { codeKey, isMoneyField } from '../../../features/promos/offers';
 
@@ -13,7 +14,7 @@ export function ReviewTable({ t, lang, review, fieldKey, names = {} }: {
 }) {
   const show = (field: string, v: string | null): string | null => {
     if (v === null) return null;
-    if (isMoneyField(field) && /^\d+$/.test(v)) return formatMoneyMinor(v, 'INR', lang);
+    if (isMoneyField(field) && /^\d+$/.test(v)) return moneyText(v, 'INR', lang);
     if ((field === 'startsAt' || field === 'endsAt') && !Number.isNaN(new Date(v).getTime()) && /T/.test(v)) return formatDate(v, lang, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' });
     if (field === 'promoType') return t.t(`promo.type.${v}.name`);
     if (field === 'discountType') return t.t(`promo.discount.${v === 'flat' ? 'flat' : 'percent'}`);

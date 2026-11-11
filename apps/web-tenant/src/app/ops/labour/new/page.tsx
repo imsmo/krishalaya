@@ -14,7 +14,7 @@ import Link from 'next/link';
 import { randomUUID } from 'node:crypto';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { LabourLookups, RosterMember } from '@krishalaya/sdk-js';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../../../components/Bidi';
 import { requireSession } from '../../../../lib/session';
 import { tenantClient } from '../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../lib/i18n';
@@ -35,7 +35,7 @@ export default async function NewJobPage({ searchParams }: { searchParams: Recor
   await requireSession(NEW_JOB_HREF);
   const t = getTranslator();
   const lang = getLang();
-  const money = (m: string | null | undefined) => formatMoneyMinor(m ?? '0', 'INR', lang);
+  const money = (m: string | null | undefined) => moneyText(m ?? '0', 'INR', lang);
   const step = chainStep(typeof searchParams.step === 'string' ? searchParams.step : undefined);
   const values = carried(FORM_KEYS, (k) => searchParams[k]);
   const v = (k: string) => values[k] ?? '';

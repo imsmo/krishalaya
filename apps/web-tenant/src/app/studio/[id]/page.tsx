@@ -8,7 +8,7 @@ import { notFound } from 'next/navigation';
 import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { courseHref, publishHref } from '../../../features/courses/desk';
 import { lessonHref, newLessonHref, outlineHref } from '../../../features/courses/lessons';
 import type { Course, CourseLesson } from '@krishalaya/sdk-js';
@@ -45,7 +45,7 @@ export default async function StudioCoursePage({ params }: { params: { id: strin
       <dl className="kv-facts">
         <div className="kv-facts__row"><dt>{t.t('studio.colStatus')}</dt><dd><span className="kv-badge">{t.t(`studio.status.${s}`) || s}</span></dd></div>
         <div className="kv-facts__row"><dt>{t.t('studio.colLevel')}</dt><dd>{t.t(`studio.level.${course.level}`) || course.level}</dd></div>
-        <div className="kv-facts__row"><dt>{t.t('studio.colPrice')}</dt><dd>{course.priceMinor === '0' ? t.t('studio.free') : formatMoneyMinor(course.priceMinor, course.currencyCode, lang)}</dd></div>
+        <div className="kv-facts__row"><dt>{t.t('studio.colPrice')}</dt><dd>{course.priceMinor === '0' ? t.t('studio.free') : moneyText(course.priceMinor, course.currencyCode, lang)}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('studio.colCert')}</dt><dd>{course.certEnabled ? t.t('studio.certYes') : t.t('common.dash')}</dd></div>
       </dl>
 

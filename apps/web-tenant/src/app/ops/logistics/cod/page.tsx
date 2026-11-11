@@ -9,7 +9,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { CodBoard, CodShortfall } from '@krishalaya/sdk-js';
-import { formatDate, formatMoneyMinor } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../../../components/Bidi';
 import { requireSession } from '../../../../lib/session';
 import { tenantClient } from '../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../lib/i18n';
@@ -25,7 +26,7 @@ const TILES = ['collectedTodayMinor', 'depositedTodayMinor', 'inRiderHandsMinor'
 export default async function CodLedgerPage({ searchParams }: { searchParams: { cursor?: string } }) {
   await requireSession(COD_HREF);
   const t = getTranslator(); const lang = getLang();
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => moneyText(m, 'INR', lang);
   let board: CodBoard | null = null; let state: string | null = null;
   try { board = await tenantClient().shipments.codBoard(); }
   catch (e) { state = pageState(e instanceof SdkError ? e.status : undefined, true); }

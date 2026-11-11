@@ -10,7 +10,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { DemandMap } from '@krishalaya/sdk-js';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
@@ -67,7 +67,7 @@ export default async function DemandMapPage({ searchParams }: { searchParams: Re
                 {r.basis === 'category' && <span className="kv-detail__muted"> · {t.t('swf.demand.byCategory')}</span>}
                 {r.consented.length > 0 && <ul className="kv-list">{r.consented.map((c, i) => <li key={i}>{t.t('swf.demand.consented', { name: c.memberName ?? t.t('common.dash'), qty: c.quantity ?? '', unit: c.unit ?? '' })}</li>)}</ul>}</span> },
               { header: t.t('swf.demand.col.value'), cell: (r) => (r.value.kind === 'value'
-                ? <span className="kv-money">{r.value.fromMinor ? `${formatMoneyMinor(r.value.fromMinor, r.value.currency, lang)} – ` : `${t.t('swf.demand.upTo')} `}{formatMoneyMinor(r.value.upToMinor, r.value.currency, lang)}</span>
+                ? <span className="kv-money">{r.value.fromMinor ? `${moneyText(r.value.fromMinor, r.value.currency, lang)} – ` : `${t.t('swf.demand.upTo')} `}{moneyText(r.value.upToMinor, r.value.currency, lang)}</span>
                 : <RefusedLine t={t} lang={lang} code={r.value.code} words={m!.refusals} />) },
               { header: t.t('swf.demand.col.reach'), cell: (r) => (typeof r.reach === 'string' ? t.t(`swf.demand.reach.${r.reach}`) : t.t('common.dash')) },
               { header: t.t('swf.demand.col.respond'), cell: (r) => <Link href={`/marketplace/requirements/${encodeURIComponent(r.id)}`} className="kv-btn--link">{t.t('swf.demand.respond')}</Link> },

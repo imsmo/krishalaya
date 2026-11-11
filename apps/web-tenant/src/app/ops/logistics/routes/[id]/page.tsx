@@ -9,7 +9,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { RunDetail, VillageRunPage } from '@krishalaya/sdk-js';
-import { formatDate, formatMoneyMinor } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../../../../components/Bidi';
 import { requireSession } from '../../../../../lib/session';
 import { tenantClient } from '../../../../../lib/api-client';
 import { tenantHasPerm } from '../../../../../lib/auth';
@@ -33,7 +34,7 @@ export default async function VillageRunRoutePage({ params, searchParams }: { pa
   let run: RunDetail | null = null;
   if (page && runId) { try { run = await tenantClient().villageRun.run(runId); } catch { run = null; } }
   const when = (iso: string | null) => (iso ? formatDate(iso, lang, { dateStyle: 'medium', timeStyle: 'short' }) : t.t('common.dash'));
-  const money = (minor: string | null, cur: string | null) => (minor == null ? t.t('common.dash') : cur ? formatMoneyMinor(minor, cur, lang) : t.t('swe.minorUnits', { minor }));
+  const money = (minor: string | null, cur: string | null) => (minor == null ? t.t('common.dash') : cur ? moneyText(minor, cur, lang) : t.t('swe.minorUnits', { minor }));
   const base = routeHref(id);
   const cur = page?.current ?? null;
 

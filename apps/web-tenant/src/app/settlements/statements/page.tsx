@@ -15,7 +15,8 @@ import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { tenantHasPerm } from '../../../lib/auth';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { DataTable } from '../../../components/DataTable';
 import { closedMonths, pdfStateKey, periodKindKey, refusalKey, rowNeedsAttention } from '../../../features/settlements/console';
 import { orgStatementAction } from '../actions';
@@ -104,12 +105,12 @@ export default async function StatementsPage({ searchParams }: {
                 </>
               ),
             },
-            { header: t.t('stl.colGross'), cell: (r) => formatMoneyMinor(r.grossMinor, 'INR', lang) },
+            { header: t.t('stl.colGross'), cell: (r) => moneyText(r.grossMinor, 'INR', lang) },
             {
               header: t.t('stl.colNet'),
               cell: (r) => (
                 <>
-                  {formatMoneyMinor(r.netMinor, 'INR', lang)}
+                  {moneyText(r.netMinor, 'INR', lang)}
                   {rowNeedsAttention(r) && <span className="kv-badge kv-badge--warn">{t.t('stl.netMismatch')}</span>}
                 </>
               ),

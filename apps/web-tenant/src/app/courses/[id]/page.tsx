@@ -19,7 +19,8 @@ import { notFound } from 'next/navigation';
 import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatDate, formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatDate, formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { Course, CourseActs, CourseLesson, CourseStats, LessonStats } from '@krishalaya/sdk-js';
 import {
@@ -103,7 +104,7 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
       <dl className="kv-facts">
         <div className="kv-facts__row"><dt>{t.t('courses.col.topic')}</dt><dd>{course.topicCode ? <><code>{course.topicCode}</code> · {course.topicName}</> : t.t('courses.noTopic')}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('courses.col.level')}</dt><dd>{t.t(levelKey(course.level))}</dd></div>
-        <div className="kv-facts__row"><dt>{t.t('courses.col.price')}</dt><dd>{course.priceMinor === '0' ? t.t('courses.free') : formatMoneyMinor(course.priceMinor, course.currencyCode, lang)} <span className="kv-field__hint">{course.currencyCode}</span></dd></div>
+        <div className="kv-facts__row"><dt>{t.t('courses.col.price')}</dt><dd>{course.priceMinor === '0' ? t.t('courses.free') : moneyText(course.priceMinor, course.currencyCode, lang)} <span className="kv-field__hint">{course.currencyCode}</span></dd></div>
         <div className="kv-facts__row"><dt>{t.t('courses.origin')}</dt><dd>{t.t(originKey(course))}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('courses.lessons')}</dt><dd>{t.t('courses.lessonsAcross', { n: formatNumber(lessons.length, lang), m: formatNumber(modules, lang) })}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('courses.col.cert')}</dt><dd>{course.certEnabled ? t.t('courses.certYes') : t.t('courses.certNo')}</dd></div>

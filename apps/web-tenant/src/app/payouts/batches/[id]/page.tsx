@@ -19,7 +19,8 @@ import { requireSession } from '../../../../lib/session';
 import { tenantClient } from '../../../../lib/api-client';
 import { tenantHasPerm } from '../../../../lib/auth';
 import { getTranslator, getLang } from '../../../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../../../components/Bidi';
 import { DataTable } from '../../../../components/DataTable';
 import {
   approveBlockedBy, checkerRuleKey, laneKey, NOTE_FLOOR, preflightIcon, preflightLabelKey,
@@ -66,7 +67,7 @@ export default async function PayoutBatchPage({ params, searchParams }: {
         {t.t('po.reviewIntro', {
           type: b.batchType,
           count: String(b.count),
-          total: formatMoneyMinor(b.itemsTotalMinor, 'INR', lang),
+          total: moneyText(b.itemsTotalMinor, 'INR', lang),
         })}
       </p>
 
@@ -76,11 +77,11 @@ export default async function PayoutBatchPage({ params, searchParams }: {
       <div className="kv-cards">
         <div className="kv-card kv-card--money">
           <h2 className="kv-card__title">{t.t('po.itemsTotal')}</h2>
-          <p className="kv-card__figure">{formatMoneyMinor(b.itemsTotalMinor, 'INR', lang)}</p>
+          <p className="kv-card__figure">{moneyText(b.itemsTotalMinor, 'INR', lang)}</p>
           {/* The total a checker signs is the SUM OF THE CLAIMED ITEMS, frozen at preparation. The settled
               total below is what has actually moved — 0 until the run executes. Two different numbers, and
               conflating them is what made "sum of items = batch total" uncheckable before this wave. */}
-          <p className="kv-field__hint">{t.t('po.itemsTotalHint', { settled: formatMoneyMinor(b.settledTotalMinor, 'INR', lang) })}</p>
+          <p className="kv-field__hint">{t.t('po.itemsTotalHint', { settled: moneyText(b.settledTotalMinor, 'INR', lang) })}</p>
         </div>
         <div className="kv-card">
           <h2 className="kv-card__title">{t.t('po.clock')}</h2>
@@ -97,7 +98,7 @@ export default async function PayoutBatchPage({ params, searchParams }: {
           <p className="kv-field__hint">{t.t('po.maker', { at: b.preparedAt ? formatDate(b.preparedAt, lang) : t.t('common.dash') })}</p>
           <p className="kv-badge">{t.t(`po.status.batch.${b.status}`)}</p>
           {/* The rule ACTUALLY in force for this batch, from the threshold pinned on the row. */}
-          <p className="kv-note">{t.t(checkerRuleKey(review.needsChecker), { threshold: b.checkerThresholdMinor ? formatMoneyMinor(b.checkerThresholdMinor, 'INR', lang) : t.t('common.dash') })}</p>
+          <p className="kv-note">{t.t(checkerRuleKey(review.needsChecker), { threshold: b.checkerThresholdMinor ? moneyText(b.checkerThresholdMinor, 'INR', lang) : t.t('common.dash') })}</p>
           {b.decidedAt && <p className="kv-field__hint">{t.t('po.decidedAt', { at: formatDate(b.decidedAt, lang) })}</p>}
           {b.decisionNote && <p className="kv-note">{b.decisionNote}</p>}
         </div>
@@ -124,7 +125,7 @@ export default async function PayoutBatchPage({ params, searchParams }: {
         columns={[
           { header: t.t('po.colPayee'), cell: (r) => <>{r.payeeName ?? t.t('common.dash')} <span className="kv-muted">{r.payeePhone ?? ''}</span></> },
           { header: t.t('po.colPurpose'), cell: (r) => <span className="kv-badge">{r.purposeCode || t.t('common.dash')}</span> },
-          { header: t.t('po.colAmount'), cell: (r) => formatMoneyMinor(r.amountMinor, r.currencyCode, lang) },
+          { header: t.t('po.colAmount'), cell: (r) => moneyText(r.amountMinor, r.currencyCode, lang) },
           {
             header: t.t('po.colBank'),
             cell: (r) => (
@@ -146,7 +147,7 @@ export default async function PayoutBatchPage({ params, searchParams }: {
         <form action={decideBatchAction} className="kv-card">
           <input type="hidden" name="batchId" value={b.id} />
           <input type="hidden" name="decision" value="approved" />
-          <p>{t.t('po.approveConfirm', { executeAt: b.executeAt ? formatDate(b.executeAt, lang) : t.t('common.dash'), total: formatMoneyMinor(b.itemsTotalMinor, 'INR', lang) })}</p>
+          <p>{t.t('po.approveConfirm', { executeAt: b.executeAt ? formatDate(b.executeAt, lang) : t.t('common.dash'), total: moneyText(b.itemsTotalMinor, 'INR', lang) })}</p>
           <label htmlFor="approveNote" className="kv-field__label">{t.t('po.noteOptional')}</label>
           <textarea id="approveNote" name="note" rows={2} maxLength={2000} />
           <button type="submit" className="kv-btn">{t.t('po.approve')}</button>

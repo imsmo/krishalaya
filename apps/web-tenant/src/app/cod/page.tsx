@@ -16,7 +16,8 @@ import { tenantClient } from '../../lib/api-client';
 import { tenantHasPerm } from '../../lib/auth';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../components/Bidi';
 import {
   AGEING_WARN_DAYS, DEPOSIT_METHODS, REMITTANCE_STATUSES,
   daysHeld, isAgeing, isRemittanceStatus, reconcileBlockedReason, remittanceActions, sortOutstanding, totalOutstandingMinor,
@@ -74,14 +75,14 @@ export default async function CodPage({ searchParams }: { searchParams: { status
       <h2>{t.t('cod.outstanding')}</h2>
       {outFailed ? <p className="kv-error" role="alert">{t.t('cod.loadError')}</p> : (
         <>
-          <p className="kv-field__hint">{t.t('cod.totalOutstanding', { amount: formatMoneyMinor(total.toString(), 'INR', lang) })}</p>
+          <p className="kv-field__hint">{t.t('cod.totalOutstanding', { amount: moneyText(total.toString(), 'INR', lang) })}</p>
           <DataTable
             rows={rows}
             empty={t.t('cod.noneOutstanding')}
             columns={[
               { header: t.t('cod.colRider'), cell: (r) => (r.riderUserId ? `${String(r.riderUserId).slice(0, 8)}…` : t.t('cod.unassigned')) },
               { header: t.t('cod.colShipments'), cell: (r) => String(r.shipments ?? 0) },
-              { header: t.t('cod.colCash'), cell: (r) => (r.codMinor ? formatMoneyMinor(String(r.codMinor), 'INR', lang) : t.t('common.dash')) },
+              { header: t.t('cod.colCash'), cell: (r) => (r.codMinor ? moneyText(String(r.codMinor), 'INR', lang) : t.t('common.dash')) },
               {
                 header: t.t('cod.colHeld'),
                 cell: (r) => {
@@ -125,7 +126,7 @@ export default async function CodPage({ searchParams }: { searchParams: { status
         return (
           <div key={String(r.id)} className="kv-card">
             <div className="kv-page-head">
-              <strong>{r.amountMinor ? formatMoneyMinor(String(r.amountMinor), 'INR', lang) : t.t('common.dash')}</strong>
+              <strong>{r.amountMinor ? moneyText(String(r.amountMinor), 'INR', lang) : t.t('common.dash')}</strong>
               <span className="kv-badge">{t.t(`cod.state.${String(r.status)}`) || String(r.status)}</span>
             </div>
             <p className="kv-detail__muted">

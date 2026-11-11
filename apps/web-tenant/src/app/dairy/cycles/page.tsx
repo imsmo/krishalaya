@@ -29,7 +29,8 @@ import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { DataTable } from '../../../components/DataTable';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatDate, formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatDate, formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { DairyCycleConsole } from '@krishalaya/sdk-js';
 import {
@@ -73,7 +74,7 @@ export default async function DairyCyclesPage({ searchParams }: {
     state = cyclesState(err?.code ?? 'generic', err?.status);
   }
 
-  const money = (m: string) => formatMoneyMinor(m, view?.currencyCode ?? 'INR', lang);
+  const money = (m: string) => moneyText(m, view?.currencyCode ?? 'INR', lang);
   const consent = view ? consentParts(view.consent) : null;
   const note = view ? registerNoteKey(view) : null;
 

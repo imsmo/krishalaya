@@ -29,7 +29,8 @@ import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { DataTable } from '../../../components/DataTable';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatDate, formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatDate, formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { SdkError } from '@krishalaya/sdk-js';
 import {
   FREIGHT_TABS, deskHref, deskState, emptyKey, freightErrorKey, freightOkKey, reconBadgeKey, reconHref,
@@ -117,7 +118,7 @@ export default async function FreightPage({ searchParams }: {
               <p>
                 <strong>{target.invoiceNo}</strong>
                 {' · '}{target.carrierName ?? t.t('freight.carrier.unknown')}
-                {' · '}{formatMoneyMinor(target.billedMinor, target.currencyCode, lang)}
+                {' · '}{moneyText(target.billedMinor, target.currencyCode, lang)}
                 {' · '}{formatNumber(target.shipmentCount, lang)} {t.t('freight.shipmentsWord')}
               </p>
               <p>{t.t(act === 'book' ? 'freight.act.book.body' : 'freight.act.reconcile.body')}</p>
@@ -168,13 +169,13 @@ export default async function FreightPage({ searchParams }: {
                   ? t.t('freight.carrier.ownFleet')
                   : r.carrierName ?? <span className="kv-badge kv-badge--muted">{t.t('freight.carrier.unknown')}</span>),
               },
-              { header: t.t('freight.colBilled'), cell: (r) => formatMoneyMinor(r.billedMinor, r.currencyCode, lang) },
+              { header: t.t('freight.colBilled'), cell: (r) => moneyText(r.billedMinor, r.currencyCode, lang) },
               {
                 header: t.t('freight.colExpected'),
                 // A dash, never a zero: "₹0 expected" against a real bill reads as "we expected this to be free",
                 // and for a cost note there is no expected side at all.
                 cell: (r) => (showsExpected(r)
-                  ? formatMoneyMinor(r.expectedMinor, r.currencyCode, lang)
+                  ? moneyText(r.expectedMinor, r.currencyCode, lang)
                   : <span className="kv-field__hint">{t.t('common.dash')}</span>),
               },
               {
@@ -183,7 +184,7 @@ export default async function FreightPage({ searchParams }: {
                   <>
                     <span className={r.disputedLines > 0 ? 'kv-badge kv-badge--warn' : 'kv-badge'}>{t.t(reconBadgeKey(r))}</span>
                     {showsExpected(r) && r.varianceDirection !== 'level' && (
-                      <> {formatMoneyMinor(r.varianceMinor, r.currencyCode, lang)}
+                      <> {moneyText(r.varianceMinor, r.currencyCode, lang)}
                         {variancePctText(r.varianceBps) !== null && <> ({variancePctText(r.varianceBps)})</>}
                       </>
                     )}
@@ -224,7 +225,7 @@ export default async function FreightPage({ searchParams }: {
           {(desk?.recovered.length ?? 0) > 0 && (
             <p className="kv-field__hint">
               {t.t('freight.recovered')}{' '}
-              {desk!.recovered.map((r) => formatMoneyMinor(r.recoveredMinor, r.currencyCode, lang)).join(' · ')}
+              {desk!.recovered.map((r) => moneyText(r.recoveredMinor, r.currencyCode, lang)).join(' · ')}
               {' · '}{t.t('freight.recoveredHow')}
             </p>
           )}

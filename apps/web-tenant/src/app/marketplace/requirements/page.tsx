@@ -17,7 +17,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { Requirement, RequirementPage } from '@krishalaya/sdk-js';
-import { formatDate, formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatDate, formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
@@ -36,7 +37,7 @@ export default async function RequirementsPage({ searchParams }: { searchParams:
   const t = getTranslator();
   const lang = getLang();
   const n = (v: number) => formatNumber(v, lang);
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => moneyText(m, 'INR', lang);
   const day = (d: string) => formatDate(`${d}T00:00:00+05:30`, lang, { day: '2-digit', month: 'short', timeZone: 'Asia/Kolkata' });
   const tab = isTab(searchParams.tab) ? searchParams.tab : 'all';
   const sort = searchParams.sort === 'need_by' ? 'need_by' : 'recent';

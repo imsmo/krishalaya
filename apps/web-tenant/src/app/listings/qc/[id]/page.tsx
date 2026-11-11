@@ -14,7 +14,7 @@ import { notFound } from 'next/navigation';
 import { requireSession } from '../../../../lib/session';
 import { tenantClient } from '../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../lib/i18n';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../../../components/Bidi';
 import type { QcReviewPayload, GalleryItem } from '@krishalaya/sdk-js';
 import { waitingAge, bandVerdict } from '../../../../features/listings/console';
 import { qcApproveAction, qcRejectAction } from '../actions';
@@ -61,7 +61,7 @@ export default async function QcReviewPage({ params, searchParams }: { params: {
       <dl className="kv-facts">
         <div className="kv-facts__row"><dt>{t.t('qcr.product')}</dt><dd>{d.detail.productName ?? t.t('common.dash')}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('qcr.qty')}</dt><dd>{d.detail.quantityTotal} {d.detail.unitCode} ({t.t('qcr.minOrder')} {d.detail.minOrderQty})</dd></div>
-        <div className="kv-facts__row"><dt>{t.t('qcr.price')}</dt><dd>{formatMoneyMinor(d.detail.priceMinor, d.detail.currencyCode, lang)} / {d.detail.unitCode}</dd></div>
+        <div className="kv-facts__row"><dt>{t.t('qcr.price')}</dt><dd>{moneyText(d.detail.priceMinor, d.detail.currencyCode, lang)} / {d.detail.unitCode}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('qcr.organic')}</dt><dd>{t.t(`qcr.organic.${d.detail.organicClaim}` as never)}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('qcr.harvest')}</dt><dd>{d.detail.harvestDate ?? t.t('common.dash')}</dd></div>
       </dl>
@@ -75,8 +75,8 @@ export default async function QcReviewPage({ params, searchParams }: { params: {
           {band.kind === 'below' && <span className="kv-error">{t.t('qcr.band.below', { pct: String(band.pct) })}</span>}
           {band.kind === 'no_band' && <span className="kv-fine">{t.t('qcr.band.none')}</span>}
           {d.band && <span className="kv-fine"> — {t.t('qcr.band.basis', {
-            low: formatMoneyMinor(d.band.lowMinor, d.detail.currencyCode, lang),
-            high: formatMoneyMinor(d.band.highMinor, d.detail.currencyCode, lang),
+            low: moneyText(d.band.lowMinor, d.detail.currencyCode, lang),
+            high: moneyText(d.band.highMinor, d.detail.currencyCode, lang),
             n: String(d.band.sampleSize),
           })}</span>}
         </li>

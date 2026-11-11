@@ -9,7 +9,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { randomUUID } from 'node:crypto';
 import type { CommissionPolicy, CommissionResolution, CommissionRuleProposal } from '@krishalaya/sdk-js';
-import { formatDate, formatMoneyMinor } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../../../components/Bidi';
 import { requireSession } from '../../../../lib/session';
 import { tenantClient } from '../../../../lib/api-client';
 import { tenantHasPerm } from '../../../../lib/auth';
@@ -88,8 +89,8 @@ export default async function ProposeCommissionPage({ searchParams }: { searchPa
         <div className="kv-card">
           <h2>{t.t('swa.com.form.reviewTitle')}</h2>
           <dl className="kv-detail">
-            <dt>{t.t('swa.com.col.rate')}</dt><dd>{t.t('swa.com.bps', { n: d.rateBps })} ({bpsPercent(Number(d.rateBps))}){d.fixedMinor && d.fixedMinor !== '0' ? ` + ${formatMoneyMinor(d.fixedMinor, 'INR', lang)}` : ''}</dd>
-            <dt>{t.t('swa.com.col.cap')}</dt><dd>{d.capMinor ? formatMoneyMinor(d.capMinor, 'INR', lang) : t.t('common.dash')}</dd>
+            <dt>{t.t('swa.com.col.rate')}</dt><dd>{t.t('swa.com.bps', { n: d.rateBps })} ({bpsPercent(Number(d.rateBps))}){d.fixedMinor && d.fixedMinor !== '0' ? ` + ${moneyText(d.fixedMinor, 'INR', lang)}` : ''}</dd>
+            <dt>{t.t('swa.com.col.cap')}</dt><dd>{d.capMinor ? moneyText(d.capMinor, 'INR', lang) : t.t('common.dash')}</dd>
             <dt>{t.t('swa.com.col.chargedTo')}</dt><dd>{t.t(`swa.com.charged.${d.chargedTo}`)}</dd>
             <dt>{t.t('swa.com.col.effective')}</dt><dd>{day(d.effectiveFrom)}{d.effectiveTo ? <> <DirArrow /> {day(d.effectiveTo)}</> : ''}</dd>
             <dt>{t.t('swa.com.col.share')}</dt><dd>{policy ? t.t('swa.com.shareByPlan', { n: String(policy.platformShareBps) }) : '—'}</dd>

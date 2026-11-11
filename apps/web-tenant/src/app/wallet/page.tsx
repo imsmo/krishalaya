@@ -25,7 +25,8 @@ import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { tenantHasPerm } from '../../lib/auth';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../components/Bidi';
 import {
   ORG_ACCOUNTS, cardMinor, cardState, needsDriftNotice, holdNoteKey, healthIcon, healthLabelKey,
   chainPhraseKey, escrowNoteKey, direction, gapNoteKey, isGapNamed, referenceHref,
@@ -88,14 +89,14 @@ export default async function WalletPage() {
           return (
             <div key={code} className="kv-card kv-card--money">
               <h2 className="kv-card__title">{t.t(`wal.account.${code}`)}</h2>
-              <p className="kv-card__figure">{formatMoneyMinor(cardMinor(a.verdict), ccy, lang)}</p>
+              <p className="kv-card__figure">{moneyText(cardMinor(a.verdict), ccy, lang)}</p>
               <p className="kv-field__hint">{t.t(`wal.accountMeaning.${code}`)}</p>
               <p className="kv-badge">{t.t(`wal.state.${cardState(a.verdict)}`)}</p>
               {a.isFrozen && <p className="kv-badge kv-badge--frozen">{t.t('wal.frozen')}</p>}
               {/* Drift is stated on the card that has it — the figure above is the ledger's, always. */}
               {needsDriftNotice(a.verdict) && a.verdict.kind === 'drifted' && (
                 <p className="kv-note" role="status">
-                  {t.t('wal.driftNotice', { cached: formatMoneyMinor(a.verdict.cachedMinor, ccy, lang), drift: formatMoneyMinor(a.verdict.driftMinor, ccy, lang) })}
+                  {t.t('wal.driftNotice', { cached: moneyText(a.verdict.cachedMinor, ccy, lang), drift: moneyText(a.verdict.driftMinor, ccy, lang) })}
                 </p>
               )}
               {code === 'hold' && <p className="kv-note">{t.t(holdNoteKey(ov!.holdBasis))}</p>}
@@ -124,7 +125,7 @@ export default async function WalletPage() {
             return (
               <li key={m.entryId} className={`kv-feed__row kv-feed__row--${direction(m.amountMinor)}`}>
                 <span className="kv-feed__type">{m.txnType ?? t.t('common.dash')}</span>
-                <span className="kv-feed__amount">{formatMoneyMinor(m.amountMinor, m.currencyCode, lang)}</span>
+                <span className="kv-feed__amount">{moneyText(m.amountMinor, m.currencyCode, lang)}</span>
                 <span className="kv-feed__account">{t.t(`wal.account.${m.accountCode}`)}</span>
                 <span className="kv-feed__ref">
                   {href ? <Link href={href}>{m.referenceId}</Link> : (m.referenceId ?? t.t('common.dash'))}
@@ -154,7 +155,7 @@ export default async function WalletPage() {
 
       <h2 className="kv-section-title">{t.t('wal.escrowTitle')}</h2>
       <div className="kv-card">
-        <p className="kv-card__figure">{formatMoneyMinor(ov.escrow.heldMinor, ccy, lang)}</p>
+        <p className="kv-card__figure">{moneyText(ov.escrow.heldMinor, ccy, lang)}</p>
         <p className="kv-field__hint">{t.t(escrowNoteKey(ov.escrow.heldMinor), { count: String(ov.escrow.orderCount) })}</p>
         {/* The basis, named on the screen: this is the net of the platform escrow account's legs that carry
             this tenant's id — arithmetic off the book, not a cached projection. */}

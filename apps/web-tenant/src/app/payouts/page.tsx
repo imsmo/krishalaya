@@ -20,7 +20,8 @@ import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { tenantHasPerm } from '../../lib/auth';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../components/Bidi';
 import { DataTable } from '../../components/DataTable';
 import {
   QUEUE_TABS, earliestExecuteLocal, kpiCount, laneKey, refusalKey, retryBlockedBy, retryKey, retryView, tabFilter,
@@ -142,7 +143,7 @@ export default async function PayoutsPage({ searchParams }: {
             { header: t.t('po.colPayee'), cell: (r) => <>{r.payeeName ?? t.t('common.dash')} <span className="kv-muted">{r.payeePhone ?? ''}</span></> },
             { header: t.t('po.colPurpose'), cell: (r) => <span className="kv-badge">{r.purposeCode || t.t('common.dash')}</span> },
             { header: t.t('po.colReference'), cell: (r) => r.referenceId ?? t.t('common.dash') },
-            { header: t.t('po.colAmount'), cell: (r) => formatMoneyMinor(r.amountMinor, r.currencyCode, lang) },
+            { header: t.t('po.colAmount'), cell: (r) => moneyText(r.amountMinor, r.currencyCode, lang) },
             {
               header: t.t('po.colBank'),
               cell: (r) => (

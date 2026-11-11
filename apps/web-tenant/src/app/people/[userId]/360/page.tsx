@@ -23,7 +23,8 @@ import { notFound } from 'next/navigation';
 import { requireSession } from '../../../../lib/session';
 import { tenantClient } from '../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../../../components/Bidi';
 import { SdkError, type Farmer360 } from '@krishalaya/sdk-js';
 import { landSummary, seasonLabel, yieldLabel, hasAnySource } from '../../../../features/people/farmer360';
 
@@ -94,18 +95,18 @@ export default async function Farmer360Page({ params }: { params: { userId: stri
             {/* **THE TOTAL IS ABSENT WHEN DAIRY IS UNKNOWN**, because a total that silently treats unknown as zero is a
                 wrong number wearing a confident face. The crop figure is still shown on its own line below. */}
             {f.income.totalRealizedMinor === null
-              ? formatMoneyMinor(f.income.cropRealizedMinor, 'INR', lang)
-              : formatMoneyMinor(f.income.totalRealizedMinor, 'INR', lang)}
+              ? moneyText(f.income.cropRealizedMinor, 'INR', lang)
+              : moneyText(f.income.totalRealizedMinor, 'INR', lang)}
           </strong>
           <span className="kv-fine">
             {t.t('f360.tile.incomeCrops', {
-              amount: formatMoneyMinor(f.income.cropRealizedMinor, 'INR', lang), n: f.income.cropPayoutCount,
+              amount: moneyText(f.income.cropRealizedMinor, 'INR', lang), n: f.income.cropPayoutCount,
             })}
             {' · '}
             {f.income.dairyRealizedMinor === null
               ? t.t('f360.tile.incomeNoDairy')
               : t.t('f360.tile.incomeDairy', {
-                  amount: formatMoneyMinor(f.income.dairyRealizedMinor, 'INR', lang), n: f.income.dairyBillCount,
+                  amount: moneyText(f.income.dairyRealizedMinor, 'INR', lang), n: f.income.dairyBillCount,
                 })}
           </span>
           <span className="kv-fine">{t.t('f360.tile.incomeNote')}</span>
@@ -129,11 +130,11 @@ export default async function Farmer360Page({ params }: { params: { userId: stri
 
         <div className="kv-card">
           <span className="kv-card__title">{t.t('f360.tile.schemes')}</span>
-          <strong>{formatMoneyMinor(f.schemesYtdTotalMinor, 'INR', lang)}</strong>
+          <strong>{moneyText(f.schemesYtdTotalMinor, 'INR', lang)}</strong>
           <span className="kv-fine">
             {f.schemesYtd.length === 0
               ? t.t('f360.tile.schemesNone')
-              : f.schemesYtd.map((s) => `${s.schemeName} ${formatMoneyMinor(s.creditedMinor, 'INR', lang)}`).join(' + ')}
+              : f.schemesYtd.map((s) => `${s.schemeName} ${moneyText(s.creditedMinor, 'INR', lang)}`).join(' + ')}
           </span>
           <span className="kv-fine">{t.t('f360.tile.schemesNote')}</span>
         </div>

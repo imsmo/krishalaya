@@ -9,7 +9,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { CommissionRule, CommissionRuleProposal, CommissionPolicy, CommissionResolution } from '@krishalaya/sdk-js';
-import { formatDate, formatMoneyMinor } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { tenantHasPerm } from '../../../lib/auth';
@@ -27,7 +28,7 @@ export default async function CommissionPage({ searchParams }: { searchParams: {
   await requireSession(COMMISSION_HREF);
   const t = getTranslator(); const lang = getLang();
   const day = (ymd: string | null) => (ymd ? formatDate(`${ymd}T00:00:00+05:30`, lang, { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' }) : '—');
-  const money = (m: string | null) => (m ? formatMoneyMinor(m, 'INR', lang) : t.t('common.dash'));
+  const money = (m: string | null) => (m ? moneyText(m, 'INR', lang) : t.t('common.dash'));
   const canManage = tenantHasPerm('commission.manage');
   const history = searchParams.history === '1';
   const source = (COMMISSION_SOURCES as readonly string[]).includes(searchParams.source ?? '') ? searchParams.source : undefined;

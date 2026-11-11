@@ -33,7 +33,8 @@ import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatDate, formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatDate, formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../components/Bidi';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { DairyCounterBoard } from '@krishalaya/sdk-js';
 import {
@@ -72,7 +73,7 @@ export default async function DairyCounterPage({ searchParams }: { searchParams:
     state = dairyState(err?.code ?? 'generic', err?.status);
   }
 
-  const money = (m: string) => formatMoneyMinor(m, board?.accrual.currencyCode ?? 'INR', lang);
+  const money = (m: string) => moneyText(m, board?.accrual.currencyCode ?? 'INR', lang);
   const foot = board ? totalsFoot(board.centres, board.totals.litres) : null;
 
   return (

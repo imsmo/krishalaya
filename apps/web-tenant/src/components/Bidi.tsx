@@ -13,12 +13,12 @@
 //
 // No hooks, no server-only imports: usable from server pages and from the client `ListingsTable` alike.
 import * as React from 'react';
-import { formatMoneyMinor, PREVIEW_LANGUAGES } from '@krishalaya/i18n';
+import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyLang } from '../features/rtl/money';
 
-/** The formatter language for an amount: a preview language (Arabic) prints money in the Indian shape (en → en-IN). */
-export function moneyLang(lang: string): string {
-  return PREVIEW_LANGUAGES.includes(lang) ? 'en' : lang;
-}
+// RTL-1b-3: `moneyLang` and the text helper `moneyText` live in features/rtl/money.ts (pure, no React) and are re-exported
+// here, so a page imports every money form from one place. `<Money>` stays the element form for table cells.
+export { moneyLang, moneyText } from '../features/rtl/money';
 
 /** One money amount, isolated left-to-right. */
 export function Money({ minor, currency, lang }: { minor: string | bigint; currency: string; lang: string }) {

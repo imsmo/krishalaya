@@ -8,7 +8,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { PodBoard, PodReview } from '@krishalaya/sdk-js';
-import { formatDate, formatMoneyMinor } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../../../components/Bidi';
 import { requireSession } from '../../../../lib/session';
 import { tenantClient } from '../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../lib/i18n';
@@ -63,7 +64,7 @@ export default async function PodQueuePage({ searchParams }: { searchParams: { s
             <div className="kv-tile"><span className="kv-tile__label">{t.t('swa.pod.tile.awaiting')}</span><strong className="kv-tile__value">{board.tiles.awaiting}</strong></div>
             <div className="kv-tile"><span className="kv-tile__label">{t.t('swa.pod.tile.autoClearedToday')}</span><strong className="kv-tile__value">{board.tiles.autoClearedToday}</strong></div>
             <div className="kv-tile"><span className="kv-tile__label">{t.t('swa.pod.tile.flagged')}</span><strong className="kv-tile__value">{board.tiles.flagged}</strong></div>
-            <div className="kv-tile"><span className="kv-tile__label">{t.t('swa.pod.tile.escrowReleasedToday')}</span><strong className="kv-tile__value">{formatMoneyMinor(board.tiles.escrowReleasedTodayMinor, 'INR', lang)}</strong></div>
+            <div className="kv-tile"><span className="kv-tile__label">{t.t('swa.pod.tile.escrowReleasedToday')}</span><strong className="kv-tile__value">{moneyText(board.tiles.escrowReleasedTodayMinor, 'INR', lang)}</strong></div>
           </div>
           <nav className="kv-tabs" aria-label={t.t('swa.pod.filter')}>
             {STATUSES.map((s) => (

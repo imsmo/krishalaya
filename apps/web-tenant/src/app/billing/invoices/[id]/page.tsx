@@ -17,7 +17,8 @@ import { tenantClient } from '../../../../lib/api-client';
 import { tenantHasPerm } from '../../../../lib/auth';
 import { DataTable } from '../../../../components/DataTable';
 import { getTranslator, getLang } from '../../../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../../../components/Bidi';
 import { gstinKey, payButtonKey, refusalKey, taxLineKey, timelinessKey } from '../../../../features/billing/invoices';
 import { payInvoiceAction } from '../../actions';
 import type { SaasInvoiceDetail, SaasPayQuote } from '@krishalaya/sdk-js';
@@ -65,12 +66,12 @@ export default async function SaasInvoicePage({ params, searchParams }: { params
 
       <dl className="kv-facts">
         <div className="kv-facts__row"><dt>{t.t('bill.col.status')}</dt><dd><span className="kv-badge">{t.t(`bill.status.${inv.status}`)}</span></dd></div>
-        <div className="kv-facts__row"><dt>{t.t('bill.col.total')}</dt><dd>{formatMoneyMinor(inv.totalMinor, inv.currencyCode, lang)}</dd></div>
-        <div className="kv-facts__row"><dt>{t.t('bill.received')}</dt><dd>{formatMoneyMinor(inv.paidMinor, inv.currencyCode, lang)}</dd></div>
-        <div className="kv-facts__row"><dt>{t.t('bill.col.outstanding')}</dt><dd>{formatMoneyMinor(inv.outstandingMinor, inv.currencyCode, lang)}</dd></div>
+        <div className="kv-facts__row"><dt>{t.t('bill.col.total')}</dt><dd>{moneyText(inv.totalMinor, inv.currencyCode, lang)}</dd></div>
+        <div className="kv-facts__row"><dt>{t.t('bill.received')}</dt><dd>{moneyText(inv.paidMinor, inv.currencyCode, lang)}</dd></div>
+        <div className="kv-facts__row"><dt>{t.t('bill.col.outstanding')}</dt><dd>{moneyText(inv.outstandingMinor, inv.currencyCode, lang)}</dd></div>
         {/* An overpayment is KEPT and shown, never swallowed into a settled invoice (0092's rule). */}
         {inv.overpaidMinor !== '0' && (
-          <div className="kv-facts__row"><dt>{t.t('bill.overpaid')}</dt><dd>{formatMoneyMinor(inv.overpaidMinor, inv.currencyCode, lang)}</dd></div>
+          <div className="kv-facts__row"><dt>{t.t('bill.overpaid')}</dt><dd>{moneyText(inv.overpaidMinor, inv.currencyCode, lang)}</dd></div>
         )}
         <div className="kv-facts__row"><dt>{t.t('bill.col.due')}</dt><dd>{formatDate(inv.dueDate, lang)}</dd></div>
         <div className="kv-facts__row"><dt>{t.t('bill.timeliness')}</dt><dd>{t.t(timelinessKey(inv.status, inv.paidAt, inv.dueDate))}</dd></div>
@@ -79,7 +80,7 @@ export default async function SaasInvoicePage({ params, searchParams }: { params
       <p className="kv-field__hint">
         {t.t(taxLineKey(inv.taxBp === null ? 'not_recorded' : inv.taxBp === 0 ? 'zero_rated' : 'stated'), {
           pct: inv.taxBp === null ? '—' : (inv.taxBp / 100).toFixed(2),
-          amount: formatMoneyMinor(inv.taxMinor, inv.currencyCode, lang),
+          amount: moneyText(inv.taxMinor, inv.currencyCode, lang),
         })}
       </p>
       <p className="kv-field__hint">{t.t(gstinKey(inv.billToGstin ? 'snapshot' : 'not_on_invoice'), { gstin: inv.billToGstin ?? '—' })}</p>
@@ -94,7 +95,7 @@ export default async function SaasInvoicePage({ params, searchParams }: { params
           { header: t.t('bill.col.qty'), cell: (l) => String(l.qty) },
           // A credit line is negative on purpose (W119 prints the charge and the credit separately); it is
           // rendered as its own row rather than folded into a smaller charge.
-          { header: t.t('bill.col.amount'), cell: (l) => formatMoneyMinor(l.totalMinor, inv!.currencyCode, lang) },
+          { header: t.t('bill.col.amount'), cell: (l) => moneyText(l.totalMinor, inv!.currencyCode, lang) },
         ]}
       />
 
@@ -104,7 +105,7 @@ export default async function SaasInvoicePage({ params, searchParams }: { params
         empty={t.t('bill.receiptsEmpty')}
         columns={[
           { header: t.t('bill.col.received'), cell: (r) => formatDate(r.receivedAt, lang) },
-          { header: t.t('bill.col.amount'), cell: (r) => formatMoneyMinor(r.amountMinor, r.currencyCode, lang) },
+          { header: t.t('bill.col.amount'), cell: (r) => moneyText(r.amountMinor, r.currencyCode, lang) },
           // 'gateway' means the capture is real and the PSP reported no instrument — not a guessed UPI.
           { header: t.t('bill.col.method'), cell: (r) => t.t(`bill.method.${r.method}`) },
           { header: t.t('bill.col.reference'), cell: (r) => r.reference },
@@ -116,7 +117,7 @@ export default async function SaasInvoicePage({ params, searchParams }: { params
         <form action={payInvoiceAction} className="kv-inline-form">
           <input type="hidden" name="invoiceId" value={inv.id} />
           <button type="submit" className="kv-btn">
-            {t.t(searchParams.payment ? 'bill.pay.retry' : 'bill.pay.button', { amount: formatMoneyMinor(quote.amountMinor, quote.currencyCode, lang) })}
+            {t.t(searchParams.payment ? 'bill.pay.retry' : 'bill.pay.button', { amount: moneyText(quote.amountMinor, quote.currencyCode, lang) })}
           </button>
         </form>
       ) : (

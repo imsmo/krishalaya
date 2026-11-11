@@ -15,7 +15,8 @@ import type { ShareRegisterView } from '@krishalaya/sdk-js';
 import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatMoneyMinor, formatDate, formatNumber } from '@krishalaya/i18n'; // PC-56 RTL-1b-2: counts via formatNumber, never a bare-code toLocaleString
+import { formatDate, formatNumber } from '@krishalaya/i18n'; // PC-56 RTL-1b-2: counts via formatNumber, never a bare-code toLocaleString
+import { moneyText } from '../../../components/Bidi';
 import {
   bylawRows, eligiblePct, registerCaption, sortRegister, turnoutTile, verdictLabel,
 } from '../../../features/governance/register';
@@ -76,11 +77,11 @@ export default async function ShareRegisterPage({ searchParams }: { searchParams
             </div>
             <div className="kv-stat">
               <span className="kv-stat__label">{t.t('reg.tile.capital')}</span>
-              <strong className="kv-stat__value">{formatMoneyMinor(view.tiles.shareCapitalMinor, 'INR', lang)}</strong>
+              <strong className="kv-stat__value">{moneyText(view.tiles.shareCapitalMinor, 'INR', lang)}</strong>
               <span className="kv-stat__hint">
                 {/* The face-value clause appears only when the register divides exactly — see features/governance/register.ts. */}
                 {view.tiles.faceValueMinor
-                  ? t.t('reg.tile.capitalHint', { shares: view.tiles.totalShares, face: formatMoneyMinor(view.tiles.faceValueMinor, 'INR', lang) })
+                  ? t.t('reg.tile.capitalHint', { shares: view.tiles.totalShares, face: moneyText(view.tiles.faceValueMinor, 'INR', lang) })
                   : t.t('reg.tile.capitalHintMixed', { shares: view.tiles.totalShares })}
               </span>
             </div>
@@ -135,7 +136,7 @@ export default async function ShareRegisterPage({ searchParams }: { searchParams
                       ) : null}
                     </td>
                     <td>{formatNumber(Number(r.sharesHeld), lang)}</td>
-                    <td>{formatMoneyMinor(r.valueMinor, 'INR', lang)}</td>
+                    <td>{moneyText(r.valueMinor, 'INR', lang)}</td>
                     <td>
                       <span className={`kv-badge kv-badge--${v.tone === 'ok' ? 'success' : v.tone === 'stop' ? 'danger' : 'muted'}`}>{v.label}</span>
                       {v.detail ? <div className="kv-detail__muted">{v.detail}</div> : null}

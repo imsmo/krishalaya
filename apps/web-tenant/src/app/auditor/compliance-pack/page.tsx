@@ -12,7 +12,8 @@ import { Fragment } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { AuditorCompliancePack } from '@krishalaya/sdk-js';
 import { requireSession } from '../../../lib/session';
@@ -38,7 +39,7 @@ export default async function CompliancePackPage({ searchParams }: { searchParam
   let p: AuditorCompliancePack | null = null; let state: RealmState | null = null; let wcode: unknown = null;
   try { p = await tenantClient().auditor.compliancePack({ from: f.from, to: f.to }); }
   catch (e) { const err = e instanceof SdkError ? e : null; state = realmState(err?.code, err?.status); wcode = (err?.details as { code?: unknown } | undefined)?.code; }
-  const money = (minor: string) => formatMoneyMinor(minor, p?.clock.currency ?? 'XXX', lang);
+  const money = (minor: string) => moneyText(minor, p?.clock.currency ?? 'XXX', lang);
   const n = (x: number) => formatNumber(x, lang);
 
   return (

@@ -11,7 +11,8 @@ import Link from 'next/link';
 import { randomUUID } from 'node:crypto';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { AmbassadorSummary } from '@krishalaya/sdk-js';
-import { formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../../../components/Bidi';
 import { requireSession } from '../../../../lib/session';
 import { tenantClient } from '../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../lib/i18n';
@@ -35,7 +36,7 @@ export default async function WeeklyRunPage({ searchParams }: { searchParams: Re
   const reason = (searchParams.reason ?? '').trim().slice(0, MAX_REASON + 50);
   const rs = reasonState(reason);
   const failed = (searchParams.error ?? '').split(',').filter((x) => /^[A-Za-z_]{2,40}$/.test(x));
-  const money = (m: string) => formatMoneyMinor(/^\d+$/.test(m) ? m : '0', 'INR', lang);
+  const money = (m: string) => moneyText(/^\d+$/.test(m) ? m : '0', 'INR', lang);
   if (!env.featureAmbassadors) {
     return <section><h1>{t.t('amb.run.title')}</h1><div className="kv-card kv-card--notice" role="status"><strong>{t.t('amb.state.flaggedOff.title')}</strong><p>{t.t('amb.state.flaggedOff.body')}</p></div></section>;
   }

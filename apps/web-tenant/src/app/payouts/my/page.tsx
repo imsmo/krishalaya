@@ -13,7 +13,8 @@ import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { DataTable } from '../../../components/DataTable';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { bankLabel } from '../../../features/payouts/form';
 import { requestPayoutAction, addBankAccountAction } from './actions';
 import type { PayoutSummary, BankAccount } from '@krishalaya/sdk-js';
@@ -108,7 +109,7 @@ export default async function PayoutsPage({ searchParams }: { searchParams: { cu
           rows={payouts}
           empty={t.t('payouts.noHistory')}
           columns={[
-            { header: t.t('payouts.colAmount'), cell: (p) => formatMoneyMinor(p.amountMinor, p.currencyCode, lang) },
+            { header: t.t('payouts.colAmount'), cell: (p) => moneyText(p.amountMinor, p.currencyCode, lang) },
             { header: t.t('payouts.colStatus'), cell: (p) => <span className="kv-badge">{p.status}</span> },
             { header: t.t('payouts.colPurpose'), cell: (p) => p.purpose ?? t.t('common.dash') },
             { header: t.t('payouts.colDate'), cell: (p) => (p.createdAt ? formatDate(p.createdAt, lang) : t.t('common.dash')) },

@@ -10,7 +10,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { Wastage, WastageEvent } from '@krishalaya/sdk-js';
-import { formatMoneyMinor, formatNumber, formatDate } from '@krishalaya/i18n';
+import { formatNumber, formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { tenantHasPerm } from '../../../lib/auth';
@@ -34,7 +35,7 @@ export default async function WastagePage({ searchParams }: { searchParams: Reco
   catch (e) { state = swfPageState(e instanceof SdkError ? e.status : undefined); }
   const exportError = searchParams.error ? swfCodeKey(searchParams.error) : null;
   const when = (iso: string) => formatDate(iso, lang, { dateStyle: 'medium' });
-  const money = (rows: Array<{ currency: string; valueMinor: string }>) => rows.map((r) => formatMoneyMinor(r.valueMinor, r.currency, lang)).join(' · ');
+  const money = (rows: Array<{ currency: string; valueMinor: string }>) => rows.map((r) => moneyText(r.valueMinor, r.currency, lang)).join(' · ');
   return (
     <section>
       <nav className="kv-breadcrumb" aria-label={t.t('swf.nav.label')}><span>{t.t('swf.nav.insights')}</span> / <span aria-current="page">{t.t('swf.wastage.title')}</span></nav>
@@ -62,7 +63,7 @@ export default async function WastagePage({ searchParams }: { searchParams: Reco
                 {w.loss.byUnit.length > 0 && <p className="kv-field__hint">{t.t('swf.wastage.plusQuantity', { q: w.loss.byUnit.map((u) => `${u.quantity} ${u.unit}`).join(' · ') })}</p>}
                 {w.loss.withoutValueOrQuantity > 0 && <p className="kv-field__hint">{t.t('swf.wastage.counted', { n: String(w.loss.withoutValueOrQuantity) })}</p>}
                 <p className="kv-field__hint">{w.share.kind === 'share'
-                  ? t.t('swf.wastage.share', { pct: sharePercent(w.share.bps), gmv: formatMoneyMinor(w.share.gmvMinor, w.share.currency, lang) })
+                  ? t.t('swf.wastage.share', { pct: sharePercent(w.share.bps), gmv: moneyText(w.share.gmvMinor, w.share.currency, lang) })
                   : <RefusedLine t={t} lang={lang} code={w.share.code} words={w.refusals} label={t.t('swf.wastage.shareLabel')} />}</p></div>
               {w.loss.split.map((s) => (
                 <div key={s.kind} className="kv-card"><p className="kv-detail__muted">{t.t(`swf.wastage.kind.${s.kind}`)}</p>
@@ -78,7 +79,7 @@ export default async function WastagePage({ searchParams }: { searchParams: Reco
             { header: t.t('swf.wastage.col.kind'), cell: (e) => t.t(`swf.wastage.kind.${e.kind}`) },
             { header: t.t('swf.wastage.col.source'), cell: (e) => <span>{t.t(`swf.wastage.source.${e.sourceKind}`)}{e.chainKey ? <span className="kv-detail__muted"> · {t.t('swf.wastage.chained')}</span> : null}</span> },
             { header: t.t('swf.wastage.col.what'), cell: (e) => [e.crop, e.quantity ? `${e.quantity} ${e.unit}` : null].filter(Boolean).join(' · ') || t.t('common.dash') },
-            { header: t.t('swf.wastage.col.value'), cell: (e) => (e.valueMinor && e.currency ? <span className="kv-money">{formatMoneyMinor(e.valueMinor, e.currency, lang)}</span> : <span className="kv-detail__muted">{t.t(`swf.wastage.reason.${e.valueReason ?? 'no_money_fact'}`)}</span>) },
+            { header: t.t('swf.wastage.col.value'), cell: (e) => (e.valueMinor && e.currency ? <span className="kv-money">{moneyText(e.valueMinor, e.currency, lang)}</span> : <span className="kv-detail__muted">{t.t(`swf.wastage.reason.${e.valueReason ?? 'no_money_fact'}`)}</span>) },
             { header: t.t('swf.wastage.col.method'), cell: (e) => t.t(`swf.wastage.methodCode.${e.methodCode}`) },
           ]} />
           {ev.nextCursor && <p><Link href={`${WASTAGE_HREF}?cursor=${encodeURIComponent(ev.nextCursor)}`} className="kv-btn--link">{t.t('swf.more')}</Link></p>}

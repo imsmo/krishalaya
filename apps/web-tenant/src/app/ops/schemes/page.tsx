@@ -12,7 +12,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { SchemeDeskRow, SchemeDeskSummary } from '@krishalaya/sdk-js';
-import { formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
@@ -30,7 +31,7 @@ export default async function SchemesDeskPage() {
   await requireSession(SCHEMES_DESK_HREF);
   const t = getTranslator();
   const lang = getLang();
-  const money = (m: string | null | undefined) => formatMoneyMinor(m && /^-?\d+$/.test(m) ? m : '0', 'INR', lang);
+  const money = (m: string | null | undefined) => moneyText(m && /^-?\d+$/.test(m) ? m : '0', 'INR', lang);
   const n = (v: number) => formatNumber(v, lang);
   const crumbs = <nav className="kv-breadcrumb" aria-label={t.t('swb.scm.breadcrumb')}><span>{t.t('lab.breadcrumb.operations')}</span> / <span aria-current="page">{t.t('swb.scm.title')}</span></nav>;
   const flaggedOff = <section>{crumbs}<h1>{t.t('swb.scm.title')}</h1><div className="kv-card kv-card--notice" role="status"><strong>{t.t('swb.scm.state.flaggedOff.title')}</strong><p>{t.t('swb.scm.state.flaggedOff.body')}</p></div></section>;

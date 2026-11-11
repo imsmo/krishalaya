@@ -14,7 +14,8 @@ import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { tenantHasPerm } from '../../../lib/auth';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { DataTable } from '../../../components/DataTable';
 import {
   ORG_ACCOUNTS, accountFilter, defaultWindow, direction, exportBlockedBy, exportRefusalKey,
@@ -144,9 +145,9 @@ export default async function WalletTransactionsPage({ searchParams }: {
             },
             {
               header: t.t('wal.colAmount'),
-              cell: (e) => <span className={`kv-amount--${direction(e.amountMinor)}`}>{formatMoneyMinor(e.amountMinor, e.currencyCode, lang)}</span>,
+              cell: (e) => <span className={`kv-amount--${direction(e.amountMinor)}`}>{moneyText(e.amountMinor, e.currencyCode, lang)}</span>,
             },
-            { header: t.t('wal.colBalanceAfter'), cell: (e) => formatMoneyMinor(e.balanceAfterMinor, e.currencyCode, lang) },
+            { header: t.t('wal.colBalanceAfter'), cell: (e) => moneyText(e.balanceAfterMinor, e.currencyCode, lang) },
           ]}
         />
       )}

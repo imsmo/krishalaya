@@ -17,7 +17,8 @@ import Link from 'next/link';
 import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../components/Bidi';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { Course, CourseDesk, CourseStats } from '@krishalaya/sdk-js';
 import {
@@ -134,7 +135,7 @@ export default async function CoursesPage({ searchParams }: { searchParams: Reco
                       </td>
                       <td>{c.topicCode ? <><code>{c.topicCode}</code> <span className="kv-field__hint">{c.topicName}</span></> : <span className="kv-field__hint">{t.t('courses.noTopic')}</span>}</td>
                       <td>{t.t(levelKey(c.level))}</td>
-                      <td>{c.priceMinor === '0' ? t.t('courses.free') : formatMoneyMinor(c.priceMinor, c.currencyCode, lang)}</td>
+                      <td>{c.priceMinor === '0' ? t.t('courses.free') : moneyText(c.priceMinor, c.currencyCode, lang)}</td>
                       <td>{learners === null ? <span className="kv-field__hint">{t.t('common.dash')}</span> : formatNumber(learners, lang)}</td>
                       <td>{pct === null ? <span className="kv-field__hint">{t.t('courses.noLearnersYet')}</span> : `${formatNumber(pct, lang)}%`}</td>
                     </tr>

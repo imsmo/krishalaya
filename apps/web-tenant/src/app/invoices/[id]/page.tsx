@@ -14,7 +14,8 @@ import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { tenantHasPerm } from '../../../lib/auth';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { rateBasisKey, supplyKey, filableState, remainingMinor, creditNoteBlockedBy } from '../../../features/invoices/console';
 import { issueCreditNoteAction } from '../actions';
 import { CREDIT_NOTE_REASON_CODES } from '../../../features/invoices/reasons';
@@ -39,7 +40,7 @@ export default async function InvoiceDetailPage({ params, searchParams }: { para
   try { inv = await tenantClient().payments.invoices.detail(params.id); }
   catch { notFound(); }
 
-  const money = (minor: string | null | undefined) => (minor ? formatMoneyMinor(minor, 'INR', lang) : t.t('common.dash'));
+  const money = (minor: string | null | undefined) => (minor ? moneyText(minor, 'INR', lang) : t.t('common.dash'));
   const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
   const blocked = creditNoteBlockedBy(inv, { canFinance });
   const filable = filableState(inv);

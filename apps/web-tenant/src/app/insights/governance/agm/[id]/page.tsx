@@ -7,7 +7,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { AgmPack } from '@krishalaya/sdk-js';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../../../../components/Bidi';
 import { requireSession } from '../../../../../lib/session';
 import { tenantClient } from '../../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../../lib/i18n';
@@ -30,7 +30,7 @@ export default async function AgmPackPage({ params }: { params: { id: string } }
   try { pack = await tenantClient().agmPacks.get(params.id); }
   catch (e) { const err = e instanceof SdkError ? e : null; state = swdPageState(err?.code, err?.status, true); }
   try { meId = (await tenantClient().auth.me()).id; } catch { meId = null; }
-  const money = (minor: string, currency: string | null) => (currency ? formatMoneyMinor(minor, currency, lang) : '—');
+  const money = (minor: string, currency: string | null) => (currency ? moneyText(minor, currency, lang) : '—');
   const acts = pack ? agmActsFor(pack.status, !!meId && pack.issuedBy === meId) : [];
   const refused = pack ? refusedItems(pack.sections) : [];
 

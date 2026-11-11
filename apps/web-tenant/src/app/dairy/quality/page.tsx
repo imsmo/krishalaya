@@ -31,7 +31,8 @@ import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { DataTable } from '../../../components/DataTable';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatDate, formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatDate, formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { DairyQualityDesk } from '@krishalaya/sdk-js';
 import {
@@ -71,7 +72,7 @@ export default async function DairyQualityPage({ searchParams }: { searchParams:
     state = qualityState(err?.code ?? 'generic', err?.status);
   }
 
-  const money = (m: string) => formatMoneyMinor(m, desk?.currencyCode ?? 'INR', lang);
+  const money = (m: string) => moneyText(m, desk?.currencyCode ?? 'INR', lang);
   const retryHref = `/dairy/quality${day ? `?day=${day}` : ''}`;
 
   return (

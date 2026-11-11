@@ -16,7 +16,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { formatDate, formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatDate, formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../components/Bidi';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { AuditEntry, AuditWindow, AuditorOverview } from '@krishalaya/sdk-js';
 import { requireSession } from '../../lib/session';
@@ -51,7 +52,7 @@ export default async function AuditorPage({ searchParams }: { searchParams: SP }
   catch (e) { const err = e instanceof SdkError ? e : null; ovState = realmState(err?.code, err?.status); ovWindowCode = (err?.details as { code?: unknown } | undefined)?.code; }
   const zone = ov?.clock.zone;
   const when = (iso: string) => formatDate(iso, lang, { dateStyle: 'medium', timeStyle: 'short', ...(zone ? { timeZone: zone } : {}) });
-  const money = (minor: string, ccy?: string | null) => formatMoneyMinor(minor, ccy ?? ov?.clock.currency ?? 'XXX', lang);
+  const money = (minor: string, ccy?: string | null) => moneyText(minor, ccy ?? ov?.clock.currency ?? 'XXX', lang);
 
   // ---- the trail ----
   const form = { action: searchParams.action, entityType: searchParams.entityType, entityId: searchParams.entityId, actorUserId: searchParams.actorUserId, from: searchParams.from, to: searchParams.to };

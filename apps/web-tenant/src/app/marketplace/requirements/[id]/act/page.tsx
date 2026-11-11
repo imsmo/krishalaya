@@ -13,7 +13,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { Requirement, RequirementResponse, ResponseGroup } from '@krishalaya/sdk-js';
-import { formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../../../../components/Bidi';
 import { requireSession } from '../../../../../lib/session';
 import { tenantClient } from '../../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../../lib/i18n';
@@ -34,7 +35,7 @@ export default async function RequirementActPage({ params, searchParams }: { par
   await requireSession(base);
   const t = getTranslator();
   const lang = getLang();
-  const money = (m: string | null | undefined) => formatMoneyMinor(m ?? '0', 'INR', lang);
+  const money = (m: string | null | undefined) => moneyText(m ?? '0', 'INR', lang);
   const n = (v: number) => formatNumber(v, lang);
   const act = isAct(searchParams.act) ? searchParams.act : 'send';
   const step = mutateStep(searchParams.step);

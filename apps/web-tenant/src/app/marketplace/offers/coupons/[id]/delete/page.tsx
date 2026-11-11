@@ -10,7 +10,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { CouponListRow } from '@krishalaya/sdk-js';
-import { formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../../../../../components/Bidi';
 import { requireSession } from '../../../../../../lib/session';
 import { tenantClient } from '../../../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../../../lib/i18n';
@@ -57,7 +58,7 @@ export default async function DeleteCouponPage({ params, searchParams }: { param
             <>
               <div className="kv-card">
                 <p><strong><code>{row.code}</code></strong> · {row.promotionName ?? t.t('cpn.promotion.none')} · {t.t(couponStatusKey(row.status))}</p>
-                <p className="kv-field__hint">{t.t(usesKey(row.maxUses), { uses: formatNumber(row.uses, lang), max: row.maxUses === null ? '' : formatNumber(row.maxUses, lang) })} · {t.t('cpn.col.redeemed')}: {formatMoneyMinor(row.redeemedValueMinor, 'INR', lang)}</p>
+                <p className="kv-field__hint">{t.t(usesKey(row.maxUses), { uses: formatNumber(row.uses, lang), max: row.maxUses === null ? '' : formatNumber(row.maxUses, lang) })} · {t.t('cpn.col.redeemed')}: {moneyText(row.redeemedValueMinor, 'INR', lang)}</p>
                 <p>{t.t('cpn.delete.rule')}</p>
                 <p className="kv-field__hint">{t.t('mutate.reason.recorded')}</p>
               </div>

@@ -18,7 +18,7 @@ import { formatDate } from '@krishalaya/i18n';
 import { RETURN_STATUSES, awaitingBuyerShipment, isReturnStatus } from '../../features/returns/rma';
 import { returnActions, refundBlockedBy } from '../../features/disputes/console';
 import { returnStepAction, inspectReturnAction, proposeReturnRefundAction } from './actions';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../components/Bidi';
 import type { ReturnQueueRow } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
@@ -89,7 +89,7 @@ export default async function ReturnsPage({ searchParams }: { searchParams: { st
               // recorded amount says so, and the refund path refuses it rather than assuming the order total.
               header: t.t('rma.colValue'),
               cell: (r) => (r.refundAmountMinor
-                ? <span>{formatMoneyMinor(r.refundAmountMinor, r.currencyCode ?? 'INR', lang)}</span>
+                ? <span>{moneyText(r.refundAmountMinor, r.currencyCode ?? 'INR', lang)}</span>
                 : <span className="kv-muted">{t.t('rma.valueNotRecorded')}</span>),
             },
             {

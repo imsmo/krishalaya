@@ -26,7 +26,7 @@ import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { DataTable } from '../../../components/DataTable';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import {
   ROUTE_TABS, actionHref, approvalKey, approveConfirmKey, boardHref, breakEvenKey, canApprove, consolidationKey,
   dayLabelKey, economicsKey, isProposal, isRouteAction, parcelsKey, parcelsValue, routeCostKey, routeErrorKey,
@@ -115,7 +115,7 @@ export default async function RoutesPage({ searchParams }: {
                 cannot disagree about which sentence a verdict deserves. Money via formatMoneyMinor, never client
                 arithmetic (Law 2) — and only when there IS a baseline. */}
             {t.t(economicsKey(target.economics))}
-            {target.economics.kind === 'ad_hoc_only' && ` ${formatMoneyMinor(target.economics.adHocPerParcelMinor, target.economics.currencyCode, lang)}`}
+            {target.economics.kind === 'ad_hoc_only' && ` ${moneyText(target.economics.adHocPerParcelMinor, target.economics.currencyCode, lang)}`}
           </p>
           <p className="kv-field__hint">{t.t(routeCostKey())} · {t.t(breakEvenKey())}</p>
 
@@ -248,7 +248,7 @@ export default async function RoutesPage({ searchParams }: {
                   {corridors.map((c) => (
                     <li key={`${c.regionId}-${c.dayKey ?? 'x'}`}>
                       {c.villageName ?? c.regionId.slice(0, 8)} · {t.t(dayLabelKey(c.dayKey, false))} · {c.parcels}
-                      {' · '}{formatMoneyMinor(c.spentMinor, 'INR', lang)}
+                      {' · '}{moneyText(c.spentMinor, 'INR', lang)}
                     </li>
                   ))}
                 </ul>

@@ -11,7 +11,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { formatDate, formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatDate, formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { AuditorLedgerPage } from '@krishalaya/sdk-js';
 import { requireSession } from '../../../lib/session';
@@ -39,7 +40,7 @@ export default async function AuditorLedgerPage({ searchParams }: { searchParams
   catch (e) { const err = e instanceof SdkError ? e : null; state = realmState(err?.code, err?.status); wcode = (err?.details as { code?: unknown } | undefined)?.code; }
   const zone = page?.clock.zone;
   const when = (iso: string) => formatDate(iso, lang, { dateStyle: 'medium', timeStyle: 'short', ...(zone ? { timeZone: zone } : {}) });
-  const money = (minor: string, ccy?: string | null) => formatMoneyMinor(minor, ccy ?? page?.clock.currency ?? 'XXX', lang);
+  const money = (minor: string, ccy?: string | null) => moneyText(minor, ccy ?? page?.clock.currency ?? 'XXX', lang);
 
   return (
     <section>

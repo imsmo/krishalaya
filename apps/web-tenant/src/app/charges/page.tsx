@@ -15,7 +15,8 @@ import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { tenantHasPerm } from '../../lib/auth';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../components/Bidi';
 import {
   OFFERED_CALC_METHODS, amountView, canApplyProposal, canSignProposal, commodityRatesRecorded,
   earliestEffectiveFrom, proposeBlockedBy, readerKey, rowState, surfaceKey,
@@ -48,7 +49,7 @@ export default async function ChargesPage({ searchParams }: { searchParams: { ok
   let meId: string | null = null;
   try { meId = (await tenantClient().auth.me()).id; } catch { meId = null; }
 
-  const money = (minor: string | null) => (minor ? formatMoneyMinor(minor, 'INR', lang) : t.t('common.dash'));
+  const money = (minor: string | null) => (minor ? moneyText(minor, 'INR', lang) : t.t('common.dash'));
   const okKey = searchParams.ok && OK.has(searchParams.ok) ? searchParams.ok : null;
   const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
   const amountText = (calcMethod: string, config: Record<string, unknown>): string => {

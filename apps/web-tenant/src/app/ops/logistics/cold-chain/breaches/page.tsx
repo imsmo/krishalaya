@@ -9,7 +9,8 @@ import Link from 'next/link';
 import { randomUUID } from 'node:crypto';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { ColdBreachPage } from '@krishalaya/sdk-js';
-import { formatDate, formatMoneyMinor } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../../../../components/Bidi';
 import { requireSession } from '../../../../../lib/session';
 import { tenantClient } from '../../../../../lib/api-client';
 import { tenantHasPerm } from '../../../../../lib/auth';
@@ -54,7 +55,7 @@ export default async function BreachesPage({ searchParams }: { searchParams: { c
                   ? <p><strong>{(() => { const d = durationParts(w.medianAlertToAction.seconds); return t.t(`swe.unit.${d.unit}`, { n: String(d.value) }); })()}</strong> <span className="kv-detail__muted">· {t.t('swe.cold.medianOver', { n: String(w.medianAlertToAction.over) })}</span></p>
                   : <p className="kv-badge kv-badge--muted">{t.t(refusedKey(w.medianAlertToAction.code))}</p>}</div>
               <div className="kv-card"><p className="kv-detail__muted">{t.t('swe.cold.loss')}</p>
-                {w.loss.kind === 'none_recorded' ? <p>{t.t('swe.cold.noLoss')}</p> : <p><strong>{w.loss.totals.map((x) => formatMoneyMinor(x.minor, x.currency, lang)).join(' · ')}</strong> <span className="kv-detail__muted">· {t.t('swe.cold.lossOver', { n: String(w.loss.breachesWithLoss) })}</span></p>}</div>
+                {w.loss.kind === 'none_recorded' ? <p>{t.t('swe.cold.noLoss')}</p> : <p><strong>{w.loss.totals.map((x) => moneyText(x.minor, x.currency, lang)).join(' · ')}</strong> <span className="kv-detail__muted">· {t.t('swe.cold.lossOver', { n: String(w.loss.breachesWithLoss) })}</span></p>}</div>
             </div>
           )}
           {p.items.length === 0 ? <div className="kv-card kv-card--notice" role="status"><strong>{t.t('swe.cold.noBreaches')}</strong></div> : (
@@ -66,7 +67,7 @@ export default async function BreachesPage({ searchParams }: { searchParams: { c
               { header: t.t('swe.cold.col.duration'), cell: (b) => dur(b.durationSeconds) },
               { header: t.t('swe.cold.col.alert'), cell: (b) => t.t(`swe.cold.alert.${b.alert.state}`, { n: String(b.alert.recipients) }) },
               { header: t.t('swe.cold.col.action'), cell: (b) => (b.actionAt ? <span>{when(b.actionAt)}<br /><span className="kv-detail__muted">{b.actionNote}</span></span> : b.acknowledgedAt ? t.t('swe.cold.acknowledgedAt', { at: when(b.acknowledgedAt) }) : t.t('common.dash')) },
-              { header: t.t('swe.cold.col.outcome'), cell: (b) => (b.outcome ? <span>{t.t(`swe.cold.outcome.${b.outcome}`)}{b.loss ? ` · ${b.loss.currency ? formatMoneyMinor(b.loss.minor, b.loss.currency, lang) : b.loss.minor}` : ''}</span> : t.t('common.dash')) },
+              { header: t.t('swe.cold.col.outcome'), cell: (b) => (b.outcome ? <span>{t.t(`swe.cold.outcome.${b.outcome}`)}{b.loss ? ` · ${b.loss.currency ? moneyText(b.loss.minor, b.loss.currency, lang) : b.loss.minor}` : ''}</span> : t.t('common.dash')) },
               { header: t.t('swe.cold.col.buyer'), cell: (b) => t.t(`swe.cold.offer.${b.buyer.offerState}`) + (b.buyer.decision ? ` · ${t.t(`swe.cold.decision.${b.buyer.decision}`)}` : '') },
               { header: '', cell: (b) => (canManage ? <span>{b.acts.map((a, i) => <span key={a}>{i ? ' · ' : ''}<Link href={`${BREACHES_HREF}/act?act=${a}&id=${b.id}`} className="kv-btn--link">{t.t(`swe.cold.act.${a}`)}</Link></span>)}</span> : null) },
             ]} />

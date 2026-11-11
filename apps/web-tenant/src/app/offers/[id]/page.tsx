@@ -9,7 +9,8 @@ import { notFound } from 'next/navigation';
 import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { isNegotiable, effectivePriceMinor } from '../../../features/offers/negotiation';
 import { minorToMajor } from '../../../features/listings/form';
 import { acceptOfferAction, counterOfferAction, rejectOfferAction } from './actions';
@@ -40,8 +41,8 @@ export default async function OfferDetailPage({ params, searchParams }: { params
   const facts: Array<[string, string]> = [
     [t.t('offerDetail.status'), offer.status],
     [t.t('offerDetail.quantity'), offer.quantity],
-    [t.t('offerDetail.offered'), formatMoneyMinor(offer.offeredPriceMinor, 'INR', lang)],
-    [t.t('offerDetail.counter'), offer.counterPriceMinor ? formatMoneyMinor(offer.counterPriceMinor, 'INR', lang) : t.t('common.dash')],
+    [t.t('offerDetail.offered'), moneyText(offer.offeredPriceMinor, 'INR', lang)],
+    [t.t('offerDetail.counter'), offer.counterPriceMinor ? moneyText(offer.counterPriceMinor, 'INR', lang) : t.t('common.dash')],
     [t.t('offerDetail.round'), String(offer.round)],
     [t.t('offerDetail.expires'), offer.expiresAt ? formatDate(offer.expiresAt, lang) : t.t('common.dash')],
   ];

@@ -18,7 +18,7 @@ import Link from 'next/link';
 import { requireSession } from '../../../../lib/session';
 import { tenantClient } from '../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../lib/i18n';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../../../components/Bidi';
 import {
   MAX_ROUTE_NAME, dayLabelKey, errorFor, reviewNoticeKey, routeErrorKey, suggestKey, validateDraft,
 } from '../../../../features/logistics/routes';
@@ -130,7 +130,7 @@ export default async function NewRoutePage({ searchParams }: {
                   <input id={`v-${c.regionId}`} type="checkbox" name="villageRegionIds" value={c.regionId}
                          defaultChecked={draft.villageRegionIds.includes(c.regionId)} />
                   {' '}{c.villageName ?? c.regionId.slice(0, 8)} · {t.t(dayLabelKey(c.dayKey, false))} · {c.parcels}
-                  {' · '}{formatMoneyMinor(c.spentMinor, 'INR', lang)}
+                  {' · '}{moneyText(c.spentMinor, 'INR', lang)}
                 </label>
               ))
             )}

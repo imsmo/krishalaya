@@ -21,7 +21,8 @@ import Link from 'next/link';
 import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatMoneyMinor, formatDate, formatNumber } from '@krishalaya/i18n'; // PC-56 RTL-1b-2: counts via formatNumber (the language's pinned Intl locale), never a bare-code toLocaleString
+import { formatDate, formatNumber } from '@krishalaya/i18n'; // PC-56 RTL-1b-2: counts via formatNumber (the language's pinned Intl locale), never a bare-code toLocaleString
+import { moneyText } from '../../components/Bidi';
 import type { TenantDashboard, GoLiveState } from '@krishalaya/sdk-js';
 import {
   gmvTrend, isQuietDay, orderedActions, ageLabel, planUsagePct, planNearLimit, showChecklistFirst,
@@ -92,7 +93,7 @@ export default async function DashboardPage() {
   const trend = gmvTrend(d.tiles);
   // the currency is READ (the tenant country's) — never a literal; with none recorded the money tiles say so instead of guessing
   const cur = d.tiles.currencyCode;
-  const money = (minor: string) => (cur ? formatMoneyMinor(minor, cur, lang) : t.t('swd.home.noCurrency'));
+  const money = (minor: string) => (cur ? moneyText(minor, cur, lang) : t.t('swd.home.noCurrency'));
   const actions = orderedActions(d.needsYouToday);
   const quiet = isQuietDay(actions);
   const usage = planUsagePct(d.planHealth);

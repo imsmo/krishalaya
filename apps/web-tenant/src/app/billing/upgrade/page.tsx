@@ -13,7 +13,8 @@ import type { PlanChangePreview, PlanCompareView } from '@krishalaya/sdk-js';
 import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatMoneyMinor, formatDate, formatNumber } from '@krishalaya/i18n'; // PC-56 RTL-1b-1: counts via formatNumber (the language's pinned Intl locale), never a bare-code toLocaleString
+import { formatDate, formatNumber } from '@krishalaya/i18n'; // PC-56 RTL-1b-1: counts via formatNumber (the language's pinned Intl locale), never a bare-code toLocaleString
+import { moneyText } from '../../../components/Bidi';
 import {
   actionLabel, breachSummary, canConfirm, directionOf, featureCell, invoiceRows, limitCell,
   offerablePlans, orderedLimitCodes, pendingNotice, showsCustomPricingNotice, taxPct,
@@ -99,7 +100,7 @@ export default async function UpgradePage({ searchParams }: {
           {showsCustomPricingNotice(view) && (
             <div className="kv-notice" role="note">
               <strong>{t.t('upg.custom.title')}</strong>
-              <p>{t.t('upg.custom.body', { price: formatMoneyMinor(view.current.priceMinor, view.current.currencyCode, lang) })}</p>
+              <p>{t.t('upg.custom.body', { price: moneyText(view.current.priceMinor, view.current.currencyCode, lang) })}</p>
             </div>
           )}
 
@@ -112,7 +113,7 @@ export default async function UpgradePage({ searchParams }: {
                   <th key={p.id} scope="col">
                     {p.name}
                     <div className="kv-detail__muted">
-                      {formatMoneyMinor(p.monthlyPriceMinor, p.currencyCode, lang)}{t.t('upg.perMonth')}
+                      {moneyText(p.monthlyPriceMinor, p.currencyCode, lang)}{t.t('upg.perMonth')}
                     </div>
                     {p.isCurrent ? <span className="kv-badge kv-badge--success">{t.t('upg.current')}</span> : null}
                   </th>
@@ -191,7 +192,7 @@ export default async function UpgradePage({ searchParams }: {
                             days: preview.lines.daysRemaining, of: preview.lines.daysInPeriod, pct: taxPct(preview),
                           })}
                           {' · '}
-                          {r.negative ? '−' : ''}{formatMoneyMinor(r.minor, preview.currencyCode, lang)}
+                          {r.negative ? '−' : ''}{moneyText(r.minor, preview.currencyCode, lang)}
                         </li>
                       ))}
                     </ul>
@@ -199,7 +200,7 @@ export default async function UpgradePage({ searchParams }: {
                         display; adding them gives a different number from the amount due (W119's own lines sum to ₹7,954
                         against a true ₹7,955.48). */}
                     <p>
-                      <strong>{t.t('upg.total')} · {formatMoneyMinor(preview.lines.totalDueMinor, preview.currencyCode, lang)}</strong>
+                      <strong>{t.t('upg.total')} · {moneyText(preview.lines.totalDueMinor, preview.currencyCode, lang)}</strong>
                     </p>
                     <p className="kv-detail__muted">{t.t('upg.dueNote')}</p>
                     {preview.taxUsedDefault && <p className="kv-detail__muted">{t.t('upg.taxDefault', { pct: taxPct(preview) })}</p>}

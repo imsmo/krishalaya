@@ -21,7 +21,8 @@ import Link from 'next/link';
 import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatDate, formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatDate, formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { EarningsStatementLine, EarningsView } from '@krishalaya/sdk-js';
 import { profileHref, studioHref, editProfileHref } from '../../../features/studio/instructor';
@@ -130,8 +131,8 @@ export default async function EarningsPage({ searchParams }: { searchParams: { i
                     return (
                       <tr key={name}>
                         <th scope="row">{t.t(tileLabelKey(name))}</th>
-                        <td>{mtd === null ? <span className="kv-field__hint">{t.t('earnings.noMonth')}</span> : formatMoneyMinor(mtd, tile.currencyCode, lang)}</td>
-                        <td>{life === null ? <span className="kv-field__hint">{t.t('common.dash')}</span> : <>{formatMoneyMinor(life, tile.currencyCode, lang)}{name === 'available' && availableState(life) === 'negative' && <> <span className="kv-badge kv-badge--danger">{t.t('earnings.availableNegative')}</span></>}</>}</td>
+                        <td>{mtd === null ? <span className="kv-field__hint">{t.t('earnings.noMonth')}</span> : moneyText(mtd, tile.currencyCode, lang)}</td>
+                        <td>{life === null ? <span className="kv-field__hint">{t.t('common.dash')}</span> : <>{moneyText(life, tile.currencyCode, lang)}{name === 'available' && availableState(life) === 'negative' && <> <span className="kv-badge kv-badge--danger">{t.t('earnings.availableNegative')}</span></>}</>}</td>
                       </tr>
                     );
                   })}
@@ -159,10 +160,10 @@ export default async function EarningsPage({ searchParams }: { searchParams: { i
                       <td><Link href={`/courses/${encodeURIComponent(c.courseId)}`} className="kv-link">{c.title}</Link></td>
                       <td><span className="kv-badge">{t.t(`studio.status.${c.status}`) || c.status}</span></td>
                       <td>{formatNumber(c.enrollments, lang)}{c.paid !== c.enrollments && <span className="kv-field__hint"> · {t.t('earnings.paidOf', { n: formatNumber(c.paid, lang) })}</span>}</td>
-                      <td>{c.priceMinor === '0' ? t.t('studio.free') : formatMoneyMinor(c.priceMinor, c.currencyCode, lang)}</td>
-                      <td>{formatMoneyMinor(c.gross, c.currencyCode, lang)}</td>
-                      <td>{formatMoneyMinor(c.instructor, c.currencyCode, lang)}</td>
-                      <td>{formatMoneyMinor(c.tenantPlatform, c.currencyCode, lang)}</td>
+                      <td>{c.priceMinor === '0' ? t.t('studio.free') : moneyText(c.priceMinor, c.currencyCode, lang)}</td>
+                      <td>{moneyText(c.gross, c.currencyCode, lang)}</td>
+                      <td>{moneyText(c.instructor, c.currencyCode, lang)}</td>
+                      <td>{moneyText(c.tenantPlatform, c.currencyCode, lang)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -182,10 +183,10 @@ export default async function EarningsPage({ searchParams }: { searchParams: { i
                     <tr key={l.id}>
                       <td>{when(l.occurredAt, lang)}</td>
                       <td>{l.courseTitle ?? <span className="kv-field__hint">{t.t('common.dash')}</span>}</td>
-                      <td>{formatMoneyMinor(l.gross, l.currencyCode, lang)}</td>
-                      <td>{formatMoneyMinor(l.instructor, l.currencyCode, lang)} <span className="kv-field__hint">({shareText(l.instructorShareBps)}%)</span></td>
-                      <td>{formatMoneyMinor(l.tenant, l.currencyCode, lang)}</td>
-                      <td>{formatMoneyMinor(l.platform, l.currencyCode, lang)}</td>
+                      <td>{moneyText(l.gross, l.currencyCode, lang)}</td>
+                      <td>{moneyText(l.instructor, l.currencyCode, lang)} <span className="kv-field__hint">({shareText(l.instructorShareBps)}%)</span></td>
+                      <td>{moneyText(l.tenant, l.currencyCode, lang)}</td>
+                      <td>{moneyText(l.platform, l.currencyCode, lang)}</td>
                       <td><span className={l.state === 'held_pending_agreement' ? 'kv-badge kv-badge--warn' : 'kv-badge kv-badge--ok'}>{t.t(lineStateKey(l.state))}</span></td>
                     </tr>
                   ))}
@@ -210,7 +211,7 @@ export default async function EarningsPage({ searchParams }: { searchParams: { i
             <p className="kv-field__hint">{t.t('earnings.payout.rides')}</p>
             {view.payouts.length === 0 ? <p className="kv-field__hint">{t.t('earnings.payoutsEmpty')}</p> : (
               <ul className="kv-list">
-                {view.payouts.map((p) => <li key={p.id}>{when(p.createdAt, lang)} · {formatMoneyMinor(p.amountMinor, p.currencyCode, lang)} · {t.t(payoutStageKey(p))}{p.failureCode && <span className="kv-field__hint"> · {p.failureCode}</span>}</li>)}
+                {view.payouts.map((p) => <li key={p.id}>{when(p.createdAt, lang)} · {moneyText(p.amountMinor, p.currencyCode, lang)} · {t.t(payoutStageKey(p))}{p.failureCode && <span className="kv-field__hint"> · {p.failureCode}</span>}</li>)}
               </ul>
             )}
           </div>

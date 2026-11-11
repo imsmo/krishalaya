@@ -17,7 +17,8 @@ import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { getTranslator, getLang } from '../../lib/i18n';
 import type { Translator } from '@krishalaya/i18n';
-import { formatMoneyMinor, formatRelative, formatNumber } from '@krishalaya/i18n'; // PC-56 RTL-1b-2: counts via formatNumber, never a bare-code toLocaleString
+import { formatRelative, formatNumber } from '@krishalaya/i18n'; // PC-56 RTL-1b-2: counts via formatNumber, never a bare-code toLocaleString
+import { moneyText } from '../../components/Bidi';
 import { rosterKycLabel, type RosterMember, type RosterCensus } from '@krishalaya/sdk-js';
 import {
   parseRosterFilters, rosterHref, isFiltered, sharePct, hasRoleLabel, hasKycLabel,
@@ -218,7 +219,7 @@ export default async function PeoplePage({ searchParams }: { searchParams: RawPa
                     </td>
                     {/* **"Lifetime sales" IS RENDERED AS MONEY RECEIVED, WHICH IS WHAT THE FIGURE IS.** It sums SETTLED
                         payouts: an order that never paid out is not income, and W155 says so in its own words. */}
-                    <td>{formatMoneyMinor(m.lifetimeReceivedMinor, 'INR', lang)}</td>
+                    <td>{moneyText(m.lifetimeReceivedMinor, 'INR', lang)}</td>
                     <td>{m.lastActiveAt ? formatRelative(m.lastActiveAt, lang) : t.t('people.never')}</td>
                   </tr>
                 );

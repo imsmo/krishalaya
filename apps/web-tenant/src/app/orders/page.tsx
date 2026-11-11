@@ -14,7 +14,8 @@ import { requireSession } from '../../lib/session';
 import { tenantHasPerm } from '../../lib/auth';
 import { tenantClient } from '../../lib/api-client';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatMoneyMinor, formatDate, formatRelative } from '@krishalaya/i18n';
+import { formatDate, formatRelative } from '@krishalaya/i18n';
+import { moneyText } from '../../components/Bidi';
 import { DataTable } from '../../components/DataTable';   // the local wrapper this page always used
 import type { ConsoleOrderRow, OrderViewCounts, OrderListItem } from '@krishalaya/sdk-js';
 import { ORDER_VIEW_TABS, isOrderViewTab, viewHref, acceptanceClock, orderStatusClass } from '../../features/orders/console';
@@ -47,7 +48,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: { cur
               { header: t.t('orders.colOrder'), cell: (o) => <Link href={`/orders/${o.id}`} className="kv-link">{o.orderNo}</Link> },
               { header: t.t('orders.colStatus'), cell: (o) => <span className="kv-badge">{o.status}</span> },
               { header: t.t('orders.colCounterparty'), cell: (o) => o.counterparty ?? t.t('common.dash') },
-              { header: t.t('orders.colTotal'), cell: (o) => formatMoneyMinor(o.totalMinor, 'INR', lang) },
+              { header: t.t('orders.colTotal'), cell: (o) => moneyText(o.totalMinor, 'INR', lang) },
               { header: t.t('orders.colDate'), cell: (o) => (o.createdAt ? formatDate(o.createdAt, lang) : t.t('common.dash')) },
             ]}
           />
@@ -115,7 +116,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: { cur
                   </td>
                   <td>{o.buyerName ?? t.t('common.dash')}</td>
                   <td>{o.sellerName ?? t.t('common.dash')}</td>
-                  <td>{formatMoneyMinor(o.totalMinor, o.currencyCode, lang)}</td>
+                  <td>{moneyText(o.totalMinor, o.currencyCode, lang)}</td>
                   <td>
                     <span className={orderStatusClass(o.status)}>{o.status}</span>
                     {clock?.kind === 'live' && <span className="kv-fine"> · {t.t('oc.acceptIn', { m: String(clock.minutesLeft) })}</span>}

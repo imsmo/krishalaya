@@ -16,7 +16,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { AmbassadorRun, AmbassadorRunCurrent } from '@krishalaya/sdk-js';
-import { formatDate, formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatDate, formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../../../components/Bidi';
 import { requireSession } from '../../../../lib/session';
 import { tenantClient } from '../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../lib/i18n';
@@ -37,7 +38,7 @@ export default async function AmbassadorEarningsPage({ searchParams }: { searchP
   await requireSession(EARNINGS_HREF);
   const t = getTranslator();
   const lang = getLang();
-  const money = (m: string | null | undefined) => formatMoneyMinor(m && /^-?\d+$/.test(m) ? m : '0', 'INR', lang);
+  const money = (m: string | null | undefined) => moneyText(m && /^-?\d+$/.test(m) ? m : '0', 'INR', lang);
   const when = (iso: string | null | undefined) => (iso ? formatDate(iso, lang, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' }) : t.t('common.dash'));
   const day = (ymd: string) => formatDate(`${ymd.slice(0, 10)}T00:00:00+05:30`, lang, { dateStyle: 'medium', timeZone: 'Asia/Kolkata' });
   const crumbs = <nav className="kv-breadcrumb" aria-label={t.t('amb.breadcrumb')}><Link href={AMBASSADORS_HREF}>{t.t('amb.title')}</Link> / <span aria-current="page">{t.t('swb.run.title')}</span></nav>;

@@ -22,7 +22,8 @@ import Link from 'next/link';
 import { requireSession } from '../../../../lib/session';
 import { tenantClient } from '../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../lib/i18n';
-import { formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../../../components/Bidi';
 import {
   DEFAULT_FREIGHT_CURRENCY, MAX_FREIGHT_LINES, documentNoticeKey, errorFor, freightErrorKey, linesTotalMinor,
   parseLines, reviewNoticeKey, validateDraft, type FreightDraft,
@@ -107,11 +108,11 @@ export default async function NewFreightInvoicePage({ searchParams }: {
             <dt>{t.t('freight.form.period')}</dt><dd>{draft.periodStart} – {draft.periodEnd}</dd>
             <dt>{t.t('freight.form.billed')}</dt>
             {/* The formatted total, so a paise/rupee mix-up is visible while it is still free to fix. */}
-            <dd>{formatMoneyMinor(draft.billedMinor, draft.currencyCode, lang)} <span className="kv-field__hint">({draft.billedMinor})</span></dd>
+            <dd>{moneyText(draft.billedMinor, draft.currencyCode, lang)} <span className="kv-field__hint">({draft.billedMinor})</span></dd>
             <dt>{t.t('freight.form.lines')}</dt>
             <dd>
               {formatNumber(parsed.lines.length, lang)}
-              {' · '}{formatMoneyMinor(linesTotalMinor(parsed.lines), draft.currencyCode, lang)}
+              {' · '}{moneyText(linesTotalMinor(parsed.lines), draft.currencyCode, lang)}
             </dd>
           </dl>
           <input type="hidden" name="carrierId" value={draft.carrierId} />

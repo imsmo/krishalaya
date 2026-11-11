@@ -15,7 +15,8 @@ import { tenantClient } from '../../lib/api-client';
 import { tenantHasPerm } from '../../lib/auth';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../components/Bidi';
 import { isGstPeriod, previousPeriods, taxCell, supplyKey, filableState, remainingMinor, isFullyCredited } from '../../features/invoices/console';
 import { exportGstr1Action } from './actions';
 import type { TradeInvoiceRow, InvoiceMonthKpis } from '@krishalaya/sdk-js';
@@ -45,7 +46,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: { p
     rows = page.items; kpis = page.kpis; nextCursor = page.nextCursor;
   } catch { failed = true; }
 
-  const money = (minor: string | null | undefined) => (minor ? formatMoneyMinor(minor, 'INR', lang) : t.t('common.dash'));
+  const money = (minor: string | null | undefined) => (minor ? moneyText(minor, 'INR', lang) : t.t('common.dash'));
   const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;
   const periods = previousPeriods(now, 12);
   const href = (p?: string) => (p ? `/invoices?period=${p}` : '/invoices');

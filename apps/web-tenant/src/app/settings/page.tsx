@@ -10,7 +10,7 @@ import { tenantClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
 import { getThemePreference, getSeniorMode } from '../../lib/mechanism';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../components/Bidi';
 import { formatBps } from '../../features/settings/config';
 import type { CommissionRule, DeliveryZone } from '@krishalaya/sdk-js';
 import { DirArrow } from '../../components/DirArrow'; // PC-56 RTL-1b-1: the arrow flips under dir="rtl"
@@ -103,7 +103,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: { o
             { header: t.t('settings.commission.source'), cell: (r) => r.source ? t.t(`settings.source.${r.source}`) : t.t('settings.commission.anySource') },
             { header: t.t('settings.commission.rate'), cell: (r) => formatBps(r.rateBps) },
             { header: t.t('settings.commission.platformShare'), cell: (r) => formatBps(r.platformShareBps) },
-            { header: t.t('settings.commission.fixed'), cell: (r) => formatMoneyMinor(r.fixedMinor, 'INR', lang) },
+            { header: t.t('settings.commission.fixed'), cell: (r) => moneyText(r.fixedMinor, 'INR', lang) },
             { header: t.t('settings.commission.chargedTo'), cell: (r) => t.t(`settings.chargedTo.${r.chargedTo}`) },
             { header: t.t('settings.status'), cell: (r) => r.isActive ? t.t('settings.active') : t.t('settings.inactive') },
             { header: '', cell: (r) => (r.scope === 'tenant' && r.isActive)

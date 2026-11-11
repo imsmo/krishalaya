@@ -17,7 +17,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { AmbassadorRosterRow, AmbassadorSummary } from '@krishalaya/sdk-js';
-import { formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
@@ -39,7 +40,7 @@ export default async function AmbassadorsRosterPage({ searchParams }: { searchPa
   const t = getTranslator();
   const lang = getLang();
   const f = rosterFilters(searchParams);
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => moneyText(m, 'INR', lang);
   const n = (v: number) => formatNumber(v, lang);
 
   const crumbs = (

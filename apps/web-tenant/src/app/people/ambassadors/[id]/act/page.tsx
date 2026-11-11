@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { randomUUID } from 'node:crypto';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { AmbassadorRosterRow } from '@krishalaya/sdk-js';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../../../../components/Bidi';
 import { requireSession } from '../../../../../lib/session';
 import { tenantClient } from '../../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../../lib/i18n';
@@ -76,7 +76,7 @@ export default async function AmbassadorActPage({ params, searchParams }: { para
             <>
               <div className="kv-card">
                 <p><strong>{t.t(who.key, who.vars)}</strong> · {row.phoneMasked}</p>
-                <p className="kv-field__hint">{t.t(row.isActive ? 'amb.active' : 'amb.suspended')} · {t.t('amb.col.owed')}: {formatMoneyMinor(row.owedMinor, 'INR', lang)}</p>
+                <p className="kv-field__hint">{t.t(row.isActive ? 'amb.active' : 'amb.suspended')} · {t.t('amb.col.owed')}: {moneyText(row.owedMinor, 'INR', lang)}</p>
                 <p>{t.t(`amb.act.rule.${act}`)}</p>
                 {act === 'payout' && <p className="kv-field__hint">{t.t('amb.act.payoutFunding')} {t.t('amb.act.payoutVerb')}</p>}
                 {act === 'message' && <p className="kv-field__hint">{t.t('swb.amb.message.channel')}</p>}
@@ -116,7 +116,7 @@ export default async function AmbassadorActPage({ params, searchParams }: { para
       {step === 'success' && (
         <>
           <div className="kv-card kv-card--notice" role="status">
-            <p>{t.t(`amb.act.done.${act}`, act === 'payout' ? { amount: formatMoneyMinor(/^\d+$/.test(searchParams.paid ?? '') ? searchParams.paid! : '0', 'INR', lang), n: /^\d+$/.test(searchParams.count ?? '') ? searchParams.count! : '0' } : {})}</p>
+            <p>{t.t(`amb.act.done.${act}`, act === 'payout' ? { amount: moneyText(/^\d+$/.test(searchParams.paid ?? '') ? searchParams.paid! : '0', 'INR', lang), n: /^\d+$/.test(searchParams.count ?? '') ? searchParams.count! : '0' } : {})}</p>
             {act === 'payout' && <p className="kv-field__hint">{t.t('amb.act.zeroSum')}</p>}
           </div>
           {act === 'payout' && runId && <AuditEntryCard t={t} lang={lang} entityType="ambassador_payout_run" entityId={runId} action={AUDIT_ACTION.payout} />}

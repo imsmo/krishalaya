@@ -6,7 +6,8 @@ import type { Metadata } from 'next';
 import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../components/Bidi';
 import type { MandiPulse, ProductCard } from '@krishalaya/sdk-js';
 
 export const dynamic = 'force-dynamic';
@@ -32,7 +33,7 @@ export default async function MarketPage({ searchParams }: { searchParams: { pro
     try { pulse = await client.market.pulse(validProduct); } catch { pulseFailed = true; }
   }
 
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => moneyText(m, 'INR', lang);
 
   return (
     <section>

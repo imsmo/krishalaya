@@ -36,7 +36,8 @@ import Link from 'next/link';
 import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatDate, formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatDate, formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { DairyInsights, DairyInsightWindow } from '@krishalaya/sdk-js';
 import {
@@ -82,7 +83,7 @@ export default async function DairyInsightsPage({ searchParams }: { searchParams
   }
 
   const ready = view && view.kind === 'ready' ? view : null;
-  const money = (minor: string) => formatMoneyMinor(minor, ready?.currencyCode ?? '', lang);
+  const money = (minor: string) => moneyText(minor, ready?.currencyCode ?? '', lang);
   const current = window ?? 90;
 
   /** The comparison line under a tile: an arrow and a percent, or the sentence saying why there is neither. */

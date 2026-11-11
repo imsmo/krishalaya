@@ -15,7 +15,8 @@ import Link from 'next/link';
 import { randomUUID } from 'node:crypto';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { GroupLotCancelReason, GroupLotDetail } from '@krishalaya/sdk-js';
-import { formatDate, formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatDate, formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../../../../components/Bidi';
 import { requireSession } from '../../../../../lib/session';
 import { tenantClient } from '../../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../../lib/i18n';
@@ -37,7 +38,7 @@ export default async function GroupLotActPage({ params, searchParams }: { params
   await requireSession(base);
   const t = getTranslator();
   const lang = getLang();
-  const money = (m: string | null | undefined) => formatMoneyMinor(m ?? '0', 'INR', lang);
+  const money = (m: string | null | undefined) => moneyText(m ?? '0', 'INR', lang);
   const n = (v: number) => formatNumber(v, lang);
   const when = (iso: string) => formatDate(iso, lang, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' });
   const act = isAct(searchParams.act) ? searchParams.act : 'nudge';

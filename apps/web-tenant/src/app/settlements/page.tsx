@@ -16,7 +16,8 @@ import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { tenantHasPerm } from '../../lib/auth';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../components/Bidi';
 import { DataTable } from '../../components/DataTable';
 import {
   approveBlockedBy, canGenerate, cycleStatusKey, deductionNoteKey, NOTE_FLOOR,
@@ -81,7 +82,7 @@ export default async function SettlementsPage({ searchParams }: { searchParams: 
         <div className="kv-cards">
           <div className="kv-card kv-card--money">
             <h2 className="kv-card__title">{t.t('stl.currentCycle')}</h2>
-            <p className="kv-card__figure">{formatMoneyMinor(ov.cycleGrossMinor, 'INR', lang)}</p>
+            <p className="kv-card__figure">{moneyText(ov.cycleGrossMinor, 'INR', lang)}</p>
             <p className="kv-field__hint">{t.t('stl.cycleGrossHint', { sellers: String(ov.sellerCount), period: periodLabel(c.periodStart, c.periodEnd, t) })}</p>
             <p className="kv-badge">{t.t(cycleStatusKey(c.status))}</p>
           </div>
@@ -113,7 +114,7 @@ export default async function SettlementsPage({ searchParams }: { searchParams: 
           ) : (
             <form action={requestCloseAction} className="kv-card">
               <input type="hidden" name="cycleId" value={c.id} />
-              <p>{t.t('stl.requestConfirm', { sellers: String(ov.sellerCount), gross: formatMoneyMinor(ov.cycleGrossMinor, 'INR', lang) })}</p>
+              <p>{t.t('stl.requestConfirm', { sellers: String(ov.sellerCount), gross: moneyText(ov.cycleGrossMinor, 'INR', lang) })}</p>
               <button type="submit" className="kv-btn">{t.t('stl.requestClose')}</button>
             </form>
           )}
@@ -159,14 +160,14 @@ export default async function SettlementsPage({ searchParams }: { searchParams: 
         columns={[
           { header: t.t('stl.colSeller'), cell: (s) => s.sellerName ?? s.sellerUserId.slice(0, 8) },
           { header: t.t('stl.colOrders'), cell: (s) => String(s.orders) },
-          { header: t.t('stl.colGross'), cell: (s) => formatMoneyMinor(s.grossMinor, 'INR', lang) },
-          { header: t.t('stl.colCommission'), cell: (s) => formatMoneyMinor(s.commissionMinor, 'INR', lang) },
-          { header: t.t('stl.colTax'), cell: (s) => formatMoneyMinor(s.taxMinor, 'INR', lang) },
+          { header: t.t('stl.colGross'), cell: (s) => moneyText(s.grossMinor, 'INR', lang) },
+          { header: t.t('stl.colCommission'), cell: (s) => moneyText(s.commissionMinor, 'INR', lang) },
+          { header: t.t('stl.colTax'), cell: (s) => moneyText(s.taxMinor, 'INR', lang) },
           {
             header: t.t('stl.colNet'),
             cell: (s) => (
               <>
-                {formatMoneyMinor(s.netMinor, 'INR', lang)}
+                {moneyText(s.netMinor, 'INR', lang)}
                 {rowNeedsAttention(s) && <span className="kv-badge kv-badge--warn">{t.t('stl.netMismatch')}</span>}
               </>
             ),

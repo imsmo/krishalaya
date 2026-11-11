@@ -8,7 +8,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { PodReview } from '@krishalaya/sdk-js';
-import { formatDate, formatMoneyMinor } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../../../../components/Bidi';
 import { requireSession } from '../../../../../lib/session';
 import { tenantClient } from '../../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../../lib/i18n';
@@ -64,7 +65,7 @@ export default async function PodDetailPage({ params }: { params: { id: string }
             <div className="kv-card">
               <h2>{t.t('swa.pod.history')}</h2>
               <dl className="kv-detail">
-                {r.flaggedAt && <><dt>{t.t('swa.pod.flagged')}</dt><dd>{when(r.flaggedAt)} · {who(r.flaggedBy)} · {t.t(`swa.pod.reason.${r.flagReason ?? 'other'}`)}{r.varianceMinor ? ` · ${formatMoneyMinor(r.varianceMinor, 'INR', lang)}` : ''}{r.flagNote ? ` · ${r.flagNote}` : ''}</dd></>}
+                {r.flaggedAt && <><dt>{t.t('swa.pod.flagged')}</dt><dd>{when(r.flaggedAt)} · {who(r.flaggedBy)} · {t.t(`swa.pod.reason.${r.flagReason ?? 'other'}`)}{r.varianceMinor ? ` · ${moneyText(r.varianceMinor, 'INR', lang)}` : ''}{r.flagNote ? ` · ${r.flagNote}` : ''}</dd></>}
                 {r.rejectProposedAt && <><dt>{t.t('swa.pod.rejectProposed')}</dt><dd>{when(r.rejectProposedAt)} · {who(r.rejectProposedBy)}</dd></>}
                 {r.decisionNote && <><dt>{t.t('swa.pod.note')}</dt><dd>{r.decisionNote}</dd></>}
                 {r.decidedAt && <><dt>{t.t('swa.pod.decided')}</dt><dd>{when(r.decidedAt)} · {who(r.decidedBy)}</dd></>}

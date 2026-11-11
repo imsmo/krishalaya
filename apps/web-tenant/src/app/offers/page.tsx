@@ -10,7 +10,7 @@ import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../components/Bidi';
 import { effectivePriceMinor } from '../../features/offers/negotiation';
 import type { ListingCard, ListingOffer } from '@krishalaya/sdk-js';
 
@@ -41,7 +41,7 @@ export default async function OffersPage({ searchParams }: { searchParams: { lis
             empty={t.t('offers.noListings')}
             columns={[
               { header: t.t('listings.colTitle'), cell: (l) => <Link href={`/offers?listingId=${encodeURIComponent(l.id)}`} className="kv-link">{l.title}</Link> },
-              { header: t.t('listings.colPrice'), cell: (l) => `${formatMoneyMinor(l.priceMinor, l.currencyCode, lang)} / ${l.unitCode}` },
+              { header: t.t('listings.colPrice'), cell: (l) => `${moneyText(l.priceMinor, l.currencyCode, lang)} / ${l.unitCode}` },
             ]}
           />
         )}
@@ -67,7 +67,7 @@ export default async function OffersPage({ searchParams }: { searchParams: { lis
           columns={[
             { header: t.t('offers.colOffer'), cell: (o) => <Link href={`/offers/${o.offerId}`} className="kv-link">{o.offerId.slice(0, 8)}</Link> },
             { header: t.t('offers.colQty'), cell: (o) => o.quantity },
-            { header: t.t('offers.colPrice'), cell: (o) => formatMoneyMinor(effectivePriceMinor(o), 'INR', lang) },
+            { header: t.t('offers.colPrice'), cell: (o) => moneyText(effectivePriceMinor(o), 'INR', lang) },
             { header: t.t('offers.colRound'), cell: (o) => String(o.round) },
             { header: t.t('offers.colStatus'), cell: (o) => <span className="kv-badge">{o.status}</span> },
           ]}

@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import type { QcQueuePayload } from '@krishalaya/sdk-js';
 import { waitingAge, QC_TARGET_HOURS } from '../../../features/listings/console';
 
@@ -100,7 +100,7 @@ export default async function QcQueuePage({ searchParams }: { searchParams: { ok
                         <td><Link href={`/listings/qc/${encodeURIComponent(r.id)}`} className="kv-link">{r.title}</Link></td>
                         <td>{r.sellerName ?? t.t('common.dash')}</td>
                         <td>{r.quantityTotal} {r.unitCode}</td>
-                        <td>{formatMoneyMinor(r.priceMinor, r.currencyCode, lang)} / {r.unitCode}</td>
+                        <td>{moneyText(r.priceMinor, r.currencyCode, lang)} / {r.unitCode}</td>
                         <td><Link href={`/listings/qc/${encodeURIComponent(r.id)}`} className="kv-link">{t.t('lc.review')}</Link></td>
                       </tr>
                     );

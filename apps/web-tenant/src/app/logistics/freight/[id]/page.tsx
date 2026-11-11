@@ -27,7 +27,8 @@ import { requireSession } from '../../../../lib/session';
 import { tenantClient } from '../../../../lib/api-client';
 import { DataTable } from '../../../../components/DataTable';
 import { getTranslator, getLang } from '../../../../lib/i18n';
-import { formatDate, formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatDate, formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../../../components/Bidi';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { FreightReconDetail } from '@krishalaya/sdk-js';
 import {
@@ -86,7 +87,7 @@ export default async function FreightReconPage({ params, searchParams }: {
   const inv = detail.invoice;
   const matched = matchedSummary(detail.lines);
   const footing = disputedFooting(detail.lines);
-  const money = (m: string) => formatMoneyMinor(m, inv.currencyCode, lang);
+  const money = (m: string) => moneyText(m, inv.currencyCode, lang);
 
   return (
     <section>

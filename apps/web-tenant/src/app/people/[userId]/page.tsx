@@ -23,7 +23,8 @@ import { requireSession } from '../../../lib/session';
 import { tenantClient } from '../../../lib/api-client';
 import { getTranslator, getLang } from '../../../lib/i18n';
 import type { Translator } from '@krishalaya/i18n';
-import { formatMoneyMinor, formatDate, formatRelative } from '@krishalaya/i18n';
+import { formatDate, formatRelative } from '@krishalaya/i18n';
+import { moneyText } from '../../../components/Bidi';
 import { SdkError, type MemberDetail, type SuspensionRecord } from '@krishalaya/sdk-js';
 import { disputeRecordKey, hasRoleLabel, hasKycLabel, MIN_REVEAL_REASON } from '../../../features/people/roster';
 import {
@@ -155,7 +156,7 @@ export default async function MemberPage(
       <div className="kv-cards">
         <div className="kv-card">
           <span className="kv-card__title">{t.t('member.tile.received')}</span>
-          <strong>{formatMoneyMinor(m.glance.lifetimeReceivedMinor, 'INR', lang)}</strong>
+          <strong>{moneyText(m.glance.lifetimeReceivedMinor, 'INR', lang)}</strong>
           {/* W154 prints "Lifetime sales · 42 orders since Nov 2024". The MONEY figure is settled payouts and the
               ORDER count is orders — two different facts, so they are labelled as two rather than implied to be one. */}
           <span className="kv-fine">
@@ -169,7 +170,7 @@ export default async function MemberPage(
         {m.glance.dairy && (
           <div className="kv-card">
             <span className="kv-card__title">{t.t('member.tile.dairy')}</span>
-            <strong>{formatMoneyMinor(m.glance.dairy.amountMinor, 'INR', lang)}</strong>
+            <strong>{moneyText(m.glance.dairy.amountMinor, 'INR', lang)}</strong>
             <span className="kv-fine">
               {t.t('member.tile.dairyNote', {
                 litres: m.glance.dairy.litres, fat: m.glance.dairy.avgFatPct,
@@ -265,7 +266,7 @@ export default async function MemberPage(
               <span key={i}>
                 {i > 0 ? ' · ' : ''}
                 {a.productName ?? t.t('member.unknownProduct')} {a.direction === 'above' ? '>' : '<'}{' '}
-                {formatMoneyMinor(a.thresholdMinor, 'INR', lang)}
+                {moneyText(a.thresholdMinor, 'INR', lang)}
                 {a.isActive ? '' : ` (${t.t('member.alertOff')})`}
               </span>
             ))}
@@ -288,7 +289,7 @@ export default async function MemberPage(
               <span className="kv-notif-title">
                 {t.t(`member.activity.${a.kind}`)}
                 {a.label ? ` · ${a.label}` : ''}
-                {a.amountMinor ? ` · ${formatMoneyMinor(a.amountMinor, 'INR', lang)}` : ''}
+                {a.amountMinor ? ` · ${moneyText(a.amountMinor, 'INR', lang)}` : ''}
               </span>
               <span className="kv-notif-meta">{a.status} · {formatRelative(a.at, lang)}</span>
             </li>

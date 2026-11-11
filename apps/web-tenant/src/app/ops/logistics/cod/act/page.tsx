@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { randomUUID } from 'node:crypto';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { CodBoard, CodShortfall } from '@krishalaya/sdk-js';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../../../../components/Bidi';
 import { requireSession } from '../../../../../lib/session';
 import { tenantClient } from '../../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../../lib/i18n';
@@ -31,7 +31,7 @@ export default async function CodActPage({ searchParams }: { searchParams: Recor
   const base = `${COD_HREF}/act`;
   await requireSession(base);
   const t = getTranslator(); const lang = getLang();
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => moneyText(m, 'INR', lang);
   const act = isCodAct(searchParams.act) ? searchParams.act : 'openDay';
   const step = mutateStep(searchParams.step);
   const id = isUuid(searchParams.id) ? searchParams.id : '';

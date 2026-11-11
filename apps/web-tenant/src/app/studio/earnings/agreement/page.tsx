@@ -13,7 +13,8 @@ import Link from 'next/link';
 import { requireSession } from '../../../../lib/session';
 import { tenantClient } from '../../../../lib/api-client';
 import { getTranslator, getLang } from '../../../../lib/i18n';
-import { formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../../../components/Bidi';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { EarningsView } from '@krishalaya/sdk-js';
 import { auditHref, canLinkAudit, carryValues, failureKey, mutateStep, mutateStepKey, readCarried, repeatedFailuresGapKey, retryToConfirm, valuesLostKey } from '../../../../features/mutate/chain';
@@ -71,7 +72,7 @@ export default async function AgreementPage({ searchParams }: { searchParams: Re
             {act === 'offer' && offered && <div className="kv-error" role="alert"><p>{t.t('earnings.agreement.refusal.OFFER_ALREADY_OPEN')}</p></div>}
             {(act === 'accept' || act === 'decline' || act === 'supersede') && !target && <div className="kv-error" role="alert"><p>{t.t('earnings.agreement.refusal.NOT_FOUND')}</p></div>}
             {act === 'accept' && view.tiles.some((x) => x.lifetime.heldLines > 0) && (
-              <p>{t.t('earnings.agreement.willRelease')} {view.tiles.filter((x) => x.lifetime.heldLines > 0).map((x) => `${formatMoneyMinor(x.lifetime.held, x.currencyCode, lang)} (${formatNumber(x.lifetime.heldLines, lang)})`).join(' · ')}</p>
+              <p>{t.t('earnings.agreement.willRelease')} {view.tiles.filter((x) => x.lifetime.heldLines > 0).map((x) => `${moneyText(x.lifetime.held, x.currencyCode, lang)} (${formatNumber(x.lifetime.heldLines, lang)})`).join(' · ')}</p>
             )}
             <p className="kv-field__hint">{t.t(`earnings.agreement.note.${act}`)}</p>
           </div>
@@ -107,7 +108,7 @@ export default async function AgreementPage({ searchParams }: { searchParams: Re
           <p>{act ? t.t(`earnings.agreement.done.${act}`) : t.t('mutate.step.success')}</p>
           {act === 'accept' && (released.length === 0
             ? <p className="kv-field__hint">{t.t('earnings.agreement.releasedNone')}</p>
-            : <p>{t.t('earnings.agreement.released')} {released.map((r) => `${formatMoneyMinor(r.amountMinor, r.currencyCode, lang)} (${r.lines})`).join(' · ')}</p>)}
+            : <p>{t.t('earnings.agreement.released')} {released.map((r) => `${moneyText(r.amountMinor, r.currencyCode, lang)} (${r.lines})`).join(' · ')}</p>)}
           <p className="kv-field__hint">{t.t('mutate.auditNote')}</p>
           {canLinkAudit('instructor_agreement', values.agreement ?? null) && <p><Link href={auditHref('instructor_agreement', values.agreement as string)} className="kv-btn--link">{t.t('mutate.viewAudit')}</Link></p>}
           <p><Link href={backHref} className="kv-btn--link">{t.t('mutate.backToScreen')}</Link></p>

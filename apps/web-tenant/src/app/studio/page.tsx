@@ -20,7 +20,8 @@ import Link from 'next/link';
 import { requireSession } from '../../lib/session';
 import { tenantClient } from '../../lib/api-client';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatMoneyMinor, formatNumber } from '@krishalaya/i18n';
+import { formatNumber } from '@krishalaya/i18n';
+import { moneyText } from '../../components/Bidi';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { StudioView } from '@krishalaya/sdk-js';
 import { NEW_COURSE_HREF } from '../../features/courses/desk';
@@ -128,7 +129,7 @@ export default async function StudioPage() {
                         <td><Link href={`/courses/${encodeURIComponent(c.id)}`} className="kv-link">{c.defaultTitle}</Link> <Link href={`/studio/${encodeURIComponent(c.id)}`} className="kv-btn--link">{t.t('studio.openBuilder')}</Link></td>
                         <td>{c.topicName ?? <span className="kv-field__hint">{t.t('common.dash')}</span>}</td>
                         <td><span className="kv-badge">{t.t(`studio.status.${c.status}`) || c.status}</span></td>
-                        <td>{c.priceMinor === '0' ? t.t('studio.free') : formatMoneyMinor(c.priceMinor, c.currencyCode, lang)}</td>
+                        <td>{c.priceMinor === '0' ? t.t('studio.free') : moneyText(c.priceMinor, c.currencyCode, lang)}</td>
                         <td>{st ? formatNumber(st.learners, lang) : <span className="kv-field__hint">{t.t('common.dash')}</span>}</td>
                         <td>{pct === null ? <span className="kv-field__hint">{t.t('common.dash')}</span> : `${formatNumber(pct, lang)}%`}</td>
                       </tr>
