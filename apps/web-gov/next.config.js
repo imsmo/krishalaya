@@ -50,12 +50,8 @@ const nextConfig = {
   // /verification for the AUTHORITY (W335–W338: field visits are not done through this platform — it says so), so its redirect is removed too.
   // PC-56 GOV-5a builds /mgnrega for the AUTHORITY (W345–W348, W440: MGNREGA's register is NREGASoft; this console records nothing for it — it says
   // so), so its redirect is removed as well; /mgnrega/* other than the page has no route and answers not found.
-  async redirects() {
-    return ['/registers'].flatMap((p) => [
-      { source: p, destination: '/dashboard', permanent: false },
-      { source: `${p}/:path*`, destination: '/dashboard', permanent: false },
-    ]);
-  },
+  // PC-56 GOV-6b (survey_gov6 F-9, C-3): the last one, /registers (the deleted GW-3 "regulator" page), loses its redirect too and answers not
+  // found — no regulator or outside body has any page on this console (GOV-6 Q3-A). No redirect remains.
   async headers() {
     return [{
       source: '/:path*',

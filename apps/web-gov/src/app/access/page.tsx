@@ -3,6 +3,9 @@
 // components/gov1/AccessViews.tsx: the authority's people, Q4-A's sentence, the acts as offers. `?act=confirm&do=request|approve|remove`
 // shows the act's form (a key minted here); `&do=reread` is the PARITY-DECOR chain opened by the error state's Retry. PC-56 GOV-4b: the
 // "Sign-ins" section (W356) is inside AccessView and reads nothing; `?do=signins-file|signins-reread&act=` are W3262–W3266. noindex.
+// PC-56 GOV-6b: "The record" (W334) and "Outside bodies" (W351–W354) are inside AccessView and read nothing (no /audit or /regulator route);
+// their chains `?do=record-file|record-reread|outside-file|outside-form|outside-reread&act=` (W3206–W3210, W3244–W3252) are answered before
+// any read. The page's ONE read is unchanged.
 import type { Metadata } from 'next';
 import { randomUUID } from 'node:crypto';
 import { SdkError, type GovMembership } from '@krishalaya/sdk-js';
@@ -16,6 +19,8 @@ import { accessDo, accessDone, accessErrorCode } from '../../features/gov1/acces
 import { approveRoleAction, removeRoleAction, requestRoleAction } from './actions';
 import { Gov4Chain } from '../../components/gov4/VerificationViews';
 import { chain4For, chain4State } from '../../features/gov4/refusals';
+import { Gov6Chain } from '../../components/gov6/DashboardSections';
+import { chain6For, chain6State } from '../../features/gov6/refusals';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +37,9 @@ export default async function AccessPage({ searchParams }: { searchParams: Recor
   const chain4 = chain4For(searchParams, 'access');
   const state4 = chain4 ? chain4State(chain4, searchParams) : null;
   if (chain4 && state4) return <Gov4Chain t={t} chain={chain4} state={state4} />;
+  const chain6 = chain6For(searchParams, 'access');   // GOV-6b: the record and outside-body chains (W3206–W3210, W3244–W3252) — no read
+  const act6 = chain6 ? chain6State(chain6, searchParams) : null;
+  if (chain6 && act6) return <Gov6Chain t={t} chain={chain6} state={act6} />;
   const doing = accessDo(searchParams.do);
   const chain = doing === 'reread' ? 'access_reread' : 'access_act';
   const act = chain1State(chain, searchParams);

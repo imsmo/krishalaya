@@ -6,6 +6,10 @@
 //   • E4: no arithmetic on overview numbers — the sections are given only the translator (never the overview), name no count field, and hold
 //     no division, sum, rounding or percentage; no money helper, no rupee sign;
 //   • no Server Action, form, input, button, table or image in a gov6 file; no write, schedule, publish or export act.
+// PC-56 GOV-6b (named update + additions): the gov6 files grow by ONE view (components/gov6/AccessSections.tsx); /audit, /regulator/* and
+// /registers have no route and no redirect; /access's reads are unchanged (requireGov + ONE govClient().gov.members.list()) and the 6b
+// chains are answered before that read; the /access sections are given only `t`; NO audit read anywhere in web-gov (no audit route, SDK
+// audit resource, `audit_read_log`, `scheme_application_events`); no regulator, partner or outside-body client.
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -24,10 +28,11 @@ const VIEW = 'components/gov6/DashboardSections.tsx';
 
 describe('PC-56 GOV-6a · E1 — no new route', () => {
   it('the gov6 files are the ones GOV-6a built (a registry and a view; no app/ directory of its own)', () => {
-    expect([...GOV6_FILES].sort()).toEqual(['components/gov6/DashboardSections.tsx', 'features/gov6/refusals.ts']);
+    // NAMED UPDATE, GOV-6b: + the /access sections' view
+    expect([...GOV6_FILES].sort()).toEqual(['components/gov6/AccessSections.tsx', 'components/gov6/DashboardSections.tsx', 'features/gov6/refusals.ts']);
   });
   it('the canon addresses have no route: /analytics, /reports (and /audit, /regulator/*, /insight) — and no route anywhere is named for them', () => {
-    for (const rel of ['analytics', 'reports', 'report', 'insight', 'insights', 'audit', 'regulator', 'regulator/home', 'regulator/lending', 'regulator/insurance', 'regulator/exports', 'dashboard/analytics', 'dashboard/reports'])
+    for (const rel of ['analytics', 'reports', 'report', 'insight', 'insights', 'audit', 'regulator', 'registers', 'access/audit', 'access/record', 'access/outside', 'transparency', 'data-room', 'exports', 'regulator/home', 'regulator/lending', 'regulator/insurance', 'regulator/exports', 'dashboard/analytics', 'dashboard/reports'])
       expect([rel, fs.existsSync(path.join(SRC, 'app', rel))]).toEqual([rel, false]);
     for (const rel of walk(path.join(SRC, 'app'))) expect([rel, /analytic|reports?\b|insight|audit|regulat|funnel|publish|schedul|export/i.test(rel)]).toEqual([rel, false]);
     expect(walk(path.join(SRC, 'app', 'dashboard'))).toEqual(['app/dashboard/page.tsx']);
@@ -84,6 +89,38 @@ describe('PC-56 GOV-6a · E4 — no arithmetic on overview numbers; no money', (
       expect([rel, /'use server'|"use server"|action=\{|formAction|<form|<input|<button|<select|<textarea/.test(c)]).toEqual([rel, false]);
       expect([rel, /<img|<svg|<Image|<video|<table|<tr\b|<td\b|<iframe|download=/.test(c)]).toEqual([rel, false]);
       if (rel !== 'features/gov6/refusals.ts') expect([rel, /schedul\w*\(|publish\w*\(|export\w*\(|\.post\(|\.patch\(|\.put\(|method:\s*'(POST|PATCH|PUT|DELETE)'/i.test(c.replace(/export (function|const|type|interface) /g, ''))]).toEqual([rel, false]);
+    }
+  });
+});
+
+describe('PC-56 GOV-6b · E1 / E2 — /access: no new route, no new read, no audit read', () => {
+  it('/audit, /regulator/* and /registers answer not found: no route, no redirect; no link to them anywhere', () => {
+    const cfg = code(fs.readFileSync(path.join(SRC, '..', 'next.config.js'), 'utf8'));
+    expect(cfg).not.toMatch(/registers|regulator|audit|redirects\(/);
+    for (const rel of [...walk(path.join(SRC, 'components')), ...walk(path.join(SRC, 'app')), ...walk(path.join(SRC, 'features'))])
+      expect([rel, /href[=:]\s*["'{`]*\/(audit|regulator|registers|transparency)\b/.test(code(read(rel)))]).toEqual([rel, false]);
+    expect(walk(path.join(SRC, 'app', 'access'))).toEqual(['app/access/actions.ts', 'app/access/page.tsx']);
+  });
+  it('/access awaits requireGov and ONE govClient().gov.members.list() — unchanged; the gov6 chains are answered (with the gov4 ones) before that read', () => {
+    const p = code(read('app/access/page.tsx'));
+    expect([...p.matchAll(/await ([\w.]+(?:\(\)[\w.]+)*)\(/g)].map((m) => m[1])).toEqual(['requireGov', 'govClient().gov.members.list']);
+    expect((p.match(/govClient\(/g) ?? []).length).toBe(1);
+    expect(p).toMatch(/chain6For\(searchParams, 'access'\)/);
+    expect(p.indexOf('return <Gov6Chain')).toBeGreaterThan(-1);
+    expect(p.indexOf('return <Gov6Chain')).toBeLessThan(p.indexOf('govClient()'));
+    expect(p.indexOf('return <Gov4Chain')).toBeLessThan(p.indexOf('return <Gov6Chain'));
+  });
+  it('the /access sections take only `t`, and AccessView hands them nothing else', () => {
+    expect(code(read('components/gov6/AccessSections.tsx'))).toMatch(/export function Gov6AccessSections\(\{ t \}: \{ t: Tr \}\)/);
+    expect((code(read('components/gov1/AccessViews.tsx')).match(/<Gov6AccessSections\b[^>]*\/>/g) ?? [])).toEqual(['<Gov6AccessSections t={t} />']);
+  });
+  it('NO audit read anywhere in web-gov: no audit route, SDK audit resource, record table, or outside-body client', () => {
+    const all = [...walk(path.join(SRC, 'features')), ...walk(path.join(SRC, 'components')), ...walk(path.join(SRC, 'app')), ...walk(path.join(SRC, 'lib'))];
+    for (const rel of all) {
+      // (the PURE refusal registries — features/*/refusals.ts — may NAME a table in their `why` strings; their code may not touch one)
+      const c = /^features\/[a-z0-9]+\/refusals\.ts$/.test(rel) ? code(read(rel)).replace(/'(?:[^'\\\n]|\\.)*'|`[^`]*`|"[^"\n]*"/g, "''") : code(read(rel));
+      expect([rel, /audit\/entries|\/v1\/audit|\.audit\.|auditEntries|auditor\.|audit_read_log|audit_log|scheme_application_events|readLog|recordedReads/.test(c)]).toEqual([rel, false]);
+      expect([rel, /partnerClient|regulatorClient|\.partner\.|\.regulator\.|\/v1\/partner|admin-api|\/v1\/reports/.test(c)]).toEqual([rel, false]);
     }
   });
 });

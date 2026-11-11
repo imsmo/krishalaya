@@ -5,7 +5,8 @@
 // words out of every `gov6.` value.
 //
 // GOV-6 is GOV-6a → GOV-6b (survey §4; GOV-6 Q1-A, Q4-A and Q5-A applied by the lead under the founder's instructions — 06_GOV.md "GOV-6
-// SPLIT"; his to reopen). This registry carries ALL 35 canon files: GOV-6a decides its 16; GOV-6b's 19 stay `pending_6b`.
+// SPLIT"; his to reopen). This registry carries ALL 35 canon files: GOV-6a decided its 16 and GOV-6b its 19
+// (35 decided, none pending).
 //
 // WHAT THE GOVERNMENT REALM COUNTS (survey §1): ONE aggregate — `GET /v1/gov/overview` — the number of applications to each scheme the
 // authority runs IN EACH STATUS NOW, all time, drafts not counted, with the oldest wait in the two queues only a person clears; the server's
@@ -26,20 +27,41 @@
 //     The sections read nothing, so the dashboard's own load-error Retry stays GOV-1b's re-read; these re-read chains are reached by
 //     address only, and each one's confirm state has ONE extra link — a re-read of /dashboard.
 //
-// GOV-6b · THE RECORD AND OUTSIDE BODIES (W334, W351–W354 and their chains) — pending; it adds its surfaces and chains to this file.
+// GOV-6b · THE RECORD AND OUTSIDE BODIES (GOV-6 Q2-A, Q3-A applied by the lead under the founder's instructions; Q4-A reused) adds NO route
+// either; `/access` (W359, GOV-1a; GOV-4b's "Sign-ins") gains two sections (GOV6_SECTIONS_6B), each READING NOTHING and GIVEN NOTHING:
+//   • W334 (Audit & transparency) — BUILT (honest) as the section "The record": Q2's sentence (verified: an opening writes an
+//     `audit_read_log` TENANT row of the application's organisation with the actor and the time — GCR recordRead; a step writes a
+//     `scheme_application_events` row (actor, realm 'gov', time — 0240's DEFINER) and an `audit_log` row with the organisation's tenant id
+//     (gov-applications.service.ts) — and no gov route or kv_gov grant reads any of it); what this console does not do; Q4's sentence (ONCE
+//     on /access, here only). No row, count, name or time; nothing about how the record is sealed (audit_log has no hash chain, C-4).
+//   • W351–W354 (the regulator's home, lending, insurance, data room) — BUILT (honest) as ONE section "Outside bodies": Q3's sentence
+//     (verified: sessions.realm IN ('tenant','partner','gov') — 0239:340; three token types; no gov export, feed or file route); what
+//     this console does not do; the refusals BY NAME (the supervisory user, access, figures across lenders and insurers, code names, a
+//     person's real name, the file room, requests, downloads, the method).
+//   • Their canon addresses (`/audit`, `/regulator/home|lending|insurance|exports`) have no route and answer not found.
+//   • the chains (`/access?do=…&act=`; Back → `/access`): audit export (W3206–W3207, `do=record-file`) DECOR; audit mutate (W3208–W3210,
+//     `do=record-reread`) PARITY-DECOR; regulator export (W3244–W3245, `do=outside-file`) DECOR; regulator form (W3246–W3249,
+//     `do=outside-form`) DECOR — "New extract request" refused (Q3-A); regulator mutate (W3250–W3252, `do=outside-reread`) PARITY-DECOR.
+//     Reached by address only; each re-read's confirm state has ONE extra link — a re-read of /access.
+// GOV-6 is complete with GOV-6b: 35 files decided, none pending.
 export interface Tr { t(key: string, vars?: Record<string, string | number>): string }
 
 export type Gov6Surface =
   // GOV-6a · the two /dashboard sections and their chains
-  | 'analytics' | 'reports' | 'analytics_file' | 'analytics_reread' | 'report_file' | 'report_form' | 'report_reread';
+  | 'analytics' | 'reports' | 'analytics_file' | 'analytics_reread' | 'report_file' | 'report_form' | 'report_reread'
+  // GOV-6b · the two /access sections and their chains
+  | 'record' | 'outside' | 'record_file' | 'record_reread' | 'outside_file' | 'outside_form' | 'outside_reread';
 export interface Gov6Refusal { id: string; canon: string; surfaces: readonly Gov6Surface[]; key: string; why: string }
 
 /** The surfaces GOV-6a builds: the sections "Analytics" (W333) and "Reports" (W357) of /dashboard, and their five chains. */
 export const SURFACES_6A: readonly Gov6Surface[] = ['analytics', 'reports', 'analytics_file', 'analytics_reread', 'report_file', 'report_form', 'report_reread'];
-/** The surfaces GOV-6b builds (none yet: W334 and W351–W354 are pending_6b). */
-export const SURFACES_6B: readonly Gov6Surface[] = [];
+/** The surfaces GOV-6b builds: the sections "The record" (W334) and "Outside bodies" (W351–W354) of /access, and their five chains. */
+export const SURFACES_6B: readonly Gov6Surface[] = ['record', 'outside', 'record_file', 'record_reread', 'outside_file', 'outside_form', 'outside_reread'];
 const REREADS_6A: readonly Gov6Surface[] = ['analytics_reread', 'report_reread'];
 const WRITE_CHAINS_6A: readonly Gov6Surface[] = ['report_form', 'analytics_reread', 'report_reread'];
+const REREADS_6B: readonly Gov6Surface[] = ['record_reread', 'outside_reread'];
+const WRITE_CHAINS_6B: readonly Gov6Surface[] = ['outside_form', 'record_reread', 'outside_reread'];
+const OUTSIDE_CHAINS_6B: readonly Gov6Surface[] = ['outside_file', 'outside_form', 'outside_reread'];
 
 export const GOV6_REFUSALS: readonly Gov6Refusal[] = Object.freeze([
   // ══ the console chrome on W333 and W357 (printed once, in "Analytics") ══
@@ -106,6 +128,69 @@ export const GOV6_REFUSALS: readonly Gov6Refusal[] = Object.freeze([
     key: 'gov6.refusal.chainBackForm', why: 'canon defect (survey §1, F-10): no form exists; Back returns to the page' },
   { id: 'reread_writes_6a', canon: 'W3203 / W3259 "confirming writes an [record] entry" (opened by "Retry")', surfaces: REREADS_6A,
     key: 'gov6.refusal.rereadWrites', why: 'a re-read writes nothing' },
+  // ══ W334 (the section "The record" of /access, Q2-A; Q4-A) ══
+  { id: 'record_menu', canon: 'W334 "[initials]" avatar · "Search the [record]… ⌘K" · the bell · the sidebar\'s "[insight]" group · state "Flagged off — [page] disabled"', surfaces: ['record'],
+    key: 'gov6.refusal.noRecordMenu', why: 'DECOR (FM :92 filter); E1: no route and no GOV_NAV change; E6: no per-section switch' },
+  { id: 'record_reader', canon: 'W334 "Everything this console does is written down; this page is where the writing is read." · state "[The record] is readable by design — All authority staff can READ the [record] (that\'s the point)."', surfaces: ['record'],
+    key: 'gov6.refusal.noRecordReader', why: 'Q2-A: the first clause is TRUE (recordRead; the act\'s audit row and event); no gov route (GC :147) and no kv_gov grant (0181:171-174) reads any record, and Q2-A keeps it so (GOV-4 Q4-A, the same shape)' },
+  { id: 'record_rows', canon: 'W334 rows "[time] · [official] ([role]) · [step] · [scheme] · [ref]" ×4', surfaces: ['record'],
+    key: 'gov6.refusal.noRecordRows', why: 'PII · TRUST, FALSE: named officials in a list every colleague reads; Q2-A shows no row' },
+  { id: 'record_acts', canon: 'W334 rows "draft v[n] edited — benefit field" · "approved application (v[n] rules, [sum])" · "system ([automatic router]) · routed [n] high-confidence applications to [a quick queue]" · "[trial run] viewed — exclusion review recorded"', surfaces: ['record'],
+    key: 'gov6.refusal.noSuchSteps', why: 'FALSE (F-7): drafts are the platform team\'s (GOV-2 Q5-A); an approval carries no sum (GOV-2 Q1-A); no automatic router or quick queue exists; trial runs are the platform registry\'s' },
+  { id: 'record_count', canon: 'W334 "Showing 1–25 of [n] recorded actions (this [year]) · Page size · Page 1 of [n]"', surfaces: ['record'],
+    key: 'gov6.refusal.noRecordCount', why: 'no row, no count (FM omission; the page-size select DECOR)' },
+  { id: 'record_seal', canon: 'W334 "Recent recorded actions · [unchangeable] trail · [chained] like the trace canon"', surfaces: ['record'],
+    key: 'gov6.refusal.noSealClaim', why: 'C-4: audit_log has no hash column (0014:32; 0183:14-16) — the only chain is the money ledger\'s; the brief forbids any sealed or tamper claim, so nothing is said about it' },
+  { id: 'public_page', canon: 'W334 "Public transparency page — A citizen-facing stats page [goes out] weekly without officer effort: …, [money] totals, rejection-reason mix … · enabled · last [put out] [date] · preview the public page"', surfaces: ['record'],
+    key: 'gov6.refusal.noPublicPage', why: 'FALSE (Q4-A; GOV-5 Q5-A): no public scheme page exists; "preview" (#preview) DECOR' },
+  { id: 'info_requests', canon: 'W334 "[information-request] & court requests — Signed [files] carry the record, its [digests], and the version of the rules in force at each decision … run it twice, byte-[identical] twice."', surfaces: ['record'],
+    key: 'gov6.refusal.noInfoRequests', why: 'FALSE: no request path, no signing key (0181:54), no byte-level digest; the scheme version IS stored per application (a fact, not a file)' },
+  { id: 'record_file', canon: 'W334 "Signed [file] ([information-request]-ready)" (→ W3206)', surfaces: ['record', 'record_file'],
+    key: 'gov6.refusal.noRecordFile', why: 'Q4-A: no gov file plane; nothing is signed' },
+  { id: 'record_retry', canon: 'W334 state "Couldn\'t load the [record] — The [record] itself is [add-only] storage; only the reader failed" + Retry (→ W3208)', surfaces: ['record'],
+    key: 'gov6.refusal.noRecordRetry', why: 'the section reads nothing, so it has no load-error state; the re-read chain (W3208–W3210) is reached by address' },
+  { id: 'record_enabled', canon: 'W334 state "No actions yet — even enabling this console was recorded"', surfaces: ['record'],
+    key: 'gov6.refusal.noSwitchClaim', why: 'not verified (survey "What I did NOT open"), so not said' },
+  // ══ W351–W354 (the section "Outside bodies" of /access, Q3-A; Q4-A) ══
+  { id: 'outside_console', canon: 'W351–W354 chrome "[console name] · READ-ONLY · [supervisory user] · dual [grant]" · banner "READ-ONLY supervisory access — every view is logged with your identity …" · their own sidebar "Scope & home / Lending / Insurance / [file room]" · "[initials]" · "Search within scope… ⌘K"', surfaces: ['outside', ...OUTSIDE_CHAINS_6B],
+    key: 'gov6.refusal.noOutsideConsole', why: 'Q3-A: no fifth realm — sessions.realm IN (tenant, partner, gov) (0239:340); three token types (token.service.ts)' },
+  { id: 'outside_access', canon: 'W351 "Supervisory access — what you see, and why · Granted to [a banking body]\'s supervision team · scope … · valid to [date]" · state "No scope active — … expired [grants] …" · state "Scope is the permission — There is no \'request more access\' button here"', surfaces: ['outside'],
+    key: 'gov6.refusal.noOutsideAccess', why: 'FALSE: no grant, scope or expiry object exists (F-2; GOV-1 refused W359\'s external grants the same way)' },
+  { id: 'lending_figures', canon: 'W352 "Partner lending — supervisory view · [n] partner lenders · nightly compute" · tiles "Active loans [n] across [n] partners" · "[priority-sector]-classified [share]" · "[overdue] [share]" · "Collections cure rate [share]"', surfaces: ['outside'],
+    key: 'gov6.refusal.noLendingFigures', why: 'MONEY · TRUST, FALSE: no read across lenders in any realm; overdue days exist only on a lender\'s own desk (PARTNER-5c)' },
+  { id: 'insurance_figures', canon: 'W353 tiles "Claims settled ≤[n] days [share] · median event-to-money [n] days" · "Surveyed claims paying [share]" · "[complaints body] complaints [n]" · "[weather-index] readiness [n]" · "What supervision can replay — Any decided claim\'s full chain … payout ledger entry …"', surfaces: ['outside'],
+    key: 'gov6.refusal.noInsuranceFigures', why: 'MONEY · TRUST, FALSE: claim settlement is not on the platform (INSURANCE_SETTLEMENT_NOT_ON_PLATFORM); no complaints record; no replay' },
+  { id: 'code_names', canon: 'W352 "Anonymised drill — [sampling] · [code names] are stable across your sessions" · rows "[code] · [product] · [sum] · [evidence] ✓" ×3 · "Sample: [n] of [n] … Page size · Page 1 of [n]"', surfaces: ['outside'],
+    key: 'gov6.refusal.noCodeNames', why: 'PII, FALSE: a stable code name with product, sum and farm facts identifies a person in a village; no such code exists (grep 0)' },
+  { id: 'naming', canon: 'W351 "[naming] requires a formal request logged to both sides" · W352 state "[Naming] is a process …" · W354 row "[Naming]: [code] … awaiting platform [second signature] — both sides logged" · state "[Second-signature] flows — both signatures or neither"', surfaces: ['outside'],
+    key: 'gov6.refusal.noNaming', why: 'PII · LEGAL, FALSE: no request, second-signature or privacy-officer flow exists; a lawyer must read any such design (survey "the law")' },
+  { id: 'file_room', canon: 'W354 "[File room] — signed, reproducible, logged · Every [file]: platform-signed, [marked] with the requesting officer, [digest]-listed …" · rows "[time] · [file] · [officer] · ready · signed · [digest]" ×3 · "Showing [n] of [n] requests" · "Reproducibility is the [record] guarantee … backend-pending ([delta])" · the row menu', surfaces: ['outside'],
+    key: 'gov6.refusal.noFileRoom', why: 'FALSE ×5 (C-5): no signing key (0181:54), no marking, no request log' },
+  { id: 'data_request', canon: 'W354 "New [file] request" ×2 (→ W3246) · state "No requests yet — The first [file] defines its own precedent"', surfaces: ['outside', 'outside_form'],
+    key: 'gov6.refusal.noDataRequest', why: 'Q3-A: no outside body asks this console for data' },
+  { id: 'outside_file', canon: 'W354 "Download" ×2 (→ W3244) · W352 / W353 "Signed [file]" (→ W354)', surfaces: ['outside', 'outside_file'],
+    key: 'gov6.refusal.noOutsideFile', why: 'Q3-A, Q4-A: nothing leaves this console for an outside body' },
+  { id: 'method_claim', canon: 'W351 "Freshness & method — Figures compute nightly from the same ledger … ([balance] checked hourly) … reproducible [files]" · "In scope — … the same signed [files] the platform auditor gets"', surfaces: ['outside'],
+    key: 'gov6.refusal.noMethodClaim', why: 'FALSE: no nightly compute for any outside body; the ledger check is not verified here and not printed; the auditor is an organisation\'s role, never the platform\'s (C-5)' },
+  { id: 'joined_books', canon: 'W353 state "Scope boundaries — Cross-scope queries (a borrower who is also a policyholder) require both [grants] and a logged joint request"', surfaces: ['outside'],
+    key: 'gov6.refusal.noJoinedBooks', why: 'the exact cross-book join the partner realm forbids' },
+  { id: 'outside_retry', canon: 'W351–W354 states "Couldn\'t load" · "Nightly compute incomplete" · "Compute incomplete" · "[File] failed to build" + Retry (→ W3250)', surfaces: ['outside'],
+    key: 'gov6.refusal.noOutsideRetry', why: 'the section reads nothing; the re-read chain (W3250–W3252) is reached by address' },
+  // ══ the 6b chains' shared sentences (W3206–W3210, W3244–W3252) — refused BY NAME (6a's words, reused) ══
+  { id: 'chain_file_6b', canon: 'W3206 / W3207 / W3244 / W3245 "queued with a position and [time to ready] … [stamped], [checked], delivered by [time-limited link]" · "file name, row count, [file digest] … every fetch logged"', surfaces: ['record_file', 'outside_file'],
+    key: 'gov6.refusal.chainFile', why: 'no file is queued, made or handed out in this realm (Q4-A)' },
+  { id: 'chain_record_6b', canon: 'W3208 / W3250 "confirming writes an [record] entry with actor, time and reason" · W3209 / W3248 / W3251 "the [record] has the entry (actor · time · reason · before/after)" · "View [the record]"', surfaces: WRITE_CHAINS_6B,
+    key: 'gov6.refusal.chainRecord', why: 'nothing is written from these pages; and under Q2-A the record is shown to no one' },
+  { id: 'chain_money_6b', canon: 'W3209 / W3248 / W3251 "Money-adjacent actions reconcile [to zero] before this page ever shows"', surfaces: WRITE_CHAINS_6B,
+    key: 'gov6.refusal.chainMoney', why: 'no money moves on this console' },
+  { id: 'chain_paging_6b', canon: 'W3210 / W3249 / W3252 "repeated failures page the [duty person]" · "Retry — back to confirm"', surfaces: WRITE_CHAINS_6B,
+    key: 'gov6.refusal.chainPaging', why: 'no paging exists; Back returns to /access' },
+  { id: 'chain_review_6b', canon: 'W3247 "[two-person]-friendly review step … the diff against current values" · W3246 "values you entered are preserved"', surfaces: ['outside_form'],
+    key: 'gov6.refusal.chainReview', why: 'no form exists, so there is nothing to keep, review or compare' },
+  { id: 'chain_back_form_6b', canon: 'W3246 "Back to the form" (→ W354) · W3249 "Retry — back to confirm" (→ W354; the form chain has no confirm)', surfaces: ['outside_form'],
+    key: 'gov6.refusal.chainBackForm', why: 'canon defect (survey §1, F-10): no form exists; Back returns to the page' },
+  { id: 'reread_writes_6b', canon: 'W3208 / W3250 "confirming writes an [record] entry" (opened by "Retry")', surfaces: REREADS_6B,
+    key: 'gov6.refusal.rereadWrites', why: 'a re-read writes nothing' },
 ]);
 export function gov6RefusalKeys(surface: Gov6Surface): string[] { return GOV6_REFUSALS.filter((r) => r.surfaces.includes(surface)).map((r) => r.key); }
 
@@ -113,7 +198,7 @@ export function gov6RefusalKeys(surface: Gov6Surface): string[] { return GOV6_RE
  *  its facts (said in words — never a number), its list of what is not counted / not done (each named ONCE), its closing statement (if any)
  *  and its own refusals (surface). */
 export interface Gov6Section {
-  id: 'analytics' | 'reports'; file: 'W333' | 'W357'; surface: Gov6Surface; title: string; statement: string; facts: readonly string[];
+  id: 'analytics' | 'reports' | 'record' | 'outside'; file: string; surface: Gov6Surface; title: string; statement: string; facts: readonly string[];
   listTitle: string; items: readonly { id: string; canon: string; key: string }[]; closing: string | null;
 }
 export const GOV6_SECTIONS_6A: readonly Gov6Section[] = Object.freeze([
@@ -134,6 +219,24 @@ export const GOV6_SECTIONS_6A: readonly Gov6Section[] = Object.freeze([
     ], closing: null },
 ]);
 
+/** GOV-6b · `/access`'s two sections — W334 "The record" (Q2-A; Q4-A once, here) and W351–W354 "Outside bodies" (Q3-A). No facts: each
+ *  prints its title, its statement, what this console does not do (each named ONCE), its closing statement (if any) and its refusals. */
+export const GOV6_SECTIONS_6B: readonly Gov6Section[] = Object.freeze([
+  { id: 'record', file: 'W334', surface: 'record', title: 'gov6.record.title', statement: 'gov6.q2', facts: [],
+    listTitle: 'gov6.notDone.title', items: [
+      { id: 'list', canon: 'W334 "Recent recorded actions" rows · "Showing 1–25 of [n] recorded actions"', key: 'gov6.recordNot.list' },
+      { id: 'public', canon: 'W334 "Public transparency page — … [goes out] weekly"', key: 'gov6.recordNot.public' },
+      { id: 'requests', canon: 'W334 "[information-request] & court requests"', key: 'gov6.recordNot.requests' },
+    ], closing: 'gov6.q4' },
+  { id: 'outside', file: 'W351–W354', surface: 'outside', title: 'gov6.outside.title', statement: 'gov6.q3', facts: [],
+    listTitle: 'gov6.notDone.title', items: [
+      { id: 'figures', canon: 'W352 / W353 tiles across [n] partner lenders and the insurers', key: 'gov6.outsideNot.figures' },
+      { id: 'people', canon: 'W352 "Anonymised drill — … [code names] are stable across your sessions"', key: 'gov6.outsideNot.people' },
+      { id: 'naming', canon: 'W351 / W352 / W354 "[naming] requires a formal request"', key: 'gov6.outsideNot.naming' },
+      { id: 'files', canon: 'W354 "[File room]" · "New [file] request"', key: 'gov6.outsideNot.files' },
+    ], closing: null },
+]);
+
 /** What was built differently from the canon, and why (DELTAs). */
 export const GOV6_DELTAS: readonly { id: string; canon: string; built: string }[] = Object.freeze([
   { id: 'two_sections', canon: 'W333 /analytics · W357 /reports (each its own page; W333 in the sidebar\'s "[insight]" group, W357 in no sidebar)', built: 'E1: no route and no GOV_NAV change; the sections "Analytics" and "Reports" of /dashboard (W325\'s page, which already prints the overview); /analytics and /reports answer not found' },
@@ -145,12 +248,20 @@ export const GOV6_DELTAS: readonly { id: string; canon: string; built: string }[
   { id: 'no_retry_opener_6a', canon: 'W333 "Couldn\'t compute … Retry" (→ W3203) · W357 "Compose failed … Retry" (→ W3259)', built: 'the sections read nothing, so they have no load-error state of their own; the dashboard\'s Retry stays GOV-1b\'s re-read; the analytics and report re-read chains are reached by address; each confirm state\'s one extra link re-reads /dashboard' },
   { id: 'export_row', canon: 'FM :184 / W3253:45 announce the report export as "[programme] public [wall]"; the canon\'s link is the "[office] monthly" row\'s menu (W357:55)', built: 'C-6: the report export chain is DECOR whichever row opens it; no row exists' },
   { id: 'analytics_link', canon: 'W325 "Full analytics" (→ W333) — GOV-1b refused it "not built yet"', built: 'GOV-6a: the GOV-1b refusal (gov1.refusal.dashAnalytics) now says there is no separate analytics page and points to the section on this page' },
+  // ── GOV-6b ──
+  { id: 'two_sections_6b', canon: 'W334 /audit (the sidebar\'s "[insight]" group) · W351–W354 /regulator/home|lending|insurance|exports (a separate console with its own sidebar)', built: 'E1: no route and no GOV_NAV change; the sections "The record" and "Outside bodies" of /access (W359\'s page — GOV-4b\'s "Sign-ins" precedent); /audit and /regulator/* answer not found' },
+  { id: 'four_pages_one_section', canon: 'W351 home · W352 lending · W353 insurance · W354 [file room] — four pages', built: 'one section: there is no outside body to give a page to, so one sentence (Q3) and one list of what is not done cover all four' },
+  { id: 'given_nothing_6b', canon: 'W334 rows, count, public page · W352 / W353 tiles and drill · W354 rows', built: 'the sections take only the translator; /access still makes only GOV-1a\'s gov.members.list(); no record row, name, time, figure or code can reach them' },
+  { id: 'q4_once_on_access', canon: 'W334 "Signed [file]" · W354 "Download" ×2', built: 'Q4\'s sentence (GOV-6a\'s key) is printed ONCE on /access, as the closing of "The record"; "Outside bodies" does not repeat it (Q3\'s sentence says nothing is received)' },
+  { id: 'registers_gone', canon: 'GOV-1a 307 /registers → /dashboard (the deleted GW-3 "regulator" page; 13 dead "reg." keys)', built: 'GOV-6b (F-9, C-3): the redirect and the 13 keys ×3 deleted; /registers answers not found' },
+  { id: 'no_retry_opener_6b', canon: 'W334 "Couldn\'t load the [record] … Retry" (→ W3208) · W351–W354 "… Retry" (→ W3250)', built: 'the sections read nothing, so they have no load-error state; /access\'s own Retry stays GOV-1a\'s re-read; the 6b re-read chains are reached by address; each confirm state\'s one extra link re-reads /access' },
+  { id: 'record_seen_correction', canon: '0239:55-57 "the organisation sees it" (C-2)', built: 'not printed: Q2 says only that the record is kept in the organisation\'s records and that this console shows it to no one; C-2 is corrected in the records, never by editing 0239' },
 ]);
 
-/** The verdict values (`pending_6b` until GOV-6b decides W334, W351–W354 and their chains — the 4c-7 rule deletes it then). */
-export type Gov6Verdict = 'BUILT (honest)' | 'BUILT (read)' | 'REAL' | 'PARITY-DECOR' | 'DECOR' | 'pending_6b';
+/** The verdict values (GOV-6b decided its 19 and deleted `pending_6b` — the 4c-7 rule). */
+export type Gov6Verdict = 'BUILT (honest)' | 'BUILT (read)' | 'REAL' | 'PARITY-DECOR' | 'DECOR';
 export type Gov6Wave = '6a' | '6b';
-/** Every canon file of GOV-6 (35), each with ONE verdict: 6a decides its 16; 6b's 19 are pending. */
+/** Every canon file of GOV-6 (35), each with ONE verdict: 6a decided its 16, 6b its 19 — 35 decided, 0 pending. */
 export const GOV6_CANON_FILES: readonly { file: string; wave: Gov6Wave; verdict: Gov6Verdict; note: string }[] = Object.freeze([
   // ── 6a · WHAT THIS CONSOLE COUNTS (16) — decided (Q1-A, Q4-A, Q5-A lead-applied) ──
   { file: 'W333-gov-analytics.html', wave: '6a', verdict: 'BUILT (honest)', note: '/dashboard section "Analytics" — Q1\'s and Q5\'s sentences; "now" in words; steps over time, typical waits and rejection reasons named once as not counted; no number; /analytics has no route' },
@@ -169,26 +280,26 @@ export const GOV6_CANON_FILES: readonly { file: string; wave: Gov6Wave; verdict:
   { file: 'W3259-gov-report-mutate-confirm.html', wave: '6a', verdict: 'PARITY-DECOR', note: '/dashboard?do=report-reread&act=confirm — the one extra link IS a re-read of /dashboard' },
   { file: 'W3260-gov-report-mutate-success.html', wave: '6a', verdict: 'PARITY-DECOR', note: '/dashboard?do=report-reread&act=success — nothing changed' },
   { file: 'W3261-gov-report-mutate-failure.html', wave: '6a', verdict: 'PARITY-DECOR', note: '/dashboard?do=report-reread&act=failure — nothing changed; Back → /dashboard' },
-  // ── 6b · THE RECORD AND OUTSIDE BODIES (19) — pending (Q2, Q3, Q4) ──
-  { file: 'W334-gov-audit.html', wave: '6b', verdict: 'pending_6b', note: 'GOV-6b' },
-  { file: 'W351-gov-regulator-home.html', wave: '6b', verdict: 'pending_6b', note: 'GOV-6b' },
-  { file: 'W352-gov-regulator-lending.html', wave: '6b', verdict: 'pending_6b', note: 'GOV-6b' },
-  { file: 'W353-gov-regulator-insurance.html', wave: '6b', verdict: 'pending_6b', note: 'GOV-6b' },
-  { file: 'W354-gov-regulator-exports.html', wave: '6b', verdict: 'pending_6b', note: 'GOV-6b' },
-  { file: 'W3206-gov-audit-export-queued.html', wave: '6b', verdict: 'pending_6b', note: 'GOV-6b' },
-  { file: 'W3207-gov-audit-export-ready.html', wave: '6b', verdict: 'pending_6b', note: 'GOV-6b' },
-  { file: 'W3208-gov-audit-mutate-confirm.html', wave: '6b', verdict: 'pending_6b', note: 'GOV-6b' },
-  { file: 'W3209-gov-audit-mutate-success.html', wave: '6b', verdict: 'pending_6b', note: 'GOV-6b' },
-  { file: 'W3210-gov-audit-mutate-failure.html', wave: '6b', verdict: 'pending_6b', note: 'GOV-6b' },
-  { file: 'W3244-gov-regulator-export-queued.html', wave: '6b', verdict: 'pending_6b', note: 'GOV-6b' },
-  { file: 'W3245-gov-regulator-export-ready.html', wave: '6b', verdict: 'pending_6b', note: 'GOV-6b' },
-  { file: 'W3246-gov-regulator-form-form-error.html', wave: '6b', verdict: 'pending_6b', note: 'GOV-6b' },
-  { file: 'W3247-gov-regulator-form-review.html', wave: '6b', verdict: 'pending_6b', note: 'GOV-6b' },
-  { file: 'W3248-gov-regulator-form-success.html', wave: '6b', verdict: 'pending_6b', note: 'GOV-6b' },
-  { file: 'W3249-gov-regulator-form-failure.html', wave: '6b', verdict: 'pending_6b', note: 'GOV-6b' },
-  { file: 'W3250-gov-regulator-mutate-confirm.html', wave: '6b', verdict: 'pending_6b', note: 'GOV-6b' },
-  { file: 'W3251-gov-regulator-mutate-success.html', wave: '6b', verdict: 'pending_6b', note: 'GOV-6b' },
-  { file: 'W3252-gov-regulator-mutate-failure.html', wave: '6b', verdict: 'pending_6b', note: 'GOV-6b' },
+  // ── 6b · THE RECORD AND OUTSIDE BODIES (19) — decided (Q2-A, Q3-A lead-applied; Q4-A reused) ──
+  { file: 'W334-gov-audit.html', wave: '6b', verdict: 'BUILT (honest)', note: '/access section "The record" — Q2\'s sentence; what is not done named once; Q4\'s sentence (once on /access); no row, count, name, time or seal claim; /audit has no route' },
+  { file: 'W351-gov-regulator-home.html', wave: '6b', verdict: 'BUILT (honest)', note: '/access section "Outside bodies" — Q3\'s sentence; the supervisory user, access, method refused by name; /regulator/home has no route' },
+  { file: 'W352-gov-regulator-lending.html', wave: '6b', verdict: 'BUILT (honest)', note: '/access section "Outside bodies" — no lending figure, code name or sample; /regulator/lending has no route' },
+  { file: 'W353-gov-regulator-insurance.html', wave: '6b', verdict: 'BUILT (honest)', note: '/access section "Outside bodies" — no insurance figure, replay or joined books; /regulator/insurance has no route' },
+  { file: 'W354-gov-regulator-exports.html', wave: '6b', verdict: 'BUILT (honest)', note: '/access section "Outside bodies" — no file room, request, naming or download; /regulator/exports has no route' },
+  { file: 'W3206-gov-audit-export-queued.html', wave: '6b', verdict: 'DECOR', note: '/access?do=record-file&act=queued — no file is made; reached by address only' },
+  { file: 'W3207-gov-audit-export-ready.html', wave: '6b', verdict: 'DECOR', note: '/access?do=record-file&act=ready — no file of the record exists' },
+  { file: 'W3208-gov-audit-mutate-confirm.html', wave: '6b', verdict: 'PARITY-DECOR', note: '/access?do=record-reread&act=confirm — the one extra link IS a re-read of /access' },
+  { file: 'W3209-gov-audit-mutate-success.html', wave: '6b', verdict: 'PARITY-DECOR', note: '/access?do=record-reread&act=success — nothing changed' },
+  { file: 'W3210-gov-audit-mutate-failure.html', wave: '6b', verdict: 'PARITY-DECOR', note: '/access?do=record-reread&act=failure — nothing changed; Back → /access' },
+  { file: 'W3244-gov-regulator-export-queued.html', wave: '6b', verdict: 'DECOR', note: '/access?do=outside-file&act=queued — nothing is made for an outside body' },
+  { file: 'W3245-gov-regulator-export-ready.html', wave: '6b', verdict: 'DECOR', note: '/access?do=outside-file&act=ready — no file exists to hand out' },
+  { file: 'W3246-gov-regulator-form-form-error.html', wave: '6b', verdict: 'DECOR', note: '/access?do=outside-form&act=form-error — "New [file] request" refused BY NAME (Q3-A); no form exists' },
+  { file: 'W3247-gov-regulator-form-review.html', wave: '6b', verdict: 'DECOR', note: '/access?do=outside-form&act=review — nothing to review' },
+  { file: 'W3248-gov-regulator-form-success.html', wave: '6b', verdict: 'DECOR', note: '/access?do=outside-form&act=success — no request was made or answered' },
+  { file: 'W3249-gov-regulator-form-failure.html', wave: '6b', verdict: 'DECOR', note: '/access?do=outside-form&act=failure — nothing was sent' },
+  { file: 'W3250-gov-regulator-mutate-confirm.html', wave: '6b', verdict: 'PARITY-DECOR', note: '/access?do=outside-reread&act=confirm — the one extra link IS a re-read of /access' },
+  { file: 'W3251-gov-regulator-mutate-success.html', wave: '6b', verdict: 'PARITY-DECOR', note: '/access?do=outside-reread&act=success — nothing changed' },
+  { file: 'W3252-gov-regulator-mutate-failure.html', wave: '6b', verdict: 'PARITY-DECOR', note: '/access?do=outside-reread&act=failure — nothing changed; Back → /access' },
 ]);
 
 /** The canon chain groups (survey §1H–§1S; the canon's route comments "B2 shared chain: <m> × chain-<x>"), 28 files, each exactly once. */
@@ -205,26 +316,40 @@ export const GOV6_CHAIN_GROUPS: readonly { id: string; donor: string; wave: Gov6
   { id: 'regulator_mutate', donor: 'W351', wave: '6b', files: ['W3250', 'W3251', 'W3252'] },
 ]);
 
-/** Every gov6a chain returns to the one page that opens it. */
+/** Every gov6 chain returns to the one page that opens it: 6a's to /dashboard, 6b's to /access. */
 export const DASHBOARD_BACK = '/dashboard';
+export const ACCESS_BACK = '/access';
+export type Chain6Page = 'dashboard' | 'access';
 
-// ── THE BUILT CHAINS: each is a query state (`?do=…&act=`) of /dashboard (Back → /dashboard). ──
-export type Chain6Id = 'analytics_file' | 'analytics_reread' | 'report_file' | 'report_form' | 'report_reread';
+// ── THE BUILT CHAINS: each is a query state (`?do=…&act=`) of the page that opens it (6a: /dashboard; 6b: /access) — Back to that page. ──
+export type Chain6Id = 'analytics_file' | 'analytics_reread' | 'report_file' | 'report_form' | 'report_reread'
+  | 'record_file' | 'record_reread' | 'outside_file' | 'outside_form' | 'outside_reread';
 export interface Chain6Def {
   id: Chain6Id; wave: Gov6Wave; kind: 'PARITY-DECOR' | 'DECOR'; group: string; surface: Gov6Surface; states: readonly string[];
-  back: string; doing: string; key: (state: string) => string; statement: string;
+  page: Chain6Page; back: string; backKey: string; rereadKey: string; doing: string; key: (state: string) => string; statement: string;
 }
 export const GOV6_CHAINS: readonly Chain6Def[] = Object.freeze([
-  { id: 'analytics_file', wave: '6a', kind: 'DECOR', group: 'analytics_export', surface: 'analytics_file', states: ['queued', 'ready'], back: DASHBOARD_BACK, doing: 'analytics-file',
+  { id: 'analytics_file', wave: '6a', kind: 'DECOR', group: 'analytics_export', surface: 'analytics_file', states: ['queued', 'ready'], page: 'dashboard', back: DASHBOARD_BACK, backKey: 'gov6.chain.back', rereadKey: 'gov6.chain.reread', doing: 'analytics-file',
     key: (s: string) => `gov6.chain.analyticsFile.${s}`, statement: 'gov6.q4' },
-  { id: 'analytics_reread', wave: '6a', kind: 'PARITY-DECOR', group: 'analytics_mutate', surface: 'analytics_reread', states: ['confirm', 'success', 'failure'], back: DASHBOARD_BACK, doing: 'analytics-reread',
+  { id: 'analytics_reread', wave: '6a', kind: 'PARITY-DECOR', group: 'analytics_mutate', surface: 'analytics_reread', states: ['confirm', 'success', 'failure'], page: 'dashboard', back: DASHBOARD_BACK, backKey: 'gov6.chain.back', rereadKey: 'gov6.chain.reread', doing: 'analytics-reread',
     key: (s: string) => `gov6.chain.analyticsReread.${s}`, statement: 'gov6.q1' },
-  { id: 'report_file', wave: '6a', kind: 'DECOR', group: 'report_export', surface: 'report_file', states: ['queued', 'ready'], back: DASHBOARD_BACK, doing: 'report-file',
+  { id: 'report_file', wave: '6a', kind: 'DECOR', group: 'report_export', surface: 'report_file', states: ['queued', 'ready'], page: 'dashboard', back: DASHBOARD_BACK, backKey: 'gov6.chain.back', rereadKey: 'gov6.chain.reread', doing: 'report-file',
     key: (s: string) => `gov6.chain.reportFile.${s}`, statement: 'gov6.q4' },
-  { id: 'report_form', wave: '6a', kind: 'DECOR', group: 'report_form', surface: 'report_form', states: ['form-error', 'review', 'success', 'failure'], back: DASHBOARD_BACK, doing: 'report-form',
+  { id: 'report_form', wave: '6a', kind: 'DECOR', group: 'report_form', surface: 'report_form', states: ['form-error', 'review', 'success', 'failure'], page: 'dashboard', back: DASHBOARD_BACK, backKey: 'gov6.chain.back', rereadKey: 'gov6.chain.reread', doing: 'report-form',
     key: (s: string) => `gov6.chain.reportForm.${s}`, statement: 'gov6.q4' },
-  { id: 'report_reread', wave: '6a', kind: 'PARITY-DECOR', group: 'report_mutate', surface: 'report_reread', states: ['confirm', 'success', 'failure'], back: DASHBOARD_BACK, doing: 'report-reread',
+  { id: 'report_reread', wave: '6a', kind: 'PARITY-DECOR', group: 'report_mutate', surface: 'report_reread', states: ['confirm', 'success', 'failure'], page: 'dashboard', back: DASHBOARD_BACK, backKey: 'gov6.chain.back', rereadKey: 'gov6.chain.reread', doing: 'report-reread',
     key: (s: string) => `gov6.chain.reportReread.${s}`, statement: 'gov6.q4' },
+  // ── GOV-6b · on /access ──
+  { id: 'record_file', wave: '6b', kind: 'DECOR', group: 'audit_export', surface: 'record_file', states: ['queued', 'ready'], page: 'access', back: ACCESS_BACK, backKey: 'gov6.chain.backAccess', rereadKey: 'gov6.chain.rereadAccess', doing: 'record-file',
+    key: (s: string) => `gov6.chain.recordFile.${s}`, statement: 'gov6.q4' },
+  { id: 'record_reread', wave: '6b', kind: 'PARITY-DECOR', group: 'audit_mutate', surface: 'record_reread', states: ['confirm', 'success', 'failure'], page: 'access', back: ACCESS_BACK, backKey: 'gov6.chain.backAccess', rereadKey: 'gov6.chain.rereadAccess', doing: 'record-reread',
+    key: (s: string) => `gov6.chain.recordReread.${s}`, statement: 'gov6.q2' },
+  { id: 'outside_file', wave: '6b', kind: 'DECOR', group: 'regulator_export', surface: 'outside_file', states: ['queued', 'ready'], page: 'access', back: ACCESS_BACK, backKey: 'gov6.chain.backAccess', rereadKey: 'gov6.chain.rereadAccess', doing: 'outside-file',
+    key: (s: string) => `gov6.chain.outsideFile.${s}`, statement: 'gov6.q3' },
+  { id: 'outside_form', wave: '6b', kind: 'DECOR', group: 'regulator_form', surface: 'outside_form', states: ['form-error', 'review', 'success', 'failure'], page: 'access', back: ACCESS_BACK, backKey: 'gov6.chain.backAccess', rereadKey: 'gov6.chain.rereadAccess', doing: 'outside-form',
+    key: (s: string) => `gov6.chain.outsideForm.${s}`, statement: 'gov6.q3' },
+  { id: 'outside_reread', wave: '6b', kind: 'PARITY-DECOR', group: 'regulator_mutate', surface: 'outside_reread', states: ['confirm', 'success', 'failure'], page: 'access', back: ACCESS_BACK, backKey: 'gov6.chain.backAccess', rereadKey: 'gov6.chain.rereadAccess', doing: 'outside-reread',
+    key: (s: string) => `gov6.chain.outsideReread.${s}`, statement: 'gov6.q3' },
 ]);
 export function chain6ById(id: Chain6Id): Chain6Def { return GOV6_CHAINS.find((c) => c.id === id) as Chain6Def; }
 
@@ -232,9 +357,9 @@ type Params = Record<string, string | string[] | undefined> | undefined;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 /** Which gov6 chain a query opens on /dashboard: `do=analytics-file` / `analytics-reread` / `report-file` / `report-form` /
  *  `report-reread`; anything else (GOV-1b's `define` / `reread` included) → null. */
-export function chain6For(searchParams: Params): Chain6Id | null {
+export function chain6For(searchParams: Params, page: Chain6Page = 'dashboard'): Chain6Id | null {
   const d = one(searchParams?.do);
-  const c = GOV6_CHAINS.find((x) => x.doing === d);
+  const c = GOV6_CHAINS.find((x) => x.page === page && x.doing === d);
   return c ? c.id : null;
 }
 /** The chain state (`?act=`), or null for the page itself / a state the chain does not have. */

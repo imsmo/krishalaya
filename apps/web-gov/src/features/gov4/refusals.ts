@@ -23,7 +23,8 @@
 //     `gov.members.list()`). Q4's sentence verbatim; the lock stated as the code proves it (OtpService.verifyDetailed: wrong codes past the
 //     cap lock the code for a while; the sign-in page states the minutes from the API's `retryAfterSec`) — never "never locked"; the download
 //     sentence; the refusals BY NAME. No row, count, person, time, address or device. Its canon address `/audit/access` has NO route and
-//     answers not found (no route was ever built there — the smaller honest change than a 307; W334's `/audit` is GOV-6's).
+//     answers not found (no route was ever built there — the smaller honest change than a 307; W334's `/audit` was GOV-6's: named update, PC-56 GOV-6b —
+//     it is the section "The record" of /access, and `/audit` has no route either).
 //   • the chains (`/access?do=signins-file|signins-reread&act=`; Back → `/access`): the file chain (W3262–W3263) DECOR — no file of
 //     sign-ins is made; the re-read chain (W3264–W3266) PARITY-DECOR — its confirm state's one link IS a re-read of /access.
 export interface Tr { t(key: string, vars?: Record<string, string | number>): string }

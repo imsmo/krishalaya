@@ -46,11 +46,11 @@ export function Gov6Chain({ t, chain, state }: { t: Tr; chain: Chain6Id; state: 
       <h1>{t.t(`${k}.title`)}</h1>
       <p className="kv-statement" data-kv-statement={c.statement}>{t.t(c.statement)}</p>
       <p>{t.t(`${k}.body`)}</p>
-      {/* PARITY-DECOR: a re-read chain's confirm state has ONE more link, and it IS the re-read of /dashboard. */}
+      {/* PARITY-DECOR: a re-read chain's confirm state has ONE more link, and it IS the re-read of the page that opens it (GOV-6b: /access). */}
       {c.kind === 'PARITY-DECOR' && state === 'confirm'
-        ? <p className="kv-pager"><a className="kv-btn" href={c.back} data-kv-real="reread">{t.t('gov6.chain.reread')}</a></p> : null}
+        ? <p className="kv-pager"><a className="kv-btn" href={c.back} data-kv-real="reread">{t.t(c.rereadKey)}</a></p> : null}
       <Gov6Refusals t={t} surface={c.surface} />
-      <p className="kv-pager"><a className="kv-btn kv-btn--muted" href={c.back} data-kv-back={c.back}>{t.t('gov6.chain.back')}</a></p>
+      <p className="kv-pager"><a className="kv-btn kv-btn--muted" href={c.back} data-kv-back={c.back}>{t.t(c.backKey)}</a></p>
     </section>
   );
 }

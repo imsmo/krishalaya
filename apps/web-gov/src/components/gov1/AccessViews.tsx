@@ -4,10 +4,12 @@
 // live member of THIS authority holds); "asked by" / "approved by" resolved only from the same list; approve offered only to a head who is
 // neither the requester nor the grantee; remove offered only to a head, never on their own row, with a reason, at once. No farmer, no member
 // roster of an organisation, no money. PC-56 GOV-4b adds W356's "Sign-ins" section (components/gov4/SignInsViews.tsx; reads nothing).
+// PC-56 GOV-6b adds W334's "The record" and W351–W354's "Outside bodies" (components/gov6/AccessSections.tsx; given only `t`; read nothing).
 // All copy via i18n; no inline styles; no physical direction.
 import type { GovMe, GovMembership } from '@krishalaya/sdk-js';
 import { Gov1Refusals } from './Gov1Chain';
 import { SignInsSection } from '../gov4/SignInsViews';
+import { Gov6AccessSections } from '../gov6/AccessSections';
 import {
   ACCESS_ERRORS, approverFact, atUtc, canOfferApprove, canOfferRemove, canRequest, GOV_ROLE_CODES, personLabel, rowStatus, TERM_MONTHS, whoOf,
   type AccessDone, type Who,
@@ -87,6 +89,8 @@ export function AccessView({ t, state, me, rows }: { t: Tr; state: AccessState; 
       ) : null}
       {/* PC-56 GOV-4b · W356 (Q4-A): the "Sign-ins" section — it reads nothing, so it is the same in every state. */}
       <SignInsSection t={t} />
+      {/* PC-56 GOV-6b · W334 (Q2-A; Q4-A once) and W351–W354 (Q3-A): "The record" and "Outside bodies" — they read nothing, so they are the same in every state. */}
+      <Gov6AccessSections t={t} />
       <Gov1Refusals t={t} surface="access" />
     </section>
   );

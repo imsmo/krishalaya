@@ -175,7 +175,7 @@ export const GOV2_REFUSALS: readonly Gov2Refusal[] = Object.freeze([
   { id: 'chain_paging_2c', canon: 'W3161 / W3166 "repeated failures page the [duty person]"', surfaces: CHAINS_2C,
     key: 'gov2.refusal.chainPaging', why: 'no paging exists' },
   { id: 'chain_record_view_2c', canon: 'W3160 / W3165 "View [the record]" · "the [record] has the entry (actor · time · reason · before/after)"', surfaces: ['application_act'],
-    key: 'gov2.refusal.chainRecordApp', why: 'the act DOES write an audit row — for the organisation (a tenant row); no gov surface views it (GOV-6)' },
+    key: 'gov2.refusal.chainRecordApp', why: 'the act DOES write an audit row — for the organisation (a tenant row); no gov surface views it (named update, PC-56 GOV-6b: GOV-6 Q2-A — this console shows that record to no one; the section "The record" of /access says so)' },
   { id: 'reread_recorded_2c', canon: 'W3159 / W3164 "confirming writes an [record] entry with actor, time and reason" (opened by "Retry")', surfaces: ['applications_reread'],
     key: 'gov2.refusal.rereadRecorded', why: 'a re-read writes only its recorded-read row (GOV-0)' },
 ]);

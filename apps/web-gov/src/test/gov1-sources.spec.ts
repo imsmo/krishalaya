@@ -71,14 +71,16 @@ describe('PC-56 GOV-1a · what these pages never hold', () => {
       expect([rel, /formatMoneyMinor|from '[^']*\/money'|\.members\.roster|\.users\.|formData\.(form|applicant)|form_data/.test(code(read(rel)))]).toEqual([rel, false]);
     }
   });
-  it('the old organisation pages are deleted and their addresses redirect (307) to /dashboard — /schemes rebuilt for the authority by GOV-2b, /verification by GOV-4a, /mgnrega by GOV-5a', () => {
+  it('the old organisation pages are deleted — /schemes rebuilt for the authority by GOV-2b, /verification by GOV-4a, /mgnrega by GOV-5a; the last 307 (/registers) removed by GOV-6b', () => {
     for (const d of ['app/registers']) expect([d, fs.existsSync(path.join(SRC, d))]).toEqual([d, false]);
     const cfg = fs.readFileSync(path.join(SRC, '..', 'next.config.js'), 'utf8');
     // NAMED UPDATE, PC-56 GOV-4a (brief §E first commit): the /verification 307 is removed and /verification is the AUTHORITY's page (gated;
     // reads nothing — test/gov4-sources.spec.ts); the old organisation page it replaced stays deleted (app/verification holds page.tsx only).
     // NAMED UPDATE, PC-56 GOV-5a (brief §E first commit): the /mgnrega 307 is removed and /mgnrega is the AUTHORITY's page (gated; reads
     // nothing — test/gov5-sources.spec.ts); the old organisation pages it replaced stay deleted (app/mgnrega holds page.tsx only).
-    expect(cfg).toMatch(/\['\/registers'\]/); expect(cfg).toMatch(/permanent: false/);
+    // NAMED UPDATE, PC-56 GOV-6b (brief §D first commit; survey_gov6 F-9): the last 307 (/registers) is removed — /registers answers not
+    // found (no app/registers, no redirect of any kind remains); the old organisation page stays deleted.
+    expect(code(cfg)).not.toMatch(/registers/); expect(code(cfg)).not.toMatch(/redirects\(|permanent:/);
     expect(cfg).not.toMatch(/'\/mgnrega'/);
     expect(fs.readdirSync(path.join(SRC, 'app', 'mgnrega'))).toEqual(['page.tsx']);
     expect(code(read('app/mgnrega/page.tsx'))).toMatch(/await requireGov\('\/mgnrega'\)/);

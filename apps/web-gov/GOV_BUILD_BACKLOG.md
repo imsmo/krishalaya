@@ -35,6 +35,8 @@ done through this platform; `/verification` is now the authority's "Field visits
       lending partners/loan-products. Export files: api `exports` = EXPORT TRADE (not reports); admin-api
       regulator-export = god-mode realm → audit-stamped export files = PC-54 `gov-report-exports` (Ledger
       Appendix 5); honest note in console, no fake downloads. DBT register (GW-2) noted Live on dashboard.
+      > **Correction (PC-56 GOV-6b, survey_gov6 C-3):** /registers was deleted at GOV-1a; its 307 and its 13 `reg.*` keys ×3 were the
+      > residue and are now deleted too — /registers answers not found. No regulator has any page or data on this console (GOV-6 Q3-A).
 - [x] **GW-4 · verification (9 rows)** ✅ **BUILT 2026-08-06 (PC-55 B1)** — /verification: KYC reviewer QUEUE
       (status boxes pending/verified/rejected/expired, keyset) + CASE page reading `kyc/review/:id` (W54-1), with
       EVIDENCE BEFORE DECISION enforced in the UI: Verify is unavailable without an attached document and the page
