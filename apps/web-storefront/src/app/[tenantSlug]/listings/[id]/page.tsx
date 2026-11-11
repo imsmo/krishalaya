@@ -31,7 +31,8 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { formatDate, formatMoneyMinor } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyString } from '../../../../features/rtl/money';
 import type { CategoryNode, GalleryItem, ListingTombstone, PublicListingDetail, RegulatedMarker, StorefrontFlags } from '@krishalaya/sdk-js';
 import { publicClient, sessionTenantClient } from '../../../../lib/api-client';
 import { hasSessionCookie } from '../../../../lib/auth';
@@ -64,7 +65,9 @@ export async function generateMetadata({ params }: { params: { tenantSlug: strin
   const r = await readState<PublicListingDetail>(() => publicClient(params.tenantSlug).listings.getPublic(params.id));
   if (!r.ok) return { title: t.t('common.notFoundTitle'), robots: { index: false } };
   const l = publicListingView(r.data);
-  const desc = `${l.title} — ${formatMoneyMinor(l.priceMinor, l.currencyCode)} / ${l.unitCode}`;
+  // PC-56 RTL-1c: the meta description is read by search engines and link previews, never by the page's reader — it keeps the default `en`
+  // shape it always had (no isolate marks in a <meta>), exactly as before.
+  const desc = `${l.title} — ${moneyString(l.priceMinor, l.currencyCode, 'en')} / ${l.unitCode}`;
   const canonical = `/${params.tenantSlug}/listings/${params.id}`;
   return {
     title: l.title,

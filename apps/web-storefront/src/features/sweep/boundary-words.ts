@@ -6,12 +6,15 @@
 // · WHAT DO I DO NOW (`now` + the links). The code is small print for support, never the message. No "Oops", no exclamation mark
 // (test/sweep-b.spec.ts guards every `*.err.*` / `*.failed.*` / `*.error*` value). Under a store the words name the ORGANISATION and its home
 // (`/<slug>`); on the platform, the bazaar and `/`.
-import { resolveLanguage } from '@krishalaya/i18n';
+import { resolveServable } from '@krishalaya/i18n';
 import { en } from '../../i18n/en';
 import { hi } from '../../i18n/hi';
 import { gu } from '../../i18n/gu';
+import { ar } from '../../i18n/ar';
 
-const CATALOGS: Record<string, Record<string, string>> = { en, hi, gu };
+// PC-56 RTL-1c: `ar` (the machine draft) is here too — a boundary under an Arabic page answers in Arabic. The `lang` a boundary receives is the
+// layout's already-resolved language or the `kv_lang` cookie — a person's choice either way — so it resolves as EXPLICIT (never Accept-Language).
+const CATALOGS: Record<string, Record<string, string>> = { en, hi, gu, ar };
 
 export type BoundaryKind = 'not_found' | 'error';
 export interface BoundaryStore { slug: string; name: string }
@@ -22,7 +25,7 @@ export interface BoundaryWords {
 
 const fill = (s: string, vars: Record<string, string>) => s.replace(/\{([a-zA-Z]+)\}/g, (m, k: string) => (k in vars ? vars[k] : m));
 export function boundaryText(lang: string | null | undefined, key: string, vars: Record<string, string> = {}): string {
-  const code = resolveLanguage(lang || undefined).code;
+  const code = resolveServable(lang || undefined, 'explicit').code;
   return fill(CATALOGS[code]?.[key] ?? en[key] ?? key, vars);
 }
 
@@ -50,5 +53,5 @@ export function boundaryWords(kind: BoundaryKind, store: BoundaryStore | null, l
 /** The `kv_lang` cookie from a `document.cookie` string (a client boundary with no context). */
 export function cookieLang(cookie: string | null | undefined): string {
   const raw = String(cookie ?? '').split(/;\s*/).find((c) => c.startsWith('kv_lang='))?.slice('kv_lang='.length);
-  return resolveLanguage(raw ? decodeURIComponent(raw) : undefined).code;
+  return resolveServable(raw ? decodeURIComponent(raw) : undefined, 'explicit').code;
 }

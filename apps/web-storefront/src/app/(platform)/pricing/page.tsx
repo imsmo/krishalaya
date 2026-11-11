@@ -11,7 +11,7 @@
 //   • Read-only: nothing here moves money or writes anything.
 import type { Metadata } from 'next';
 import type { StorefrontPlans } from '@krishalaya/sdk-js';
-import { formatNumber, resolveLanguage } from '@krishalaya/i18n';
+import { formatNumber, resolveServable } from '@krishalaya/i18n';
 import { publicClient } from '../../../lib/api-client';
 import { env } from '../../../lib/env';
 import { getLang, getTranslator } from '../../../lib/i18n';
@@ -28,7 +28,7 @@ export function generateMetadata(): Metadata {
 export default async function PricingPage({ searchParams = {} }: { searchParams?: Record<string, string | string[] | undefined> }) {
   const t = getTranslator();
   const lang = getLang();
-  const intl = resolveLanguage(lang).intlLocale;
+  const intl = resolveServable(lang, 'explicit').intlLocale;   // PC-56 RTL-1c: `lang` is already served (an `ar` here was chosen) — its own pinned tag
   const country = pricingCountry(searchParams.country, env.platformCountry);
   const res = country ? await loadResult<StorefrontPlans>(() => publicClient().storefront.plans(country)) : null;
   const place = country ? countryName(country, intl) : '';

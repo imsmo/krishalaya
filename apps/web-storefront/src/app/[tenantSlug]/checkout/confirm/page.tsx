@@ -24,6 +24,7 @@ import { BillRowsView } from '../../../../components/BillRowsView';
 import { RefusalList } from '../../../../components/RefusalList';
 import { when } from '../../../../components/OrderTimeline';
 import { orderHref, ordersHref, showsDeadline } from '../../../../features/store3a/orders';
+import { ltrText } from '../../../../features/rtl/span';
 
 /** A checkout group is at most one order per seller of one cart — bounded; the page never reads more than this. */
 const MAX_GROUP_ORDERS = 20;
@@ -81,7 +82,7 @@ export default async function TenantConfirmPage({ params, searchParams }: { para
         return (
           <article key={order.id} className="kv-confirm__order" data-kv-order={order.id} data-kv-payment-state={state}>
             <h2 className="kv-checkout__orderno">
-              {orders!.length > 1 ? t.t('checkout.groupOrder', { n: String(i + 1), count: String(orders!.length), no: order.orderNo }) : t.t('checkout.orderNo', { no: order.orderNo })}
+              {orders!.length > 1 ? t.t('checkout.groupOrder', { n: String(i + 1), count: String(orders!.length), no: ltrText(order.orderNo, lang) }) : t.t('checkout.orderNo', { no: ltrText(order.orderNo, lang) })}
             </h2>
             {org && <p className="kv-detail__muted" data-kv-seller="organisation">{t.t('checkout.soldBy', { org })}</p>}
             <p className={isSettledGood(state) ? 'kv-form__notice' : 'kv-form__error'} role="status">{t.t(confirmStateKey(state))}</p>

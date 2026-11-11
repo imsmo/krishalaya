@@ -15,6 +15,7 @@
 //     the typed value kept), failure (named), success (done) — the W3041–W3047 states as one page.
 import type { Cart, CartItem } from '@krishalaya/sdk-js';
 import { moneyText } from '../discovery/money';
+import { withSign } from '../rtl/money';
 
 /* ---------------------------------------------------------------------------------------------------------------------------------- */
 /* THE NAMED REFUSALS                                                                                                                  */
@@ -112,7 +113,8 @@ export function driftView(line: Pick<CartItem, 'priceChanged' | 'addedPriceMinor
   const current = moneyText(line.currentPriceMinor, line.currencyCode, lang);
   const delta = moneyText(abs, line.currencyCode, lang);
   if (!added || !current || !delta) return null;
-  return { added, current, delta: `${neg ? '−' : '+'}${delta}`, up: !neg };
+  // PC-56 RTL-1c: the sign goes INSIDE the amount's isolate under the rtl preview ("−₹20.00" one run); under en/hi/gu exactly as before
+  return { added, current, delta: withSign(neg ? '−' : '+', delta), up: !neg };
 }
 
 /* ---------------------------------------------------------------------------------------------------------------------------------- */

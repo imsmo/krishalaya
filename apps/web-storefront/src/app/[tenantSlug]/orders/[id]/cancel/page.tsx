@@ -32,6 +32,7 @@ import { CANCEL_DRAFT_COOKIE, decodeCancelDraft } from '../../../../../features/
 import { RefusalList } from '../../../../../components/RefusalList';
 import { SubmitButton } from '../../../../../components/SubmitButton';
 import { cancelOrderAction } from './actions';
+import { ltrText } from '../../../../../features/rtl/span';
 
 export const dynamic = 'force-dynamic';
 type SP = Record<string, string | string[] | undefined>;
@@ -123,7 +124,7 @@ export default async function TenantCancelPage({ params, searchParams }: { param
       {rules}
 
       <section className="kv-order__section" aria-labelledby="confirm-h" data-kv-confirm="cancel">
-        <h2 id="confirm-h">{t.t('store3a.cancel.confirmTitle', { no: order.orderNo })}</h2>
+        <h2 id="confirm-h">{t.t('store3a.cancel.confirmTitle', { no: ltrText(order.orderNo, lang) })}</h2>
         {what}
         {failure && (
           <div className="kv-form__error" role="alert" data-kv-failure={failure}>

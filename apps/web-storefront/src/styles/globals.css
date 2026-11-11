@@ -405,3 +405,13 @@ html[data-motion="calm"] *, html[data-motion="calm"] *::before, html[data-motion
 .kv-lang__choice.is-active { outline: 2px solid var(--kv-brand-700); outline-offset: 2px; }
 .kv-lang__inuse { font-size: 12px; }
 .kv-ribbon { border-inline-start: 4px solid var(--kv-brand-700); padding-inline-start: 12px; margin-block-end: 12px; }
+
+/* ── PC-56 RTL-1c · Arabic (machine draft, opt-in only) ──────────────────────────────────────────────────────────────
+   The machine-draft banner (canon lang-ar/W128 `.md-banner-ar`): shown on every page while Arabic is the chosen language.
+   Amounts inside text carry their own LRI…PDI isolate (features/rtl/money.ts); codes, order numbers and file names already sit in
+   <code class="kv-mono">, which is isolated left to right here (the canon's `.bidi{direction:ltr;unicode-bidi:isolate}`): "ORD-2026-000417"
+   is one left-to-right run the right-to-left page never reorders. Under en/hi/gu (ltr pages) nothing visible changes. Logical properties only. */
+.kv-md-banner { margin-block-end: 12px; padding-block: 8px; padding-inline: 12px; border: 1px solid var(--kv-neutral-200); border-inline-start-width: 4px; border-radius: var(--kv-radius); background: var(--kv-neutral-100); font-size: 13px; }
+.kv-md-banner p { margin: 0; }
+.kv-locale__draft { font-size: 12px; color: var(--kv-neutral-600); }
+code.kv-mono { direction: ltr; unicode-bidi: isolate; }

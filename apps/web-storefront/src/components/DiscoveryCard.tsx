@@ -7,14 +7,14 @@
 // `grade_option_id`'s name whether or not a person confirmed it, and 0204 is applied (never edited) — so this card cannot tell a confirmed
 // grade from an unconfirmed one, and prints neither. The confirmed grade is on the lot's own page (and on the tenant store's cards).
 import Link from 'next/link';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyString } from '../features/rtl/money';
 import type { DiscoveryCard as DiscoveryCardData } from '@krishalaya/sdk-js';
 
 export function DiscoveryCard({ card, lang, labels }: { card: DiscoveryCardData; lang: string; labels: { organic: string; soldBy: string } }) {
   return (
     <Link href={`/${card.tenantSlug}/listings/${card.listingId}`} className="kv-card" aria-label={card.title} data-kv-card="discovery">
       <h3 className="kv-card__title">{card.title}</h3>
-      <div className="kv-card__price">{formatMoneyMinor(card.priceMinor, card.currencyCode, lang)} <span className="kv-card__unit">/ {card.unitCode}</span></div>
+      <div className="kv-card__price">{moneyString(card.priceMinor, card.currencyCode, lang)} <span className="kv-card__unit">/ {card.unitCode}</span></div>
       <div className="kv-card__meta">
         {card.organic && <span className="kv-badge kv-badge--organic">{labels.organic}</span>}
       </div>

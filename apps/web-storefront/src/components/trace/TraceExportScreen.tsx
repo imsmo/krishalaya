@@ -20,6 +20,7 @@ import { downloadErrorKey, etaMinutes, exportFailureKey } from '../../features/s
 import { carriedExportKey, EXPORT_FAILURES, traceExportView, traceHref, type ExportFailure } from '../../features/store5b/trace';
 import { requestTraceExportAction, mintTraceDownloadAction } from '../../app/(platform)/trace/actions';
 import { RefusalList } from '../RefusalList';
+import { ltrText } from '../../features/rtl/span';
 
 type SP = Record<string, string | string[] | undefined>;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
@@ -41,7 +42,7 @@ export async function TraceExportScreen({ chrome, qrToken, searchParams }: { chr
     <>
       <nav aria-label={t.t('store4a.crumb.label')}>
         <ol className="kv-crumb">
-          <li><Link href={traceHref(chrome, qrToken)}>{t.t('store5b.trace.crumb', { token: qrToken })}</Link></li>
+          <li><Link href={traceHref(chrome, qrToken)}>{t.t('store5b.trace.crumb', { token: ltrText(qrToken, lang) })}</Link></li>
           <li><Link href={traceHref(chrome, qrToken, 'verify')}>{t.t('store5b.verify.title')}</Link></li>
           <li aria-current="page">{t.t('store5b.export.title')}</li>
         </ol>

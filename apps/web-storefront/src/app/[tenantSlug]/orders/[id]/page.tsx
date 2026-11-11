@@ -56,6 +56,7 @@ import { reviewHref } from '../../../../features/store5a/review';
 import { DraftDone } from '../../../../components/drafts/DraftDone';   // PC-56 STORE-6b · D4
 import { TrackingSection } from '../../../../components/sweep/TrackingSection';   // PC-56 STORE-SWEEP-b · D1
 import { logisticsFlag, trackingState, type TrackingLoad } from '../../../../features/sweep/tracking';
+import { ltrText } from '../../../../features/rtl/span';
 
 export const dynamic = 'force-dynamic';
 type SP = Record<string, string | string[] | undefined>;
@@ -122,7 +123,7 @@ export default async function TenantOrderPage({ params, searchParams }: { params
   return (
     <section className="kv-order" data-kv-store={slug} data-kv-order={order.id} data-kv-status={order.status} data-kv-payment-state={order.paymentState}>
       <h1>
-        {first ? t.t('store3a.row.item', { title: first.title_snapshot, qty: formatNumber(Number(first.quantity), lang), unit: first.unit_code }) : t.t('order.orderNo', { no: order.orderNo })}{' '}
+        {first ? t.t('store3a.row.item', { title: first.title_snapshot, qty: formatNumber(Number(first.quantity), lang), unit: first.unit_code }) : t.t('order.orderNo', { no: ltrText(order.orderNo, lang) })}{' '}
         <span className={`kv-chip kv-chip--${orderStatusTone(order.status)}`} data-kv-chip={order.status}>{t.t(orderStatusKey(order.status))}</span>
       </h1>
       <p className="kv-detail__muted">
@@ -198,7 +199,7 @@ export default async function TenantOrderPage({ params, searchParams }: { params
         {(paid || order.paymentState === 'pending') && <p className="kv-cart__note">{t.t('store2c.escrow')}</p>}
         {invoice && (
           <p className="kv-order__invoice">
-            <a href={invoice.url} className="kv-link" download={invoiceFileName(invoice.invoiceNo)} target="_blank" rel="noopener noreferrer">{t.t('order.downloadInvoice', { no: invoice.invoiceNo })}</a>
+            <a href={invoice.url} className="kv-link" download={invoiceFileName(invoice.invoiceNo)} target="_blank" rel="noopener noreferrer">{t.t('order.downloadInvoice', { no: ltrText(invoice.invoiceNo, lang) })}</a>
           </p>
         )}
       </section>

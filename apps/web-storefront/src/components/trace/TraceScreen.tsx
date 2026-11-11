@@ -23,6 +23,7 @@ import { statusKey, typeLabel } from '../../features/store5b/certificate';
 import { RefusalList } from '../RefusalList';
 import { TraceState } from './TraceStates';
 import { loadTrace } from './load';
+import { ltrText } from '../../features/rtl/span';
 
 type SP = Record<string, string | string[] | undefined>;
 
@@ -54,7 +55,7 @@ export async function TraceScreen({ chrome, qrToken, searchParams = {} }: { chro
 
   return (
     <article className="kv-prose" data-kv-screen="trace" data-kv-chrome={chromeField(chrome)} data-kv-trace="published" data-kv-seal={seal}>
-      <p className="kv-detail__muted" data-kv-lot-code>{t.t('store5b.trace.lotCode', { token: p.qrToken })}</p>
+      <p className="kv-detail__muted" data-kv-lot-code>{t.t('store5b.trace.lotCode', { token: ltrText(p.qrToken, lang) })}</p>
       <h1>{p.product ? (p.product.quantity !== null && p.product.unit
         ? t.t('store5b.trace.lotLine', { title: p.product.title, quantity: String(p.product.quantity), unit: p.product.unit })
         : t.t('store5b.trace.lotTitle', { title: p.product.title })) : t.t('store5b.trace.title')}</h1>

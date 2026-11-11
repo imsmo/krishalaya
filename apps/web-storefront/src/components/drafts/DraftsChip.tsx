@@ -7,6 +7,7 @@
 // server's HTML never carries a count (a kept public page stays the same for everyone).
 import { useEffect, useState } from 'react';
 import { DRAFTS_EVENT, settlePhone } from './phone';
+import { intlTag } from '../../features/rtl/intl';
 
 export interface ChipLabels { chip: string; aria: string }
 
@@ -35,6 +36,6 @@ export function DraftsChip({ slug, href, labels, lang }: { slug: string | null; 
     return () => { stopped = true; window.removeEventListener(DRAFTS_EVENT, count); };
   }, [slug]);
   let fmt: (v: number) => string = String;
-  try { const nf = new Intl.NumberFormat(lang); fmt = (v) => nf.format(v); } catch { fmt = String; }
+  try { const nf = new Intl.NumberFormat(intlTag(lang)); fmt = (v) => nf.format(v); } catch { fmt = String; }
   return <DraftsChipView n={n} href={href} labels={labels} fmt={fmt} />;
 }

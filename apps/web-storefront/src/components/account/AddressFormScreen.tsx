@@ -14,7 +14,7 @@ import { cookies } from 'next/headers';
 import type { Address, LookupValue, UserProfile } from '@krishalaya/sdk-js';
 import { serverClient, sessionTenantClient, publicClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
-import { getTranslator } from '../../lib/i18n';
+import { getTranslator, getLang } from '../../lib/i18n';
 import { accountHref, chromeField, type AccountChrome } from '../../features/store4a/account';
 import { labelText, readFailure, readKey } from '../../features/store4a/addresses';
 import {
@@ -23,6 +23,7 @@ import {
 import { maskForDisplay } from '../../features/chain/mask';
 import { reviewAddressAction, submitAddressAction } from '../../app/(platform)/account/addresses/actions';
 import { RefusalList } from '../RefusalList';
+import { ltrText } from '../../features/rtl/span';
 
 type SP = Record<string, string | string[] | undefined>;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
@@ -153,7 +154,7 @@ export async function AddressFormScreen({ chrome, id, searchParams }: { chrome: 
         <input id="ad-cn" name="contactName" className="kv-field__input" defaultValue={values.contactName} autoComplete="name" />
         <label htmlFor="ad-cp" className="kv-form__label">{t.t('account.contactPhone')}</label>
         <input id="ad-cp" name="contactPhone" className="kv-field__input" inputMode="tel" defaultValue={values.contactPhone} autoComplete="tel" />
-        {current?.contactPhone && <p className="kv-detail__muted" data-kv-phone-kept>{t.t('store4a.form.phoneKept', { masked: maskForDisplay(current.contactPhone) })}</p>}
+        {current?.contactPhone && <p className="kv-detail__muted" data-kv-phone-kept>{t.t('store4a.form.phoneKept', { masked: ltrText(maskForDisplay(current.contactPhone), getLang()) })}</p>}
         {err('contactPhone')}
         <label htmlFor="ad-note" className="kv-form__label">{t.t('store4a.form.note')}</label>
         <textarea id="ad-note" name="deliveryNote" className="kv-field__input" maxLength={DELIVERY_NOTE_MAX + 20} defaultValue={values.deliveryNote} />

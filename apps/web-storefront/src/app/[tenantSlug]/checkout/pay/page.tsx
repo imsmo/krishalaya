@@ -25,6 +25,7 @@ import { env } from '../../../../lib/env';
 import { loadTenantShell } from '../../../../lib/storefront-data';
 import { paymentStateOf, payPageRoute } from '../../../../features/orders/payment-state';
 import { moneyText } from '../../../../features/discovery/money';
+import { intlTag } from '../../../../features/rtl/intl';
 import { reloadHref } from '../../../../features/home/load-result';
 import { couponNoticeKey } from '../../../../features/checkout/preview';
 import { attemptToOpen, canSendAgain, confirmHref, failureReasonKey, moneyRefusalKey, payHref, processingView, readMoneyRefusal, walletCovers } from '../../../../features/store2c/checkout';
@@ -36,6 +37,7 @@ import { RefusalList } from '../../../../components/RefusalList';
 import { PoweredByMark } from '../../../../components/PoweredByMark';
 import { poweredByVisible, PLATFORM_BRAND } from '../../../../features/branding/brand-theme';
 import { payFromWalletAction } from './actions';
+import { ltrText } from '../../../../features/rtl/span';
 
 export const dynamic = 'force-dynamic';
 type SP = Record<string, string | undefined>;
@@ -47,7 +49,7 @@ export function generateMetadata(): Metadata {
 
 const timeText = (iso: string | null | undefined, lang: string) => {
   const d = iso ? new Date(iso) : null;
-  return d && Number.isFinite(d.getTime()) ? new Intl.DateTimeFormat(lang, { hour: '2-digit', minute: '2-digit' }).format(d) : null;
+  return d && Number.isFinite(d.getTime()) ? new Intl.DateTimeFormat(intlTag(lang), { hour: '2-digit', minute: '2-digit' }).format(d) : null;
 };
 
 export default async function TenantPayPage({ params, searchParams }: { params: { tenantSlug: string }; searchParams: SP }) {
@@ -106,7 +108,7 @@ export default async function TenantPayPage({ params, searchParams }: { params: 
   return (
     <section className="kv-pay-page" data-kv-processing={view}>
       <h1>{t.t('checkout.payTitle')}</h1>
-      <p className="kv-checkout__orderno">{t.t('checkout.orderNo', { no: order.orderNo })} · {t.t('checkout.soldBy', { org })}</p>
+      <p className="kv-checkout__orderno">{t.t('checkout.orderNo', { no: ltrText(order.orderNo, lang) })} · {t.t('checkout.soldBy', { org })}</p>
       {couponNoticeKey(searchParams.cn) && <p className="kv-form__notice" role="status">{t.t(couponNoticeKey(searchParams.cn)!)} {t.t('coupon.notice.placedAtNormalPrice')}</p>}
       {showsDepositRows(order) && (
         <p className="kv-cart__note" data-kv-deposit-rows="">{t.t('store3c.pay.depositRows', {

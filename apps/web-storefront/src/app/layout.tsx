@@ -11,6 +11,8 @@ import { getLanguageDef, getTranslator } from '../lib/i18n';
 import { getThemeHtmlAttrs, getSeniorMode, getContrastMode, getCalmMotion } from '../lib/mechanism';
 import { PLATFORM_BRAND } from '../features/branding/brand-theme';
 import { PLATFORM_BRAND_COLOURS } from '@krishalaya/tokens';
+import { PREVIEW_LANGUAGES } from '@krishalaya/i18n';
+import { en } from '../i18n/en';
 
 export function generateMetadata(): Metadata {
   const t = getTranslator();
@@ -47,11 +49,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   // PC-56 STORE-5a · D4: High contrast and Calm motion per device — one attribute each, so the modes STACK (senior + contrast + motion)
   const contrast = getContrastMode();
   const calm = getCalmMotion();
+  // PC-56 RTL-1c (founder Q1 "Draft all, opt-in only"): while a PREVIEW language (Arabic — a machine draft nobody has reviewed) is the chosen
+  // language, every page says so, in that language AND in English (canon lang-ar/W128 `.md-banner-ar`) — above both chromes (the platform's and
+  // a store's) and the session-free shell. Under en/hi/gu nothing is drawn. The English line reads the en catalogue directly.
+  const draftBanner = PREVIEW_LANGUAGES.includes(lang.code) ? (
+    <div className="kv-md-banner" role="note" data-kv-md-banner={lang.code}>
+      <p lang={lang.code} dir={lang.dir}>{t.t('rtl.draftBanner')}</p>
+      <p lang="en" dir="ltr">{en['rtl.draftBanner']}</p>
+    </div>
+  ) : null;
   return (
     <html lang={lang.code} dir={lang.dir} data-theme={themeAttrs['data-theme']} className={themeAttrs.className} data-senior={senior ? 'true' : undefined}
       data-contrast={contrast ? 'true' : undefined} data-motion={calm ? 'calm' : undefined}>
       <body>
         <a href="#main" className="kv-skip">{t.t('common.skipToContent')}</a>
+        {draftBanner}
         {children}
         {/* PC-24c: register the conservative offline shell (never caches authed/API responses).
             Progressive enhancement: no SW support (or JS off) → the site works exactly as before.

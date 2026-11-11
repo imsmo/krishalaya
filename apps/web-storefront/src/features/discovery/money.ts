@@ -4,7 +4,7 @@
 // KRW, VND) or 3-decimal (BHD, KWD, OMR, JOD, TND) currency, and a Rule Zero country assumption. The exponent now comes from the SAME place
 // the one canonical money formatter (`@krishalaya/i18n` formatMoneyMinor) takes it: Intl's ISO 4217 minor-unit count for the currency.
 // An unknown / malformed code answers null — the caller then refuses to parse a price rather than guessing two decimals.
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyString } from '../rtl/money';
 
 /** ISO 4217 minor-unit exponent for a currency code (2 for INR/USD, 0 for JPY, 3 for BHD), or null when Intl does not know the code. */
 export function currencyExponent(code: string | null | undefined): number | null {
@@ -26,5 +26,6 @@ export function currencyExponent(code: string | null | undefined): number | null
 export function moneyText(minor: string | null | undefined, currency: string | null | undefined, lang: string): string | null {
   if (typeof minor !== 'string' || !/^-?\d+$/.test(minor)) return null;
   if (currencyExponent(currency) === null) return null;
-  return formatMoneyMinor(minor, String(currency).toUpperCase(), lang);
+  // PC-56 RTL-1c: printed by the one money helper — byte-identical under en/hi/gu; the Indian shape, isolated, under the rtl preview (ar)
+  return moneyString(minor, String(currency).toUpperCase(), lang);
 }

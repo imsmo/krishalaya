@@ -5,6 +5,7 @@
 // without `beforeinstallprompt`: iOS Safari, Firefox). Nothing before the device answers, or without JavaScript.
 import { useEffect, useState } from 'react';
 import { INSTALL_COOKIE, cookieValue, installStatus, readInstall } from '../../features/store6b/install';
+import { intlTag } from '../../features/rtl/intl';
 
 export interface StatusLabels { notNow: string; added: string; cannot: string }
 export type StatusView = { kind: 'notnow'; until: number } | { kind: 'added' } | { kind: 'cannot' } | null;
@@ -27,6 +28,6 @@ export function InstallStatus({ labels, lang }: { labels: StatusLabels; lang: st
     } catch { setView(null); }
   }, []);
   let fmt = (ms: number) => new Date(ms).toISOString().slice(0, 10);
-  try { const df = new Intl.DateTimeFormat(lang, { dateStyle: 'medium' }); fmt = (ms) => df.format(new Date(ms)); } catch { /* the ISO date */ }
+  try { const df = new Intl.DateTimeFormat(intlTag(lang), { dateStyle: 'medium' }); fmt = (ms) => df.format(new Date(ms)); } catch { /* the ISO date */ }
   return <InstallStatusView view={view} labels={labels} fmt={fmt} />;
 }

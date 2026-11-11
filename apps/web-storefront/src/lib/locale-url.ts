@@ -20,15 +20,23 @@
 // REAL, bookmarkable, shareable part of the URL (satisfying the ruling's own text — "locale scheme in URL", not
 // "URL as the ONLY locale source") without moving a single existing file or changing a single existing route's
 // path. It is explicitly ADDITIVE: a future batch can still layer a path-prefix scheme on top without conflict.
-import { isSupported, resolveLanguage } from '@krishalaya/i18n';
+import { isSupported, resolveLanguage, resolveServable, PREVIEW_LANGUAGES } from '@krishalaya/i18n';
 
-/** Reads `?lang=` from a URL and returns the resolved LIVE language code, or `null` if absent/unknown/not-live
- *  (never throws, never silently invents a code — a null return means "the URL expressed no valid preference,
+/** A language a person CHOSE (the switcher's or the language page's posted value, `?lang=`): a live code resolves as before; a preview code
+ *  (`ar`, the RTL-1c machine draft — founder Q1 "Draft all, opt-in only") resolves too, because choosing it IS the explicit act; anything
+ *  else (unknown, or a not-yet-live "coming soon" code) is `null` — never invented. */
+export function pickChosenLang(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  if (isSupported(raw)) return resolveLanguage(raw).code;
+  const served = resolveServable(raw, 'explicit');
+  return PREVIEW_LANGUAGES.includes(served.code) ? served.code : null;
+}
+
+/** Reads `?lang=` from a URL and returns the chosen language code (live, or the explicit-only preview `ar`), or `null` if
+ *  absent/unknown/not-live (never throws, never silently invents a code — a null return means "the URL expressed no valid preference,
  *  fall through to the existing cookie/Accept-Language chain unchanged"). */
 export function pickUrlLang(url: URL): string | null {
-  const raw = url.searchParams.get('lang');
-  if (!raw) return null;
-  return isSupported(raw) ? resolveLanguage(raw).code : null;
+  return pickChosenLang(url.searchParams.get('lang'));
 }
 
 /** Appends (or replaces) `?lang=<code>` on a same-origin relative path, preserving any other existing query

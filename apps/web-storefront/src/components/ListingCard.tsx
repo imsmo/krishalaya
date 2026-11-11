@@ -8,7 +8,7 @@
 // never a farmer — HOTFIX-4 D3), and the regulated lock ("Licence required to buy") SHOWN, never used to hide the lot (B5). No distance,
 // no vernacular line (no such column), no farmer name.
 import Link from 'next/link';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyString } from '../features/rtl/money';
 import type { PublicListingCard } from '@krishalaya/sdk-js';
 
 // PC-56 STORE-1b (founder D4): `soldBy` names the ORGANISATION on the card ("Sold by Anand FPO") — never a farmer or a member number.
@@ -27,7 +27,7 @@ export function ListingCard(
   return (
     <Link href={`/${tenantSlug}/listings/${listing.id}`} className="kv-card" aria-label={listing.title}>
       <h3 className="kv-card__title">{listing.title}</h3>
-      <div className="kv-card__price">{formatMoneyMinor(listing.priceMinor, listing.currencyCode, lang)} <span className="kv-card__unit">/ {listing.unitCode}</span></div>
+      <div className="kv-card__price">{moneyString(listing.priceMinor, listing.currencyCode, lang)} <span className="kv-card__unit">/ {listing.unitCode}</span></div>
       <div className="kv-card__meta">
         {listing.grade && <span className="kv-badge" data-kv-grade="confirmed">{listing.grade}</span>}
         {listing.organicClaim && <span className="kv-badge kv-badge--organic">{kind ?? labels.organic}</span>}

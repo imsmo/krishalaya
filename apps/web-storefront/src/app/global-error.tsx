@@ -3,12 +3,13 @@
 // LAYOUT (the root's or a chrome's) had no boundary of ours. Next 14 renders this INSTEAD of the root layout, so it carries its own minimal `<html>`
 // (`lang`/`dir` from the `kv_lang` cookie) and NO chrome — no header, no brand, no organisation: the three questions' words, a Try-again button
 // (`reset()` only when pressed — never automatically) and the way back to `/`. No stylesheet is assumed (the root layout's CSS may not be there).
-import { resolveLanguage } from '@krishalaya/i18n';
+import { resolveServable } from '@krishalaya/i18n';
 import { cookieLang } from '../features/sweep/boundary-words';
 import { BoundaryView } from '../components/sweep/BoundaryView';
 
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  const lang = resolveLanguage(cookieLang(typeof document !== 'undefined' ? document.cookie : '')); 
+  // the cookie is a person's choice (PC-56 RTL-1c: Arabic is opt-in only — `cookieLang` already resolved it as explicit)
+  const lang = resolveServable(cookieLang(typeof document !== 'undefined' ? document.cookie : ''), 'explicit');
   return (
     <html lang={lang.code} dir={lang.dir}>
       <body>

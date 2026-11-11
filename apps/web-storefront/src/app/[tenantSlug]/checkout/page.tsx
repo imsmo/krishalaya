@@ -42,6 +42,7 @@ import { BillRowsView } from '../../../components/BillRowsView';
 import { SubmitButton } from '../../../components/SubmitButton';
 import { RefusalList, CartOff } from '../../../components/RefusalList';
 import { addAddressAction, applyCouponAction, chooseDeliveryAction, choosePaymentAction, placeOrderAction } from './actions';
+import { ltrText } from '../../../features/rtl/span';
 
 export const dynamic = 'force-dynamic';
 type SP = Record<string, string | string[] | undefined>;
@@ -212,7 +213,7 @@ async function AddressStep({ slug, state, addresses, chosen, preview, previewRef
                         {c.label && <span className="kv-badge" data-kv-address-label="">{c.label}</span>}
                         <span>{c.lines}</span>
                         {(c.receiver || c.phoneMasked) && (
-                          <span className="kv-detail__muted" data-kv-receiver="">{t.t('store2c.address.receiving', { who: [c.receiver, c.phoneMasked].filter(Boolean).join(' · ') })}</span>
+                          <span className="kv-detail__muted" data-kv-receiver="">{t.t('store2c.address.receiving', { who: [c.receiver, c.phoneMasked && ltrText(c.phoneMasked, lang)].filter(Boolean).join(' · ') })}</span>
                         )}
                       </span>
                     </label>

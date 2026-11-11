@@ -13,12 +13,13 @@ import Link from 'next/link';
 import type { Address, LookupValue } from '@krishalaya/sdk-js';
 import { serverClient } from '../../lib/api-client';
 import { requireSession } from '../../lib/session';
-import { getTranslator } from '../../lib/i18n';
+import { getTranslator, getLang } from '../../lib/i18n';
 import { reloadHref } from '../../features/home/load-result';
 import { accountHref, chromeField, readOne, type AccountChrome } from '../../features/store4a/account';
 import { bookCard, labelText, removesDefault, readFailure, readKey, BOOK_OK, MUTATE_ACTS, type BookCard } from '../../features/store4a/addresses';
 import { removeAddressAction, makeDefaultAddressAction } from '../../app/(platform)/account/addresses/actions';
 import { RefusalList } from '../RefusalList';
+import { ltrText } from '../../features/rtl/span';
 
 type SP = Record<string, string | string[] | undefined>;
 const UUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
@@ -115,7 +116,7 @@ export async function AddressesScreen({ chrome, searchParams }: { chrome: Accoun
                 {c.isDefault && <span className="kv-badge" data-kv-default>{t.t('account.default')}</span>}{' '}
                 <strong>{c.lines}</strong>{c.countryCode ? <> · <span data-kv-country>{c.countryCode}</span></> : null}
               </p>
-              {(c.receiver || c.phoneMasked) && <p className="kv-detail__muted" data-kv-receiver={c.id}>{t.t('store4a.addresses.receiving', { who: [c.receiver, c.phoneMasked].filter(Boolean).join(' · ') })}</p>}
+              {(c.receiver || c.phoneMasked) && <p className="kv-detail__muted" data-kv-receiver={c.id}>{t.t('store4a.addresses.receiving', { who: [c.receiver, c.phoneMasked && ltrText(c.phoneMasked, getLang())].filter(Boolean).join(' · ') })}</p>}
               {c.deliveryNote && <p className="kv-detail__muted" data-kv-note={c.id}>{t.t('store4a.addresses.note', { note: c.deliveryNote })}</p>}
               <div className="kv-cart__actions">
                 <Link href={accountHref(chrome, { edit: c.id })} className="kv-btn--link" data-kv-edit={c.id}>{t.t('store4a.addresses.edit')}</Link>

@@ -19,6 +19,7 @@ import { chainSummary, verdictKey } from '../../features/store5b/verify';
 import { RefusalList } from '../RefusalList';
 import { TraceState } from './TraceStates';
 import { loadVerification } from './load';
+import { ltrText } from '../../features/rtl/span';
 
 type SP = Record<string, string | string[] | undefined>;
 
@@ -31,7 +32,7 @@ export async function TraceVerifyScreen({ chrome, qrToken, searchParams = {} }: 
   const crumb = (
     <nav aria-label={t.t('store4a.crumb.label')}>
       <ol className="kv-crumb">
-        <li><Link href={traceHref(chrome, qrToken)}>{t.t('store5b.trace.crumb', { token: qrToken })}</Link></li>
+        <li><Link href={traceHref(chrome, qrToken)}>{t.t('store5b.trace.crumb', { token: ltrText(qrToken, lang) })}</Link></li>
         <li aria-current="page">{t.t('store5b.verify.title')}</li>
       </ol>
     </nav>

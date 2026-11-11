@@ -7,16 +7,16 @@
 //     if it does not, the price is NOT printed (a figure scaled by the wrong power of ten is worse than none) — the card says so;
 //   • a setup fee is shown only when it is above zero (a "₹0 setup" line would be noise posing as a promise);
 //   • the country is `?country=XX` (two letters) else the platform's own (NEXT_PUBLIC_PLATFORM_COUNTRY) — never a literal here.
-import { formatMoneyMinor } from '@krishalaya/i18n';
 import type { StorefrontPlan } from '@krishalaya/sdk-js';
 import { currencyExponent } from '../discovery/money';
+import { moneyString } from '../rtl/money';
 
 /** The printed price, or null when it cannot be printed honestly (malformed minor units, or an exponent the currency does not have). */
 export function planPrice(minor: string, currency: string, exponent: number, lang: string): string | null {
   if (!/^\d{1,19}$/.test(String(minor ?? ''))) return null;
   const iso = currencyExponent(currency);
   if (iso === null || iso !== exponent) return null;
-  return formatMoneyMinor(minor, currency, lang);
+  return moneyString(minor, currency, lang);   // PC-56 RTL-1c: the one money helper (byte-identical under en/hi/gu)
 }
 
 /** Whether a setup-fee line is printed at all: only for a fee above zero. */

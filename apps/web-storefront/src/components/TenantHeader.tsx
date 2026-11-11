@@ -70,7 +70,7 @@ export async function TenantHeader({ slug, name, logoSrc, showPoweredBy, crumbs 
           <button type="submit" className="kv-btn">{t.t('header.search.submit')}</button>
         </form>
         <div className="kv-header__actions">
-          <LocaleSwitcher active={lang} label={t.t('lang.label')} comingSoonLabel={t.t('lang.comingSoon')} />
+          <LocaleSwitcher active={lang} label={t.t('lang.label')} comingSoonLabel={t.t('lang.comingSoon')} draftLabel={t.t('lang.draft')} />
           {signedIn && offersOn && <Link href={`${home}/offers`} className="kv-header__link" data-kv-nav="offers">{t.t('nav.offers')}</Link>}
           {auctionsOn && <Link href={`${home}/auctions`} className="kv-header__link" data-kv-nav="auctions">{t.t('nav.auctions')}</Link>}
           {auctionsOn && signedIn && <Link href={`${home}/auctions/bids`} className="kv-header__link" data-kv-nav="my-bids">{t.t('nav.myBids')}</Link>}

@@ -23,6 +23,7 @@ import { getSessionTenant } from '../../../../lib/auth';
 import { getTranslator, getLang } from '../../../../lib/i18n';
 import { loadTenantShell } from '../../../../lib/storefront-data';
 import { moneyText } from '../../../../features/discovery/money';
+import { intlTag } from '../../../../features/rtl/intl';
 import { reloadHref } from '../../../../features/home/load-result';
 import { auctionState, emdRule } from '../../../../features/store2c/auction';
 import { payHref } from '../../../../features/store2c/checkout';
@@ -161,7 +162,7 @@ export default async function TenantAuctionPage({ params, searchParams }: { para
           <ul className="kv-confirm__items">
             {v.bids.map((b, i) => (
               <li key={`${b.at}-${i}`} className="kv-confirm__item">
-                <span>{new Intl.DateTimeFormat(lang, { hour: '2-digit', minute: '2-digit' }).format(new Date(b.at))}</span>
+                <span>{new Intl.DateTimeFormat(intlTag(lang), { hour: '2-digit', minute: '2-digit' }).format(new Date(b.at))}</span>
                 <span>{b.amountMinor ? t.t('store2c.auction.perUnit', { price: money(b.amountMinor), unit }) : t.t('auctions.sealedBid')}</span>
               </li>
             ))}

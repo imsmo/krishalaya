@@ -508,6 +508,8 @@ export const gu: Messages = {
   // PC-56 STORE-1a · the platform name for {platform} interpolation (never a literal in a sentence); header a11y.
   'brand.platform': 'કૃષાલય',
   'lang.comingSoon': 'ટૂંક સમયમાં',
+  'lang.draft': 'મશીન ડ્રાફ્ટ',
+  'rtl.draftBanner': 'આ અરબી લખાણ મશીનથી બનેલો ડ્રાફ્ટ છે અને તેની સમીક્ષા થઈ નથી.',
   'nav.cartCount': 'કાર્ટ, {count} વસ્તુઓ',
   // PC-56 STORE-1b · the platform home (W273), the tenant home (W274), /discover, /organisations, /trace, the as-of stamp. The platform's
   // name is never a literal in these sentences ({platform} / {store} from packages/tokens) — brand-guard.spec reads them.

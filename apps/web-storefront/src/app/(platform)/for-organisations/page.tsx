@@ -19,7 +19,7 @@
 import type { Metadata } from 'next';
 import { randomUUID } from 'crypto';
 import type { LookupValue, StorefrontFlags, StorefrontPlans, StorefrontStats } from '@krishalaya/sdk-js';
-import { formatNumber, resolveLanguage } from '@krishalaya/i18n';
+import { formatNumber, resolveLanguage, resolveServable } from '@krishalaya/i18n';
 import { publicClient } from '../../../lib/api-client';
 import { env } from '../../../lib/env';
 import { getLang, getTranslator } from '../../../lib/i18n';
@@ -27,6 +27,7 @@ import { readPendingSignup } from '../../../lib/signup-flow';
 import { loadResult } from '../../../features/home/load-result';
 import { STORE1C_REFUSALS } from '../../../features/home/refusals';
 import { maskForDisplay } from '../../../features/chain/mask';
+import { ltrText } from '../../../features/rtl/span';
 import {
   NAME_RULES, REFUSAL_FIELD, SIGNUP_LANGS, formatDay, readSignupParams, resolveSignupStep,
   type FieldRefusal, type PendingSignup, type SignupParams,
@@ -77,7 +78,7 @@ function fieldText(t: T, r: FieldRefusal, p: SignupParams): string {
 export default async function ForOrganisationsPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
   const t = getTranslator();
   const lang = getLang();
-  const intl = resolveLanguage(lang).intlLocale;
+  const intl = resolveServable(lang, 'explicit').intlLocale;   // PC-56 RTL-1c: `lang` is already served (an `ar` here was chosen) — its own pinned tag
   const platform = t.t('brand.platform');
   const p = readSignupParams(searchParams);
   const pending: PendingSignup | null = readPendingSignup();
@@ -126,7 +127,7 @@ export default async function ForOrganisationsPage({ searchParams }: { searchPar
       <div className="kv-card" data-kv-step="code">
         <h2>{t.t('signup.code.title')}</h2>
         <p>
-          {t.t('signup.code.sentTo', { phone: masked })}
+          {t.t('signup.code.sentTo', { phone: ltrText(masked, lang) })}
           {pending.ttlSec ? <> · {t.t('signup.code.validFor', { minutes: minutes(pending.ttlSec) })}</> : null}
         </p>
         {p.sent && !error && <p className="kv-form__notice" role="status">{t.t('signup.code.resent')}</p>}

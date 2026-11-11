@@ -22,6 +22,7 @@ import { readGroup, ordersHref, orderHref, orderTabs, countForm, moreItems, show
 import { RefusalList } from '../../../components/RefusalList';
 // PC-56 STORE-CLOSE · RTL spot-check: the keyset "Show more" arrow is the direction-safe DirArrow (it was the catalogue's "Show more →").
 import { DirArrow } from '../../../components/DirArrow';
+import { ltrText } from '../../../features/rtl/span';
 
 export const dynamic = 'force-dynamic';
 type SP = Record<string, string | string[] | undefined>;
@@ -103,7 +104,7 @@ export default async function TenantOrdersPage({ params, searchParams }: { param
                 <Link href={orderHref(slug, o.id)} className="kv-link kv-orders__title">
                   {o.primaryItem
                     ? t.t('store3a.row.item', { title: o.primaryItem.title, qty: formatNumber(o.primaryItem.quantity, lang), unit: o.primaryItem.unitCode })
-                    : t.t('order.orderNo', { no: o.orderNo })}
+                    : t.t('order.orderNo', { no: ltrText(o.orderNo, lang) })}
                 </Link>
                 {more !== null && <span className="kv-detail__muted" data-kv-more={more}> {t.t('store3a.row.more', { n: formatNumber(more, lang) })}</span>}
                 {o.organisation && <p className="kv-detail__muted" data-kv-seller="organisation">{t.t('checkout.soldBy', { org: o.organisation.name })}</p>}

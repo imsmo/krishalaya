@@ -13,7 +13,7 @@
 // W3106 / W3131 (confirm pages) are not built: DELTA — a confirm before sending a code confirms nothing, the "Sending…" lock is the guard.
 import { randomUUID } from 'crypto';
 import { redirect } from 'next/navigation';
-import { getTranslator } from '../lib/i18n';
+import { getTranslator, getLang } from '../lib/i18n';
 import { resolveSessionToken } from '../lib/session';
 import { serverClient } from '../lib/api-client';
 import { readPendingLogin, readPendingTwoFactor } from '../lib/login-flow';
@@ -25,6 +25,7 @@ import { maskForDisplay } from '../features/chain/mask';
 import { requestCodeAction, verifyCodeAction, verifyTwoFactorAction, resendCodeAction, resetLoginAction } from '../app/(platform)/login/actions';
 import { SubmitButton } from './SubmitButton';
 import { ResendButton } from './ResendButton';
+import { ltrText } from '../features/rtl/span';
 
 type T = ReturnType<typeof getTranslator>;
 const ERR_ID = 'kv-login-error';
@@ -148,11 +149,11 @@ export async function LoginScreen({ routeSlug, searchParams }: LoginScreenProps)
       <section className="kv-auth" aria-labelledby="kv-auth-h">
         <h1 id="kv-auth-h">{t.t('auth.code.heading')}</h1>
         <p className="kv-prose__lead">
-          {t.t('auth.code.sentTo', { phone: masked })}
+          {t.t('auth.code.sentTo', { phone: ltrText(masked, getLang()) })}
           {pending.ttlSec ? <> · {t.t('auth.code.validFor', { minutes: minutes(pending.ttlSec) })}</> : null}
         </p>
         {p.sent && !error && <p className="kv-form__notice" role="status">{t.t('auth.code.resent')}</p>}
-        {!p.sent && !error && <p className="kv-form__notice" role="status">{t.t('auth.code.sentNotice', { phone: masked })}</p>}
+        {!p.sent && !error && <p className="kv-form__notice" role="status">{t.t('auth.code.sentNotice', { phone: ltrText(masked, getLang()) })}</p>}
         {alert}
         <form action={verifyCodeAction} data-kv-act-class="countdown" data-kv-needs-signal-reason="signInCode" className="kv-form">
           {hidden}

@@ -510,6 +510,8 @@ export const en: Messages = {
   // PC-56 STORE-1a · the platform name for {platform} interpolation (never a literal in a sentence); header a11y.
   'brand.platform': 'Krishalaya',
   'lang.comingSoon': 'Coming soon',
+  'lang.draft': 'machine draft',
+  'rtl.draftBanner': 'This Arabic text is a machine draft and has not been reviewed.',
   'nav.cartCount': 'Cart, {count} items',
   // PC-56 STORE-1b · the platform home (W273), the tenant home (W274), /discover, /organisations, /trace, the as-of stamp. The platform's
   // name is never a literal in these sentences ({platform} / {store} from packages/tokens) — brand-guard.spec reads them.

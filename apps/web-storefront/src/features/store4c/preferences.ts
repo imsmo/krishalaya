@@ -12,6 +12,7 @@
 //   (notices) AND this site's language.
 // • THE CHAIN (W3134–W3136): the server's three reviews are the confirm; a key minted at render (`prefs:<uuid>`) rides the whole chain and each
 //   act derives its own (`:c` consent, `:p` preferences, `:q` quiet hours) — a Retry replays the same keys (nothing applied twice).
+import { PREVIEW_LANGUAGES } from '@krishalaya/i18n';
 
 export interface MatrixCellLike { channel: string; sentOn: boolean; enabled: boolean | null }
 export interface MatrixEventLike { code: string; defaultName: string; priority: string; locked: boolean; cells: MatrixCellLike[]; consent?: { purpose: string; granted: boolean } }
@@ -111,9 +112,11 @@ export function windowChange(m: MatrixLike, posted: { starts: string; ends: stri
 export function languageOptions(m: MatrixLike, siteSupported: (code: string) => boolean): Array<{ code: string; nameNative: string }> {
   return m.language.active.filter((l) => siteSupported(l.code)).map((l) => ({ code: l.code, nameNative: l.nameNative }));
 }
-/** The language route's decision (C4): the cookie is ALWAYS set; the account language is PATCHed (best effort) only for a signed-in person. */
+/** The language route's decision (C4): the cookie is ALWAYS set; the account language is PATCHed (best effort) only for a signed-in person.
+ *  PC-56 RTL-1c: never for a PREVIEW language (Arabic — a machine draft of this site's words, chosen for this device only): it is not an
+ *  account language (no notice is written in it, the API's languages have no `ar` row), so the account keeps the language it had. */
 export function langRouteDecision(i: { lang: string; signedIn: boolean }): { cookie: string; patchAccount: boolean } {
-  return { cookie: i.lang, patchAccount: i.signedIn };
+  return { cookie: i.lang, patchAccount: i.signedIn && !PREVIEW_LANGUAGES.includes(i.lang) };
 }
 
 /* ---------------------------------------------------------------------------------------------------------------------------------- */

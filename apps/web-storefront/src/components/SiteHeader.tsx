@@ -72,7 +72,7 @@ export async function SiteHeader() {
           {nav.map((n) => <Link key={n.href} href={n.href} className="kv-header__link">{n.label}</Link>)}
         </nav>
         <div className="kv-header__actions">
-          <LocaleSwitcher active={lang} label={t.t('lang.label')} comingSoonLabel={t.t('lang.comingSoon')} />
+          <LocaleSwitcher active={lang} label={t.t('lang.label')} comingSoonLabel={t.t('lang.comingSoon')} draftLabel={t.t('lang.draft')} />
           {signedIn && offersOn && <Link href="/offers" className="kv-header__link" data-kv-nav="offers">{t.t('nav.offers')}</Link>}
           {signedIn && messagesOn && <Link href={messagesHref} className="kv-header__link" data-kv-nav="messages">{t.t('nav.messages')}</Link>}
           {/* the inbox is never switched off (founder Q12): /notifications is the door to the session store's inbox */}
