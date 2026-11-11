@@ -7,7 +7,8 @@
 // read (`/payout/[id]`). "Send to tenant payout desk" is DECOR → the W3332–W3334 chain (`?act=confirm`), labelled with what is true; the error
 // state's Retry opens the same chain, whose Back re-reads the bills. Every refused canon line is printed BY NAME (`Ops1Refusals`).
 import Link from 'next/link';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';   // PC-56 RTL-1e: the Indian shape, isolated, under Arabic
 import type { MilkBill } from '@krishalaya/sdk-js';
 import type { Tr } from '../../features/ops1/refusals';
 import { billHref, payoutHref, PAGE_SIZES, PAYOUT_PAGE, type PageSize, type PayoutState } from '../../features/ops1/payout';
@@ -29,7 +30,7 @@ export function PayoutView({ t, lang, state, bills, memberCodes, size, nextCurso
       </section>
     );
   }
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => moneyText(m, 'INR', lang);
   return (
     <section data-kv-ops1="payout" data-kv-state={state}>
       <h1>{t.t('ops1.payout.title')}</h1>

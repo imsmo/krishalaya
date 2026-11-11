@@ -10,15 +10,25 @@
 // SCHEME: a `?lang=<code>` query parameter, read with priority over the existing `kv_lang` cookie, wired
 // to `@krishalaya/i18n`'s LANGUAGE_REGISTRY — only LIVE codes are accepted (a "coming soon" registry code
 // is a real, known code but never a selectable locale today).
-import { isSupported, resolveLanguage } from '@krishalaya/i18n';
+// PC-56 RTL-1e: the one exception is a PREVIEW code (`ar`, the Arabic machine draft): choosing it is the explicit act, so `pickChosenLang`
+// accepts it here — and only here (Accept-Language never reaches it; `lib/i18n.ts` resolves the header as implicit).
+import { isSupported, resolveLanguage, resolveServable, PREVIEW_LANGUAGES } from '@krishalaya/i18n';
 
-/** Reads `?lang=` from a URL and returns the resolved LIVE language code, or `null` if absent/unknown/not-live
- *  (never throws, never silently invents a code — a null return means "the URL expressed no valid preference,
+/** A language a person CHOSE (the switcher's posted value, `?lang=`) — PC-56 RTL-1e, web-tenant's RTL-1b-1 rule: a live code resolves
+ *  as before; a preview code (`ar`, the machine draft — founder Q1 "Draft all, opt-in only") resolves too, because choosing it IS the
+ *  explicit act; anything else (unknown, or a not-yet-live "coming soon" code) is `null` — never invented. */
+export function pickChosenLang(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  if (isSupported(raw)) return resolveLanguage(raw).code;
+  const served = resolveServable(raw, 'explicit');
+  return PREVIEW_LANGUAGES.includes(served.code) ? served.code : null;
+}
+
+/** Reads `?lang=` from a URL and returns the chosen language code (live, or the explicit-only preview `ar`), or `null` if
+ *  absent/unknown/not-live (never throws, never silently invents a code — a null return means "the URL expressed no valid preference,
  *  fall through to the existing cookie/Accept-Language chain unchanged"). */
 export function pickUrlLang(url: URL): string | null {
-  const raw = url.searchParams.get('lang');
-  if (!raw) return null;
-  return isSupported(raw) ? resolveLanguage(raw).code : null;
+  return pickChosenLang(url.searchParams.get('lang'));
 }
 
 /** Appends (or replaces) `?lang=<code>` on a same-origin relative path, preserving any other existing query

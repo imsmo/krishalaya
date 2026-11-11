@@ -9,7 +9,8 @@
 //   • AepsReceiptView (W393, /aeps/receipt) — HONEST, reads nothing: there is no receipt here. Its "Retry" (FM:101) opens the chain's confirm.
 // Every refused canon line is printed BY NAME (`Ops1Refusals`). No input on an honest view; no figure computed anywhere.
 import Link from 'next/link';
-import { formatDate, formatMoneyMinor } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';   // PC-56 RTL-1e: the Indian shape, isolated, under Arabic
 import type { Tr } from '../../features/ops1/refusals';
 import { AEPS_EXCEPTIONS, AEPS_RECEIPT, AEPS_RECORD, BIOMETRIC_CANON, isException, type ExceptionsState, type ExceptionsView } from '../../features/ops1/aeps';
 import { EVENT_STATUSES, EXCEPTION_CODES, MAX_ATTEMPTS, SERVICE_KINDS, nextStep } from '../../features/aeps/service';
@@ -163,7 +164,7 @@ export function AepsExceptionsView({ t, lang, view, state, rows }: { t: Tr; lang
                   <td><span className="kv-badge">{e.status ? t.t(`ops1.aeps.status.${e.status}`) : t.t('ops1.aeps.none')}</span></td>
                   <td>{e.exceptionCode ? t.t(`ops1.aeps.exception.${e.exceptionCode}`) : t.t('ops1.aeps.none')}</td>
                   <td>{t.t('ops1.aeps.attemptOf', { n: e.attemptNo ?? 1, max: MAX_ATTEMPTS })}</td>
-                  <td>{e.amountMinor ? formatMoneyMinor(e.amountMinor, 'INR', lang) : t.t('ops1.aeps.none')}</td>
+                  <td>{e.amountMinor ? moneyText(e.amountMinor, 'INR', lang) : t.t('ops1.aeps.none')}</td>
                   <td>{step === 'none' ? t.t('ops1.aeps.none') : t.t(`ops1.aeps.next.${step}`)}</td>
                   <td>{e.escalationNote ?? t.t('ops1.aeps.none')}</td>
                 </tr>

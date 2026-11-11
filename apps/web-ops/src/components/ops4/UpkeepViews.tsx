@@ -9,7 +9,10 @@
 // maintenance entry on one of their machines (the only form; GET to the review, one POST from the review). No days down, no %, no "real
 // rent", no odometer, no technician, no completion. Every refused canon line is printed BY NAME (`Ops4Refusals`).
 import Link from 'next/link';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+// PC-56 RTL-1e: the console's money text (features/rtl/money.ts `moneyText`) — the Indian shape, isolated, under Arabic; byte-identical under
+// en/hi/gu. Bound to the name `formatMoneyMinor` here so this view's call reads as before (its pinned OPS spec).
+import { moneyText as formatMoneyMinor } from '../../features/rtl/money';
+import { ltrText } from '../../features/rtl/span';   // PC-56 RTL-1e: a code inside a sentence, isolated under Arabic only
 import type { CategoryNode, EquipmentAsset } from '@krishalaya/sdk-js';
 import type { Tr } from '../../features/ops4/refusals';
 import { CHC, MAINTENANCE_TYPES, isMinorString, type ChcState, type MaintenanceEntry } from '../../features/ops4/chc';
@@ -107,7 +110,7 @@ export function MaintRecorded({ t, lang, entry, machine }: { t: Tr; lang: string
   if (!entry) return <p className="kv-muted" data-kv-recorded="unknown">{t.t('ops4.upkeep.recordedUnknown')}</p>;
   return (
     <div className="kv-card" data-kv-recorded={entry.id}>
-      <p data-kv-fact="server-id">{t.t('ops4.upkeep.recordedId', { id: entry.id })}</p>
+      <p data-kv-fact="server-id">{t.t('ops4.upkeep.recordedId', { id: ltrText(entry.id, lang) })}</p>
       {machine ? <p data-kv-fact="machine">{machine}</p> : null}
       <ul className="kv-list"><EntryLine t={t} lang={lang} e={entry} /></ul>
       <p className="kv-statement" data-kv-statement="ops4.upkeep.recordedFact">{t.t('ops4.upkeep.recordedFact')}</p>

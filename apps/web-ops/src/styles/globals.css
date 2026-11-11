@@ -185,3 +185,8 @@ details.kv-card > summary { cursor: pointer; }
 .kv-tab { padding: 8px 12px; min-height: 40px; display: inline-flex; align-items: center; border: 1px solid var(--kv-neutral-200); border-radius: var(--kv-radius); color: var(--kv-neutral-900); text-decoration: none; }
 .kv-tab:hover { border-color: var(--kv-brand-700); }
 .kv-tab--active { background: var(--kv-neutral-100); border-color: var(--kv-brand-700); font-weight: 600; }
+/* PC-56 RTL-1e · the Arabic machine draft (founder Q1 "Draft all, opt-in only"): the banner above the shell and the switcher's draft tag
+   (web-tenant's RTL-1b-1 rules) — logical properties only. */
+.kv-md-banner { margin-block-end: 12px; padding-block: 8px; padding-inline: 12px; border: 1px solid var(--kv-neutral-200); border-inline-start-width: 4px; border-radius: var(--kv-radius); background: var(--kv-neutral-100); font-size: 13px; }
+.kv-md-banner p { margin: 0; }
+.kv-locale__draft { font-size: 12px; color: var(--kv-neutral-600); }

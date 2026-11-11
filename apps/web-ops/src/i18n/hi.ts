@@ -2138,4 +2138,7 @@ export const hi: Record<string, string> = {
   'ops5.refusal.exportRecordView': 'हर अनुरोध, लिंक और डाउनलोड सर्वर पर दर्ज होता है, पर इस कंसोल पर कोई रिकॉर्ड देखने की सुविधा नहीं है।',
   'ops5.refusal.insightsActWrites': 'आँकड़े फिर से पढ़ने से कुछ भी नहीं लिखा जाता।',
   // ── end OPS-5b ──
+  // ── PC-56 RTL-1e · the Arabic machine draft (founder Q1 "Draft all, opt-in only"): the switcher's draft tag and the banner (web-tenant's words) ──
+  'lang.draft': 'मशीन ड्राफ़्ट',
+  'rtl.draftBanner': 'यह अरबी पाठ मशीन से बना ड्राफ़्ट है और इसकी समीक्षा नहीं हुई है।',
 };

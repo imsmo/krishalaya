@@ -12,7 +12,9 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import type { DairyChange, DairyInsights, DairyInsightsReady, DairyInsightWindow, DairyPremiumPrevious, ExportJob } from '@krishalaya/sdk-js';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+// PC-56 RTL-1e: the console's money text (features/rtl/money.ts `moneyText`) — the Indian shape, isolated, under Arabic; byte-identical under
+// en/hi/gu. Bound to the name `formatMoneyMinor` here so this view's call reads as before (its pinned OPS spec).
+import { moneyText as formatMoneyMinor } from '../../features/rtl/money';
 import type { Tr } from '../../features/ops5/refusals';
 import { atText } from '../../features/ops4/iot';
 import {

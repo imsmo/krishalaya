@@ -2,13 +2,14 @@
 // (`GET /v1/dairy/milk-bills/:id`), presentational. The server's gross / deductions / net and the deduction lines as returned (only when the
 // server loaded them — "not returned" is said, never `[]` standing in); the state verbatim. No form, no approve, no pay, no sum.
 import Link from 'next/link';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';   // PC-56 RTL-1e: the Indian shape, isolated, under Arabic
 import type { MilkBill } from '@krishalaya/sdk-js';
 import type { Tr } from '../../features/ops1/refusals';
 import { PAYOUT_PAGE } from '../../features/ops1/payout';
 
 export function PayoutBillView({ t, lang, bill, memberCode, state }: { t: Tr; lang: string; bill: MilkBill | null; memberCode: string | null; state: 'ok' | 'not_found' | 'off' }) {
-  const money = (m: string) => formatMoneyMinor(m, 'INR', lang);
+  const money = (m: string) => moneyText(m, 'INR', lang);
   return (
     <section data-kv-ops1="payout_bill" data-kv-state={state}>
       <h1>{t.t('ops1.payout.billTitle')}</h1>

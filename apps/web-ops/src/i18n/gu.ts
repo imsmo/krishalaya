@@ -2138,4 +2138,7 @@ export const gu: Record<string, string> = {
   'ops5.refusal.exportRecordView': 'દરેક વિનંતી, લિંક અને ડાઉનલોડ સર્વર પર નોંધાય છે, પણ આ કન્સોલ પર કોઈ રેકોર્ડ જોવાની સુવિધા નથી.',
   'ops5.refusal.insightsActWrites': 'આંકડા ફરી વાંચવાથી કંઈ લખાતું નથી.',
   // ── end OPS-5b ──
+  // ── PC-56 RTL-1e · the Arabic machine draft (founder Q1 "Draft all, opt-in only"): the switcher's draft tag and the banner (web-tenant's words) ──
+  'lang.draft': 'મશીન ડ્રાફ્ટ',
+  'rtl.draftBanner': 'આ અરબી લખાણ મશીનથી બનેલો ડ્રાફ્ટ છે અને તેની સમીક્ષા થઈ નથી.',
 };

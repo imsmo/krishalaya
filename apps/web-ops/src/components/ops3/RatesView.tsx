@@ -9,7 +9,9 @@
 // (E3). NO input, NO change button, NO member (Q10-A), NO role claim (Q14-A). "Print counter poster" is DECOR → W3338 (Q15-A). Every refused
 // canon line is printed BY NAME (`Ops3Refusals`).
 import Link from 'next/link';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+// PC-56 RTL-1e: the console's money text (features/rtl/money.ts `moneyText`) — the Indian shape, isolated, under Arabic; byte-identical under
+// en/hi/gu. Bound to the name `formatMoneyMinor` here so this view's call reads as before (its pinned OPS spec).
+import { moneyText as formatMoneyMinor } from '../../features/rtl/money';
 import type { DairyRateCard } from '@krishalaya/sdk-js';
 import type { Tr } from '../../features/ops3/refusals';
 import { RATES_PAGE, approvedCards, byMilkType, centiPctText, isMinorString, overlaps, type RatesState, type SlabsPaid } from '../../features/ops3/rates';

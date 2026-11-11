@@ -8,7 +8,10 @@
 // run" are DECOR → the W3350–W3354 chains (`?export=queued`, `?act=confirm`), labelled with what is true (Q10-A). Every refused canon line is
 // printed BY NAME (`Ops2Refusals`).
 import Link from 'next/link';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+// PC-56 RTL-1e: the console's money text (features/rtl/money.ts `moneyText`) — the Indian shape, isolated, under Arabic; byte-identical under
+// en/hi/gu. Bound to the name `formatMoneyMinor` here so this view's call reads as before (its pinned OPS spec).
+import { moneyText as formatMoneyMinor } from '../../features/rtl/money';
+import { ltrText } from '../../features/rtl/span';   // PC-56 RTL-1e: a code inside a sentence, isolated under Arabic only
 import type { Warehouse } from '@krishalaya/sdk-js';
 import type { Tr } from '../../features/ops2/refusals';
 import { BILLING_PAGE, billingHref, isMinorString, type BillingState } from '../../features/ops2/billing';
@@ -60,7 +63,7 @@ export function BillingView({ t, lang, state, warehouses, nextCursor }: BillingV
               {warehouses.map((w) => (
                 <tr key={w.id} data-kv-warehouse={w.id}>
                   <td data-kv-cell="name">{w.defaultName}</td>
-                  <td data-kv-cell="wdra">{w.wdraRegNo ? t.t('ops2.billing.wdraAsEntered', { wdra: w.wdraRegNo }) : t.t('ops2.billing.noWdra')}</td>
+                  <td data-kv-cell="wdra">{w.wdraRegNo ? t.t('ops2.billing.wdraAsEntered', { wdra: ltrText(w.wdraRegNo, lang) }) : t.t('ops2.billing.noWdra')}</td>
                   <td data-kv-cell="rate">
                     {isMinorString(w.ratePerQtlMonthMinor)
                       ? <><span data-kv-rate={w.ratePerQtlMonthMinor}>{formatMoneyMinor(w.ratePerQtlMonthMinor, 'INR', lang)}</span> <span className="kv-muted" data-kv-rate-label="on-file">{t.t('ops2.billing.rateLabel')}</span></>

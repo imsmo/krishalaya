@@ -8,7 +8,8 @@ import { requireSession } from '../../lib/session';
 import { opsClient } from '../../lib/api-client';
 import { DataTable } from '../../components/DataTable';
 import { getTranslator, getLang } from '../../lib/i18n';
-import { formatMoneyMinor, formatDate } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';   // PC-56 RTL-1e: the Indian shape, isolated, under Arabic
 import { BILL_STATUSES, isBillStatus, canPreview } from '../../features/dairy/pos';
 import { generateBillAction, previewBillAction } from './actions';
 import Link from 'next/link';
@@ -85,7 +86,7 @@ export default async function DairyPosPage({ searchParams }: { searchParams: { o
           columns={[
             { header: t.t('dairy.date'), cell: (c) => formatDate(c.collectedOn, lang) },
             { header: t.t('dairy.shiftCol'), cell: (c) => t.t(`dairy.shift.${c.shift}`) },
-            { header: t.t('dairy.amount'), cell: (c) => <strong>{formatMoneyMinor(c.amountMinor, 'INR', lang)}</strong> },
+            { header: t.t('dairy.amount'), cell: (c) => <strong>{moneyText(c.amountMinor, 'INR', lang)}</strong> },
             { header: t.t('dairy.exceptionsCol'), cell: (c) => (c.waterFlag ? t.t('dairy.waterFlag') : t.t('common.dash')) },
           ]}
         />
@@ -109,7 +110,7 @@ export default async function DairyPosPage({ searchParams }: { searchParams: { o
             { header: t.t('dairy.member'), cell: (b) => memberCode(b.membershipId) },
             { header: t.t('dairy.period'), cell: (b) => `${formatDate(b.periodStart, lang)} – ${formatDate(b.periodEnd, lang)}` },
             { header: t.t('dairy.litres'), cell: (b) => b.totalLitres },
-            { header: t.t('dairy.net'), cell: (b) => <strong>{formatMoneyMinor(b.netMinor, 'INR', lang)}</strong> },
+            { header: t.t('dairy.net'), cell: (b) => <strong>{moneyText(b.netMinor, 'INR', lang)}</strong> },
             { header: t.t('dairy.colStatus'), cell: (b) => <span className="kv-badge">{t.t(`dairy.status.${b.status}`) || b.status}</span> },
             {
               header: t.t('dairy.colActions'),

@@ -9,7 +9,9 @@
 // NO MONEY MATH (E3): every amount is a server minor string through the money formatter, never added, split or divided here. NO member name,
 // photo or phone anywhere (the roll carries none). Every refused canon line is printed BY NAME (`Ops3Refusals`).
 import Link from 'next/link';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+// PC-56 RTL-1e: the console's money text (features/rtl/money.ts `moneyText`) — the Indian shape, isolated, under Arabic; byte-identical under
+// en/hi/gu. Bound to the name `formatMoneyMinor` here so this view's call reads as before (its pinned OPS spec).
+import { moneyText as formatMoneyMinor } from '../../features/rtl/money';
 import type { DairyBmcTile, DairyDaySummaryRow, DairyMcc, DairyMembership, DairyRateCard } from '@krishalaya/sdk-js';
 import type { Tr } from '../../features/ops3/refusals';
 import {

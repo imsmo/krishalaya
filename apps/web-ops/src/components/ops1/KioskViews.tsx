@@ -13,7 +13,8 @@
 // Every refused canon line is printed BY NAME (`Ops1Refusals`). No input on an honest view; no figure computed anywhere. No SDK import here
 // (the shapes are declared locally; the pages read).
 import Link from 'next/link';
-import { formatDate, formatMoneyMinor } from '@krishalaya/i18n';
+import { formatDate } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';   // PC-56 RTL-1e: the Indian shape, isolated, under Arabic
 import type { Ops1Surface, Tr } from '../../features/ops1/refusals';
 import { parseKioskReason, KIOSK_BANK, KIOSK_EARNINGS, KIOSK_HOME, KIOSK_KYC, KIOSK_LAND, KIOSK_LISTING, KIOSK_PROFILE, KIOSK_SCHEMES, KIOSK_START, KIOSK_STEPS, KIOSK_SUMMARY, earningPaid, type KioskReadState } from '../../features/ops1/kiosk';
 import { Ops1Chain, Ops1Refusals } from './Ops1Chain';
@@ -53,7 +54,7 @@ function EarningsTable({ t, lang, rows }: { t: Tr; lang: string; rows: readonly 
           <tr key={e.id ?? i} data-kv-earning={e.id ?? String(i)}>
             <td>{when(lang, e.createdAt, t)}</td>
             <td>{eventLabel(t, e.eventCode)}</td>
-            <td>{e.amountMinor && /^\d+$/.test(e.amountMinor) ? formatMoneyMinor(e.amountMinor, 'INR', lang) : t.t('ops1.kiosk.none')}</td>
+            <td>{e.amountMinor && /^\d+$/.test(e.amountMinor) ? moneyText(e.amountMinor, 'INR', lang) : t.t('ops1.kiosk.none')}</td>
             <td>{t.t(earningPaid(e) ? 'ops1.kiosk.earnings.paidYes' : 'ops1.kiosk.earnings.paidNo')}</td>
           </tr>
         ))}

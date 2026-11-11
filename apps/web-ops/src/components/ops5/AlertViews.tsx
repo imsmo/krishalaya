@@ -12,7 +12,8 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import type { ColdBreach } from '@krishalaya/sdk-js';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+import { moneyText } from '../../features/rtl/money';   // PC-56 RTL-1e: the Indian shape, isolated, under Arabic
+import { ltrText } from '../../features/rtl/span';   // PC-56 RTL-1e: a code inside a sentence, isolated under Arabic only
 import type { Tr } from '../../features/ops5/refusals';
 import { atText, IOT, type IotState } from '../../features/ops4/iot';
 // The preferred channel is NOT offered: nothing in the notification spine reads it (HOTFIX-14 §2.2) — a field that changes nothing is not a choice.
@@ -291,12 +292,12 @@ export function AlertIncidentView({ t, lang, state, id, breach }: AlertIncidentP
         <div className="kv-empty-state" data-kv-empty="breach"><h2>{t.t('ops5.incident.notFound.title')}</h2><p>{t.t('ops5.incident.notFound.body')}</p></div>
       ) : state === 'error' || !b ? <ReadError t={t} href={`${self}${self.includes('?') ? '&' : '?'}act=confirm`} /> : (
         <>
-          <h2 data-kv-breach={b.id}>{t.t('ops5.incident.subject', { type: t.t(`ops4.iot.type.${b.subjectType}`), ref: b.subjectRef })}</h2>
+          <h2 data-kv-breach={b.id}>{t.t('ops5.incident.subject', { type: t.t(`ops4.iot.type.${b.subjectType}`), ref: ltrText(b.subjectRef, lang) })}</h2>
           <p className="kv-muted" data-kv-statement="ops4.iot.breachRule">{t.t('ops4.iot.breachRule')}</p>
           <dl className="kv-facts">
             <div className="kv-facts__row"><dt>{t.t('ops5.incident.band')}</dt><dd data-kv-band={`${b.band.minC}|${b.band.maxC}`}>{t.t('ops4.iot.bandText', { min: b.band.minC, max: b.band.maxC })}</dd></div>
             <div className="kv-facts__row"><dt>{t.t('ops5.incident.peak')}</dt><dd data-kv-peak={b.peakC}>{t.t('ops5.incident.peakText', { peak: b.peakC, direction: t.t(`ops4.iot.direction.${b.direction}`), n: b.readingsOut })}</dd></div>
-            <div className="kv-facts__row"><dt>{t.t('ops5.incident.logger')}</dt><dd>{b.device ? t.t('ops4.iot.loggerSerial', { serial: b.device.serial ?? t.t('ops4.iot.serialUnknown') }) : t.t('ops4.iot.noLogger')}</dd></div>
+            <div className="kv-facts__row"><dt>{t.t('ops5.incident.logger')}</dt><dd>{b.device ? t.t('ops4.iot.loggerSerial', { serial: b.device.serial != null ? ltrText(b.device.serial, lang) : t.t('ops4.iot.serialUnknown') }) : t.t('ops4.iot.noLogger')}</dd></div>
             <div className="kv-facts__row"><dt>{t.t('ops5.incident.duration')}</dt><dd data-kv-duration={b.durationSeconds ?? 'open'}>
               {b.closedAt ? (dur ? t.t('ops5.incident.durationText', { min: dur.min, sec: dur.sec }) : t.t('ops5.alerts.unknown')) : t.t('ops5.incident.stillOpen')}</dd></div>
             <div className="kv-facts__row"><dt>{t.t('ops5.incident.alert')}</dt><dd data-kv-alert-state={b.alert.state} data-kv-told={b.alert.recipients}>
@@ -315,7 +316,7 @@ export function AlertIncidentView({ t, lang, state, id, breach }: AlertIncidentP
               {b.outcome ? <>{t.t('ops5.incident.outcomeAt', { outcome: t.t(outcomeKey(b.outcome)), at: at(t, b.outcomeAt) })}{b.outcomeReason ? <>{' '}{t.t('ops5.incident.reasonKept')}</> : null}</> : t.t('ops5.incident.outcomeNone')}</li>
             {b.outcome === 'loss_recorded' ? (
               <li data-kv-loss={loss ? `${loss.minor}|${loss.currency}` : 'unreadable'}>
-                {loss ? t.t('ops5.incident.loss', { amount: formatMoneyMinor(loss.minor, loss.currency, lang) }) : t.t('ops5.incident.lossUnreadable')}</li>
+                {loss ? t.t('ops5.incident.loss', { amount: moneyText(loss.minor, loss.currency, lang) }) : t.t('ops5.incident.lossUnreadable')}</li>
             ) : null}
           </ul>
           <h3>{t.t('ops5.incident.buyer')}</h3>

@@ -9,7 +9,10 @@
 // the status filter (a GET). Every refused canon line is printed BY NAME (`Ops4Refusals`).
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { formatMoneyMinor } from '@krishalaya/i18n';
+// PC-56 RTL-1e: the console's money text (features/rtl/money.ts `moneyText`) — the Indian shape, isolated, under Arabic; byte-identical under
+// en/hi/gu. Bound to the name `formatMoneyMinor` here so this view's call reads as before (its pinned OPS spec).
+import { moneyText as formatMoneyMinor } from '../../features/rtl/money';
+import { ltrText } from '../../features/rtl/span';   // PC-56 RTL-1e: a code inside a sentence, isolated under Arabic only
 import type { CategoryNode, EquipmentAsset, EquipmentRate, EquipmentRental } from '@krishalaya/sdk-js';
 import type { Tr } from '../../features/ops4/refusals';
 import {
@@ -185,7 +188,7 @@ function Hire({ t, lang, h, machines, categories }: { t: Tr; lang: string; h: Eq
   const row = (k: string, v: ReactNode, attr?: Record<string, string>) => <div className="kv-facts__row" {...attr}><dt>{t.t(k)}</dt><dd>{v}</dd></div>;
   return (
     <article className="kv-card" data-kv-hire={h.id} data-kv-hire-status={h.status}>
-      <h3 className="kv-card__title" data-kv-booking-no={h.bookingNo}>{t.t('ops4.hire.bookingNo', { no: h.bookingNo })}</h3>
+      <h3 className="kv-card__title" data-kv-booking-no={h.bookingNo}>{t.t('ops4.hire.bookingNo', { no: ltrText(h.bookingNo, lang) })}</h3>
       <dl className="kv-facts">
         {row('ops4.hire.machine', machine
           ? <Link className="kv-link" href={`${CHC.detail}?id=${encodeURIComponent(h.assetId)}`} data-kv-edge="W406">{machineText(t, machine, categories)}</Link>
