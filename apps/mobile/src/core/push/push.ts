@@ -3,7 +3,7 @@
 // router. start() registers for push (JIT) + syncs the token + attaches listeners; returns a cleanup. Safe to
 // call once the user is authenticated. Degrade-never-die: any failure no-ops (push is best-effort).
 import * as Notifications from 'expo-notifications';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { registerForPush, syncPushToken } from './fcm';
 import { routeForNotification } from './notification-router';
 import { isWithinQuietHours } from './quiet-hours';
@@ -32,7 +32,9 @@ export async function startPush(): Promise<() => void> {
   const sub = Notifications.addNotificationResponseReceivedListener((resp) => {
     try {
       const { payload, eventCode } = payloadOf(resp);
-      router.navigate(routeForNotification(payload, eventCode));
+      // Narrow cast (TSC-1): the route comes from a push payload at runtime (allow-listed by SAFE_INTERNAL_PATH or mapped
+      // from the event code), so it cannot be one of the typed-routes literals at compile time.
+      router.navigate(routeForNotification(payload, eventCode) as Href);
     } catch { /* never crash on a malformed push */ }
   });
   return () => sub.remove();

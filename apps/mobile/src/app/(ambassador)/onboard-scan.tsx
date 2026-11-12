@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   h: { fontFamily: font.display, fontSize: font.size.lg, fontWeight: font.weight.bold, color: color.ink800 },
   body: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink600, marginTop: space[1], lineHeight: font.size.sm * 1.5 },
   viewfinder: { backgroundColor: color.ink900, borderRadius: radius.lg, paddingVertical: space[6], paddingHorizontal: space[4], alignItems: 'center', gap: space[4] },
-  frame: { width: '80%', aspectRatio: 1, borderWidth: 3, borderColor: color.accent, borderRadius: radius.lg, borderStyle: 'dashed' },
+  frame: { width: '80%', aspectRatio: 1, borderWidth: 3, borderColor: color.accent500, borderRadius: radius.lg, borderStyle: 'dashed' },
   viewfinderHint: { fontFamily: font.body, fontSize: font.size.sm, fontWeight: font.weight.semibold, color: color.white, textAlign: 'center' },
   controls: { flexDirection: 'row', gap: space[3] },
   control: { minHeight: 44, justifyContent: 'center', paddingHorizontal: space[3], borderRadius: radius.pill, borderWidth: 1.5, borderColor: color.white },

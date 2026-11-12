@@ -81,7 +81,7 @@ export default function UpiIds() {
           {/* Add new UPI */}
           <Text style={styles.section}>{t('upiIds.addTitle')}</Text>
           <Card>
-            <Input label={t('upiIds.upiLabel')} value={vpa} onChangeText={(v) => { setVpa(v); if (error) setError(undefined); }} autoCapitalize="none" keyboardType="email-address" maxLength={100} placeholder="name@bank" error={error} />
+            <Input label={t('upiIds.upiLabel')} value={vpa} onChangeText={(v) => { setVpa(v); if (error) setError(undefined); }} keyboardType="email-address" maxLength={100} placeholder="name@bank" error={error} />
             <Text style={styles.commonTitle}>{t('upiIds.commonHandles')}</Text>
             <View style={styles.chips}>
               {COMMON_UPI_HANDLES.map((h) => (

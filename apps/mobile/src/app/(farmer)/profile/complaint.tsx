@@ -82,7 +82,7 @@ export default function Complaint() {
 
         {/* Which order */}
         <Text style={styles.h2}>{t('profile.complaint.whichOrder')}</Text>
-        <Input label={t('profile.complaint.orderId')} value={orderRef} onChangeText={setOrderRef} autoCapitalize="characters" maxLength={40} placeholder="KV-2026-..." />
+        <Input label={t('profile.complaint.orderId')} value={orderRef} onChangeText={setOrderRef} maxLength={40} placeholder="KV-2026-..." />
         {recent.length ? (
           <View style={styles.recent}>
             <Text style={styles.recentLabel}>{t('profile.complaint.recent')}</Text>

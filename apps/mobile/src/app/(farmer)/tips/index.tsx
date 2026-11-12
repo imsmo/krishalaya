@@ -10,14 +10,17 @@
 //  • A per-tip VIEW COUNT ("2.4k views") has no contract on the resource read-model → omitted, never invented.
 //  • A thumbnail IMAGE isn't carried either → a kind glyph stands in (design's emoji thumb).
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, FlatList, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import type { LearningResource } from '@krishalaya/sdk-js';
 import { Input, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { listTips } from '../../../features/content/content.api';
-import { searchResources, kindLabelKey, readTimeMinutes, languageLabelKey, distinctTopics, filterByTopic } from '../../../features/content/content';
+import { searchResources, kindLabelKey, readTimeMinutes, languageLabelKey, TIP_CATEGORIES, type TipCategory } from '../../../features/content/content';
+// TSC-1: TIP_CATEGORIES/TipCategory were dropped from this import while the tabs below still use them (a ReferenceError
+// on every render). The dynamic topic chips (distinctTopics/filterByTopic) the header describes were never wired; the
+// tabs + the "coming soon" note are what the catalogue strings support today.
 
 /** Design's emoji thumb stands in for the (absent) thumbnail image — chosen by resource kind. Pure. */
 function kindGlyph(kind: string): string {
@@ -55,7 +58,7 @@ export default function TipsLibrary() {
         <Pressable onPress={() => router.push('/(farmer)/tips/saved')} accessibilityRole="button"><Text style={styles.link}>🔖 {t('content.saved.title')}</Text></Pressable>
         <Pressable onPress={() => router.push('/(farmer)/assistant')} accessibilityRole="button"><Text style={styles.link}>🤖 {t('content.assistant.title')}</Text></Pressable>
       </View>
-      <Input label={t('content.search.label')} value={query} onChangeText={setQuery} placeholder={t('content.search.placeholder')} returnKeyType="search" />
+      <Input label={t('content.search.label')} value={query} onChangeText={setQuery} placeholder={t('content.search.placeholder')} />
       <Pressable onPress={() => router.push('/(farmer)/voice-search')} accessibilityRole="button" style={styles.voiceLink}><Text style={styles.link}>🎙️ {t('content.voiceSearch.cta')}</Text></Pressable>
 
       {/* Topic-category tabs (design). §13: only 'all' has a contract; named topics are disabled until a topic

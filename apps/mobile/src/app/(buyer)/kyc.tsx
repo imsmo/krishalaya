@@ -123,8 +123,8 @@ export default function BusinessKyc() {
             ))}
           </View>
 
-          <Input label={t('businessKyc.pan')} value={pan} onChangeText={(v) => setPan(v.toUpperCase())} autoCapitalize="characters" maxLength={10} placeholder="ABCDE1234F" error={panErr} />
-          <Input label={t('businessKyc.gstin')} value={gstin} onChangeText={(v) => setGstin(v.toUpperCase())} autoCapitalize="characters" maxLength={15} placeholder="27ABCDE1234F1Z5" error={gstinErr} />
+          <Input label={t('businessKyc.pan')} value={pan} onChangeText={(v) => setPan(v.toUpperCase())} maxLength={10} placeholder="ABCDE1234F" error={panErr} />
+          <Input label={t('businessKyc.gstin')} value={gstin} onChangeText={(v) => setGstin(v.toUpperCase())} maxLength={15} placeholder="27ABCDE1234F1Z5" error={gstinErr} />
           <Text style={styles.note}>{t('businessKyc.gstinOptional')}</Text>
           {biz && (biz.gstinMasked || biz.panMasked) ? (
             <Card style={{ marginTop: space[2] }}>
@@ -146,7 +146,7 @@ export default function BusinessKyc() {
                 </View>
                 {!status || status === 'rejected' ? (
                   <View style={{ marginTop: space[2] }}>
-                    <Button title={t('businessKyc.upload')} variant="outline" size="sm" onPress={() => upload(dt.id)} loading={busyType === dt.id} />
+                    <Button title={t('businessKyc.upload')} variant="outline" size="md" onPress={() => upload(dt.id)} loading={busyType === dt.id} />
                   </View>
                 ) : null}
               </Card>

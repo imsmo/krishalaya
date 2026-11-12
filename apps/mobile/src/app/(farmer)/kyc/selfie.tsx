@@ -64,7 +64,7 @@ export default function VerifySelfie() {
   // §13: no selfie doc-type in the catalogue → honest degrade (never file under a wrong type).
   const canCapture = !!docType;
   const footer = (
-    <Button title={t('kycSelfie.take')} onPress={onCapture} loading={busy} disabled={!canCapture} accessibilityLabel={t('kycSelfie.take')} />
+    <Button title={t('kycSelfie.take')} onPress={onCapture} loading={busy} disabled={!canCapture} />
   );
 
   return (

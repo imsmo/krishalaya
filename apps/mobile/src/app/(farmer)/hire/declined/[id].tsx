@@ -10,14 +10,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { LabourBooking, LabourAssignment, WorkerProfile, LabourLookups } from '@krishalaya/sdk-js';
+import type { LabourBooking, LabourAssignment, LabourLookups } from '@krishalaya/sdk-js';
 import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { formatRelative } from '@krishalaya/i18n';
 import { useTranslation } from '../../../../core/i18n/useTranslation';
 import { useFlag } from '../../../../core/flags/useFlag';
 import { getBooking, bookingAssignments, browseWorkers, labourLookups } from '../../../../features/labour/hire.api';
 import { regionName } from '../../../../features/labour/worker-profile';
-import { skillChips } from '../../../../features/labour/hire-browse';
+import { skillChips, type HireWorker } from '../../../../features/labour/hire-browse';
 import { isolate } from '../../../../core/i18n/bidi';
 
 export default function BookingDeclined() {
@@ -27,7 +27,7 @@ export default function BookingDeclined() {
   const enabled = useFlag('labour_hire');
   const [booking, setBooking] = useState<LabourBooking | null>(null);
   const [assignments, setAssignments] = useState<LabourAssignment[]>([]);
-  const [similar, setSimilar] = useState<WorkerProfile[]>([]);
+  const [similar, setSimilar] = useState<HireWorker[]>([]);
   const [lookups, setLookups] = useState<LabourLookups | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);

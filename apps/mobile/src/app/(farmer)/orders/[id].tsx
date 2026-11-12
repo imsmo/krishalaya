@@ -187,7 +187,7 @@ export default function OrderDetailScreen() {
   );
 }
 
-function StatusBanner({ status, t }: { status: string; t: (k: string, p?: Record<string, unknown>) => string }) {
+function StatusBanner({ status, t }: { status: string; t: (k: string, p?: Record<string, string | number>) => string }) {
   const key = orderBannerKey(status);
   const tone = orderStatusTone(status);
   const bg = tone === 'success' ? color.successLight : tone === 'danger' ? color.dangerLight : tone === 'accent' ? color.accent50 : tone === 'info' ? color.infoLight : color.primary50;

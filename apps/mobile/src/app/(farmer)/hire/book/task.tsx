@@ -10,12 +10,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import type { WorkerProfile, LabourLookups } from '@krishalaya/sdk-js';
+import type { LabourLookups } from '@krishalaya/sdk-js';
 import { Button, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../../core/i18n/useTranslation';
 import { useFlag } from '../../../../core/flags/useFlag';
 import { getWorker, labourLookups } from '../../../../features/labour/hire.api';
-import { bookableSkills } from '../../../../features/labour/hire-browse';
+import { bookableSkills, type HireWorker } from '../../../../features/labour/hire-browse';
 import { skillEmoji } from '../../../../features/labour/worker-skills';
 import { isolate } from '../../../../core/i18n/bidi';
 
@@ -24,7 +24,7 @@ export default function BookTask() {
   const router = useRouter();
   const { workerId } = useLocalSearchParams<{ workerId?: string }>();
   const enabled = useFlag('labour_hire');
-  const [worker, setWorker] = useState<WorkerProfile | null>(null);
+  const [worker, setWorker] = useState<HireWorker | null>(null);
   const [lookups, setLookups] = useState<LabourLookups | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);

@@ -95,7 +95,7 @@ export default function AmbassadorHome() {
                     <Text style={styles.pendName}>{t('amb.home.referralAnon', { code: isolate(r.code, lang) })}</Text>
                     <StatusPill label={t(`amb.referral.status.${r.status}`, { defaultValue: r.status })} tone={referralStatusTone(r.status)} />
                   </View>
-                  <Button title={t('amb.home.help')} variant="outline" size="sm" onPress={() => router.push('/(ambassador)/onboard-start')} />
+                  <Button title={t('amb.home.help')} variant="outline" size="md" onPress={() => router.push('/(ambassador)/onboard-start')} />
                 </View>
               ))}
             </Card>
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
   greeting: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink500 },
   vern: { fontFamily: font.body, fontSize: font.size.sm, fontWeight: font.weight.semibold, color: color.primary700, marginTop: 2 },
   name: { fontFamily: font.display, fontSize: font.size.xl, fontWeight: font.weight.bold, color: color.ink800, marginTop: 2 },
-  badge: { alignSelf: 'flex-start', marginTop: space[2], backgroundColor: color.accent, borderRadius: radius.pill, paddingHorizontal: space[3], paddingVertical: 4 },
+  badge: { alignSelf: 'flex-start', marginTop: space[2], backgroundColor: color.accent500, borderRadius: radius.pill, paddingHorizontal: space[3], paddingVertical: 4 },
   badgeTxt: { fontFamily: font.body, fontSize: font.size.xs, fontWeight: font.weight.bold, color: color.ink900 },
   stats: { flexDirection: 'row', gap: space[2] },
   statCell: { flex: 1, alignItems: 'center', backgroundColor: color.card, borderWidth: 1, borderColor: color.ink100, borderRadius: radius.lg, paddingVertical: space[3], gap: 2 },

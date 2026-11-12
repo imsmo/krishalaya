@@ -56,7 +56,7 @@ export default function Faq() {
         </View>
 
         {/* Search */}
-        <Input value={query} onChangeText={setQuery} placeholder={t('amb.faq.searchPlaceholder')} accessibilityLabel={t('amb.faq.searchPlaceholder')} />
+        <Input value={query} onChangeText={setQuery} placeholder={t('amb.faq.searchPlaceholder')} />
 
         {/* Category chips */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>

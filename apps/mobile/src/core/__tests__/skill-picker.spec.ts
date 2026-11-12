@@ -1,7 +1,6 @@
 // Unit tests for the PURE Add-a-Skill logic (features/labour/skill-picker) behind screen 137. Verifies flat rows
 // carry real name/emoji + selection, the experience buckets, and the selected count — no fabricated rate range.
-import { flatSkillRows, EXPERIENCE_LEVELS, selectedCount } from '../../features/labour/skill-picker';
-import type { Skill } from '@krishalaya/sdk-js';
+import { flatSkillRows, EXPERIENCE_LEVELS, selectedCount, type Skill } from '../../features/labour/skill-picker';
 
 const S = (id: string, code: string, name: string): Skill => ({ id, code, name, tier: 1, parentId: null, hazardous: false });
 
@@ -13,7 +12,7 @@ describe('flatSkillRows', () => {
     expect(rows[0].emoji).toBe('🌾');
     expect(rows[1]).toMatchObject({ id: 'b', selected: false });
     // no fabricated rate range on the row
-    expect((rows[0] as Record<string, unknown>).rate).toBeUndefined();
+    expect(({ ...rows[0] } as Record<string, unknown>).rate).toBeUndefined();
   });
   it('is empty for no catalogue', () => {
     expect(flatSkillRows([], new Set())).toEqual([]);

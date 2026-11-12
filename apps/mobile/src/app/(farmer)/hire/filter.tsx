@@ -10,12 +10,12 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import type { WorkerProfile, LabourLookups } from '@krishalaya/sdk-js';
+import type { LabourLookups } from '@krishalaya/sdk-js';
 import { Button, Card, Toggle, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { browseWorkers, labourLookups } from '../../../features/labour/hire.api';
-import { filterWorkers } from '../../../features/labour/hire-browse';
+import { filterWorkers, type HireWorker } from '../../../features/labour/hire-browse';
 import { skillEmoji } from '../../../features/labour/worker-skills';
 
 const AVAIL = ['today', 'tomorrow', 'week', 'pick'] as const;
@@ -24,7 +24,7 @@ export default function FilterWorkers() {
   const { t } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('labour_hire');
-  const [items, setItems] = useState<WorkerProfile[]>([]);
+  const [items, setItems] = useState<HireWorker[]>([]);
   const [lookups, setLookups] = useState<LabourLookups | null>(null);
   const [skillId, setSkillId] = useState<string | null>(null);
   const [min4, setMin4] = useState(false);

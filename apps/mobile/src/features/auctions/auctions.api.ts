@@ -4,7 +4,7 @@
 // money via the EMD hold and needs live auction state; blind replay of a stale bid is wrong). The EMD hold + the
 // loser-refund + winner→settlement are entirely SERVER-SIDE (the app never moves money — Law 11). Money is bigint
 // minor-unit strings (Law 2).
-import type { Auction, BidHistoryItem, MyBid, PlaceBidResult } from '@krishalaya/sdk-js';
+import type { Auction, BidHistoryItem, CreateAuctionResult, MyBid, PlaceBidResult } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
 import { newId } from '../../core/util/ids';
 
@@ -32,10 +32,10 @@ export function placeBid(auctionId: string, amountMinor: string): Promise<PlaceB
   return apiClient().auctions.placeBid(auctionId, amountMinor, newId());
 }
 /** Create an auction on a listing the caller owns. Idempotent; throws on a real error. */
-export function createAuction(input: { listingId: string; kind?: 'english_open' | 'sealed'; startPriceMinor: string; reservePriceMinor?: string; minIncrementMinor?: string; startsAt: string; endsAt: string }): Promise<Auction> {
+export function createAuction(input: { listingId: string; kind?: 'english_open' | 'sealed'; startPriceMinor: string; reservePriceMinor?: string; minIncrementMinor?: string; startsAt: string; endsAt: string }): Promise<CreateAuctionResult> {
   return apiClient().auctions.create(input, newId());
 }
-export function cancelAuction(id: string): Promise<{ ok: boolean }> { return apiClient().auctions.cancel(id); }
+export function cancelAuction(id: string): Promise<{ auctionId: string; status: string; notified: number }> { return apiClient().auctions.cancel(id); }
 
 // --- watch / follow (P1-7) — any authed member may watch an auction in their tenant; watchers are notified when it
 // closes (server-side, via the notification spine). Reads degrade-never-die; the toggle mutations throw so the

@@ -1,7 +1,12 @@
 // apps/mobile/src/features/labour/hire-browse.ts · PURE filter/sort/chip logic for the employer "Find Workers"
 // screen (screen 42). No React / no SDK I/O (SDK types are `import type` → erased) → unit-tested. Operates only on
 // the PII-minimised worker pool the server returned; the SERVER stays the authority on eligibility + the pool.
-import type { LabourLookups } from '@krishalaya/sdk-js';
+import type { LabourLookups, WorkerCard, WorkerProfile } from '@krishalaya/sdk-js';
+
+/** The employer-side worker read (listWorkers/getWorker → the consented WorkerCard). TSC-1: the hire screens typed it as
+ * the worker's OWN WorkerProfile, which it is not. `skillIds` is optional because the card read does not carry it
+ * today — the helpers below already fall back when it is absent (§13). */
+export type HireWorker = WorkerCard & Partial<Pick<WorkerProfile, 'skillIds'>>;
 
 export type WorkerSort = 'rating' | 'jobs';
 

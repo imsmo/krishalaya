@@ -12,12 +12,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { type CreateBookingInput, type WorkerProfile, type LabourLookups } from '@krishalaya/sdk-js';
-import { Button, Card, EmptyState, MoneyText, Toggle, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
+import { type CreateBookingInput, type LabourLookups } from '@krishalaya/sdk-js';
+import { Button, Card, EmptyState, MoneyText, Toggle, ScreenScaffold, SkeletonCard, color, font, space } from '@krishalaya/ui-native';
 import { formatDate } from '@krishalaya/i18n';
 import { useTranslation } from '../../../../core/i18n/useTranslation';
 import { useFlag } from '../../../../core/flags/useFlag';
 import { getWorker, labourLookups } from '../../../../features/labour/hire.api';
+import type { HireWorker } from '../../../../features/labour/hire-browse';
 import { walletBalance } from '../../../../features/wallet/wallet.api';
 import { moneyText } from '../../../../core/i18n/money';
 import { isolate } from '../../../../core/i18n/bidi';
@@ -29,7 +30,7 @@ export default function BookReview() {
   const enabled = useFlag('labour_hire');
 
   const input: CreateBookingInput | null = React.useMemo(() => { try { return inputJson ? JSON.parse(inputJson) : null; } catch { return null; } }, [inputJson]);
-  const [worker, setWorker] = useState<WorkerProfile | null>(null);
+  const [worker, setWorker] = useState<HireWorker | null>(null);
   const [lookups, setLookups] = useState<LabourLookups | null>(null);
   const [balanceMinor, setBalanceMinor] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);

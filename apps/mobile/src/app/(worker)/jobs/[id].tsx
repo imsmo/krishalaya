@@ -1,8 +1,9 @@
 // apps/mobile/src/app/(worker)/jobs/[id].tsx · screen 31 (Job Detail — worker view). Thin screen (guide §3): an
 // open booking's wage (with how far above the statutory floor), task, date, work type, worker count, plus a
-// Decline (back) / Apply footer. "Apply" self-applies to the booking (labour.applyToJob → an interest-pool
-// 'applied' assignment; the employer still assigns) — idempotent (Law 3), and gated on the worker being 18+
-// (navigation-only; the SERVER is the authority). Money via MoneyText (Law 2). Behind `worker_app`. Degrade-never-die.
+// Decline (back) / Apply footer. "Apply" opens the confirm-and-apply screen (jobs/apply/[id], screen 140), which
+// performs the real idempotent apply (Law 3); the employer still assigns. Gated on the worker being 18+
+// (navigation-only; the SERVER is the authority). TSC-1: the footer still called the removed in-screen `apply`/`busy`
+// (a ReferenceError on render of every open job) — it now calls goApply. Money via MoneyText (Law 2). Behind `worker_app`. Degrade-never-die.
 //
 // §13 — REAL: wage (wageOfferedMinor), above-min (wageOffered − minWage), state minimum (minWageMinor), task
 // (skill via lookups), work type (demandType via lookups), start date, workers needed. HONESTLY degraded (no field
@@ -58,8 +59,8 @@ export default function JobDetail() {
   const footer = job && job.status === 'open' ? (
     ageOk ? (
       <View style={styles.actions}>
-        <Button title={t('worker.jobDetail.decline')} variant="outline" disabled={busy} onPress={() => router.back()} />
-        <View style={{ flex: 1 }}><Button title={t('worker.jobDetail.apply', { amount: moneyText(job.wageOfferedMinor, ccy, lang) })} loading={busy} disabled={busy} onPress={apply} fullWidth /></View>
+        <Button title={t('worker.jobDetail.decline')} variant="outline" onPress={() => router.back()} />
+        <View style={{ flex: 1 }}><Button title={t('worker.jobDetail.apply', { amount: moneyText(job.wageOfferedMinor, ccy, lang) })} onPress={goApply} fullWidth /></View>
       </View>
     ) : undefined
   ) : undefined;

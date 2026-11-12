@@ -90,7 +90,7 @@ export default function CourseDetail() {
                   accessibilityRole="button"
                   accessibilityState={{ disabled: locked }}
                 >
-                  <Card style={[styles.lesson, locked && styles.locked]}>
+                  <Card style={StyleSheet.flatten([styles.lesson, locked && styles.locked])}>
                     <Text style={styles.lessonNo}>{index + 1}</Text>
                     <Text style={styles.lessonTitle} numberOfLines={2}>{item.defaultTitle}</Text>
                     {done ? <StatusPill label={t('amb.course.done')} tone="success" /> : <Text style={styles.kind}>{t(`amb.contentKind.${item.contentKind}`)}</Text>}

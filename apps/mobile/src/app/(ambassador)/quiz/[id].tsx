@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
   heroQOf: { fontFamily: font.display, fontSize: font.size.lg, fontWeight: font.weight.bold, color: color.card },
   heroPass: { fontFamily: font.body, fontSize: font.size.xs, color: color.card, opacity: 0.85 },
   track: { height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.2)', overflow: 'hidden', marginTop: space[1] },
-  fill: { height: '100%', borderRadius: 2, backgroundColor: color.gold500 },
+  fill: { height: '100%', borderRadius: 2, backgroundColor: color.accent500 },
   q: { fontFamily: font.display, fontSize: font.size.lg, fontWeight: font.weight.bold, color: color.ink800, lineHeight: font.size.lg * 1.3 },
   opt: { flexDirection: 'row', alignItems: 'center', gap: space[3], padding: space[3], borderRadius: radius.md, borderWidth: 2, borderColor: color.ink200, backgroundColor: color.card, minHeight: 48 },
   optOn: { borderColor: color.primary600, backgroundColor: color.primary50 },

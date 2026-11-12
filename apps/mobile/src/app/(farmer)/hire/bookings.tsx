@@ -79,7 +79,7 @@ export default function MyBookings() {
   );
 }
 
-function BookingCard({ pair, lookups, lang, t, onOpen }: { pair: Pair; lookups: LabourLookups | null; lang: string; t: (k: string, v?: Record<string, unknown>) => string; onOpen: () => void }) {
+function BookingCard({ pair, lookups, lang, t, onOpen }: { pair: Pair; lookups: LabourLookups | null; lang: string; t: (k: string, v?: Record<string, string | number>) => string; onOpen: () => void }) {
   const { booking, workerId } = pair;
   const skill = skillLabel(booking, lookups);
   const win = booking.status === 'pending' || booking.status === 'open' ? respondWindow(booking.respondBy) : null;

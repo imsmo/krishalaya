@@ -12,6 +12,13 @@ export async function listKyc(status?: string): Promise<KycDocument[]> {
   catch { return []; }
 }
 
+/** The caller's KYC documents — the name the worker Documents (screen 133) and PMSBY-enrol screens import. TSC-1: those
+ * two screens imported `myDocuments` from here, where it did not exist, so the call threw and both screens hung on
+ * their loading state. Same read as listKyc() (and profile.api's myDocuments); degrades to []. */
+export async function myDocuments(): Promise<KycDocument[]> {
+  return listKyc();
+}
+
 /** The seeded KYC document-type catalogue (id + code + localized name) to enumerate uploadable docs (screen 133).
  * Degrades to [] so the Documents section simply shows nothing rather than crashing. */
 export async function kycDocTypes(): Promise<KycDocType[]> {

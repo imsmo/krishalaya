@@ -108,7 +108,7 @@ export default function WorkHistory() {
   );
 }
 
-function DayCard({ att, lang, t }: { att: LabourAttendance; lang: string; t: (k: string, v?: Record<string, unknown>) => string }) {
+function DayCard({ att, lang, t }: { att: LabourAttendance; lang: string; t: (k: string, v?: Record<string, string | number>) => string }) {
   const hours = attendanceTotalHours(att);
   const status = attendanceStatusKey(att);
   const meta = [safeDate(att.workDate, lang), hours != null ? t('workerHistory.hrs', { n: hours }) : null].filter(Boolean).join(' · ');

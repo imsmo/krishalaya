@@ -63,7 +63,7 @@ export default function GlobalSearch() {
 
   return (
     <ScreenScaffold title={t('search.title')}>
-      <Input label={t('search.label')} value={query} onChangeText={setQuery} placeholder={t('search.placeholder')} autoFocus returnKeyType="search" onSubmitEditing={() => run(query)} />
+      <Input label={t('search.label')} value={query} onChangeText={setQuery} placeholder={t('search.placeholder')} autoFocus />
 
       {loading ? <SkeletonCard lines={6} /> : !searched ? (
         <EmptyState title={t('search.hint.title')} message={t('search.hint.message')} />

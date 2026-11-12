@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   codeBox: { alignItems: 'center', paddingVertical: space[4], backgroundColor: color.primary50, borderRadius: radius.lg },
   codeLabel: { fontFamily: font.body, fontSize: font.size.xs, fontWeight: font.weight.bold, color: color.ink500, textTransform: 'uppercase', letterSpacing: 0.5 },
   code: { fontFamily: font.display, fontSize: font.size['2xl'], fontWeight: font.weight.bold, color: color.primary800, letterSpacing: 3, marginTop: space[1] },
-  commissionCard: { flexDirection: 'row', gap: space[3], alignItems: 'center', backgroundColor: color.accent },
+  commissionCard: { flexDirection: 'row', gap: space[3], alignItems: 'center', backgroundColor: color.accent500 },
   commissionIcon: { fontSize: 24 },
   commissionTitle: { fontFamily: font.body, fontSize: font.size.md, fontWeight: font.weight.bold, color: color.ink900 },
   commissionBody: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink800, marginTop: 2, lineHeight: font.size.xs * 1.5 },

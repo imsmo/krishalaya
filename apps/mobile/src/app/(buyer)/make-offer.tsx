@@ -109,7 +109,7 @@ export default function MakeOffer() {
               {offerMinor ? <MoneyText minor={offerMinor} currencyCode={ccy} langCode={lang} size="3xl" style={styles.priceAmt} /> : <Text style={styles.priceAmtEmpty}>—</Text>}
               {totalMinor ? (
                 <Text style={styles.priceSub}>
-                  {t('offer.forQty', { n: q, unit })} = {moneyText(totalMinor, ccy, lang)} {t('offer.total')}
+                  {t('offer.forQty', { n: q ?? '', unit })} = {moneyText(totalMinor, ccy, lang)} {t('offer.total')}
                   {pct !== null && pct !== 0 ? ` · ${pct > 0 ? t('offer.belowAsk', { pct }) : t('offer.aboveAsk', { pct: -pct })}` : ''}
                 </Text>
               ) : <Text style={styles.priceSub}>{t('offer.enterPriceQty')}</Text>}

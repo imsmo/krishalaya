@@ -53,6 +53,8 @@ export default function Tutorial() {
 }
 
 const styles = StyleSheet.create({
+  // TSC-1: was referenced by the footer but never defined (the two buttons stacked unstyled) — the sibling system screens' footer.
+  footer: { flexDirection: 'row', gap: space[3] },
   body: { alignItems: 'center', paddingVertical: space[6], gap: space[3] },
   icon: { fontSize: 64 },
   h: { fontFamily: font.display, fontSize: font.size['2xl'], fontWeight: font.weight.bold, color: color.ink900, textAlign: 'center' },

@@ -69,7 +69,8 @@ export default function ActiveJob() {
     setBusy(true);
     try {
       const fix = await getCurrentFix();
-      if (!fix.ok) { Alert.alert(t('worker.clockIn.title'), t(`worker.clockIn.gps.${fix.reason}`)); return; }
+      // TSC-1: narrow on the fix itself (GpsResult is a single shape, not a union) — the same guard every other caller uses.
+      if (!fix.ok || !fix.fix) { Alert.alert(t('worker.clockIn.title'), t(`worker.clockIn.gps.${fix.reason ?? 'error'}`)); return; }
       await clockInJob(id!, { lat: fix.fix.lat, lng: fix.fix.lng });
       await load();
     } catch (e) {
@@ -146,7 +147,7 @@ export default function ActiveJob() {
           <Card>
             <Text style={styles.h3}>{t('worker.activeJob.issues')}</Text>
             <Text style={styles.note}>{t('worker.activeJob.reportNote')}</Text>
-            <Button title={t('worker.activeJob.report')} variant="outline" size="sm" onPress={() => router.push({ pathname: '/(worker)/dispute/[id]', params: { id: id! } })} />
+            <Button title={t('worker.activeJob.report')} variant="outline" size="md" onPress={() => router.push({ pathname: '/(worker)/dispute/[id]', params: { id: id! } })} />
           </Card>
 
           {phase === 'done' ? <Text style={styles.doneNote}>{t('worker.activeJob.awaitingConfirm')}</Text> : null}

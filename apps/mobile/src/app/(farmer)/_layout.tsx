@@ -32,12 +32,14 @@ export default function FarmerTabsLayout() {
 
   return (
     <Tabs
+      // react-native-screens paints each tab's native Screen surface with NO default background of its own —
+      // without this, a slow-loading/erroring screen (or a dark system theme) shows raw black through the gap
+      // before JS content paints (Law 12: never a blank/black screen). This one line kills that whole class.
+      // TSC-1: a NAVIGATOR prop in react-navigation v6 (BottomTabNavigationConfig), not a screen option — inside
+      // screenOptions it was silently ignored, so the cream background was never applied.
+      sceneContainerStyle={{ backgroundColor: color.page }}
       screenOptions={{
         headerShown: false,
-        // react-native-screens paints each tab's native Screen surface with NO default background of its own —
-        // without this, a slow-loading/erroring screen (or a dark system theme) shows raw black through the gap
-        // before JS content paints (Law 12: never a blank/black screen). This one line kills that whole class.
-        sceneContainerStyle: { backgroundColor: color.page },
         tabBarActiveTintColor: color.primary600,
         tabBarInactiveTintColor: color.ink400,
         tabBarStyle: { backgroundColor: color.card, borderTopColor: color.ink100, height: 64, paddingBottom: 8, paddingTop: 6 },

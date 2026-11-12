@@ -23,11 +23,13 @@ export default function BuyerTabsLayout() {
 
   return (
     <Tabs
+      // See (farmer)/_layout.tsx: react-native-screens has no default scene background — pin it to the app's
+      // cream page color so a slow/erroring screen never shows raw black (Law 12).
+      // TSC-1: a NAVIGATOR prop in react-navigation v6 (BottomTabNavigationConfig), not a screen option — inside
+      // screenOptions it was silently ignored, so the cream background was never applied.
+      sceneContainerStyle={{ backgroundColor: color.page }}
       screenOptions={{
         headerShown: false,
-        // See (farmer)/_layout.tsx: react-native-screens has no default scene background — pin it to the app's
-        // cream page color so a slow/erroring screen never shows raw black (Law 12).
-        sceneContainerStyle: { backgroundColor: color.page },
         tabBarActiveTintColor: color.primary600,
         tabBarInactiveTintColor: color.ink400,
         tabBarStyle: { backgroundColor: color.card, borderTopColor: color.ink100, height: 64, paddingBottom: 8, paddingTop: 6 },

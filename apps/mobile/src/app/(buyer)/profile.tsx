@@ -46,7 +46,7 @@ export default function BuyerProfile() {
   }, [kycEnabled]);
   useFocusEffect(useCallback(() => { if (enabled) { load(); } }, [enabled, load]));
 
-  if (!enabled) return <ScreenScaffold title={t('buyerProfile.title')} />;
+  if (!enabled) return <ScreenScaffold title={t('buyerProfile.title')}>{null}</ScreenScaffold>;
 
   const latest = kyc?.[0];
   const name = profile?.displayName?.trim() || t('buyerProfile.genericName');

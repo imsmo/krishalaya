@@ -27,7 +27,7 @@ import { relativeAge, type RelativeAge } from '../../../features/listings/listin
 import { convRate, funnelFromAnalytics, viewsByDaySeries } from '../../../features/listings/listing-analytics';
 import { isolate } from '../../../core/i18n/bidi';
 
-function liveLabel(t: (k: string, p?: Record<string, unknown>) => string, a: RelativeAge | null): string | null {
+function liveLabel(t: (k: string, p?: Record<string, string | number>) => string, a: RelativeAge | null): string | null {
   if (!a) return null;
   if (a.unit === 'today') return t('analytics.liveToday');
   return t(`analytics.liveFor.${a.unit}`, { n: a.value });

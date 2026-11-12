@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[3] },
   k: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink500 },
   v: { fontFamily: font.body, fontSize: font.size.sm, fontWeight: font.weight.semibold, color: color.ink800, flexShrink: 1, textAlign: 'right' },
-  mono: { fontFamily: font.mono ?? font.body },
+  mono: { fontFamily: font.body },
   planVal: { flexDirection: 'row', alignItems: 'center' },
   perMo: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink500 },
   section: { fontFamily: font.body, fontSize: font.size.md, fontWeight: font.weight.bold, color: color.ink700, marginTop: space[1] },

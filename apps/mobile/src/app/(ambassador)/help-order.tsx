@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
   divide: { borderTopWidth: 1, borderTopColor: color.ink100 },
   check: { fontFamily: font.body, fontSize: font.size.lg, color: color.primary600 },
   actionTxt: { flex: 1, fontFamily: font.body, fontSize: font.size.sm, color: color.ink800, lineHeight: font.size.sm * 1.5 },
-  earn: { flexDirection: 'row', gap: space[3], alignItems: 'center', backgroundColor: color.accent, borderRadius: radius.lg, padding: space[3] },
+  earn: { flexDirection: 'row', gap: space[3], alignItems: 'center', backgroundColor: color.accent500, borderRadius: radius.lg, padding: space[3] },
   earnIcon: { fontSize: 24 },
   earnTxt: { flex: 1, fontFamily: font.body, fontSize: font.size.sm, fontWeight: font.weight.semibold, color: color.ink900, lineHeight: font.size.sm * 1.5 },
 });

@@ -69,7 +69,7 @@ export default function EditProfile() {
             <ReadOnly label={t('profile.edit.displayName')} />
             <ReadOnly label={t('profile.edit.mobile')} note={t('profile.edit.mobileManaged')} />
             <ReadOnly label={t('profile.edit.whatsapp')} />
-            <Input label={t('profile.edit.emailOptional')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" maxLength={200} error={error} />
+            <Input label={t('profile.edit.emailOptional')} value={email} onChangeText={setEmail} keyboardType="email-address" maxLength={200} error={error} />
           </Card>
 
           {/* Location — §13: profile has no address; lives on parcels */}
@@ -93,7 +93,8 @@ export default function EditProfile() {
           {/* Bio — §13: no bio contract */}
           <Text style={styles.section}>{t('profile.edit.about')}</Text>
           <Card>
-            <Input label={t('profile.edit.bio')} value={''} editable={false} multiline placeholder={t('profile.edit.bioSoon')} />
+            {/* Read-only placeholder (editable={false}): Input requires onChangeText, and there is nothing to change yet. */}
+            <Input label={t('profile.edit.bio')} value={''} onChangeText={() => {}} editable={false} multiline placeholder={t('profile.edit.bioSoon')} />
             <Text style={styles.soon}>{t('common.comingSoon')}</Text>
           </Card>
 

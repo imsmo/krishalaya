@@ -124,6 +124,9 @@ export default function FarmerAnalytics() {
 }
 
 const styles = StyleSheet.create({
+  // TSC-1: referenced by the error-state retry but never defined — the same pair as (owner)/analytics + order-analytics.
+  retry: { alignItems: 'center', paddingVertical: space[3], marginTop: space[2] },
+  retryText: { fontFamily: font.body, fontSize: font.size.md, fontWeight: font.weight.semibold, color: color.primary600 },
   headline: { alignItems: 'center', gap: space[1], paddingVertical: space[5] },
   headLabel: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink500 },
   headValue: { fontFamily: font.display, fontSize: font.size['3xl'], fontWeight: font.weight.bold, color: color.ink800 },

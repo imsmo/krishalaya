@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
   heroTitle: { fontFamily: font.display, fontSize: font.size.xl, fontWeight: font.weight.bold, color: color.white },
   heroSub: { fontFamily: font.body, fontSize: font.size.sm, color: color.primary50, marginBottom: space[2], textAlign: 'center' },
   heroCover: { fontFamily: font.body, fontSize: font.size.sm, color: color.primary50, marginTop: 2, textAlign: 'center' },
-  premiumTag: { marginTop: space[2], backgroundColor: color.accent, borderRadius: radius.pill, paddingHorizontal: space[3], paddingVertical: 6 },
+  premiumTag: { marginTop: space[2], backgroundColor: color.accent500, borderRadius: radius.pill, paddingHorizontal: space[3], paddingVertical: 6 },
   premiumTxt: { fontFamily: font.body, fontSize: font.size.sm, fontWeight: font.weight.bold, color: color.ink900 },
   section: { fontFamily: font.body, fontSize: font.size.md, fontWeight: font.weight.bold, color: color.ink700, marginTop: space[2], marginBottom: space[1] },
   benefit: { flexDirection: 'row', gap: space[3], alignItems: 'flex-start', paddingTop: space[2] },

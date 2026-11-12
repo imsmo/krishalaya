@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   intro: { backgroundColor: color.primary50 },
   heading: { fontFamily: font.display, fontSize: font.size.lg, fontWeight: font.weight.bold, color: color.ink900 },
   note: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink600, marginTop: space[2], lineHeight: font.size.sm * 1.5 },
-  incentive: { flexDirection: 'row', alignItems: 'center', gap: space[3], backgroundColor: color.accent, borderRadius: radius.lg, padding: space[3] },
+  incentive: { flexDirection: 'row', alignItems: 'center', gap: space[3], backgroundColor: color.accent500, borderRadius: radius.lg, padding: space[3] },
   incIcon: { fontSize: 24 },
   incTxt: { flex: 1, fontFamily: font.body, fontSize: font.size.sm, fontWeight: font.weight.semibold, color: color.ink900, lineHeight: font.size.sm * 1.5 },
   section: { fontFamily: font.body, fontSize: font.size.md, fontWeight: font.weight.bold, color: color.ink700, marginTop: space[2] },

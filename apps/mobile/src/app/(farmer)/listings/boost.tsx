@@ -178,7 +178,7 @@ export default function BoostListing() {
   );
 }
 
-type T = (k: string, p?: Record<string, unknown>) => string;
+type T = (k: string, p?: Record<string, string | number>) => string;
 function areaKey(kind: TierKind): string { return `boost.area.${kind}`; }
 /** The static per-kind feature bullets (presentation copy), split from a newline-joined i18n string. */
 function featLines(t: T, kind: TierKind): string[] {

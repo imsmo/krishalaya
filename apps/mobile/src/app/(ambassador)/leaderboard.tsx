@@ -116,7 +116,7 @@ export default function Leaderboard() {
 
 function Row({ entry, mine, lang, t }: { entry: LeaderboardEntry; mine: boolean; lang: string; t: (k: string, v?: Record<string, string | number>) => string }) {
   return (
-    <Card style={[styles.row, mine && styles.mineRow]}>
+    <Card style={StyleSheet.flatten([styles.row, mine && styles.mineRow])}>
       <Text style={styles.rank}>{entry.rank}</Text>
       <View style={{ flex: 1 }}>
         <View style={styles.nameRow}>
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   scopeNote: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink500, fontStyle: 'italic' },
   podium: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: space[2] },
   podCol: { flex: 1, alignItems: 'center', backgroundColor: color.primary50, borderRadius: radius.lg, paddingVertical: space[3], gap: 2 },
-  podFirst: { backgroundColor: color.accent, paddingVertical: space[4] },
+  podFirst: { backgroundColor: color.accent500, paddingVertical: space[4] },
   podMedal: { fontSize: 28 },
   podName: { fontFamily: font.body, fontSize: font.size.xs, fontWeight: font.weight.semibold, color: color.ink800, maxWidth: '100%' },
   podEvents: { fontFamily: font.display, fontSize: font.size.lg, fontWeight: font.weight.bold, color: color.ink900 },

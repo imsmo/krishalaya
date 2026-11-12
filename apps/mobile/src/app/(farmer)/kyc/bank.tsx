@@ -86,7 +86,7 @@ export default function AddBankAccount() {
           <Input label={t('kycBank.confirmLabel')} value={confirm} onChangeText={(v) => { setConfirm(normalizeAccountNumber(v)); if (error) setError(undefined); }} keyboardType="number-pad" maxLength={18} />
 
           <View style={styles.gap} />
-          <Input label={t('kycBank.ifscLabel')} value={ifsc} onChangeText={(v) => { setIfsc(normalizeIfsc(v)); if (error) setError(undefined); }} autoCapitalize="characters" maxLength={11} placeholder="SBIN0001247" />
+          <Input label={t('kycBank.ifscLabel')} value={ifsc} onChangeText={(v) => { setIfsc(normalizeIfsc(v)); if (error) setError(undefined); }} maxLength={11} placeholder="SBIN0001247" />
           {/* §13: real bank CODE from the IFSC, not a fabricated brand + branch name. */}
           {ifscValid && bankCode ? <Text style={styles.ifscOk}>{t('kycBank.ifscOk', { code: isolate(bankCode, lang) })}</Text> : null}
 

@@ -82,7 +82,7 @@ export default function BankAccounts() {
           {/* Add UPI */}
           <Card style={styles.form}>
             <Text style={styles.h}>{t('profile.bank.addUpi')}</Text>
-            <Input label={t('profile.bank.upiId')} value={upiId} onChangeText={setUpiId} autoCapitalize="none" keyboardType="email-address" maxLength={100} error={error} placeholder="name@bank" />
+            <Input label={t('profile.bank.upiId')} value={upiId} onChangeText={setUpiId} keyboardType="email-address" maxLength={100} error={error} placeholder="name@bank" />
             <Input label={t('profile.bank.holder')} value={holderName} onChangeText={setHolderName} maxLength={200} />
             <View style={{ marginTop: space[2] }}><Button title={t('profile.bank.add')} loading={saving} onPress={add} /></View>
             <Text style={styles.note}>{t('profile.bank.bankNote')}</Text>

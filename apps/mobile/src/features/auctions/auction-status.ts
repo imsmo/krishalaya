@@ -253,7 +253,7 @@ export function walletCoversHold(availableMinor: string, holdMinor: string): boo
  * the 👑. These count what the loaded history page exposes (the server is the authority on auction-wide totals);
  * `topBidderId` is the highest VISIBLE non-masked bid's bidder. Pure. */
 export function bidStats(bids: BidHistoryItem[]): { bidders: number; bids: number; topBidderId: string | null } {
-  const ids = new Set<string>();
+  const ids = new Set<string | null>(); // bidderUserId is null on a masked row (TSC-1: type matches the runtime)
   for (const b of bids) ids.add(b.bidderUserId);
   const top = bids.find((b) => b.amountMinor != null) ?? null;
   return { bidders: ids.size, bids: bids.length, topBidderId: top ? top.bidderUserId : null };

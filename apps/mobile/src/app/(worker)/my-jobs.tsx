@@ -90,7 +90,7 @@ export default function MyJobs() {
   );
 }
 
-function JobCard({ job, lookups, lang, t, onActive }: { job: ScheduledJob; lookups: LabourLookups | null; lang: string; t: (k: string, v?: Record<string, unknown>) => string; onActive: (id: string) => void }) {
+function JobCard({ job, lookups, lang, t, onActive }: { job: ScheduledJob; lookups: LabourLookups | null; lang: string; t: (k: string, v?: Record<string, string | number>) => string; onActive: (id: string) => void }) {
   const { assignment, booking } = job;
   const label = booking ? skillLabel(booking, lookups) : null;
   const active = isActiveNow(job);

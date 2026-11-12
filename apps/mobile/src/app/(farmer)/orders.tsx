@@ -265,7 +265,7 @@ export default function Orders() {
 }
 
 function OrderCard({ item, role, t, lang, busyPay, onOpen, onCta }: {
-  item: OrderListItem; role: OrderRole; t: (k: string, p?: Record<string, unknown>) => string; lang: string; busyPay: boolean;
+  item: OrderListItem; role: OrderRole; t: (k: string, p?: Record<string, string | number>) => string; lang: string; busyPay: boolean;
   onOpen: () => void; onCta: (o: OrderListItem, cta: OrderListCta) => void;
 }) {
   const cta = orderListCta(item.status, role);
@@ -312,7 +312,7 @@ function OrderCard({ item, role, t, lang, busyPay, onOpen, onCta }: {
         {cta ? (
           <Button
             title={t(`orders.cta.${cta}`)}
-            size="sm"
+            size="md"
             variant={cta === 'pay' ? 'accent' : cta === 'track' ? 'outline' : 'ghost'}
             loading={cta === 'pay' && busyPay}
             onPress={() => onCta(item, cta)}

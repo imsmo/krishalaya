@@ -53,7 +53,7 @@ export default function VoiceSearch() {
 
       {/* Typed fallback + search */}
       <Card>
-        <Input label={t('content.search.label')} value={voice.listening ? voice.transcript : typed} onChangeText={setTyped} placeholder={t('content.voiceSearch.placeholder')} returnKeyType="search" onSubmitEditing={() => run()} />
+        <Input label={t('content.search.label')} value={voice.listening ? voice.transcript : typed} onChangeText={setTyped} placeholder={t('content.voiceSearch.placeholder')} />
         <View style={{ marginTop: space[2] }}><Button title={t('content.voiceSearch.search')} disabled={!normalizeQuery(query)} onPress={() => run()} /></View>
       </Card>
 

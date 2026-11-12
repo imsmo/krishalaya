@@ -12,8 +12,16 @@ export interface SttHandlers {
   onError?: (message: string) => void;
 }
 
+/** True for the recognizer's "available" answer in either shape it arrives in (1 or true). Pure. */
+export function availabilityIsYes(answer: unknown): boolean {
+  return answer === 1 || answer === true;
+}
+
 export async function isSttAvailable(): Promise<boolean> {
-  try { return await Voice.isAvailable() === 1 || (await Voice.isAvailable()) === true; }
+  // TSC-1: the native module answers a BOOLEAN on iOS and Android (Voice.m `@[@true]`, VoiceModule.java `Boolean`) although
+  // the package types it 0 | 1. The old line compared the typed number to `true` and, on a boolean answer, asked the
+  // recognizer TWICE (each iOS ask is an authorization request). Ask once; accept either shape.
+  try { return availabilityIsYes(await Voice.isAvailable()); }
   catch { return false; }
 }
 

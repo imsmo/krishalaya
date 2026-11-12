@@ -119,7 +119,7 @@ export default function AmbassadorWithdraw() {
           {/* Amount + quick chips */}
           <View>
             <Text style={styles.section}>{t('ambWithdraw.amount')}</Text>
-            <Input value={rupees} onChangeText={setRupees} keyboardType="number-pad" maxLength={7} placeholder="₹0" error={error} accessibilityLabel={t('ambWithdraw.amount')} />
+            <Input value={rupees} onChangeText={setRupees} keyboardType="number-pad" maxLength={7} placeholder="₹0" error={error} />
             <View style={styles.chipRow}>
               {PRESET_RUPEES.map((r) => (
                 <Pressable key={r} onPress={() => setRupees(String(r))} accessibilityRole="button" style={styles.chip}>
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   acctOn: { borderColor: color.primary600, backgroundColor: color.primary50 },
   acctPrimary: { fontFamily: font.body, fontSize: font.size.md, fontWeight: font.weight.semibold, color: color.ink800 },
   acctPrimaryOn: { color: color.primary800 },
-  acctLine: { fontFamily: font.mono ?? font.body, fontSize: font.size.sm, color: color.ink700, letterSpacing: 1 },
+  acctLine: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink700, letterSpacing: 1 },
   acctSub: { fontFamily: font.body, fontSize: font.size.xs, color: color.ink500 },
   primary: { fontFamily: font.body, fontSize: font.size.xs, color: color.primary700 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2], marginTop: space[2] },

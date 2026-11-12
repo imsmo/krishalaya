@@ -62,7 +62,7 @@ export function weatherSeverityTone(severity: string): PillTone {
 
 /** Whether a weather advisory is currently in effect (UX; the server's activeOnly filter is authoritative).
  * `now` is injectable for testing. */
-export function isAdvisoryActive(a: Pick<WeatherAlert, 'validFrom' | 'validTo'>, now: number = Date.now()): boolean {
+export function isAdvisoryActive(a: Partial<Pick<WeatherAlert, 'validFrom' | 'validTo'>>, now: number = Date.now()): boolean {
   const from = a.validFrom ? Date.parse(a.validFrom) : NaN;
   const to = a.validTo ? Date.parse(a.validTo) : NaN;
   if (!Number.isNaN(from) && now < from) return false;

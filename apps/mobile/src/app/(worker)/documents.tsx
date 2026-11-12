@@ -112,7 +112,7 @@ export default function WorkerDocuments() {
   );
 }
 
-function DocLine({ row, last, onAdd, t }: { row: DocRow; last: boolean; onAdd: () => void; t: (k: string, v?: Record<string, unknown>) => string }) {
+function DocLine({ row, last, onAdd, t }: { row: DocRow; last: boolean; onAdd: () => void; t: (k: string, v?: Record<string, string | number>) => string }) {
   const sub = row.present && row.docNoMasked ? row.docNoMasked : row.present ? t(`workerDocs.status.${row.status ?? 'pending'}`) : t('workerDocs.notAdded');
   return (
     <Row icon={docEmoji(row.code)} title={row.name} sub={sub} last={last}

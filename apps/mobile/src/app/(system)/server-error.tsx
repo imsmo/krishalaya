@@ -54,6 +54,8 @@ export default function ServerError() {
 }
 
 const styles = StyleSheet.create({
+  // TSC-1: was referenced by the footer but never defined (the two buttons stacked unstyled) — the sibling system screens' footer.
+  footer: { flexDirection: 'row', gap: space[3] },
   hero: { alignItems: 'center', gap: space[2], padding: space[5], borderRadius: radius.lg, backgroundColor: color.dangerLight, marginBottom: space[2] },
   heroIcon: { fontSize: 48 },
   heroTitle: { fontFamily: font.display, fontSize: font.size.xl, fontWeight: font.weight.bold, color: color.ink900, textAlign: 'center' },

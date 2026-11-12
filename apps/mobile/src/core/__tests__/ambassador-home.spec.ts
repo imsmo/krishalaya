@@ -1,8 +1,9 @@
 // Unit tests for the PURE Ambassador-Home logic (features/ambassador/ambassador-home) behind screen 86.
 import { referralsThisMonth, pendingReferrals, myRank, personInitials, FARMER_TABS, filterReferralsByTab, farmerTabCounts, sortByRank, onboardsToReachTop, tenureYears } from '../../features/ambassador/ambassador-home';
+import type { LeaderboardEntry } from '@krishalaya/sdk-js';
 
 const r = (id: string, status: string, createdAt?: string) => ({ id, referrerUserId: 'me', refereeUserId: null, code: id, status, createdAt } as never);
-const lb = (userId: string, rank: number, events: number, earnedMinor = '0') => ({ ambassadorId: 'amb-' + userId, userId, tierId: null, earnedMinor, events, rank } as never);
+const lb = (userId: string, rank: number, events: number, earnedMinor = '0'): LeaderboardEntry => ({ ambassadorId: 'amb-' + userId, userId, tierId: null, earnedMinor, events, rank } as LeaderboardEntry);
 
 describe('sortByRank', () => {
   it('sorts ascending by server rank without mutating input', () => {

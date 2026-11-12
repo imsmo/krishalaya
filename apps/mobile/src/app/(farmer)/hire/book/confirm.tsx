@@ -15,13 +15,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { SdkError, type CreateBookingInput, type WorkerProfile, type LabourLookups } from '@krishalaya/sdk-js';
+import { SdkError, type CreateBookingInput, type LabourLookups } from '@krishalaya/sdk-js';
 import { Button, Card, EmptyState, MoneyText, Toggle, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { formatDate } from '@krishalaya/i18n';
 import { useTranslation } from '../../../../core/i18n/useTranslation';
 import { useFlag } from '../../../../core/flags/useFlag';
 import { useSecureScreen } from '../../../../core/security/screen-guard';
 import { createBooking, assignWorker, getWorker, labourLookups } from '../../../../features/labour/hire.api';
+import type { HireWorker } from '../../../../features/labour/hire-browse';
 import { walletBalance } from '../../../../features/wallet/wallet.api';
 import { PAYMENT_METHODS, type PaymentMethod, walletSufficient, confirmFeeLines, committedWageMinor, canConfirm } from '../../../../features/labour/book-confirm';
 import { moneyText } from '../../../../core/i18n/money';
@@ -35,7 +36,7 @@ export default function BookConfirm() {
   const enabled = useFlag('labour_hire');
 
   const input: CreateBookingInput | null = React.useMemo(() => { try { return inputJson ? JSON.parse(inputJson) : null; } catch { return null; } }, [inputJson]);
-  const [worker, setWorker] = useState<WorkerProfile | null>(null);
+  const [worker, setWorker] = useState<HireWorker | null>(null);
   const [lookups, setLookups] = useState<LabourLookups | null>(null);
   const [balanceMinor, setBalanceMinor] = useState<string | null>(null);
   const [method, setMethod] = useState<PaymentMethod>('upi'); // default = pay-on-completion (the honest labour path)
@@ -108,7 +109,8 @@ export default function BookConfirm() {
                   </Text>
                 ) : null}
               </View>
-              {worker?.ageVerified18 ? <StatusPill label={t('bookConfirm.verified')} tone="success" /> : null}
+              {/* TSC-1: the employer card's flag is `ageVerified` (ageVerified18 is the worker's own profile) — the pill never showed. */}
+              {worker?.ageVerified ? <StatusPill label={t('bookConfirm.verified')} tone="success" /> : null}
             </View>
           </Card>
 

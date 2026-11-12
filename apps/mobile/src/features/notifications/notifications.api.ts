@@ -48,7 +48,7 @@ export async function markAllRead(ids: string[]): Promise<void> {
 export async function getPreferences(): Promise<NotificationPreference[]> {
   try { return await apiClient().notifications.getPreferences(); } catch { return []; }
 }
-export async function setPreferences(preferences: NotificationPreference[]): Promise<NotificationPreference[]> {
+export async function setPreferences(preferences: NotificationPreference[]): Promise<{ updated: number }> {
   return apiClient().notifications.setPreferences(preferences);
 }
 export async function getQuietHours(): Promise<QuietHours | null> {

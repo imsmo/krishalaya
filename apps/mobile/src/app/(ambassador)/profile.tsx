@@ -9,7 +9,7 @@
 // FPO"), Coverage shows the real region count (no km), and Achievements is generic (no fabricated "8 badges").
 // Farmers/this-month/tenure/earnings/bank/training-progress are all derived live from the caller's own data.
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import type { AmbassadorProfile, AmbassadorEarning, Referral, Enrollment, BankAccount } from '@krishalaya/sdk-js';
 import { LANGUAGES } from '@krishalaya/i18n';
@@ -22,7 +22,8 @@ import { config } from '../../core/config';
 import { myProfile, listReferrals, myEarnings } from '../../features/ambassador/ambassador.api';
 import { myEnrollments } from '../../features/education/education.api';
 import { myBankAccounts } from '../../features/profile/profile.api';
-import { personInitials, referralFunnel, referralsThisMonth, tenureYears } from '../../features/ambassador/ambassador-home';
+import { personInitials, referralsThisMonth, tenureYears } from '../../features/ambassador/ambassador-home';
+import { referralFunnel } from '../../features/ambassador/referral-flow'; // TSC-1: lives here, not in ambassador-home
 import { withdrawableMinor } from '../../features/ambassador/commissions-summary';
 import { bankLabel } from '../../features/profile/profile';
 import { moneyText } from '../../core/i18n/money';

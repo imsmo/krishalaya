@@ -68,7 +68,7 @@ export default function LanguageSwitcher() {
           const on = code === chosen;
           return (
             <Pressable key={code} onPress={() => setLanguage(code)} accessibilityRole="button" accessibilityState={{ selected: on }}>
-              <Card style={[styles.card, on && styles.cardOn]}>
+              <Card style={StyleSheet.flatten([styles.card, on && styles.cardOn])}>
                 <View style={styles.row}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.name}>{l.nameNative}</Text>

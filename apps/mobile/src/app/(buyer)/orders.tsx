@@ -99,9 +99,9 @@ export default function BuyerOrders() {
                     // guard returned before setLoading(false) ever ran, leaving the screen on its initial
                     // loading=true forever (an infinite skeleton). '/(buyer)/orders/[id]' below correctly uses
                     // `id` — only this `track` push had the wrong key.
-                    <View style={{ minWidth: 96 }}><Button title={t('buyer.orders.track')} variant="outline" size="sm" onPress={() => router.push({ pathname: '/(buyer)/orders/track', params: { orderId: item.id } })} /></View>
+                    <View style={{ minWidth: 96 }}><Button title={t('buyer.orders.track')} variant="outline" size="md" onPress={() => router.push({ pathname: '/(buyer)/orders/track', params: { orderId: item.id } })} /></View>
                   ) : (
-                    <View style={{ minWidth: 96 }}><Button title={t('buyer.orders.detail')} variant="ghost" size="sm" onPress={() => router.push({ pathname: '/(buyer)/orders/[id]', params: { id: item.id } })} /></View>
+                    <View style={{ minWidth: 96 }}><Button title={t('buyer.orders.detail')} variant="ghost" size="md" onPress={() => router.push({ pathname: '/(buyer)/orders/[id]', params: { id: item.id } })} /></View>
                   )}
                 </View>
               </Pressable>
