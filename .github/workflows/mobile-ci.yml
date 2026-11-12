@@ -32,7 +32,7 @@ jobs:
         run: npm run -w apps/mobile test -- --ci && npm run -w packages/sdk-js test -- --ci
       - name: Dependency audit (production deps, fail on high+)
         run: npm audit --omit=dev --audit-level=high
-      - name: Bundle-size budget (Hermes bytecode < 30 MB)
+      - name: Hermes bytecode as shipped ≤ 6,000 KB
         run: node apps/mobile/scripts/check-bundle-size.mjs
 
   e2e:

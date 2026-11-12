@@ -8,9 +8,7 @@ import { Slot } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { useFonts, Fraunces_700Bold } from '@expo-google-fonts/fraunces';
-import { PlusJakartaSans_400Regular, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold } from '@expo-google-fonts/plus-jakarta-sans';
-import { Hind_400Regular, Hind_600SemiBold } from '@expo-google-fonts/hind';
+import { useFonts } from 'expo-font';
 import { color, OfflineBanner } from '@krishalaya/ui-native';
 import { AuthProvider } from '../core/auth/auth.store';
 import { AppErrorBoundary } from '../core/errors/AppErrorBoundary';
@@ -27,6 +25,20 @@ import { statusBarStyleFor } from '../core/mechanisms/theme';
 import { MachineDraftBanner, LanguageRestartNotice } from '../core/i18n/LanguageShell';
 import '../core/offline/handlers'; // register offline replay handlers (media.upload, listing.create)
 import '../core/config'; // fail-closed env validation at boot
+
+// PC-56 BUNDLE-1a: ONLY the 6 faces the app uses, each `require`d by file. Importing them from an @expo-google-fonts
+// package index made every weight of every family ship (Metro doesn't tree-shake: 37 TTFs, ~4.15 MB); by file, 6 ship.
+// The keys are the fontFamily names ui-native's `font` tokens use — unchanged (pinned by core spec bundle1a-size-and-fonts).
+/* eslint-disable no-restricted-syntax -- a font asset is a Metro `require` of the file; an ES import of a .ttf has no type */
+const FONT_FACES = {
+  Fraunces: require('@expo-google-fonts/fraunces/Fraunces_700Bold.ttf'),
+  PlusJakartaSans: require('@expo-google-fonts/plus-jakarta-sans/PlusJakartaSans_400Regular.ttf'),
+  PlusJakartaSans_Semibold: require('@expo-google-fonts/plus-jakarta-sans/PlusJakartaSans_600SemiBold.ttf'),
+  PlusJakartaSans_Bold: require('@expo-google-fonts/plus-jakarta-sans/PlusJakartaSans_700Bold.ttf'),
+  Hind: require('@expo-google-fonts/hind/Hind_400Regular.ttf'),
+  Hind_Semibold: require('@expo-google-fonts/hind/Hind_600SemiBold.ttf'),
+};
+/* eslint-enable no-restricted-syntax */
 
 function ConnectivityBanner() {
   const online = useConnectivity();
@@ -45,14 +57,7 @@ function ConnectivityBanner() {
 export default function RootLayout() {
   // `error` matters as much as `loaded`: if a font asset can't be fetched (e.g. a Metro/pnpm asset hiccup in
   // Expo Go), we must still render — falling back to the system font — rather than hang forever on the splash.
-  const [fontsLoaded, fontError] = useFonts({
-    Fraunces: Fraunces_700Bold,
-    PlusJakartaSans: PlusJakartaSans_400Regular,
-    PlusJakartaSans_Semibold: PlusJakartaSans_600SemiBold,
-    PlusJakartaSans_Bold: PlusJakartaSans_700Bold,
-    Hind: Hind_400Regular,
-    Hind_Semibold: Hind_600SemiBold,
-  });
+  const [fontsLoaded, fontError] = useFonts(FONT_FACES);
 
   // DEV-20: resolved color-scheme drives the OS status-bar icon color (the one real, canon-independent effect —
   // see core/mechanisms/theme.ts's own header for why this does NOT yet repaint any screen).
