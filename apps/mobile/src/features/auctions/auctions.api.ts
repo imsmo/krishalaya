@@ -35,7 +35,11 @@ export function placeBid(auctionId: string, amountMinor: string): Promise<PlaceB
 export function createAuction(input: { listingId: string; kind?: 'english_open' | 'sealed'; startPriceMinor: string; reservePriceMinor?: string; minIncrementMinor?: string; startsAt: string; endsAt: string }): Promise<CreateAuctionResult> {
   return apiClient().auctions.create(input, newId());
 }
-export function cancelAuction(id: string): Promise<{ auctionId: string; status: string; notified: number }> { return apiClient().auctions.cancel(id); }
+/** Stop (cancel) an auction before it goes live. PC-56 TSC-1b (F-3): the server requires a REASON (3–300 characters, sent to
+ * bidders and audited); the screen validates it with `checkStopReason` first. Throws on a real error. */
+export function cancelAuction(id: string, reason: string): Promise<{ auctionId: string; status: string; notified: number }> {
+  return apiClient().auctions.cancel(id, reason);
+}
 
 // --- watch / follow (P1-7) — any authed member may watch an auction in their tenant; watchers are notified when it
 // closes (server-side, via the notification spine). Reads degrade-never-die; the toggle mutations throw so the

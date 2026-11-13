@@ -1,7 +1,9 @@
 // apps/mobile/src/app/(farmer)/auction/[id].tsx · screen 65 "Your Auction" (SELLER live view). Thin screen (guide
 // §3): the seller watches their own live auction — a gold hero (current highest bid, % above reserve, bidder/bid
 // counts), a HH:MM:SS countdown (ticks locally, data POLLS every 4s), a stats strip, and the Top Bids list. The
-// seller may Share or Stop Early (cancel — idempotent on the server, which authorises ownership). Behind
+// seller may Share or Stop Early (cancel — idempotent on the server, which authorises ownership). PC-56 TSC-1b (F-3,
+// founder: "Before live, with a reason"): Stop Early is offered ONLY while the auction is `scheduled` (the seller cannot stop
+// a live one — that is admin-only on the server) and asks for the 3–300 character reason the server requires. Behind
 // `auctions`. Degrade-never-die: not-found/failure → EmptyState + retry.
 // §13 gaps (no contract → rendered honestly, never faked):
 //  • "Viewers 340": there is no viewer-count read-model → shown as coming-soon, never a fabricated number.
@@ -13,13 +15,13 @@ import { View, Text, FlatList, Pressable, StyleSheet, Alert, Share } from 'react
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { Auction, BidHistoryItem } from '@krishalaya/sdk-js';
-import { Button, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
+import { Button, EmptyState, Input, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { formatRelative } from '@krishalaya/i18n';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { useAuth } from '../../../core/auth/auth.store';
 import { getAuction, bidHistory, cancelAuction } from '../../../features/auctions/auctions.api';
-import { currentPriceMinor, bidStats, timeLeft, formatClock, pctAboveReserve, isBiddable } from '../../../features/auctions/auction-status';
+import { currentPriceMinor, bidStats, timeLeft, formatClock, pctAboveReserve, isBiddable, canStopEarly, checkStopReason, STOP_REASON_MAX } from '../../../features/auctions/auction-status';
 
 const POLL_MS = 4000;
 
@@ -36,6 +38,9 @@ export default function YourAuction() {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [stopping, setStopping] = useState(false);
+  const [asking, setAsking] = useState(false);
+  const [reason, setReason] = useState('');
+  const [reasonError, setReasonError] = useState<string | undefined>();
   const poll = useRef<ReturnType<typeof setInterval> | null>(null);
   const tick = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -62,27 +67,37 @@ export default function YourAuction() {
   const left = auction ? timeLeft(auction.endsAt, now) : { ended: true, totalMs: 0, days: 0, hours: 0, minutes: 0 };
   const pct = auction ? pctAboveReserve(current, auction.reservePriceMinor) : null;
   const live = !!auction && isBiddable(auction.status);
+  const stoppable = !!auction && canStopEarly(auction.status);
 
   const onShare = async () => { try { await Share.share({ message: t('yourAuction.shareMsg') }); } catch { /* user cancelled */ } };
-  const onStop = () => {
+  const onStop = () => { setReason(''); setReasonError(undefined); setAsking(true); };
+  const onCloseStop = () => { setAsking(false); setReasonError(undefined); };
+  const onConfirmStop = async () => {
     if (!id) return;
-    Alert.alert(t('yourAuction.stopTitle'), t('yourAuction.stopBody'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('yourAuction.stopConfirm'), style: 'destructive', onPress: async () => {
-        setStopping(true);
-        try { await cancelAuction(id); await refresh(); }
-        catch (e) { Alert.alert(t('yourAuction.title'), e instanceof SdkError && e.isForbidden ? t('yourAuction.stopNotAllowed') : t('yourAuction.stopFailed')); }
-        finally { setStopping(false); }
-      } },
-    ]);
+    const check = checkStopReason(reason);
+    if (!check.ok) { setReasonError(t('yourAuction.stopReasonShort')); return; }
+    setStopping(true);
+    try { await cancelAuction(id, check.reason); setAsking(false); await refresh(); }
+    catch (e) { Alert.alert(t('yourAuction.title'), e instanceof SdkError && e.isForbidden ? t('yourAuction.stopNotAllowed') : t('yourAuction.stopFailed')); }
+    finally { setStopping(false); }
   };
 
-  const footer = auction ? (
+  const footer = !auction ? undefined : asking && stoppable ? (
+    <View style={styles.stopPanel}>
+      <Text style={styles.stopTitle}>{t('yourAuction.stopTitle')}</Text>
+      <Text style={styles.stopBody}>{t('yourAuction.stopBodyBefore')}</Text>
+      <Input label={t('yourAuction.stopReason')} value={reason} onChangeText={(v) => { setReason(v); setReasonError(undefined); }} maxLength={STOP_REASON_MAX} multiline error={reasonError} testID="stop-reason" />
+      <View style={styles.ctaBar}>
+        <View style={{ flex: 1 }}><Button title={t('common.cancel')} variant="outline" onPress={onCloseStop} disabled={stopping} /></View>
+        <View style={{ flex: 1 }}><Button title={t('yourAuction.stopConfirm')} variant="danger" loading={stopping} onPress={onConfirmStop} /></View>
+      </View>
+    </View>
+  ) : (
     <View style={styles.ctaBar}>
       <View style={{ flex: 1 }}><Button title={t('yourAuction.share')} variant="outline" onPress={onShare} /></View>
-      {live ? <Button title={t('yourAuction.stopEarly')} variant="danger" loading={stopping} onPress={onStop} /> : null}
+      {stoppable ? <Button title={t('yourAuction.stopEarly')} variant="danger" loading={stopping} onPress={onStop} /> : null}
     </View>
-  ) : undefined;
+  );
 
   return (
     <ScreenScaffold title={t('yourAuction.title')} scroll={false} footer={footer}>
@@ -182,4 +197,7 @@ const styles = StyleSheet.create({
   bidTime: { fontFamily: font.body, fontSize: 11, color: color.ink500, marginTop: 1 },
   sealed: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink400 },
   ctaBar: { flexDirection: 'row', gap: space[2] },
+  stopPanel: { gap: space[2] },
+  stopTitle: { fontFamily: font.display, fontSize: font.size.md, fontWeight: font.weight.bold, color: color.ink800 },
+  stopBody: { fontFamily: font.body, fontSize: font.size.sm, color: color.ink600 },
 });

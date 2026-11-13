@@ -22,6 +22,27 @@ export function isBiddable(status: string): boolean {
   return status === 'live' || status === 'extended';
 }
 
+// --- PC-56 TSC-1b (F-3, founder: "Before live, with a reason") · stop an auction early ---
+// The server (apps/api auctions AuctionService.cancel) lets the SELLER cancel only a `scheduled` auction; `live` / `extended`
+// need the tenant-admin permission auction.cancel_live, and `awaiting_approval` comes AFTER bidding (it is the seller's
+// decline of the result, not a stop). So the seller's "Stop early" is offered only while the auction is `scheduled`.
+/** The statuses in which the seller may stop the auction themselves (before it goes live). */
+export const STOP_EARLY_STATUSES: readonly string[] = Object.freeze(['scheduled']);
+export function canStopEarly(status: string): boolean {
+  return STOP_EARLY_STATUSES.includes(status);
+}
+/** The server's reason limits (apps/api auctions dto/auction-act.dto.ts + domain/display.ts cleanReason): 3–300 after trim. */
+export const STOP_REASON_MIN = 3;
+export const STOP_REASON_MAX = 300;
+export type StopReasonCheck = { ok: true; reason: string } | { ok: false; why: 'short' | 'long' };
+/** Validate the typed reason as the server will: trimmed, 3–300 characters. Returns the trimmed reason to send. */
+export function checkStopReason(raw: string | null | undefined): StopReasonCheck {
+  const reason = typeof raw === 'string' ? raw.trim() : '';
+  if (reason.length < STOP_REASON_MIN) return { ok: false, why: 'short' };
+  if (reason.length > STOP_REASON_MAX) return { ok: false, why: 'long' };
+  return { ok: true, reason };
+}
+
 /** The current price = the highest visible bid (history is newest-first; the latest bid is the highest in an
  * english auction), else the auction's start price. Ignores masked (null) amounts. All bigint minor strings. */
 export function currentPriceMinor(auction: Pick<Auction, 'startPriceMinor'>, bids: BidHistoryItem[]): string {

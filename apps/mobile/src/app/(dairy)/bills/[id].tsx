@@ -37,7 +37,11 @@ export default function BillDetail() {
           </View>
           {row(t('dairyapp.billDetail.litres'), <Text style={styles.value}>{bill.totalLitres}</Text>)}
           {row(t('dairyapp.billDetail.gross'), <MoneyText minor={bill.grossMinor} langCode={lang} size="md" />)}
-          {bill.deductions.map((d, i) => <React.Fragment key={`${d.type}-${i}`}>{row(`− ${d.type}`, <MoneyText minor={d.amountMinor} langCode={lang} size="sm" tone="negative" />)}</React.Fragment>)}
+          {/* PC-56 TSC-1b (F-2, founder: "One total deductions row"): the lines come only when the server loaded them; when they are
+              absent the bill still carries the total, shown as ONE "Deductions" row (never a crash, never a guessed split). */}
+          {bill.deductions
+            ? bill.deductions.map((d, i) => <React.Fragment key={`${d.type}-${i}`}>{row(`− ${d.type}`, <MoneyText minor={d.amountMinor} langCode={lang} size="sm" tone="negative" />)}</React.Fragment>)
+            : row(t('dairyapp.billDetail.deductions'), <MoneyText minor={bill.deductionsMinor} langCode={lang} size="sm" tone="negative" />)}
           {row(t('dairyapp.billDetail.net'), <MoneyText minor={bill.netMinor} langCode={lang} />)}
         </Card>
         {windowOpen && (

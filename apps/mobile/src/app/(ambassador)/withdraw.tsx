@@ -42,11 +42,16 @@ export default function AmbassadorWithdraw() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | undefined>();
+  // PC-56 TSC-1b (F-1, founder: "Wallet available balance"): the figure shown AND the withdraw limit are the wallet's
+  // `availableMinor` (the withdrawable amount; held money is excluded). A failed balance read is NOT ₹0 — the screen shows
+  // the unavailable line with a retry instead, so a read failure never looks like an empty wallet.
+  const [balanceFailed, setBalanceFailed] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     const [bal, accts] = await Promise.all([walletBalance(), listBankAccounts()]);
-    setBalanceMinor(bal.balanceMinor);
+    setBalanceMinor(bal.availableMinor);
+    setBalanceFailed(bal.failed);
     setAccounts(accts);
     setSelected((prev) => prev ?? accts.find((a) => a.isPrimary)?.id ?? accts[0]?.id ?? null);
     setLoading(false);
@@ -81,18 +86,20 @@ export default function AmbassadorWithdraw() {
     <ScreenScaffold
       title={t('ambWithdraw.title')}
       scroll
-      footer={accounts.length ? (
+      footer={accounts.length && !balanceFailed ? (
         <View style={styles.ctaRow}>
           <Button title={t('common.cancel')} variant="outline" onPress={() => router.back()} disabled={busy} />
           <View style={{ flex: 1.5 }}><Button title={submitLabel} onPress={onSubmit} loading={busy} disabled={!canSubmit} /></View>
         </View>
       ) : undefined}
     >
-      {loading ? <SkeletonCard lines={5} /> : accounts.length === 0 ? (
+      {loading ? <SkeletonCard lines={5} /> : balanceFailed ? (
+        <EmptyState title={t('wallet.unavailable')} message={t('common.retryHint')} actionLabel={t('common.retry')} onAction={load} />
+      ) : accounts.length === 0 ? (
         <EmptyState title={t('withdraw.noAccount.title')} message={t('withdraw.noAccount.message')} />
       ) : (
         <View style={{ gap: space[4] }}>
-          {/* Available balance (real wallet balance) */}
+          {/* Available balance (the wallet's withdrawable figure, availableMinor) */}
           <Card style={styles.balanceCard}>
             <Text style={styles.balanceLabel}>{t('ambWithdraw.available')}</Text>
             <MoneyText minor={balanceMinor} langCode={lang} size="2xl" tone="positive" />
