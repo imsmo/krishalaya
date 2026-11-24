@@ -1,6 +1,6 @@
 {
   "name": "@krishalaya/mobile",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Farmer/Buyer/Worker/Ambassador role-switching app — offline-first, vernacular, low-end devices.",
   "main": "expo-router/entry",
@@ -30,6 +30,7 @@
     "@krishalaya/ui-native": "workspace:*",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/netinfo": "12.0.1",
+    "@sentry/react-native": "~8.28.0",
     "expo": "~58.0.26",
     "expo-build-properties": "~58.0.12",
     "expo-constants": "~58.0.16",
@@ -47,8 +48,11 @@
     "expo-screen-capture": "~58.0.6",
     "expo-secure-store": "~58.0.3",
     "expo-speech-recognition": "~58.0.1",
+    "expo-splash-screen": "~58.0.14",
     "expo-sqlite": "~58.0.18",
     "expo-status-bar": "~58.0.5",
+    "expo-system-ui": "~58.0.7",
+    "expo-updates": "~58.0.22",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-native": "0.88.1",
@@ -70,6 +74,7 @@
     "jest": "^30.0.0",
     "jest-expo": "~58.0.15",
     "react-test-renderer": "19.3.0",
+    "sharp": "0.35.5",
     "ts-jest": "^29.4.15",
     "typescript": "^6.0.3"
   }

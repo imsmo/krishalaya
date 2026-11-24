@@ -11,14 +11,20 @@ export {
 export { captureError, addBreadcrumb, setCrashUser, sanitizeEvent, setCrashProvider, forceCrash, type CrashProvider } from './crash';
 export { SLOS, sloFor, meetsSlo, type SloTarget } from './slo';
 
-import { config } from '../config';
+export { sentryOptions, scrubSentryEvent, scrubSentryBreadcrumb, scrubText } from './sentry-scrub';
 
-/** Wire crash + analytics providers at boot. No-op unless a DSN is configured (release builds inject it). The
- * actual provider modules (Sentry, analytics SDK) are dynamically required so dev/tests/sandbox don't load native
- * deps. Always best-effort — observability must never break boot (Law 12). */
+import { config } from '../config';
+import { setCrashProvider } from './crash';
+
+/** Wire crash + analytics providers at boot. No-op unless a DSN is configured (release builds inject it). The Sentry
+ * provider module is required LAZILY so dev/tests/sandbox never load or initialise the native SDK (no DSN → no init → no
+ * network). Always best-effort — observability must never break boot (Law 12). Analytics stays provider-less until a
+ * consented analytics backend exists (STORE-LISTING.md declares no analytics collection). */
 export function initObservability(): void {
-  if (!config.sentryDsn && !config.analyticsEnabled) return;
-  // Providers are installed by the release bootstrap (CI/EAS), which calls setCrashProvider/setAnalyticsProvider
-  // with Sentry + the analytics SDK configured with redaction as beforeSend. Left as the integration point so the
-  // framework-free core stays testable + the offline sandbox never pulls native modules.
+  if (!config.sentryDsn) return;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires, no-restricted-syntax -- native SDK loaded only when a DSN is configured (see above)
+    const { installSentry } = require('./sentry.provider') as typeof import('./sentry.provider');
+    setCrashProvider(installSentry({ dsn: config.sentryDsn, appEnv: config.appEnv, appVersion: config.appVersion }));
+  } catch { /* crash reporting is best-effort; the app boots without it */ }
 }

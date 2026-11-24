@@ -3,5 +3,5 @@
 // The actual EAS build/submit + OTA publish + phased rollout live in eas.json + the CI workflows + RELEASE.md;
 // this module owns the runtime gate + the PURE decisions CI verifies.
 export { compareVersions, decideUpdate, setUpdateThresholds, effectiveMin, effectiveRecommended, type UpdateDecision } from './update-gate';
-export { shouldApplyOta, setOtaProvider, checkAndFetchOta, type OtaState, type OtaProvider } from './ota';
+export { shouldApplyOta, setOtaProvider, checkAndFetchOta, otaProviderFrom, installExpoOtaProvider, type OtaState, type OtaProvider, type UpdatesModuleLike } from './ota';
 export { ForcedUpdateGate } from './ForcedUpdateGate';

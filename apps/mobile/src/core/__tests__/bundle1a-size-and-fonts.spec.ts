@@ -52,9 +52,9 @@ describe('A · the gate counts what ships', () => {
   });
 
   it('the limit stays 6,000 KB (1 KB = 1,024 B); the env override still works', () => {
-    expect(lib.DEFAULT_BUDGET_KB).toBe(6500);   // MOB-SDK-1 (was 6,000 — see bundle-size-lib.cjs)
-    expect(lib.budgetKb(undefined)).toBe(6500);
-    expect(lib.budgetKb('')).toBe(6500);
+    expect(lib.DEFAULT_BUDGET_KB).toBe(8000);   // MOB-STORE-1 (6,000 → 6,500 MOB-SDK-1 → 8,000 Sentry — see bundle-size-lib.cjs)
+    expect(lib.budgetKb(undefined)).toBe(8000);
+    expect(lib.budgetKb('')).toBe(8000);
     expect(lib.budgetKb('7000')).toBe(7000);
     expect(lib.verdict(6000 * 1024, 6000)).toEqual({ kb: 6000, empty: false, over: false, overBy: 0 });
     expect(lib.verdict(6000 * 1024 + 600, 6000)).toEqual({ kb: 6001, empty: false, over: true, overBy: 1 });
@@ -87,7 +87,7 @@ describe('A · the gate counts what ships', () => {
 
   it('the CI step is labelled for what it measures and runs the gate', () => {
     const ci = fs.readFileSync(path.join(REPO, '.github/workflows/mobile-ci.yml'), 'utf8');
-    expect(ci).toMatch(/- name: Hermes bytecode as shipped ≤ 6,000 KB\n\s+run: node apps\/mobile\/scripts\/check-bundle-size\.mjs/);
+    expect(ci).toMatch(/- name: Hermes bytecode as shipped ≤ 8,000 KB\n\s+run: node apps\/mobile\/scripts\/check-bundle-size\.mjs/);
     expect(ci).not.toMatch(/30 MB/);
   });
 });

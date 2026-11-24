@@ -9,6 +9,8 @@
 # from the repo root, but app.config.ts and eas.json live in apps/mobile → those steps now run there. The release
 # gates now also run lint, matching mobile-ci. What each track does (build/submit/update/rollback, flags, secrets,
 # the production environment gate) is unchanged.
+# PC-56 MOB-STORE-1: expo-updates is now installed (the OTA track works), the source-map upload is real (EAS builder for
+# binaries, this runner for OTA bundles) and skipped with a warning when the Sentry token is absent.
 name: mobile-release
 
 on:
@@ -32,6 +34,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: ${{ github.event.inputs.profile }}   # required reviewers gate production
+    # MOB-STORE-1: app.config.ts reads these when `eas` evaluates it on this runner. EAS_PROJECT_ID (not a secret: the `eas init`
+    # id) builds updates.url + extra.eas.projectId; the SENTRY_* values gate the OTA source-map upload below. The BINARY build's
+    # upload runs on the EAS builder, from the same names set as EAS environment variables (docs/mobile/PUSH-SETUP.md).
+    env:
+      EAS_PROJECT_ID: ${{ vars.EAS_PROJECT_ID }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4            # version from package.json "packageManager"
@@ -58,12 +68,12 @@ jobs:
         if: ${{ github.event.inputs.action == 'binary-build' }}
         working-directory: apps/mobile
         run: eas build --platform all --profile ${{ github.event.inputs.profile }} --non-interactive
-      - name: Upload source maps (private) to crash service
-        if: ${{ github.event.inputs.action == 'binary-build' }}
-        working-directory: apps/mobile
-        run: npx sentry-expo-upload-sourcemaps dist || echo "sourcemap upload step (configured with SENTRY_AUTH_TOKEN)"
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      # MOB-STORE-1: a binary build's source maps are uploaded BY THE EAS BUILDER (the @sentry/react-native plugin's gradle /
+      # Xcode step, enabled when SENTRY_AUTH_TOKEN is an EAS secret) and never packed into the AAB/IPA. There is no local
+      # `dist` here, so the old `sentry-expo-upload-sourcemaps dist` after `eas build` could never upload anything.
+      - name: Crash reporting configured? (binary builds)
+        if: ${{ github.event.inputs.action == 'binary-build' && env.SENTRY_AUTH_TOKEN == '' }}
+        run: echo "::warning::SENTRY_AUTH_TOKEN is not set - release crashes will not be symbolicated (docs/mobile/PUSH-SETUP.md, Sentry section)."
       - name: Submit (production starts at 1% staged rollout)
         if: ${{ github.event.inputs.action == 'binary-build' }}
         working-directory: apps/mobile
@@ -73,6 +83,15 @@ jobs:
         if: ${{ github.event.inputs.action == 'ota-update' }}
         working-directory: apps/mobile
         run: eas update --channel ${{ github.event.inputs.profile }} --environment production --message "${{ github.sha }}" --non-interactive   # --environment is required since SDK 55; both beta and production build with EXPO_PUBLIC_APP_ENV=production (eas.json)
+      # The OTA bundle `eas update` just exported to apps/mobile/dist: upload its maps PRIVATELY (Debug IDs from the Sentry
+      # Metro config match them to crashes), then delete them so nothing else can pick them up. Skipped without the token.
+      - name: Upload OTA source maps (private) to Sentry
+        if: ${{ github.event.inputs.action == 'ota-update' && env.SENTRY_AUTH_TOKEN != '' }}
+        working-directory: apps/mobile
+        run: npx sentry-expo-upload-sourcemaps dist && find dist -name '*.map' -delete
+      - name: OTA source-map upload skipped
+        if: ${{ github.event.inputs.action == 'ota-update' && env.SENTRY_AUTH_TOKEN == '' }}
+        run: echo "::warning::SENTRY_AUTH_TOKEN is not set - OTA source maps not uploaded."
       - name: OTA rollback (revert to previous publish)
         if: ${{ github.event.inputs.action == 'ota-rollback' }}
         working-directory: apps/mobile

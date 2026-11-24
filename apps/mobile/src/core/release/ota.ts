@@ -32,3 +32,37 @@ export async function checkAndFetchOta(opts: { enabled: boolean; isCriticalFlow:
     return { staged: !!isNew };
   } catch { return { staged: false }; } // degrade-never-die — an OTA hiccup must never break the app
 }
+
+// --- the real expo-updates adapter (PC-56 MOB-STORE-1) ---
+/** The slice of `expo-updates` the provider uses (structural, so the core suite can pass a fake). */
+export interface UpdatesModuleLike {
+  isEnabled: boolean;
+  checkForUpdateAsync(): Promise<{ isAvailable: boolean }>;
+  fetchUpdateAsync(): Promise<{ isNew: boolean }>;
+  reloadAsync(): Promise<void>;
+}
+
+/** Adapt expo-updates to the OtaProvider port. Null when updates are off in this binary — dev client / Expo Go, or a build
+ * without an EAS project id (app.config `updates.enabled` false) — so checkAndFetchOta stays a no-op there. PURE. */
+export function otaProviderFrom(u: UpdatesModuleLike | null | undefined): OtaProvider | null {
+  if (!u || !u.isEnabled) return null;
+  return {
+    checkForUpdate: async () => ({ isAvailable: !!(await u.checkForUpdateAsync()).isAvailable }),
+    fetchUpdate: async () => ({ isNew: !!(await u.fetchUpdateAsync()).isNew }),
+    reload: () => u.reloadAsync(),
+  };
+}
+
+function loadExpoUpdates(): UpdatesModuleLike | null {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, no-restricted-syntax -- native module, loaded lazily inside try/catch so the module still loads where it isn't linked (tests/web) — Law 12
+  try { return require('expo-updates') as UpdatesModuleLike; } catch { return null; }
+}
+
+/** Boot wiring (root layout): install the expo-updates provider when this binary has updates enabled. Returns whether one
+ * was installed. The `ota_updates` flag is still checked on every checkAndFetchOta call (kill-switch for the JS re-check). */
+export function installExpoOtaProvider(load: () => UpdatesModuleLike | null = loadExpoUpdates): boolean {
+  let p: OtaProvider | null = null;
+  try { p = otaProviderFrom(load()); } catch { p = null; }
+  setOtaProvider(p);
+  return p != null;
+}

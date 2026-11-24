@@ -17,7 +17,8 @@ import { startSyncEngine } from '../core/offline/sync.engine';
 import { useConnectivity } from '../core/connectivity/connectivity';
 import { useTranslation } from '../core/i18n/useTranslation';
 import { initObservability, rotateCorrelationId, flushAnalytics } from '../core/observability';
-import { ForcedUpdateGate, checkAndFetchOta } from '../core/release';
+import { ForcedUpdateGate, checkAndFetchOta, installExpoOtaProvider } from '../core/release';
+import { PushRegistrar } from '../core/push/PushRegistrar';
 import { isEnabled } from '../core/flags/flags';
 import { hydrateMechanismPreferences } from '../core/mechanisms/mechanismStore.runtime';
 import { useThemeMode } from '../core/mechanisms/useThemeMode';
@@ -39,6 +40,10 @@ const FONT_FACES = {
   Hind_Semibold: require('@expo-google-fonts/hind/Hind_600SemiBold.ttf'),
 };
 /* eslint-enable no-restricted-syntax */
+
+// MOB-STORE-1: expo-updates behind the OTA port, installed at module load (before any effect — the ConnectivityBanner's first
+// check runs before this layout's own boot effect). Null provider when updates are off in this binary; never throws.
+installExpoOtaProvider();
 
 function ConnectivityBanner() {
   const online = useConnectivity();
@@ -86,6 +91,7 @@ export default function RootLayout() {
       <View style={{ flex: 1, backgroundColor: color.page }} onLayout={onLayout}>
         <StatusBar style={statusBarStyleFor(scheme)} />
         <AuthProvider>
+          <PushRegistrar />
           <ConnectivityBanner />
           <MachineDraftBanner />
           <LanguageRestartNotice />

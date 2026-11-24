@@ -1,5 +1,8 @@
 # Krishalaya Mobile — Store Compliance (P-32, Wave 11)
 
+> **Superseded for store submission by `docs/mobile/STORE-LISTING.md` (PC-56 MOB-STORE-1)** — the Play Data safety and App
+> Store privacy answers there are derived from the code + `app.config.ts` privacy manifest; where this file differs, that one wins.
+
 Play Store + App Store submission compliance (MOBILE_AI_AGENT_BUILD_GUIDE §8). This is the source of truth that
 the store data-safety / privacy forms must match what the app actually collects. Keep it in sync with the code
 (`core/observability/redact` defines what never leaves the device; `core/security` the FLAG_SECURE/PII handling).

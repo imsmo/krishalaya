@@ -25,8 +25,9 @@ function payloadOf(resp: Notifications.NotificationResponse): { payload: Record<
   return { payload: data, eventCode: String(data.eventCode ?? '') };
 }
 
-/** Start push: register + sync token + listen for taps. Returns a cleanup fn. */
-export async function startPush(): Promise<() => void> {
+/** Start push: register + sync token + listen for taps. Returns a cleanup fn. `getRole` is read at TAP time (the user may
+ * have switched role since registration) so the tap opens that role's screen. */
+export async function startPush(getRole: () => string | undefined = () => undefined): Promise<() => void> {
   const token = await registerForPush();
   if (token) void syncPushToken(token);
 
@@ -35,7 +36,7 @@ export async function startPush(): Promise<() => void> {
       const { payload, eventCode } = payloadOf(resp);
       // Narrow cast (TSC-1): the route comes from a push payload at runtime (allow-listed by SAFE_INTERNAL_PATH or mapped
       // from the event code), so it cannot be one of the typed-routes literals at compile time.
-      router.navigate(routeForNotification(payload, eventCode) as Href);
+      router.navigate(routeForNotification(payload, eventCode, getRole()) as Href);
     } catch { /* never crash on a malformed push */ }
   });
   return () => sub.remove();

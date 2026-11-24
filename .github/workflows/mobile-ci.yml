@@ -36,7 +36,7 @@ jobs:
         run: pnpm --filter @krishalaya/mobile lint
       - name: Unit tests (pure core + sdk)
         run: pnpm --filter @krishalaya/mobile test -- --ci && pnpm --filter @krishalaya/sdk-js test -- --ci
-      - name: Hermes bytecode as shipped ≤ 6,500 KB
+      - name: Hermes bytecode as shipped ≤ 8,000 KB
         run: node apps/mobile/scripts/check-bundle-size.mjs
       # Last, so a known advisory never hides the size check (PC-56 SEC-0). Still fails the job on high+.
       - name: Dependency audit (production deps, fail on high+)

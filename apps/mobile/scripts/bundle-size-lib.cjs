@@ -13,7 +13,10 @@ const APP_DIR = path.resolve(__dirname, '..');
  *  Play's API 36 target) grew the Hermes bundle 4,395 → 6,261 KB with NO new app code — the Hermes V1 compiler emits ~42%
  *  more bytecode for ~15% more source, and Expo Router 58 bundles its own React Navigation. 6,500 keeps ~4% headroom so the
  *  gate still catches real growth; it is a ceiling to lower again, not a target. */
-const DEFAULT_BUDGET_KB = 6500;
+// → 8,000 KB (PC-56 MOB-STORE-1, lead as product owner): crash reporting (@sentry/react-native) adds 1,468 KB of bytecode
+//   and cannot be meaningfully trimmed (its sdk entry pulls feedback/replay/tracing). A production app used by millions must
+//   not run blind to crashes; everything else in that wave added 23 KB. Measured 7,752 KB → ~3% headroom: still a gate.
+const DEFAULT_BUDGET_KB = 8000;
 
 /** The `npx` argv for the export. `--source-maps` makes hermesc emit `-output-source-map`, which moves the debug tables
  *  out of the .hbc — exactly as release builds do (@react-native/gradle-plugin ReactExtension.kt:115-117 defaults

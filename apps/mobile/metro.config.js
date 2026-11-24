@@ -1,8 +1,10 @@
-// apps/mobile/metro.config.js · Expo's default Metro config, unchanged. Since SDK 52 `expo/metro-config` detects the
-// pnpm workspace by itself (watchFolders = the workspace packages, nodeModulesPaths = app + root node_modules, symlinks
-// followed), so the hand-written monorepo overrides this file used to carry are gone (MOB-SDK-1: expo-doctor flags
-// them). The offline cache module is `core/offline/sqlite.store.ts` — not `sqlite.db.ts` — because `db` is one of
-// Expo's asset extensions and `./sqlite.db` would resolve as a .db asset. See https://docs.expo.dev/guides/monorepos/.
-const { getDefaultConfig } = require('expo/metro-config');
+// apps/mobile/metro.config.js · Expo's default Metro config, wrapped by Sentry's (MOB-STORE-1). Since SDK 52
+// `expo/metro-config` detects the pnpm workspace by itself (watchFolders = the workspace packages, nodeModulesPaths = app +
+// root node_modules, symlinks followed), so no monorepo overrides here (MOB-SDK-1: expo-doctor flags them).
+// getSentryExpoConfig = getDefaultConfig + a Debug ID stamped into every bundle and its source map, which is how Sentry matches
+// a release crash to the PRIVATELY uploaded map (the map itself never ships). The offline cache module is
+// `core/offline/sqlite.store.ts` — not `sqlite.db.ts` — because `db` is one of Expo's asset extensions. See
+// https://docs.expo.dev/guides/monorepos/ and https://docs.sentry.io/platforms/react-native/manual-setup/expo/.
+const { getSentryExpoConfig } = require('@sentry/react-native/metro');
 
-module.exports = getDefaultConfig(__dirname);
+module.exports = getSentryExpoConfig(__dirname);

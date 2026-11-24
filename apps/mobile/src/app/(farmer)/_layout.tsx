@@ -1,14 +1,13 @@
 // apps/mobile/src/app/(farmer)/_layout.tsx · the farmer role's bottom-tab navigator (screen 09's tab bar:
 // Home / Listings / Orders / Wallet / Profile). Auth-gated: an anonymous session is redirected to onboarding
 // (the server also re-enforces auth on every call — this is just UX). Tab labels are localized.
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Redirect, Tabs } from 'expo-router';
 import { Text, View } from 'react-native';
 import { color, font, EmptyState } from '@krishalaya/ui-native';
 import { useAuth } from '../../core/auth/auth.store';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
-import { startPush } from '../../core/push/push';
 
 function Icon({ glyph, focused }: { glyph: string; focused: boolean }) {
   return <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }} accessibilityElementsHidden importantForAccessibility="no">{glyph}</Text>;
@@ -18,14 +17,7 @@ export default function FarmerTabsLayout() {
   const { state } = useAuth();
   const { t } = useTranslation();
   const farmerOn = useFlag('farmer_app');
-  const notifOn = useFlag('notifications');
-  // Register for push + attach tap-routing once the authenticated farmer area mounts (JIT permission inside).
-  useEffect(() => {
-    if (state.status !== 'authenticated' || !notifOn) return;
-    let cleanup: (() => void) | undefined;
-    startPush().then((c) => { cleanup = c; }).catch(() => { /* push is best-effort */ });
-    return () => cleanup?.();
-  }, [state.status, notifOn]);
+  // Push registration moved to the role-agnostic core/push/PushRegistrar in the root layout (MOB-STORE-1: every role).
   if (state.status === 'anonymous') return <Redirect href="/(auth)/welcome" />;
   // Kill-switch: if ops disabled the farmer vertical via remote config, show a maintenance state (Law 10).
   if (!farmerOn) return <View style={{ flex: 1, backgroundColor: color.page, justifyContent: 'center' }}><EmptyState title={t('common.unavailable')} /></View>;

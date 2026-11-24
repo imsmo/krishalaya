@@ -29,7 +29,10 @@ Release hardening (Hermes, R8/ProGuard + shrink, cleartext-off, TLS pins) lives 
   (`appVersion` policy) so an OTA only targets a compatible binary.
 - The app checks/fetches OTA on reconnect/foreground **only when the `ota_updates` flag is on** and **never
   mid-critical-flow** (`core/release/ota.ts` `shouldApplyOta`); a staged bundle applies on the next cold start.
-- A bad OTA is a **flag flip** away from disabled — turn `ota_updates` off remotely (no store release needed).
+- MOB-STORE-1 (expo-updates now installed): the **native** `checkAutomatically: ON_LOAD` check runs on every cold start of a
+  binary built with `EAS_PROJECT_ID` and applies a channel's new update on the next launch — the `ota_updates` flag does NOT
+  gate it; the flag gates only the JS re-check on reconnect. So a bad OTA is withdrawn with `ota-rollback` (below), not by
+  the flag. Setup: `docs/mobile/PUSH-SETUP.md` §1.
 
 ## Rollback rehearsal (must be rehearsed before GA)
 - **Binary rollout:** pause/halt the Play staged rollout (or set the previous build to 100%).
