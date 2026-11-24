@@ -48,7 +48,9 @@ export default function AddBatch() {
           <Input label={t('store.add.qty')} value={form.qtyReceived} keyboardType="decimal-pad" onChangeText={set('qtyReceived')} />
           <Input label={t('store.add.unit')} value={form.unitCode} onChangeText={set('unitCode')} />
           <Input label={t('store.add.mrp')} value={form.mrpRupees} keyboardType="decimal-pad" onChangeText={set('mrpRupees')} />
+          {/* i18n-allow: ISO date format example the field parses, not words */}
           <Input label={t('store.add.mfg')} value={form.mfgDate} placeholder="YYYY-MM-DD" onChangeText={set('mfgDate')} />
+          {/* i18n-allow: ISO date format example the field parses, not words */}
           <Input label={t('store.add.expiry')} value={form.expiryDate} placeholder="YYYY-MM-DD" onChangeText={set('expiryDate')} />
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <Button title={t('store.add.submit')} onPress={submit} disabled={busy || !productId} />

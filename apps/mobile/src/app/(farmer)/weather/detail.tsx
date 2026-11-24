@@ -56,6 +56,7 @@ export default function WeatherDetail() {
           {today ? (
             <View style={styles.hero}>
               <Text style={styles.heroEmoji}>{weatherEmoji(today.code)}</Text>
+              {/* i18n-allow: degree-Celsius unit symbol, identical in every locale */}
               <Text style={styles.heroTemp}>{Math.round(today.tempMaxC)}°C</Text>
               <Text style={styles.heroCond}>{t(`weather.cond.${weatherConditionKey(today.code)}`)}{today.feelsLikeMaxC != null ? ` · ${t('weatherDetail.feelsLike', { t: `${Math.round(today.feelsLikeMaxC)}°C` })}` : ''}</Text>
               <Text style={styles.heroLoc}>📍 {place ?? t('weather.yourArea')}{updated ? ` · ${t('weather.updated', { ago: safeRel(updated, lang) })}` : ''}</Text>

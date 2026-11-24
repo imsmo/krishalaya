@@ -120,6 +120,7 @@ export default async function MembersPage(
         <summary className="kv-card__title">{t.t('members.addTier')}</summary>
         <form action={createTierAction} className="kv-form">
           <label htmlFor="tr-code" className="kv-field__label">{t.t('members.colCode')}</label>
+          {/* i18n-allow: example code value (pattern [A-Za-z0-9_]), data not copy */}
           <input id="tr-code" name="code" className="kv-input" required pattern="[A-Za-z0-9_]{2,40}" placeholder="gold" />
           <label htmlFor="tr-name" className="kv-field__label">{t.t('members.tierName')}</label>
           <input id="tr-name" name="name" className="kv-input" required minLength={2} maxLength={120} />

@@ -107,6 +107,7 @@ export default async function GoPage(props: { searchParams: Promise<Record<strin
           <input type="hidden" name="key" value={searchParams.key ?? ''} />
           <dl className="kv-dl">
             <dt>{t.t('swd.go.field.date')}</dt><dd>{v.date}</dd>
+            {/* i18n-allow: timezone code IST, kept verbatim in hi/gu catalogs too (cf. amb.run.rule) */}
             <dt>{t.t('swd.go.field.from')}</dt><dd>{v.from} – {v.to} (IST)</dd>
             <dt>{t.t('swd.go.field.language')}</dt><dd>{t.t(`swd.go.lang.${(SETUP_CALL_LANGUAGES as readonly string[]).includes(v.languageCode) ? v.languageCode : 'en'}`)}</dd>
             {v.notes && <><dt>{t.t('swd.go.field.notes')}</dt><dd>{v.notes}</dd></>}

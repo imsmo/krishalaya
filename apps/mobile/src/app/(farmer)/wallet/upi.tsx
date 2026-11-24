@@ -81,6 +81,7 @@ export default function UpiIds() {
           {/* Add new UPI */}
           <Text style={styles.section}>{t('upiIds.addTitle')}</Text>
           <Card>
+            {/* i18n-allow: UPI ID format example (VPA syntax), not words */}
             <Input label={t('upiIds.upiLabel')} value={vpa} onChangeText={(v) => { setVpa(v); if (error) setError(undefined); }} keyboardType="email-address" maxLength={100} placeholder="name@bank" error={error} />
             <Text style={styles.commonTitle}>{t('upiIds.commonHandles')}</Text>
             <View style={styles.chips}>

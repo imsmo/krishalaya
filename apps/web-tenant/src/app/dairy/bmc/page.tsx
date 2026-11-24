@@ -141,6 +141,7 @@ export default async function DairyBmcPage(
                   </span>
                 )}
                 <span className="kv-field__hint">
+                  {/* i18n-allow: degree-Celsius unit symbol, identical in every locale */}
                   {t.t('dairy.bmc.tile.band')} {u.band.minC}–{u.band.maxC}°C ({t.t('dairy.bmc.tile.target')} {u.band.targetC})
                 </span>
                 <span className="kv-field__hint">
@@ -176,6 +177,7 @@ export default async function DairyBmcPage(
                        aria-label={`${t.t('dairy.bmc.chart.aria')} ${chart.minC}–${chart.maxC}°C`}>
                     <path d={chart.path} fill="none" stroke="currentColor" strokeWidth="2" />
                   </svg>
+                  {/* i18n-allow: degree-Celsius unit symbol, identical in every locale */}
                   <p className="kv-field__hint">{chart.minC}°C – {chart.maxC}°C · {formatNumber(view.focus.points.length, lang)} {t.t('dairy.bmc.chart.readings')}</p>
                 </div>
               ) : (
@@ -191,6 +193,7 @@ export default async function DairyBmcPage(
                       {p.due ? t.t('dairy.bmc.playbook.due') : t.t('dairy.bmc.playbook.notYet')}
                     </span>{' '}
                     {t.t(playbookStepKey(p.step))}
+                    {/* i18n-allow: degree-Celsius unit symbol, identical in every locale */}
                     {p.atDeci !== null && <span className="kv-field__hint"> · {t.t('dairy.bmc.playbook.at')} {(p.atDeci / 10).toFixed(1)}°C</span>}
                     {/* [TENANT-6d-6] STEP 2 IS BUILT NOW — for a cooperative that has the override switched on. The
                         link is offered on the step itself rather than in a button bar, because the playbook is where an
@@ -290,7 +293,9 @@ export default async function DairyBmcPage(
           )}
           {callOfferKey(view) && <p className="kv-field__hint">{t.t(callOfferKey(view)!)}</p>}
           <p className="kv-field__hint">
+            {/* i18n-allow: degree-Celsius unit symbol, identical in every locale */}
             {t.t('dairy.bmc.thresholds.divert')} {view.thresholds.divertC}°C
+            {/* i18n-allow: degree-Celsius unit symbol, identical in every locale */}
             {' · '}{t.t('dairy.bmc.thresholds.condemn')} {view.thresholds.condemnC}°C
             {' · '}{t.t('dairy.bmc.thresholds.silence')} {formatNumber(view.thresholds.silenceMinutes, lang)}
           </p>

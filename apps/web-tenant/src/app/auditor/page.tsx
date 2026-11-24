@@ -193,9 +193,13 @@ export default async function AuditorPage(props: { searchParams: Promise<SP> }) 
       <p className="kv-muted">{t.t('aud.subtitle')}</p>
       {invalid && <p className="kv-error" role="alert">{t.t('aud.error')}: {invalid}</p>}
       <form method="get" className="kv-form kv-form--grid">
+        {/* i18n-allow: example audit action code value, data not copy */}
         <label className="kv-label">{t.t('aud.filter.action')}<input className="kv-input" name="action" defaultValue={form.action ?? ''} maxLength={120} placeholder="kyc.approved" /></label>
+        {/* i18n-allow: example audit entity_type code value, data not copy */}
         <label className="kv-label">{t.t('aud.filter.entityType')}<input className="kv-input" name="entityType" defaultValue={form.entityType ?? ''} maxLength={60} placeholder="order" /></label>
+        {/* i18n-allow: technical identifier format the field expects */}
         <label className="kv-label">{t.t('aud.filter.entityId')}<input className="kv-input" name="entityId" defaultValue={form.entityId ?? ''} placeholder="UUID" /></label>
+        {/* i18n-allow: technical identifier format the field expects */}
         <label className="kv-label">{t.t('aud.filter.actor')}<input className="kv-input" name="actorUserId" defaultValue={form.actorUserId ?? ''} placeholder="UUID" /></label>
         <label className="kv-label">{t.t('aud.filter.from')}<input className="kv-input" name="from" type="date" defaultValue={form.from ?? ''} /></label>
         <label className="kv-label">{t.t('aud.filter.to')}<input className="kv-input" name="to" type="date" defaultValue={form.to ?? ''} /></label>

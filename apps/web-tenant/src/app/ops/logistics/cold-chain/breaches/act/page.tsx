@@ -48,6 +48,7 @@ export default async function BreachActPage(props: { searchParams: Promise<Recor
       ) : b && (
         <>
           <div className="kv-card">
+            {/* i18n-allow: degree-Celsius unit symbol, identical in every locale */}
             <p><strong>{b.subjectRef}</strong> · {bandLabel(b.band)} · {b.peakC} °C · {when(b.openedAt)}{b.closedAt ? <> <DirArrow /> {when(b.closedAt)}</> : ` · ${t.t('swe.cold.ongoing')}`}</p>
             <p>{t.t(`swe.cold.act.rule.${act}`)}</p><p className="kv-field__hint">{t.t('mutate.auditNote')}</p>
           </div>

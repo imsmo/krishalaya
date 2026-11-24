@@ -49,6 +49,7 @@ export default async function ThresholdPage(props: { searchParams: Promise<Recor
       {step === 'review' && !problem && (
         <div className="kv-card">
           <h2>{t.t('swe.reviewTitle')}</h2>
+          {/* i18n-allow: degree-Celsius unit symbol, identical in every locale */}
           <p>{t.t(`swe.cold.kind.${v.subjectType}`)} <code>{v.subjectId}</code> · {v.minC}–{v.maxC} °C</p>
           <p className="kv-field__hint">{t.t('swe.cold.method.band')}</p>
           <form action={setThresholdAction} className="kv-actions">

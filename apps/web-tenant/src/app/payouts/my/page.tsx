@@ -80,6 +80,7 @@ export default async function PayoutsPage(
           <label htmlFor="vaultRef" className="kv-field__label">{t.t('payouts.vaultRef')}</label>
           <input id="vaultRef" name="vaultRef" className="kv-input" required />
           <label htmlFor="upiId" className="kv-field__label">{t.t('payouts.upiId')}</label>
+          {/* i18n-allow: UPI ID format example (VPA syntax), not words */}
           <input id="upiId" name="upiId" className="kv-input" inputMode="email" placeholder="name@bank" />
           <label htmlFor="ifsc" className="kv-field__label">{t.t('payouts.ifsc')}</label>
           <input id="ifsc" name="ifsc" className="kv-input" pattern="[A-Za-z]{4}0[A-Za-z0-9]{6}" />

@@ -103,7 +103,9 @@ export default async function AiReviewPage(props: { searchParams: Promise<SP> })
             </select>
           </label>
           <label className="kv-label">{t.t('air.new.priority')}<input className="kv-input" name="priority" type="number" min={1} max={1000} placeholder="100" /></label>
+          {/* i18n-allow: example subject_type code value the API accepts, data not copy */}
           <label className="kv-label">{t.t('air.new.subjectType')}<input className="kv-input" name="subjectType" maxLength={50} placeholder="listing" /></label>
+          {/* i18n-allow: technical identifier format the field expects */}
           <label className="kv-label">{t.t('air.new.subjectId')}<input className="kv-input" name="subjectId" placeholder="UUID" /></label>
           <button type="submit" className="kv-btn">{t.t('air.new.enqueue')}</button>
         </form>

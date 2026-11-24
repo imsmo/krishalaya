@@ -203,6 +203,7 @@ export default async function VehiclesPage(
                 cell: (v) => (
                   <>
                     <span>{t.t(todayKey(v.today))}</span>
+                    {/* i18n-allow: degree-Celsius unit symbol, identical in every locale */}
                     {v.today.kind === 'carrying' && v.today.reefer && <> · {v.today.reefer.tempC}°C</>}
                     {reeferBreach(v.today) && <> <span className="kv-badge kv-badge--danger">{t.t('fleet.breach')}</span></>}
                     {v.today.kind === 'loads_next' && <> · {v.today.routeName}</>}

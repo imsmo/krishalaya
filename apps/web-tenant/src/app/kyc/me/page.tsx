@@ -134,6 +134,7 @@ export default async function KycPage(props: { searchParams: Promise<{ ok?: stri
 
             <label htmlFor="docNoMasked" className="kv-field__label">{t.t('kyc.docNo')}</label>
             <input id="docNoMasked" name="docNoMasked" className="kv-input" inputMode="text"
+              /* i18n-allow: masked document-number format example */
               placeholder="XXXX-XXXX-1234" maxLength={32} autoComplete="off" />
             <p className="kv-field__hint">{t.t('kyc.docNoHint')}</p>
 

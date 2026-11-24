@@ -34,6 +34,7 @@ export default async function VerifyAgmPage(props: { params: Promise<{ documentI
             <dt>{t.t('swd.agm.documentId')}</dt><dd><code>{v.documentId}</code></dd>
             <dt>{t.t('swd.verify.organisation')}</dt><dd>{v.organisation}</dd>
             <dt>{t.t('swd.agm.col.fy')}</dt><dd>{v.fiscalYearLabel}</dd>
+            {/* i18n-allow: timezone code IST, kept verbatim in hi/gu catalogs too (cf. amb.run.rule) */}
             <dt>{t.t('swd.agm.issuedAt')}</dt><dd>{istLabel(v.issuedAt)} (IST)</dd>
             <dt>{t.t('swd.agm.pdfSha')}</dt><dd><code style={{ overflowWrap: 'anywhere' }}>{v.pdfSha256}</code></dd>
             {v.contentSha256 && <><dt>{t.t('swd.agm.contentSha')}</dt><dd><code style={{ overflowWrap: 'anywhere' }}>{v.contentSha256}</code></dd></>}

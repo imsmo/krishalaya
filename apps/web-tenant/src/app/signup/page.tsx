@@ -266,8 +266,11 @@ export default async function SignupPage(props: { searchParams: Promise<Search> 
 
           <label htmlFor="su-lang" className="kv-form__label">{t.t('signup.language')}</label>
           <select id="su-lang" name="lang" className="kv-field__input" defaultValue={chosenLang}>
+            {/* i18n-allow: language autonym in its own script in the language picker */}
             <option value="en">English</option>
+            {/* i18n-allow: language autonym in its own script in the language picker */}
             <option value="hi">हिन्दी</option>
+            {/* i18n-allow: language autonym in its own script in the language picker */}
             <option value="gu">ગુજરાતી</option>
           </select>
 

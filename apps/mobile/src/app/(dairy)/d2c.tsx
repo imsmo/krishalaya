@@ -130,6 +130,7 @@ export default function D2cSubscriptions() {
 
               {canPause(s.status) ? (<>
                 <Text style={styles.label}>{t('d2c.pause.until')}</Text>
+                {/* i18n-allow: ISO date format example the field parses, not words */}
                 <TextInput value={pauseUntil} onChangeText={setPauseUntil} style={styles.input} placeholder="YYYY-MM-DD" accessibilityLabel={t('d2c.pause.until')} />
                 <Text style={styles.muted}>{t('d2c.pause.hint')}</Text>
                 <Button title={t('d2c.pause.btn')} variant="outline" disabled={busy} onPress={() => doPause(String(s.id))} />
@@ -172,6 +173,7 @@ export default function D2cSubscriptions() {
             ))}
 
             <Text style={styles.label}>{t('d2c.startsOn')}</Text>
+            {/* i18n-allow: ISO date format example the field parses, not words */}
             <TextInput value={startsOn} onChangeText={setStartsOn} style={styles.input} placeholder="YYYY-MM-DD" accessibilityLabel={t('d2c.startsOn')} />
             <Text style={styles.muted}>{t('d2c.startsOnHint')}</Text>
             <Button title={t('d2c.subscribe.btn')} disabled={busy || !planId || !addressId} onPress={subscribe} />

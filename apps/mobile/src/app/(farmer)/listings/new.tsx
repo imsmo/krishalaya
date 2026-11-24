@@ -202,7 +202,7 @@ export default function CreateListing() {
                 <Icon name="mic" size={34} color={color.white} />
               </Pressable>
               <Text style={styles.voiceStatus}>
-                {voice.listening ? <>{t('createListing.listening')} <Text style={styles.voiceVern}>सुन रहा हूं</Text></> : t('createListing.tapToSpeak')}
+                {voice.listening ? <>{t('createListing.listening')} <Text style={styles.voiceVern}>{t('createListing.listeningVern')}</Text></> : t('createListing.tapToSpeak')}
               </Text>
               <Text style={styles.voiceHint}>{t('createListing.voiceExample')}</Text>
               {voice.error ? <Text style={styles.voiceErr}>{t('createListing.voiceFailed')}</Text> : null}

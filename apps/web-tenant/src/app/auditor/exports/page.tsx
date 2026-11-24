@@ -75,6 +75,7 @@ export default async function AuditorExportsPageView(props: { searchParams: Prom
               { header: t.t('auditor.exports.col.export'), cell: (j) => <>{t.t(datasetKey(j.datasetCode))}{typeof j.params.section === 'string' ? ` · ${t.t(sectionKey(j.params.section))}` : ''}</> },
               { header: t.t('auditor.exports.col.period'), cell: (j) => `${String(j.params.from ?? '')} – ${String(j.params.to ?? '')}` },
               { header: t.t('auditor.exports.col.status'), cell: (j) => t.t(`auditor.exports.status.${j.status}`) },
+              // i18n-allow: hash algorithm prefix of a digest, technical identifier
               { header: t.t('auditor.exports.col.hash'), cell: (j) => j.receipt ? <code className="kv-mono" style={{ overflowWrap: 'anywhere' }}>sha256:{shaGroups(j.receipt.sha256).slice(0, 9)}…{j.receipt.sha256.slice(-4)}</code> : t.t('common.dash') },
               { header: t.t('auditor.exports.col.signature'), cell: () => <span className="kv-badge kv-badge--muted">{t.t('auditor.exports.unsigned')}</span> },
             ]}

@@ -36,7 +36,7 @@ export default async function WhatsAppSettingsPage() {
   return (
     <section>
       <nav aria-label={t.t('wa.breadcrumb')} className="kv-field__hint"><Link href={WA_HUB_HREF}>{t.t('wa.hub.title')}</Link></nav>
-      <h1>{t.t('wa.settings.title')} <span lang="gu" className="kv-field__hint">વોટ્સએપ સેટિંગ્સ</span></h1>
+      <h1>{t.t('wa.settings.title')}</h1>
       {!view && (
         <div className={state === 'error' ? 'kv-error' : 'kv-card kv-card--notice'} role={state === 'error' ? 'alert' : 'status'}>
           <p>{t.t(`wa.state.${state}`)}</p>

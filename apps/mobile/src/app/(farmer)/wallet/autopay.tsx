@@ -108,6 +108,7 @@ export default function Autopay() {
       {showForm ? (
         <Card style={styles.form}>
           <Text style={styles.formTitle}>{t('wallet.autopayNew')}</Text>
+          {/* i18n-allow: UPI ID format example (VPA syntax), not words */}
           <Input label={t('wallet.autopayVpaPlaceholder')} value={vpa} onChangeText={(v) => { setVpa(v); if (error) setError(undefined); }} keyboardType="email-address" maxLength={100} placeholder="name@bank" error={error} />
           <View style={{ height: space[3] }} />
           <Input label={t('wallet.autopayCapPlaceholder')} value={cap} onChangeText={(v) => { setCap(v.replace(/[^0-9]/g, '')); if (error) setError(undefined); }} keyboardType="number-pad" maxLength={7} />

@@ -46,6 +46,7 @@ export default async function EsgMethodPage(props: { params: Promise<{ code: str
             <h2>{t.t('esg.methodPage.method')}</h2>
             {row.method.status === 'published' && row.method.ref ? (
               <dl className="kv-dl">
+                {/* i18n-allow: version prefix "v", kept verbatim in every catalog (cf. templates.editor.servingVersion) */}
                 <dt>{t.t('esg.methodPage.ref')}</dt><dd><code>{row.method.ref}</code> · v{row.method.version}</dd>
                 <dt>{t.t('esg.methodPage.publishedAt')}</dt><dd>{row.method.publishedAt ? formatDate(row.method.publishedAt, lang, { dateStyle: 'medium', timeZone: clock.zone }) : ''}</dd>
                 <dt>{t.t('esg.methodPage.text')}</dt><dd>{pick(row.method.text, lang)}</dd>

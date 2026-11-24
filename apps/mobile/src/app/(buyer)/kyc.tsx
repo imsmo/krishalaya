@@ -123,7 +123,9 @@ export default function BusinessKyc() {
             ))}
           </View>
 
+          {/* i18n-allow: PAN format example */}
           <Input label={t('businessKyc.pan')} value={pan} onChangeText={(v) => setPan(v.toUpperCase())} maxLength={10} placeholder="ABCDE1234F" error={panErr} />
+          {/* i18n-allow: GSTIN format example */}
           <Input label={t('businessKyc.gstin')} value={gstin} onChangeText={(v) => setGstin(v.toUpperCase())} maxLength={15} placeholder="27ABCDE1234F1Z5" error={gstinErr} />
           <Text style={styles.note}>{t('businessKyc.gstinOptional')}</Text>
           {biz && (biz.gstinMasked || biz.panMasked) ? (

@@ -13663,4 +13663,6 @@ export const ar: Messages = {
   'swf.code.VALIDATION_FAILED': 'بعض ما أُدخل غير صالح.',
   'swf.code.IDEMPOTENCY_CONFLICT': 'أُرسل هذا بالفعل بقيم مختلفة؛ أعد التحميل وحاول مرة أخرى.',
   'swf.code.unknown': 'حدث خطأ ما. لم يتغير شيء.',
+  'courses.col.moduleLesson': "الوحدة·الدرس",
+  'dairy.member.farmerPlaceholder': "UUID المستخدم",
 };

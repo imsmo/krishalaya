@@ -13809,4 +13809,7 @@ export const hi: Messages = {
   'swf.code.IDEMPOTENCY_CONFLICT': "यह पहले अलग मानों के साथ भेजा गया था; पुनः लोड कर फिर कोशिश करें।",
   'swf.code.unknown': "कुछ गलत हुआ। कुछ भी नहीं बदला।",
   // ── end TENANT-SW-f
+  // ── PC-56 I18N-9 · hardcoded-string census: the WhatsApp vernacular accents, the courses M·L column, the farmer-ID placeholder
+  'courses.col.moduleLesson': "मॉड्यूल·पाठ",
+  'dairy.member.farmerPlaceholder': "यूज़र UUID",
 };

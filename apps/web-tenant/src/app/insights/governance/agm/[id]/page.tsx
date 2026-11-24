@@ -52,6 +52,7 @@ export default async function AgmPackPage(props: { params: Promise<{ id: string 
             {pack.confirmedBy && <><dt>{t.t('swd.agm.confirmedBy')}</dt><dd>{pack.confirmedByName ?? '—'} · {istLabel(pack.confirmedAt)}</dd></>}
             {pack.parentDocumentId && <><dt>{t.t('swd.agm.parent')}</dt><dd><code>{pack.parentDocumentId}</code> · {pack.reason}</dd></>}
             {pack.documentId && <><dt>{t.t('swd.agm.documentId')}</dt><dd><code>{pack.documentId}</code></dd></>}
+            {/* i18n-allow: timezone code IST, kept verbatim in hi/gu catalogs too (cf. amb.run.rule) */}
             {pack.issuedAt && <><dt>{t.t('swd.agm.issuedAt')}</dt><dd>{istLabel(pack.issuedAt)} (IST)</dd></>}
             {pack.pdfSha256 && <><dt>{t.t('swd.agm.pdfSha')}</dt><dd><code style={{ overflowWrap: 'anywhere' }}>{pack.pdfSha256}</code></dd></>}
             {pack.contentSha256 && <><dt>{t.t('swd.agm.contentSha')}</dt><dd><code style={{ overflowWrap: 'anywhere' }}>{pack.contentSha256}</code><br /><span className="kv-field__hint">{t.t('swd.agm.contentShaHint')}</span></dd></>}

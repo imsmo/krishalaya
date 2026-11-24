@@ -82,7 +82,7 @@ export default function FarmerHome() {
         <View style={styles.avatar}><Text style={styles.avatarTxt}>{initial}</Text></View>
         <View style={styles.greet}>
           <Text style={styles.greetLine} numberOfLines={1}>
-            <Text style={styles.greetVern}>नमस्ते, </Text>{name}
+            <Text style={styles.greetVern}>{t('home.greetVern')} </Text>{name}
           </Text>
           {weather ? (
             <Text style={styles.greetSub} numberOfLines={1}>
@@ -120,7 +120,7 @@ export default function FarmerHome() {
           <View style={styles.heroGlow} />
           <View style={styles.heroTag}><Text style={styles.heroTagTxt}>⚡ {t('home.aiPowered')}</Text></View>
           <Text style={styles.heroTitle}>{t('home.sellIn60')}</Text>
-          <Text style={styles.heroVern}>अपनी फसल बेचें</Text>
+          <Text style={styles.heroVern}>{t('home.heroVern')}</Text>
           <View style={styles.heroActions}>
             <Pressable style={styles.ctaMic} onPress={() => router.push({ pathname: '/(farmer)/listings/new', params: { mode: speakToSellTargetMode(voiceListingOn) } })} accessibilityRole="button" accessibilityLabel={t('home.speakToSell')}>
               <Text style={styles.ctaMicTxt}>🎤  {t('home.speakToSell')}</Text>

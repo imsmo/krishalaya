@@ -40,7 +40,7 @@ export default async function WhatsAppTemplatesPage(props: { searchParams: Promi
   return (
     <section>
       <nav aria-label={t.t('wa.breadcrumb')} className="kv-field__hint"><Link href={WA_HUB_HREF}>{t.t('wa.hub.title')}</Link></nav>
-      <h1>{t.t('wa.templates.title')} <span lang="gu" className="kv-field__hint">વોટ્સએપ ટેમ્પલેટ</span></h1>
+      <h1>{t.t('wa.templates.title')}</h1>
       <p className="kv-field__hint">{t.t('wa.templates.lead')}</p>
       {!idx && (
         <div className={state === 'error' ? 'kv-error' : 'kv-card kv-card--notice'} role={state === 'error' ? 'alert' : 'status'}>

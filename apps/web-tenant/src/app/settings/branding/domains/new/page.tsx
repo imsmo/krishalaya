@@ -53,6 +53,7 @@ export default async function AddDomainPage(props: { searchParams: Promise<Recor
         <form method="get" action={DOMAIN_NEW_HREF} className="kv-form">
           <input type="hidden" name="step" value="review" />
           <label className="kv-field" htmlFor="dom-domain"><span>{t.t('dom.new.domain')}</span>
+            {/* i18n-allow: domain-name format example */}
             <input id="dom-domain" name="domain" className="kv-input" required maxLength={255} defaultValue={domain} placeholder="mandi.example.in" /></label>
           <label className="kv-field" htmlFor="dom-reason"><span>{t.t('dom.new.reason')}</span>
             <input id="dom-reason" name="reason" className="kv-input" required minLength={5} maxLength={500} defaultValue={reason} /></label>

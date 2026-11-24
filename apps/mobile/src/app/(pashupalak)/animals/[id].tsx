@@ -165,6 +165,7 @@ export default function AnimalDetail() {
 
               {nextDueExpected(type) ? (<>
                 <Text style={styles.label}>{t('health.field.nextDue')}</Text>
+                {/* i18n-allow: ISO date format example the field parses, not words */}
                 <TextInput value={nextDueDate} onChangeText={setNextDueDate} style={styles.input} placeholder="YYYY-MM-DD" accessibilityLabel={t('health.field.nextDue')} />
                 <Text style={styles.muted}>{t('health.field.nextDueHint')}</Text>
               </>) : null}

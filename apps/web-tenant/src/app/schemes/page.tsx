@@ -132,6 +132,7 @@ export default async function SchemesPage(
                 <details className="kv-disclosure"><summary>{t.t('scm.action.approve')}</summary>
                   <form action={approveApplicationAction} className="kv-form">
                     <input type="hidden" name="id" value={app.id} />
+                    {/* i18n-allow: government reference-number format example */}
                     <label className="kv-label">{t.t('scm.detail.govtRef')}<input className="kv-input" name="govtAppRef" maxLength={120} placeholder="GOV-…" /></label>
                     <button type="submit" className="kv-btn">{t.t('scm.action.approve')}</button>
                   </form>

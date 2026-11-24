@@ -169,6 +169,7 @@ export default async function DairyCentresPage(
                 <span>
                   <span className={c.isActive ? 'kv-badge' : 'kv-badge kv-badge--muted'}>{t.t(statusKey(c))}</span>
                   {' '}<span className={TONE[tankTone(c.tank)]}>{t.t(tankKey(c.tank))}</span>
+                  {/* i18n-allow: degree-Celsius unit symbol, identical in every locale */}
                   {tankTempIsCurrent(c.tank) && <span className="kv-field__hint"> · {c.tank.tempC}°C</span>}
                   {c.tank.condition === 'stale' && c.tank.ageMinutes !== null && (
                     <span className="kv-field__hint"> · {formatNumber(c.tank.ageMinutes, lang)} {t.t('dairy.centres.tank.minutesAgo')}</span>

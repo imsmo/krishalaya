@@ -137,7 +137,7 @@ export default async function CourseDetailPage(props: { params: Promise<{ id: st
         </div>
       ) : (
         <table className="kv-table">
-          <thead><tr><th>M·L</th><th>{t.t('courses.lessonTitle')}</th><th>{t.t('courses.lessonKind')}</th><th>{t.t('courses.lessonDuration')}</th><th>{t.t('courses.col.completion')}</th></tr></thead>
+          <thead><tr><th>{t.t('courses.col.moduleLesson')}</th><th>{t.t('courses.lessonTitle')}</th><th>{t.t('courses.lessonKind')}</th><th>{t.t('courses.lessonDuration')}</th><th>{t.t('courses.col.completion')}</th></tr></thead>
           <tbody>
             {lessons.map((l) => (
               <tr key={l.id}>

@@ -64,7 +64,7 @@ export default function PaymentReceived() {
           <View style={[styles.hero, !paid && styles.heroPending]}>
             <View style={[styles.badge, !paid && styles.badgePending]}><Text style={styles.badgeTxt}>{paid ? '✓' : '⏳'}</Text></View>
             <Text style={styles.heroTitle}>{paid ? t('worker.payment.received') : t('worker.payment.pending')}</Text>
-            {paid ? <Text style={styles.heroVern}>पैसा मिल गया</Text> : null}
+            {paid ? <Text style={styles.heroVern}>{t('worker.payment.receivedVern')}</Text> : null}
             <View style={{ marginTop: space[3] }}><MoneyText minor={offer.wageMinor} currencyCode={ccy} langCode={lang} size="2xl" tone={paid ? 'positive' : 'default'} /></View>
             <Text style={styles.heroSub}>{paid ? t('worker.payment.credited') : t('worker.payment.pendingSub')}</Text>
           </View>

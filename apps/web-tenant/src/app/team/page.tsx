@@ -78,8 +78,10 @@ export default async function TeamPage(
           <label htmlFor="fullName" className="kv-field__label">{t.t('team.name')}</label>
           <input id="fullName" name="fullName" className="kv-input" />
           <label htmlFor="languageCode" className="kv-field__label">{t.t('team.language')}</label>
+          {/* i18n-allow: ISO 639-1 language codes the field accepts */}
           <input id="languageCode" name="languageCode" className="kv-input" placeholder="hi / en / gu" />
           <label htmlFor="countryCode" className="kv-field__label">{t.t('team.country')}</label>
+          {/* i18n-allow: ISO 3166-1 country code example */}
           <input id="countryCode" name="countryCode" className="kv-input" placeholder="IN" />
           <button type="submit" className="kv-btn">{t.t('team.add')}</button>
         </form>

@@ -65,6 +65,7 @@ export default async function AuditorLedgerPage(props: { searchParams: Promise<R
       <form method="get" className="kv-form kv-form--grid" aria-label={t.t('auditor.window.label')}>
         <label className="kv-label">{t.t('auditor.window.from')}<input className="kv-input" name="from" type="date" defaultValue={f.from ?? page?.window.from ?? ''} /></label>
         <label className="kv-label">{t.t('auditor.window.to')}<input className="kv-input" name="to" type="date" defaultValue={f.to ?? page?.window.to ?? ''} /></label>
+        {/* i18n-allow: example ledger txn_type code value, data not copy */}
         <label className="kv-label">{t.t('auditor.ledger.type')}<input className="kv-input" name="txnType" defaultValue={f.txnType ?? ''} maxLength={60} placeholder="payout" /></label>
         <span className="kv-actions"><button type="submit" className="kv-btn kv-btn--sm">{t.t('auditor.window.apply')}</button> <Link href={LEDGER_HREF} className="kv-btn kv-btn--muted kv-btn--sm">{t.t('aud.filter.clear')}</Link></span>
       </form>

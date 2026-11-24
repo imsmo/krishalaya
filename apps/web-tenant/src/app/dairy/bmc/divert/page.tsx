@@ -91,6 +91,7 @@ export default async function DivertShiftPage(
             <input type="hidden" name="step" value="confirm" />
             <label className="kv-field"><span>{t.t('mutate.diversion.from')}</span><input name="fromMccId" defaultValue={from} /></label>
             <label className="kv-field"><span>{t.t('mutate.diversion.to')}</span><input name="toMccId" defaultValue={to} /></label>
+            {/* i18n-allow: ISO date format example the field parses, not words */}
             <label className="kv-field"><span>{t.t('mutate.diversion.day')}</span><input name="divertedOn" defaultValue={values.divertedOn ?? ''} placeholder="YYYY-MM-DD" /></label>
             <label className="kv-field">
               <span>{t.t('mutate.diversion.shift')}</span>

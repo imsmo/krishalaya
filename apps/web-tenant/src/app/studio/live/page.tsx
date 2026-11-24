@@ -70,6 +70,7 @@ export default async function LiveStudioPage(props: { searchParams: Promise<{ ok
           <label htmlFor="ch-title" className="kv-field__label">{t.t('channels.colTitle')}</label>
           <input id="ch-title" name="title" className="kv-input" required maxLength={200} />
           <label htmlFor="ch-url" className="kv-field__label">{t.t('channels.url')}</label>
+          {/* i18n-allow: URL scheme example, not words */}
           <input id="ch-url" name="externalUrl" type="url" className="kv-input" required maxLength={500} placeholder="https://…" />
           <button type="submit" className="kv-btn">{t.t('channels.addBtn')}</button>
         </form>

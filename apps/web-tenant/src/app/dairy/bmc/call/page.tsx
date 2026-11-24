@@ -95,6 +95,7 @@ export default async function CallOperatorPage(
               {preview.object.tempC === null
                 ? <span className="kv-field__hint">{t.t(objectTempKey(preview.object))}</span>
                 : <>
+                    {/* i18n-allow: degree-Celsius unit symbol, identical in every locale */}
                     <strong>{preview.object.tempC}°C</strong>{' '}
                     <span className="kv-field__hint">{t.t(objectTempKey(preview.object))}</span>
                   </>}

@@ -102,6 +102,7 @@ export default function AddFarmer() {
               <Text style={styles.section}>{t('owner.addFarmer.detailsTitle')}</Text>
               <View style={{ marginTop: space[3], gap: space[1] }}>
                 <Input label={t('owner.addFarmer.name')} value={fullName} onChangeText={setName} maxLength={200} />
+                {/* i18n-allow: E.164 phone format example */}
                 <Input label={t('owner.addFarmer.phone')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" maxLength={20} placeholder="+9198XXXXXXXX" error={error} />
               </View>
               <Text style={styles.laterLabel}>{t('owner.addFarmer.laterTitle')}</Text>

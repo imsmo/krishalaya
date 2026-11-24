@@ -85,11 +85,13 @@ export default async function TwinOverviewPage() {
               <p><strong>{t.t('twin.tile.parcels.value', { mapped: fmt(o.parcels.mapped), registered: fmt(o.parcels.registered) })}</strong></p>
               <p className="kv-field__hint">{t.t('twin.tile.parcels.denominator')}</p>
               {o.parcels.unmapped > 0 && <p className="kv-field__hint">{t.t('twin.tile.parcels.unmapped', { n: fmt(o.parcels.unmapped) })}</p>}
+              {/* i18n-allow: database table name shown as a technical identifier */}
               <p className="kv-field__hint">{o.parcels.asOf ? t.t('twin.asOf.at', { when: when(o.parcels.asOf, o.clock.zone) }) : t.t('twin.asOf.none')} · <code>land_parcels</code></p>
             </div>
             <div className="kv-card" role="listitem">
               <h2>{t.t('twin.tile.soil')}</h2>
               <p><strong>{t.t('twin.tile.soil.value', { n: fmt(o.soil.tests), parcels: fmt(o.soil.parcelsTested) })}</strong></p>
+              {/* i18n-allow: database table name shown as a technical identifier */}
               <p className="kv-field__hint">{o.soil.latestSampledOn ? t.t('twin.tile.soil.latest', { day: o.soil.latestSampledOn }) : t.t('twin.tile.soil.none')} · <code>soil_tests</code></p>
             </div>
             <div className="kv-card" role="listitem">
@@ -97,12 +99,14 @@ export default async function TwinOverviewPage() {
               <p><strong>{t.t('twin.tile.seasons.value', { open: fmt(o.seasons.open), harvested: fmt(o.seasons.harvested) })}</strong></p>
               <p className="kv-field__hint">{o.seasons.lastClosed
                 ? t.t('twin.tile.seasons.last', { season: t.t(seasonKey(o.seasons.lastClosed.season)), year: String(o.seasons.lastClosed.year), status: t.t(`twin.seasonStatus.${o.seasons.lastClosed.status === 'harvested' ? 'harvested' : 'abandoned'}`) })
+                // i18n-allow: database table name shown as a technical identifier
                 : t.t('twin.tile.seasons.none')} · <code>crop_seasons</code></p>
             </div>
             <div className="kv-card" role="listitem">
               <h2>{t.t('twin.tile.devices')}</h2>
               <p><strong>{t.t('twin.tile.devices.value', { pods: fmt(o.devices.soilPods), masts: fmt(o.devices.weatherMasts) })}</strong></p>
               <p className="kv-field__hint">{t.t('twin.tile.devices.readings')}</p>
+              {/* i18n-allow: database table name shown as a technical identifier */}
               <p className="kv-field__hint"><code>twin_devices</code> · {t.t('twin.tile.devices.registryOnly')}</p>
             </div>
             <div className="kv-card" role="listitem">

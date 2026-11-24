@@ -55,6 +55,7 @@ export function AddEndpointChain({ catalogue, labels, idempotencyKey, backHref, 
       {step === 'edit' && (
         <form className="kv-form" onSubmit={(e) => { e.preventDefault(); doReview(); }}>
           <label className="kv-field" htmlFor="wh-url"><span>{L('wh.form.url')}</span>
+            {/* i18n-allow: URL scheme example, not words */}
             <input id="wh-url" className="kv-input" type="url" inputMode="url" autoComplete="off" spellCheck={false} maxLength={500} required value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" />
           </label>
           <p className="kv-field__hint">{L('wh.form.urlHint')}</p>

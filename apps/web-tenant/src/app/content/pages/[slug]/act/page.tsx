@@ -80,6 +80,7 @@ export default async function PageActPage(
           {/* ---- THE OBJECT ---- */}
           <div className="kv-card">
             <h2 lang={ver.languageCode ?? undefined}>{ver.defaultTitle}</h2>
+            {/* i18n-allow: version prefix "v", kept verbatim in every catalog (cf. templates.editor.servingVersion) */}
             <p className="kv-field__hint"><code>/{preview.view.slug}</code> · {t.t(kindKey(ver.pageKind))} · v{ver.version} · {t.t(statusKey(ver.status))}</p>
             {act === 'publish' && (
               <>

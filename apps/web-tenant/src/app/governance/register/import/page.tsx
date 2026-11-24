@@ -46,6 +46,7 @@ export default async function RegisterImportPage(props: { searchParams: Promise<
           <input type="hidden" name="key" value={randomUUID()} />
           <p>{t.t('swd.import.columns', { max: IMPORT_MAX_ROWS })}</p>
           <label className="kv-field" htmlFor="imp-file"><span>{t.t('swd.import.field.file')}</span><input id="imp-file" name="file" type="file" accept=".csv,text/csv" className="kv-input" /></label>
+          {/* i18n-allow: CSV header spec the importer parses, column names are code */}
           <label className="kv-field" htmlFor="imp-csv"><span>{t.t('swd.import.field.csv')}</span><textarea id="imp-csv" name="csv" className="kv-textarea" rows={5} placeholder="phone,folio,shares,paid_up" /></label>
           <fieldset className="kv-fieldset"><legend>{t.t('swd.import.consent.title')}</legend>
             <p className="kv-field__hint">{t.t('swd.import.consent.hint')}</p>

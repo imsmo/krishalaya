@@ -13809,4 +13809,7 @@ export const gu: Messages = {
   'swf.code.IDEMPOTENCY_CONFLICT': "આ પહેલાં અલગ મૂલ્યો સાથે મોકલાયું હતું; ફરી લોડ કરી ફરી પ્રયાસ કરો.",
   'swf.code.unknown': "કંઈક ખોટું થયું. કંઈ બદલાયું નથી.",
   // ── end TENANT-SW-f
+  // ── PC-56 I18N-9 · hardcoded-string census: the WhatsApp vernacular accents, the courses M·L column, the farmer-ID placeholder
+  'courses.col.moduleLesson': "મોડ્યુલ·પાઠ",
+  'dairy.member.farmerPlaceholder': "યુઝર UUID",
 };

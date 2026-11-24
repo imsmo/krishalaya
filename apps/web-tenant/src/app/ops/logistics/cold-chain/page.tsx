@@ -53,6 +53,7 @@ export default async function ColdChainPage() {
             <DataTable rows={o.items} empty={t.t('swe.cold.empty.title')} columns={[
               { header: t.t('swe.cold.col.subject'), cell: (s) => <Link href={coldSubjectHref(s.subjectType, s.subjectId)} className="kv-btn--link">{s.label}</Link> },
               { header: t.t('swe.cold.col.kind'), cell: (s) => t.t(`swe.cold.kind.${s.subjectType}`) },
+              // i18n-allow: degree-Celsius unit symbol, identical in every locale
               { header: t.t('swe.cold.col.now'), cell: (s) => (s.now ? <span>{s.now.tempC} °C <span className="kv-detail__muted">· {s.now.source ? t.t(`swe.cold.source.${s.now.source}`) : ''} · {when(s.now.at)}</span></span> : t.t('common.dash')) },
               { header: t.t('swe.cold.col.target'), cell: (s) => bandLabel(s.target) ?? t.t('swe.cold.noBand') },
               { header: t.t('swe.cold.col.device'), cell: (s) => (s.device ? <span>{s.device.serial ?? s.device.id.slice(0, 8)} <span className="kv-detail__muted">· {when(s.device.lastReadingAt)}</span></span> : t.t('common.dash')) },

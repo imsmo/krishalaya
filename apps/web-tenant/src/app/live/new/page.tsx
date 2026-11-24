@@ -113,6 +113,7 @@ export default async function LiveFormPage(
           <p className="kv-field__hint">{t.t('live.capacityRule')}</p>
           <label className="kv-field" htmlFor="lc-join">
             <span>{t.t(fieldLabelKey(LIVE_FORM, 'joinUrl'))}</span>
+            {/* i18n-allow: URL scheme example, not words */}
             <input id="lc-join" name="joinUrl" type="url" defaultValue={values.joinUrl ?? ''} maxLength={500} placeholder="https://…" />
           </label>
           <p className="kv-field__hint">{t.t('form.live.joinHint')}</p>

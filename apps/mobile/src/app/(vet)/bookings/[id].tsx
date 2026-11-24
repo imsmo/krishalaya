@@ -157,6 +157,7 @@ export default function VetCase() {
 
             <Button title={t('rx.addLine')} variant="outline" onPress={addLine} disabled={lines.length >= RX_MAX_LINES} />
             <Text style={styles.label}>{t('rx.validUntil')}</Text>
+            {/* i18n-allow: ISO date format example the field parses, not words */}
             <TextInput value={validUntil} onChangeText={setValidUntil} style={styles.input} placeholder="YYYY-MM-DD" accessibilityLabel={t('rx.validUntil')} />
             <Text style={styles.muted}>{t('rx.validUntilHint')}</Text>
             <Button title={t('rx.sign')} disabled={busy} onPress={sign} />

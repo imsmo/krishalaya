@@ -159,7 +159,7 @@ export default async function DairyOperatorConsolePage(props: { searchParams: Pr
       <details className="kv-disclosure">
         <summary>{t.t('dairy.member.add')}</summary>
         <form action={enrolMemberAction} className="kv-form kv-form--grid">
-          <label className="kv-label">{t.t('dairy.member.farmer')}<input className="kv-input" name="farmerUserId" required placeholder="user UUID" /></label>
+          <label className="kv-label">{t.t('dairy.member.farmer')}<input className="kv-input" name="farmerUserId" required placeholder={t.t('dairy.member.farmerPlaceholder')} /></label>
           <label className="kv-label">{t.t('dairy.mcc.title')}
             <select className="kv-input" name="mccId" required defaultValue="">
               <option value="" disabled>{t.t('dairy.member.pickMcc')}</option>

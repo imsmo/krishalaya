@@ -13815,4 +13815,7 @@ export const en: Messages = {
   'swf.code.IDEMPOTENCY_CONFLICT': "This was already sent with different values; reload and try again.",
   'swf.code.unknown': "Something went wrong. Nothing was changed.",
   // ── end TENANT-SW-f
+  // ── PC-56 I18N-9 · hardcoded-string census: the WhatsApp vernacular accents, the courses M·L column, the farmer-ID placeholder
+  'courses.col.moduleLesson': "M·L",
+  'dairy.member.farmerPlaceholder': "user UUID",
 };

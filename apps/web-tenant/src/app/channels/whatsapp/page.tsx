@@ -44,7 +44,7 @@ export default async function WhatsAppHubPage(props: { searchParams: Promise<{ e
 
   return (
     <section>
-      <h1>{t.t('wa.hub.title')} <span lang="gu" className="kv-field__hint">વોટ્સએપ</span></h1>
+      <h1>{t.t('wa.hub.title')}</h1>
       <p className="kv-field__hint">{t.t('wa.hub.lead')}</p>
       {searchParams.error && <div className="kv-error" role="alert"><p>{t.t('bc.export.failed')} <code>{searchParams.error}</code></p></div>}
       {!hub && (
