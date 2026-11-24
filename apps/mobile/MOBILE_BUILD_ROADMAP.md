@@ -508,8 +508,8 @@ This completes **Wave 9** and the Phase-1 mobile screen catalogue.
   **287 mobile + 31 SDK tests green.**
 - **Flagged (offline-sandbox honesty):** native enforcement (TLS handshake pinning, root/attestation, R8/Hermes,
   source-map strip) is wired via the release build config and is exercised by **EAS/CI, not the offline sandbox**;
-  `npm audit`/Snyk is a CI gate (needs a lockfile + registry). Real TLS pins + the native integrity provider are
-  injected at build (`EXPO_PUBLIC_TLS_PINS` / `setIntegrityProvider`); the JS ports + server scoring are ready.
+  `npm audit`/Snyk is a CI gate (needs a lockfile + registry). The native integrity provider is
+  injected at build (`setIntegrityProvider`); TLS pins shipped in PC-56 MOB-TLS-1 (`core/security/tls-pins.ts`, docs/mobile/TLS-PINNING.md); the JS ports + server scoring are ready.
 
 ### P-31 · Observability + crash + analytics (P0) — ✅ DONE
 - **Shipped:** new `core/observability` (PURE, unit-tested): `redact` (deep PII/secret scrubber — key denylist +

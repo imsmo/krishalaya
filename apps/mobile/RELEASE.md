@@ -12,8 +12,9 @@ release logic is unit-tested here; the binary build/submit + OTA run on EAS/CI, 
 | `beta` | `beta` | Play internal→closed→open / TestFlight | beta cohort |
 | `production` | `production` | Play production (1% rollout) / App Store | GA |
 
-Release hardening (Hermes, R8/ProGuard + shrink, cleartext-off, TLS pins) lives in `app.config.ts`
-(`expo-build-properties`); source maps upload privately then are stripped (P-30 + `mobile-release.yml`).
+Release hardening (Hermes, R8/ProGuard + shrink, cleartext-off, Android network security config) lives in `app.config.ts`
+(`expo-build-properties` + `plugins/with-android-network-security.js`); TLS public-key pins live in
+`src/core/security/tls-pins.ts` and switch on for `preview`/`beta`/`production` (docs/mobile/TLS-PINNING.md — yearly review); source maps upload privately then are stripped (P-30 + `mobile-release.yml`).
 
 ## Binary release (new native build)
 1. CI green on `main` (mobile-ci.yml: typecheck, lint, unit, audit, bundle-size, Maestro e2e).

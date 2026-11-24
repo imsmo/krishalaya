@@ -14,10 +14,19 @@ import { createClient, KrishalayaClient } from '@krishalaya/sdk-js';
 import { config } from '../config';
 import { integrityHeaders } from '../security/integrity';
 import { correlationHeaders } from '../observability';
+import { tlsPinningReady } from '../security/tls-pinning.runtime';
 
-/** Per-request PII-free headers: device-integrity risk signal (§4) + correlation id (§6). Merged best-effort. */
+/** Per-request PII-free headers: device-integrity risk signal (§4) + correlation id (§6). Merged best-effort. Awaits the TLS
+ * pin set-up first (MOB-TLS-1) so no request reaches the API host before the pins are in force (instant after the first). */
 async function authedHeaders(): Promise<Record<string, string>> {
+  await tlsPinningReady();
   return { ...correlationHeaders(), ...(await integrityHeaders()) };
+}
+
+/** The tokenless client's only header hook: wait for the TLS pins (the OTP login is the first thing a new install sends). */
+async function anonHeaders(): Promise<Record<string, string>> {
+  await tlsPinningReady();
+  return {};
 }
 
 let _accessTokenGetter: () => string | undefined = () => undefined;
@@ -57,5 +66,5 @@ export function apiClient(): KrishalayaClient {
 
 /** Tokenless client for the pre-auth OTP flow. */
 export function anonClient(): KrishalayaClient {
-  return createClient({ baseUrl: config.apiUrl, tenantSlug: config.tenantSlug, timeoutMs: config.requestTimeoutMs, userAgent: config.userAgent });
+  return createClient({ baseUrl: config.apiUrl, tenantSlug: config.tenantSlug, timeoutMs: config.requestTimeoutMs, userAgent: config.userAgent, getHeaders: anonHeaders });
 }

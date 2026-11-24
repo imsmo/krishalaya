@@ -142,8 +142,8 @@ build/submit + OTA publish run on EAS/CI, not the offline sandbox; the framework
   (`shouldApplyOta` gates on `isCriticalFlow`) and is pinned to a compatible binary via the `appVersion` runtime policy.
 - **No undeclared collection.** `STORE_COMPLIANCE.md` is kept in lockstep with `redactPII` + the data layers — the
   data-safety form matches what the app actually sends. Permissions are feature-scoped, just-in-time, with in-app rationale.
-- **Hardened release artifact.** Production builds carry the P-30 hardening (Hermes, R8/ProGuard, cleartext off, TLS
-  pins); source maps upload privately then are stripped. The bundle-size gate catches a runaway dependency before ship.
+- **Hardened release artifact.** Production builds carry the P-30 hardening (Hermes, R8/ProGuard, cleartext off) and
+  CA-level TLS public-key pins on the API host (MOB-TLS-1, `docs/mobile/TLS-PINNING.md`); source maps upload privately then are stripped. The bundle-size gate catches a runaway dependency before ship.
 - **Degrade-never-die (Law 12).** `checkAndFetchOta` and the OTA provider never throw; the gate renders the app
   untouched whenever it isn't actively forcing an update. Phased rollout halts automatically if crash-free dips below 99.5%.
 
@@ -197,8 +197,8 @@ OFF, TLS pins) + `eas.json` (production profile, private source-map upload, stag
   destination re-checks ownership server-side — IDOR).
 - **Screen capture / clipboard / PII.** 17 sensitive screens block screenshots/recording (FLAG_SECURE); nothing
   sensitive is ever copied to the clipboard (audited: zero Clipboard usage); no raw Aadhaar/PAN/bank on device.
-- **Degrade-never-die (Law 12).** A failing attestation/extra-header provider never blocks a request; pinning
-  failure is a native reject (not a JS bypass). Offline-sandbox caveat: native enforcement + `npm audit` run in CI.
+- **Degrade-never-die (Law 12).** A failing attestation/extra-header provider never blocks a request; a pin
+  mismatch is rejected natively, reported once to Sentry and shown as the ordinary network error (never a crash). Offline-sandbox caveat: native enforcement + `npm audit` run in CI.
 
 ## Global search + settings + system screens (`features/system` + `(system)` group, roadmap P-23)
 
@@ -914,7 +914,7 @@ The app is treated as fully untrusted (guide §4) — every control below is als
   client read degrades to an EmptyState on 404, never leaks another tenant's data).
 - **Scraping / DoS:** product search is debounced, lists are keyset-bounded; the server owns rate limits.
 - **DoS via flaky deps:** every call is timeout-bounded and degrades (Law 12); a hung API never white-screens.
-Hardening still owed before GA (roadmap P-30): TLS pinning, root/integrity attestation, release obfuscation,
+Hardening still owed before GA (roadmap P-30): root/integrity attestation, release obfuscation,
 `FLAG_SECURE` on KYC/payment/wallet screens — tracked in `MOBILE_BUILD_ROADMAP.md`.
 
 ## Verification

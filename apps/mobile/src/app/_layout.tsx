@@ -17,6 +17,7 @@ import { startSyncEngine } from '../core/offline/sync.engine';
 import { useConnectivity } from '../core/connectivity/connectivity';
 import { useTranslation } from '../core/i18n/useTranslation';
 import { initObservability, rotateCorrelationId, flushAnalytics } from '../core/observability';
+import { tlsPinningReady } from '../core/security/tls-pinning.runtime';
 import { ForcedUpdateGate, checkAndFetchOta, installExpoOtaProvider } from '../core/release';
 import { PushRegistrar } from '../core/push/PushRegistrar';
 import { isEnabled } from '../core/flags/flags';
@@ -72,6 +73,7 @@ export default function RootLayout() {
   // Boot: hydrate remote flags (best-effort), then start the sync engine (replays queued writes on reconnect).
   useEffect(() => {
     initObservability(); // crash + analytics providers (no-op without a DSN; never breaks boot) — §6
+    void tlsPinningReady(); // MOB-TLS-1: CA-level pins on the API host in preview/production builds (after observability so a failure is reported)
     void hydrateFlags();
     void hydrateMechanismPreferences(); // DEV-20: restore theme-mode + senior-mode preferences (best-effort)
     // PC-56 RTL-1h-1: the RTL flags are NOT set here any more. This effect ran before the saved language was read (so it always

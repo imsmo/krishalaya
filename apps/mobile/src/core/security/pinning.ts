@@ -1,10 +1,8 @@
-// apps/mobile/src/core/security/pinning.ts · TLS certificate/public-key PINNING config + validators (guide §4).
-// The actual pin ENFORCEMENT happens natively in release builds (network-security-config on Android via the
-// `pins` declared in app.config, and an iOS App Transport Security / NSURLSession pinning hook) — pinning cannot
-// be enforced from JS, and a patched client could strip a JS check anyway. This module owns the *config* the
-// native layer consumes plus PURE validators we unit-test, so a malformed/empty pin set is caught in CI, not in
-// the field. Every host MUST ship a backup pin (rotation plan, §4) so a cert rotation can't brick the app.
-// PINS are loaded from public config (sha256/base64 SPKI hashes — not secrets); the API origin is pinned in prod.
+// apps/mobile/src/core/security/pinning.ts · PURE TLS pin validators (guide §4). WHAT is pinned lives in tls-pins.ts (CA-level
+// SPKI pins: Amazon Trust Services roots + Starfield Services G2, the app's own API host only, preview/production builds only,
+// expiring 2028-05-31); tls-pinning.runtime.ts installs them in the native stack via react-native-ssl-public-key-pinning
+// (OkHttp CertificatePinner on Android, TrustKit on iOS). Nothing is configured in app.config / Info.plist / a pin-set, and no
+// pins come from env. These helpers are the format checks the builder and its CI test use. docs/mobile/TLS-PINNING.md.
 
 export interface HostPins { host: string; pins: string[]; includeSubdomains?: boolean }
 

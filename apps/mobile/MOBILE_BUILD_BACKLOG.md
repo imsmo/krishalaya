@@ -30,7 +30,7 @@ was wired. The dot stayed amber for two honest reasons, neither of which was "an
 - **i18n parity EXACT**: `en`/`hi`/`gu` = **1232 keys each, zero missing / zero extra / zero dupes** (deep-flattened).
 - **0** direct `apiClient()` calls in any screen (all I/O via `features/*.api`) — the guide's hard rule holds.
 - **Security/release docs present**: `THREAT_MODEL.md`, `RELEASE.md`, `STORE_COMPLIANCE.md`; `app.config.ts`
-  (Hermes/R8/cleartext-off/TLS pins), `eas.json` (phased rollout), CI workflows.
+  (Hermes/R8/cleartext-off; TLS pins since MOB-TLS-1), `eas.json` (phased rollout), CI workflows.
 - Every feature vertical sits behind a **default-OFF feature flag** with a kill-switch.
 
 > **Build-sandbox note (same caveat the web apps recorded).** This monorepo's `workspace:*` deps can't be installed

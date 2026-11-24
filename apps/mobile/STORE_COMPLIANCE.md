@@ -35,7 +35,7 @@ Not requested: background location, contacts, SMS read, calendar, precise advert
 | Crash logs | Yes | Stability | With crash service (Sentry) | PII/token-redacted; user id only |
 | Device integrity signal | Yes | Fraud/risk scoring | No | Coarse posture token, **no device id / PII** |
 
-- **Encryption in transit:** HTTPS + TLS pinning (P-30). **At rest:** tokens in Keychain/Keystore (expo-secure-store).
+- **Encryption in transit:** HTTPS + TLS public-key pinning of the app's own API host at the CA level in preview/production builds (MOB-TLS-1, `docs/mobile/TLS-PINNING.md`). **At rest:** tokens in Keychain/Keystore (expo-secure-store).
 - **Data deletion:** in-app DPDP **account delete** + **data export** (P-23, `(system)` privacy) — request from the app.
 - **Account creation:** phone-OTP (enumeration-safe). Children: not directed at children; no child data collected.
 

@@ -25,7 +25,7 @@ PC-56 MOB-STORE-1. **One set of facts, two forms.** Each answer below comes from
 
 **Not collected:** email, contacts, SMS, call logs, calendar, browsing or search history, an advertising id, analytics or app-interaction events (no analytics provider is wired; `setAnalyticsProvider` is never called), health, audio. Voice input (flags `voice_listing` and `voice_assistant`, OFF at launch) uses the platform recogniser (Apple Speech, or Google's recogniser on Android). Audio goes to the OS vendor, never to Krishalaya, and only the text the user keeps lands in a form. If voice is switched on, review this with the OS vendors' terms.
 
-**Encryption in transit:** always. HTTPS only, cleartext is off (`usesCleartextTraffic: false`, ATS default) and TLS pins are injected per build.
+**Encryption in transit:** always. HTTPS only, cleartext is off (`usesCleartextTraffic: false`, ATS default) and preview/production builds pin the API host's TLS public keys at the CA level (Amazon Trust Services roots; docs/mobile/TLS-PINNING.md).
 **Deletion:** in the app, Settings → Delete account (`(system)/account-delete.tsx`). This is **behind the `system_screens` flag, which must be ON before submission.** Play also requires a web URL for deletion requests (see §5).
 **No tracking:** `NSPrivacyTracking` is false and there are no tracking domains, no ad SDKs and no ATT prompt.
 

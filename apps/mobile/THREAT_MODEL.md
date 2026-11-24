@@ -19,7 +19,7 @@ defence. This document is the §4 sign-off for the GA gate.
 |---|------------|--------|-------|
 | 1 | Tokens only in encrypted secure storage; never AsyncStorage/logs/bundle | ✅ | `core/auth/token-store.ts` (expo-secure-store); access+refresh+expiry only; language in AsyncStorage is non-secret |
 | 2 | No API secret/admin capability in the bundle (only `EXPO_PUBLIC_*`) | ✅ | `core/config.ts` fail-closed; only public origin/keys; god-mode lives in admin-api (Law 11) |
-| 3 | HTTPS only + TLS cert/public-key **pinning** (primary + backup) | ✅ (native at release) | `core/security/pinning.ts` (config + CI gate `pinConfigReady`); `app.config.ts` `tlsPins` + `usesCleartextTraffic:false` |
+| 3 | HTTPS only + TLS public-key **pinning** (CA level: Amazon Root CA 1–4 + Starfield Services G2, API host only, preview/production builds, expires 2028-05-31) | ✅ (native at runtime, MOB-TLS-1) | `core/security/tls-pins.ts` (pins + builder, unit-tested) → `tls-pinning.runtime.ts` (react-native-ssl-public-key-pinning: OkHttp CertificatePinner / TrustKit; failures → Sentry); Android `networkSecurityConfig` (release: system CAs only, no cleartext) + `usesCleartextTraffic:false`; `docs/mobile/TLS-PINNING.md` |
 | 4 | Root/jailbreak + Play Integrity / App Attest on sensitive flows | ✅ (signal) | `core/security/integrity.ts` — risk signal header `x-device-integrity` on every authed call; server scores it; native provider injected at boot via `setIntegrityProvider` |
 | 5 | Anti-tamper/anti-reversing: Hermes, R8/ProGuard, shrink, strip source maps, no dev menu | ✅ (release config) | `app.config.ts` (`jsEngine:hermes`, expo-build-properties), `eas.json` (production profile + private source-map upload) |
 | 6 | Every mutation carries an Idempotency-Key (Law 3) | ✅ | SDK attaches `idempotency-key` on non-GET; all write data-layers pass `newId()`; SDK test pins it |
@@ -77,8 +77,9 @@ worker/withdraw, ambassador/withdraw, system/change-phone.
 ## C. RESIDUAL RISK / FOLLOW-UPS (tracked, not blocking the JS layer)
 - **Native attestation provider** (`setIntegrityProvider`) must be wired in the release build (Play Integrity /
   App Attest) — the JS port + server scoring are ready; the default honestly reports `unknown`.
-- **Real TLS pins** must be injected at build (`EXPO_PUBLIC_TLS_PINS`, primary + backup) and rotated on cert
-  renewal; `pinConfigReady()` is the CI gate so an empty/short set fails the build.
+- **TLS pins** (MOB-TLS-1) are CA-level (Amazon Trust Services roots + Starfield G2), so ACM leaf renewals never need an
+  app change; they expire 2028-05-31 (fail open to system-CA validation) and are reviewed yearly — `docs/mobile/TLS-PINNING.md`.
+  Not covered: presigned media uploads (S3, expo-file-system's own client) and third parties (Razorpay, Sentry, Expo, Google).
 - **`npm audit`/Snyk** is a CI gate (needs lockfile + registry) — wired in `eas.json`'s production promotion note.
 - **Source-map upload** to the crash service is a CI step (private), with maps stripped from the shipped artifact.
 
@@ -86,5 +87,5 @@ worker/withdraw, ambassador/withdraw, system/change-phone.
 The §4 checklist is GREEN at the JS/config layer (items 1–14), with items 3/4/5/14 completed by the release build
 config + CI gates (verified by EAS/CI, not the offline sandbox). The five high-value flows above are closed
 **server-side** with the client hardening as defence-in-depth. Recommendation: **proceed to staged rollout**
-(1%→10%→100%, crash-free ≥ 99.5%) once a release build passes the CI gates (pins present, audit clean, source
+(1%→10%→100%, crash-free ≥ 99.5%) once a release build passes the CI gates (pin config valid, audit clean, source
 maps uploaded). — Mobile security pass, P-30.

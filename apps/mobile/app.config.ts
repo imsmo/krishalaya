@@ -1,14 +1,15 @@
 // apps/mobile/app.config.ts · Expo app configuration. Uses expo-router (file-based routing under src/app) and
 // surfaces public runtime config via `extra` (read by core/config.ts — no secrets here, only public values
 // injected from EXPO_PUBLIC_* env at build time). Deep-link scheme `krishalaya` powers OTP/SMS return +
-// notification taps. P-30 release hardening: Hermes JS engine, R8/ProGuard + resource shrink, cleartext OFF, and
-// TLS pinning declared for the API host so the native layer enforces it in release builds (§4). None of these are
-// the LAST line of defence — the server is the authority (Law 11) — but they raise the cost of attack.
+// notification taps. P-30 release hardening: Hermes JS engine, R8/ProGuard + resource shrink, cleartext OFF, and an
+// explicit Android network security config (release: system CAs only, no cleartext — plugins/with-android-network-security.js).
+// TLS public-key pinning (MOB-TLS-1) is NOT configured here: the CA-level pins live in src/core/security/tls-pins.ts and are
+// installed at runtime by react-native-ssl-public-key-pinning (autolinked native module, no config plugin) in preview/production
+// builds only — docs/mobile/TLS-PINNING.md. None of these are the LAST line of defence — the server is the authority — but they
+// raise the cost of attack.
 import type { ExpoConfig } from 'expo/config';
-
-const apiHost = (() => { try { return process.env.EXPO_PUBLIC_API_URL ? new URL(process.env.EXPO_PUBLIC_API_URL).host : undefined; } catch { return undefined; } })();
-// TLS public-key pins (base64 SHA-256 SPKI) injected at build time: primary + backup (rotation). CSV in env.
-const tlsPins = (process.env.EXPO_PUBLIC_TLS_PINS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+// eslint-disable-next-line @typescript-eslint/no-var-requires -- a CommonJS config plugin (runs in Node at prebuild only)
+const withAndroidNetworkSecurity = require('./plugins/with-android-network-security');
 
 // PC-56 MOB-STORE-1 · the store version. ONE constant feeds both `version` (CFBundleShortVersionString / versionName) and
 // `extra.appVersion` (what core/config.ts hands the forced-update floor, update-gate.ts compareVersions), so the release_gate
@@ -180,6 +181,9 @@ const config: ExpoConfig = {
       microphonePermission: PERMISSION.microphone,
       speechRecognitionPermission: PERMISSION.speech,
     }],
+    // MOB-TLS-1: android:networkSecurityConfig — release trusts system CAs only (no user-installed CAs) and forbids cleartext;
+    // the debug build type gets a resource overlay allowing Metro over http + user CAs.
+    withAndroidNetworkSecurity,
     // Release anti-tamper/anti-reversing + transport hardening (§4). Cleartext is OFF (HTTPS-only); R8 + resource
     // shrinking minify + strip; Hermes is the engine. ProGuard keeps the RN/OkHttp/Hermes runtime.
     // MOB-SDK-1: Google Play requires target API 36 (Android 16) for new apps and updates since 31 Aug 2026 — the
@@ -241,8 +245,6 @@ const config: ExpoConfig = {
     termsUrl: process.env.EXPO_PUBLIC_TERMS_URL,
     razorpayKeyId: process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID,
     tenantConsoleUrl: process.env.EXPO_PUBLIC_TENANT_CONSOLE_URL,
-    // TLS pinning config consumed by the native pinning hook in release builds; CI gate: pinConfigReady().
-    tlsPins: apiHost && tlsPins.length ? [{ host: apiHost, pins: tlsPins, includeSubdomains: false }] : [],
   },
 };
 
