@@ -32,10 +32,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # PC-56 CI-3: no `version:` here — package.json "packageManager" pins pnpm@9.15.9, and naming both made
+      # pnpm/action-setup stop with "Multiple versions of pnpm specified", so this audit never ran. Frozen install:
+      # CI must fail on lockfile drift, not silently rewrite the lockfile it is about to audit.
       - uses: pnpm/action-setup@v4
-        with: { version: 9 }
       - uses: actions/setup-node@v4
         with: { node-version: 20, cache: pnpm }
-      - run: pnpm install --frozen-lockfile=false
+      - run: pnpm install --frozen-lockfile
       - name: pnpm audit (fail on high/critical)
         run: pnpm audit --audit-level high || (echo "High/critical advisories found — triage before release." && exit 1)
