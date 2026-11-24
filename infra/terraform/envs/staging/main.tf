@@ -107,6 +107,21 @@ module "irsa" {
   media_bucket_arn   = module.media.media_bucket_arn
 }
 
+# 5b) PC-56 DEPLOY-1 · the role GitHub Actions deploys as (OIDC, no stored AWS keys). Trusted only for jobs running in
+#     the GitHub Environment "staging" of var.github_repository; ECR push to krishalaya-*, describe this cluster, and
+#     Kubernetes "edit" in the krishalaya namespace only. Output github_deploy_role_arn → GitHub Environment variable
+#     AWS_DEPLOY_ROLE_ARN (see .github/workflows/deploy-staging.yml).
+module "github_deploy" {
+  source               = "../../modules/github-deploy"
+  name                 = var.project
+  github_repository    = var.github_repository
+  github_environment   = "staging"
+  create_oidc_provider = var.create_github_oidc_provider
+  cluster_name         = module.eks.cluster_name
+  cluster_arn          = module.eks.cluster_arn
+  namespace            = "krishalaya"
+}
+
 # 6) EDGE — DNS zone for the staging.krishalaya.com SUBDOMAIN (its own Route 53 zone, NS-delegated at the
 #    registrar or inside the prod zone once it exists — see S1_STAGING_APPLY_RUNBOOK.md §5), wildcard TLS, WAF,
 #    and IAM for the ALB controller + external-dns. Founder decision: WAF/ACM/Route53 ON at pilot (cheap, and

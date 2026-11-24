@@ -1,1 +1,79 @@
-# .github/workflows/deploy-prod.yml · Tue/Fri, manual approve, canary · [P1]
+# .github/workflows/deploy-prod.yml · Tue/Fri, manual approve · [P1]
+# PC-56 DEPLOY-1: was a one-line placeholder that GitHub reported as a broken workflow on every push. Now: a MANUAL
+# production deploy that only promotes what staging already proved —
+#   • started by hand from `main` (never by a push or a schedule),
+#   • the exact commit must have a SUCCESSFUL deploy-staging run (promote, never skip staging),
+#   • release window Tuesday/Friday (IST); outside it only with out_of_window + a written reason,
+#   • the job runs in the `production` GitHub Environment → its required reviewers approve before anything happens,
+#     and only that environment can assume the production AWS role (infra/terraform/modules/github-deploy).
+# "Canary" from the original header: every release is `helm --atomic` (an unhealthy release rolls back by itself) and
+# services roll out one at a time. A traffic-weighted canary needs the edge wave (ALB/Ingress) — not built yet.
+name: deploy-prod
+
+on:
+  workflow_dispatch:
+    inputs:
+      migrations_applied:
+        description: 'db/migrations changed since the running release AND were applied to production'
+        type: boolean
+        default: false
+      out_of_window:
+        description: 'Deploy outside the Tue/Fri window (emergency)'
+        type: boolean
+        default: false
+      reason:
+        description: 'Why (required when out_of_window)'
+        type: string
+        default: ''
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+  actions: read
+  statuses: write   # record deploy/<environment> on the commit after a real, healthy deploy
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: From main only
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error title=Not main::Production deploys start from main (started from ${GITHUB_REF})."
+          exit 1
+
+      - name: Release window (Tue/Fri IST) unless an emergency is stated
+        env:
+          OUT: ${{ inputs.out_of_window }}
+          REASON: ${{ inputs.reason }}
+        run: |
+          day=$(TZ=Asia/Kolkata date +%a)
+          if [ "$day" = "Tue" ] || [ "$day" = "Fri" ]; then echo "In window ($day)."; exit 0; fi
+          if [ "$OUT" = "true" ] && [ "${#REASON}" -ge 10 ]; then
+            echo "::warning title=Out-of-window deploy::$day — reason: $REASON"; exit 0
+          fi
+          echo "::error title=Outside the release window::Today is $day (IST). Production deploys are Tue/Fri; for an emergency set out_of_window and give a reason (10+ characters)."
+          exit 1
+
+      - name: Staging proved this exact commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Set by deploy-environment.yml only after a REAL staging deploy whose /healthz smoke passed (a skipped,
+          # not-configured staging run never sets it).
+          state=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/statuses" --jq '[.[] | select(.context == "deploy/staging")][0].state // "none"')
+          if [ "$state" != "success" ]; then
+            echo "::error title=Not proven on staging::deploy/staging is '${state}' for ${GITHUB_SHA}. Deploy this commit to staging first."
+            exit 1
+          fi
+
+  production:
+    needs: gate
+    uses: ./.github/workflows/deploy-environment.yml
+    with:
+      environment: production
+      migrations_applied: ${{ inputs.migrations_applied }}

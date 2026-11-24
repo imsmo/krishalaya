@@ -141,3 +141,57 @@ The services run **inside** the cluster now, but there is no public entrypoint y
 AWS Load Balancer Controller + an `Ingress` per web/api, an **ACM TLS cert** for your domain, the **WAF**, and
 **Route 53** DNS records. That wave needs your **production domain name**. Until then, reach services via
 `kubectl port-forward` for testing.
+
+---
+
+## 7. Deploying from GitHub Actions (PC-56 DEPLOY-1)
+
+Everything above, as code: `.github/workflows/deploy-environment.yml` (the procedure) called by
+`deploy-staging.yml` (daily 18:00 IST from `main`, or on demand) and `deploy-prod.yml` (manual, from `main`, Tue/Fri IST,
+promotes only a commit already healthy on staging). Neither runs on a push. Until an environment is configured, its run
+ends green with a "Deploy skipped — not configured" notice.
+
+### One-time setup per environment (staging first, then production)
+1. **Terraform** — `terraform apply` in `envs/<env>` now also creates the GitHub deploy role (`modules/github-deploy`:
+   OIDC, no stored AWS keys; ECR push to `krishalaya-*`, describe this cluster, Kubernetes *edit* in the `krishalaya`
+   namespace only) and switches the cluster to EKS access entries (`API_AND_CONFIG_MAP`, in place; existing access
+   unchanged). If staging and prod share one AWS account, set `create_github_oidc_provider = false` in the env applied
+   second (the provider is one per account).
+2. **GitHub → Settings → Environments** — create `staging` and `production`. On `production` add **required
+   reviewers** (the approval gate) and restrict deployment branches to `main`.
+3. **Environment variables** (per environment, from `terraform output`):
+   | Variable | Value |
+   |---|---|
+   | `AWS_DEPLOY_ROLE_ARN` | `terraform output -raw github_deploy_role_arn` |
+   | `EKS_CLUSTER_NAME` | `terraform output -raw eks_cluster_name` |
+   | `IRSA_ROLE_ARNS` | `terraform output -json irsa_role_arns` (one line of JSON) |
+   | `AWS_REGION` | optional; default `ap-south-1` |
+   | `NEXT_PUBLIC_ENV_WEB_STOREFRONT` … `_WEB_TENANT`, `_WEB_ADMIN`, `_WEB_PARTNER`, `_WEB_GOV`, `_WEB_OPS` | each web app's **public** build-time settings as dotenv lines (e.g. `NEXT_PUBLIC_API_URL=https://api.staging.krishalaya.com`). They are baked into the browser bundle — never a secret. |
+4. Steps 3 (namespace + env Secrets from Secrets Manager) of this runbook must be done once per cluster; the workflow
+   deploys into an existing `krishalaya` namespace and never handles server secrets.
+
+### Migrations (the workflow does not run them)
+The database is in isolated subnets, unreachable from GitHub. Before deploying, the workflow compares `db/migrations`
+between the commit running now (read from the `api` release's image tag) and the commit being deployed. If anything
+changed it **stops**: apply the migrations to that environment first (`pnpm migrate` with `MIGRATION_DATABASE_URL`
+from a host inside the VPC, e.g. a pod in the cluster), then re-run the workflow with **migrations_applied = true**.
+A first deploy always counts as "every migration".
+
+### What a deploy does
+CI must have passed on the commit → OIDC login → build + push all images tagged `<sha>-staging|prod` (linux/amd64) →
+`helm upgrade --install --atomic --wait` per service, wallet-service first (a release that does not become healthy
+rolls back on its own) → in-cluster `/healthz` smoke → commit status `deploy/<environment> = success`
+(production requires `deploy/staging = success` on the same commit).
+
+### Corrections to §2 and §4 found while wiring this (PC-56 DEPLOY-1)
+- Backend images never built: `node-service.Dockerfile` used `pnpm deploy --legacy`, a pnpm 10 flag (the repo pins
+  pnpm 9.15.9). Fixed.
+- Web images: no way to pass the required `NEXT_PUBLIC_*` (builds refused), and the runtime stage could not find
+  `next`, so `npx` downloaded next@latest (16.x) on every container start. Fixed: `NEXT_PUBLIC_ENV` build arg and a
+  prod-only `pnpm deploy` tree started with the app's own pinned `next`.
+- Images are built for `linux/amd64` (the nodes are t3); a plain `docker build` on an Apple-silicon Mac makes arm64
+  images that fail with "exec format error".
+- `web-gov` and `web-ops` are built and deployed too (generic `web` chart).
+- Installs inside images use `--frozen-lockfile` (the exact versions CI tested).
+- The 5 P1/P2 charts (`analytics-pipeline`, `ivr-ussd-gateway`, `outbox-relay`, `stream-processor`, `whatsapp-bot`)
+  are placeholders that `helm lint` rejects; they are not deployed.

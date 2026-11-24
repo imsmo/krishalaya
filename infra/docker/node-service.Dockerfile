@@ -10,10 +10,11 @@ FROM node:20-alpine AS build
 ARG APP_PKG
 WORKDIR /repo
 RUN corepack enable
-COPY pnpm-workspace.yaml package.json pnpm-lock.yaml* turbo.json tsconfig*.json ./
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml .npmrc* turbo.json tsconfig*.json ./
 COPY packages ./packages
 COPY apps ./apps
-RUN pnpm install --frozen-lockfile=false \
+# PC-56 DEPLOY-1: frozen — the image must build the exact dependency versions CI tested.
+RUN pnpm install --frozen-lockfile \
   && pnpm --filter "${APP_PKG}..." build
 
 # ---- prune stage: production-only deps for the target app ----
@@ -23,7 +24,9 @@ WORKDIR /repo
 RUN corepack enable
 COPY --from=build /repo /repo
 # deploy a self-contained, prod-only node_modules tree for the app into /app
-RUN pnpm --filter "${APP_PKG}" deploy --prod --legacy /app
+# PC-56 DEPLOY-1: no `--legacy` — that flag exists only in pnpm 10; this repo pins pnpm 9.15.9, which stopped every
+# backend image build with "Unknown option: 'legacy'". Without it the deployed api boots (verified outside Docker).
+RUN pnpm --filter "${APP_PKG}" deploy --prod /app
 
 # ---- runtime stage ----
 FROM ${RUNTIME_BASE} AS runtime

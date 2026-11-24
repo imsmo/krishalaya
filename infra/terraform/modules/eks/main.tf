@@ -85,6 +85,14 @@ resource "aws_eks_cluster" "this" {
 
   enabled_cluster_log_types = ["api", "audit", "authenticator"]
 
+  # PC-56 DEPLOY-1: EKS access entries (API) alongside the aws-auth ConfigMap, so the GitHub deploy role can be granted
+  # namespace-scoped access (modules/github-deploy). CONFIG_MAP -> API_AND_CONFIG_MAP is an in-place, one-way update;
+  # existing kubeconfig access is unchanged. The cluster creator keeps admin (the API default, stated explicitly).
+  access_config {
+    authentication_mode                         = "API_AND_CONFIG_MAP"
+    bootstrap_cluster_creator_admin_permissions = true
+  }
+
   tags       = local.tags
   depends_on = [aws_iam_role_policy_attachment.cluster]
 }

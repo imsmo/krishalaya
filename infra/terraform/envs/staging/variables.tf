@@ -91,3 +91,15 @@ variable "root_domain" {
   description = "Staging apex — a delegated SUBDOMAIN of the prod apex, not its own registrar-level domain. Gets its own Route 53 hosted zone (module.dns), NS-delegated from inside the prod krishalaya.com zone (see runbook step on DNS delegation)."
   default     = "staging.krishalaya.com"
 }
+
+# PC-56 DEPLOY-1 · GitHub Actions deploy identity (modules/github-deploy)
+variable "github_repository" {
+  description = "owner/repo whose GitHub Actions may deploy to this environment."
+  type        = string
+  default     = "imsmo/krishalaya"
+}
+variable "create_github_oidc_provider" {
+  description = "The GitHub OIDC provider is one per AWS ACCOUNT. If staging and prod share an account, keep true in the env applied first and set false in the other."
+  type        = bool
+  default     = true
+}

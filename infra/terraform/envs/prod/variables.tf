@@ -66,3 +66,15 @@ variable "root_domain" {
   description = "Apex production domain."
   default     = "krishalaya.com"
 }
+
+# PC-56 DEPLOY-1 · GitHub Actions deploy identity (modules/github-deploy)
+variable "github_repository" {
+  description = "owner/repo whose GitHub Actions may deploy to this environment."
+  type        = string
+  default     = "imsmo/krishalaya"
+}
+variable "create_github_oidc_provider" {
+  description = "The GitHub OIDC provider is one per AWS ACCOUNT. If staging and prod share an account, keep true in the env applied first and set false in the other."
+  type        = bool
+  default     = true
+}

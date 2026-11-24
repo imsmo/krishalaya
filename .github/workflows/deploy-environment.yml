@@ -1,0 +1,194 @@
+# .github/workflows/deploy-environment.yml · PC-56 DEPLOY-1 — the ONE deploy procedure, called by deploy-staging.yml and
+# deploy-prod.yml. It is infra/DEPLOY-RUNBOOK.md §2–§5 as code: build + push every image to ECR, then one Helm release
+# per service into the `krishalaya` namespace of the environment's EKS cluster, each `--atomic --wait` (a release that
+# does not become healthy is rolled back automatically), then an in-cluster /healthz smoke test.
+#
+# SAFE BY CONSTRUCTION
+#  • No AWS keys in GitHub: OIDC → the environment's deploy role (infra/terraform/modules/github-deploy), which trusts
+#    ONLY jobs running in that GitHub Environment — so production needs the `production` environment's reviewers.
+#  • Not configured yet → the job explains what is missing and ENDS GREEN; it never fails a schedule for missing setup.
+#  • Only a commit whose `CI` workflow passed is deployed.
+#  • Database migrations are NOT run here (the database is in isolated subnets, unreachable from GitHub). If db/migrations
+#    changed since the commit that is running now, the deploy STOPS until someone confirms they were applied
+#    (input migrations_applied) — code is never shipped ahead of its schema.
+#
+# CONFIGURATION — per GitHub Environment (Settings → Environments → staging | production → Variables):
+#   AWS_DEPLOY_ROLE_ARN   terraform output github_deploy_role_arn
+#   EKS_CLUSTER_NAME      terraform output eks_cluster_name
+#   IRSA_ROLE_ARNS        terraform output -json irsa_role_arns   (the JSON map, as one line)
+#   AWS_REGION            optional, default ap-south-1
+#   NEXT_PUBLIC_ENV_WEB_STOREFRONT, _WEB_TENANT, _WEB_ADMIN, _WEB_PARTNER, _WEB_GOV, _WEB_OPS
+#                         each web app's PUBLIC build-time settings as dotenv text (multi-line). Public values only.
+# Server-side secrets are NOT GitHub variables: they live in AWS Secrets Manager and reach pods through the Kubernetes
+# Secrets the charts read (DEPLOY-RUNBOOK §3).
+name: deploy-environment
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'GitHub Environment: staging | production'
+        type: string
+        required: true
+      migrations_applied:
+        description: 'Confirm db/migrations changes since the running release were applied to this environment'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write   # OIDC → AWS
+  actions: read
+  statuses: write   # record deploy/<environment> on the commit after a real, healthy deploy     # check this commit's CI result
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: ${{ inputs.environment }}
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'ap-south-1' }}
+      NAMESPACE: krishalaya
+      SUFFIX: ${{ inputs.environment == 'production' && 'prod' || 'staging' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the migration check diffs against the commit that is running now
+
+      - name: Configured for ${{ inputs.environment }}?
+        id: cfg
+        env:
+          ROLE: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          CLUSTER: ${{ vars.EKS_CLUSTER_NAME }}
+          IRSA: ${{ vars.IRSA_ROLE_ARNS }}
+          WEB_STOREFRONT: ${{ vars.NEXT_PUBLIC_ENV_WEB_STOREFRONT }}
+          WEB_TENANT: ${{ vars.NEXT_PUBLIC_ENV_WEB_TENANT }}
+          WEB_ADMIN: ${{ vars.NEXT_PUBLIC_ENV_WEB_ADMIN }}
+          WEB_PARTNER: ${{ vars.NEXT_PUBLIC_ENV_WEB_PARTNER }}
+          WEB_GOV: ${{ vars.NEXT_PUBLIC_ENV_WEB_GOV }}
+          WEB_OPS: ${{ vars.NEXT_PUBLIC_ENV_WEB_OPS }}
+        run: |
+          missing=()
+          [ -n "$ROLE" ]    || missing+=("AWS_DEPLOY_ROLE_ARN")
+          [ -n "$CLUSTER" ] || missing+=("EKS_CLUSTER_NAME")
+          [ -n "$IRSA" ]    || missing+=("IRSA_ROLE_ARNS")
+          for v in WEB_STOREFRONT WEB_TENANT WEB_ADMIN WEB_PARTNER WEB_GOV WEB_OPS; do
+            [ -n "${!v}" ] || missing+=("NEXT_PUBLIC_ENV_$v")
+          done
+          if [ -n "$IRSA" ] && ! echo "$IRSA" | jq -e 'type == "object"' >/dev/null 2>&1; then missing+=("IRSA_ROLE_ARNS (not a JSON object)"); fi
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            msg="Deploy to '${{ inputs.environment }}' is not configured yet — nothing was deployed. Missing GitHub Environment variables: ${missing[*]}. See infra/DEPLOY-RUNBOOK.md §7."
+            echo "::notice title=Deploy skipped::$msg"
+            { echo "### Deploy skipped — not configured"; echo; echo "$msg"; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Only a commit whose CI passed
+        if: steps.cfg.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          c=$(gh run list --workflow ci.yml --commit "$GITHUB_SHA" --status success --limit 1 --json databaseId -q 'length')
+          if [ "$c" != "1" ]; then
+            echo "::error title=CI not green::The CI workflow has no successful run for ${GITHUB_SHA}. Deploy refused."
+            exit 1
+          fi
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        if: steps.cfg.outputs.ready == 'true'
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          role-session-name: gha-deploy-${{ inputs.environment }}-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Kubeconfig + Helm
+        if: steps.cfg.outputs.ready == 'true'
+        env:
+          CLUSTER: ${{ vars.EKS_CLUSTER_NAME }}
+        run: aws eks update-kubeconfig --name "$CLUSTER" --region "$AWS_REGION"
+      - uses: azure/setup-helm@v4
+        if: steps.cfg.outputs.ready == 'true'
+        with:
+          version: v3.16.3
+
+      - name: Migrations — never ship code ahead of its schema
+        if: steps.cfg.outputs.ready == 'true'
+        env:
+          CONFIRMED: ${{ inputs.migrations_applied }}
+        run: |
+          running=$(helm -n "$NAMESPACE" get values api -o json 2>/dev/null | jq -r '.image.tag // empty' | sed -E 's/-(staging|prod)$//')
+          if [ -z "$running" ]; then
+            changed="(first deploy — every migration)"
+          elif git cat-file -e "${running}^{commit}" 2>/dev/null; then
+            changed=$(git diff --name-only "$running" "$GITHUB_SHA" -- db/migrations | tr '\n' ' ')
+          else
+            changed="(running commit ${running} not found in history)"
+          fi
+          echo "running: ${running:-none} → deploying: ${GITHUB_SHA}"
+          if [ -n "$changed" ] && [ "$CONFIRMED" != "true" ]; then
+            echo "::error title=Migrations pending::db/migrations changed: ${changed}. Apply them to '${{ inputs.environment }}' first (infra/DEPLOY-RUNBOOK.md §7), then re-run with migrations_applied = true."
+            exit 1
+          fi
+          [ -z "$changed" ] && echo "No migration changes." || echo "Migration changes confirmed applied: ${changed}"
+
+      - name: Build + push images (tag = commit-environment)
+        if: steps.cfg.outputs.ready == 'true'
+        env:
+          NEXT_PUBLIC_ENV_WEB_STOREFRONT: ${{ vars.NEXT_PUBLIC_ENV_WEB_STOREFRONT }}
+          NEXT_PUBLIC_ENV_WEB_TENANT: ${{ vars.NEXT_PUBLIC_ENV_WEB_TENANT }}
+          NEXT_PUBLIC_ENV_WEB_ADMIN: ${{ vars.NEXT_PUBLIC_ENV_WEB_ADMIN }}
+          NEXT_PUBLIC_ENV_WEB_PARTNER: ${{ vars.NEXT_PUBLIC_ENV_WEB_PARTNER }}
+          NEXT_PUBLIC_ENV_WEB_GOV: ${{ vars.NEXT_PUBLIC_ENV_WEB_GOV }}
+          NEXT_PUBLIC_ENV_WEB_OPS: ${{ vars.NEXT_PUBLIC_ENV_WEB_OPS }}
+        run: |
+          ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+          echo "ECR=${ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com" >> "$GITHUB_ENV"
+          echo "TAG=${GITHUB_SHA}-${SUFFIX}" >> "$GITHUB_ENV"
+          ACCOUNT=$ACCOUNT REGION=$AWS_REGION TAG="${GITHUB_SHA}-${SUFFIX}" ./infra/docker/build-and-push.sh
+
+      - name: Helm releases (atomic — an unhealthy release rolls back)
+        if: steps.cfg.outputs.ready == 'true'
+        env:
+          IRSA: ${{ vars.IRSA_ROLE_ARNS }}
+        run: |
+          set -euo pipefail
+          cd infra/helm
+          for c in api admin-api wallet-service worker realtime-gateway ai-services web web-partner; do helm dependency build "./$c" >/dev/null; done
+          role() { echo "$IRSA" | jq -er --arg k "$1" '.[$k]'; }
+          release() {  # <release> <chart> <image-repo> [irsa key]
+            local args=(upgrade --install "$1" "./$2" -n "$NAMESPACE" --atomic --wait --timeout 10m
+                        --set "image.repository=${ECR}/$3" --set "image.tag=${TAG}")
+            [ -n "${4:-}" ] && args+=(--set "serviceAccount.roleArn=$(role "$4")")
+            echo ">> $1"; helm "${args[@]}"
+          }
+          # wallet-service first: the api calls it over gRPC.
+          release wallet-service   wallet-service   krishalaya-wallet-service   wallet-service
+          release api              api              krishalaya-api              api
+          release admin-api        admin-api        krishalaya-admin-api        admin-api
+          release worker           worker           krishalaya-worker           worker
+          release realtime-gateway realtime-gateway krishalaya-realtime-gateway realtime-gateway
+          release ai-services      ai-services      krishalaya-ai-services      ai-services
+          for app in web-storefront web-tenant web-admin web-gov web-ops; do release "$app" web "krishalaya-$app"; done
+          release web-partner      web-partner      krishalaya-web-partner
+
+      - name: Smoke — /healthz inside the cluster
+        if: steps.cfg.outputs.ready == 'true'
+        run: |
+          kubectl -n "$NAMESPACE" get pods,svc,hpa
+          kubectl -n "$NAMESPACE" run "smoke-${GITHUB_RUN_ID}" --rm -i --restart=Never --image=curlimages/curl:8.10.1 -- \
+            curl -fsS --max-time 10 "http://api.${NAMESPACE}.svc.cluster.local/healthz"
+          { echo "### Deployed to ${{ inputs.environment }}"; echo; echo "Commit \`${GITHUB_SHA}\` · images \`${TAG}\` · namespace \`${NAMESPACE}\`"; } >> "$GITHUB_STEP_SUMMARY"
+
+      # Proof for promotion: set ONLY after a real deploy whose smoke test passed (a skipped/unconfigured run never sets
+      # it). deploy-prod.yml requires deploy/staging = success on the exact commit it promotes.
+      - name: Record deploy/${{ inputs.environment }} on the commit
+        if: steps.cfg.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state=success -f context="deploy/${{ inputs.environment }}" \
+            -f description="Deployed and /healthz passed (${TAG})" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" >/dev/null

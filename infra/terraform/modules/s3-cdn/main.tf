@@ -46,6 +46,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs" {
   rule {
     id     = "expire-logs"
     status = "Enabled"
+    filter {} # whole bucket (as before); required by future AWS providers (PC-56 DEPLOY-1)
     expiration {
       days = 90
     }
@@ -113,6 +114,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "media" {
   rule {
     id     = "abort-incomplete-mpu"
     status = "Enabled"
+    filter {} # whole bucket (as before); required by future AWS providers (PC-56 DEPLOY-1)
     abort_incomplete_multipart_upload {
       days_after_initiation = 7
     }
@@ -120,6 +122,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "media" {
   rule {
     id     = "expire-noncurrent"
     status = "Enabled"
+    filter {} # whole bucket (as before); required by future AWS providers (PC-56 DEPLOY-1)
     noncurrent_version_expiration {
       noncurrent_days = var.noncurrent_version_expiration_days
     }

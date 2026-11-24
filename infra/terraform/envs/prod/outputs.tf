@@ -77,3 +77,8 @@ output "external_secrets_role_arn" {
   description = "Annotate the ESO controller SA (external-secrets/external-secrets) with this IRSA role."
   value       = module.irsa.external_secrets_role_arn
 }
+
+output "github_deploy_role_arn" {
+  description = "Set as the GitHub Environment 'production' variable AWS_DEPLOY_ROLE_ARN."
+  value       = module.github_deploy.role_arn
+}

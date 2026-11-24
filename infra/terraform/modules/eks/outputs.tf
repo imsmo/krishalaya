@@ -40,3 +40,8 @@ output "cluster_primary_security_group_id" {
   description = "EKS-managed primary SG attached to managed nodes; allow this on Aurora/Redis/OpenSearch ingress."
   value       = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
 }
+
+output "cluster_arn" {
+  description = "Cluster ARN (scope for eks:DescribeCluster grants, e.g. the GitHub deploy role)."
+  value       = aws_eks_cluster.this.arn
+}

@@ -1,1 +1,35 @@
-# .github/workflows/deploy-staging.yml · daily 6PM IST, auto · [P1]
+# .github/workflows/deploy-staging.yml · daily 6 PM IST, auto · [P1]
+# PC-56 DEPLOY-1: was a one-line placeholder that GitHub reported as a broken workflow on every push. Now: deploys
+# `main` to the staging EKS cluster every day at 18:00 IST (and on demand), via the shared procedure in
+# deploy-environment.yml. Until the `staging` GitHub Environment is configured it skips with a notice (green).
+# Never triggered by a push.
+name: deploy-staging
+
+on:
+  schedule:
+    - cron: '30 12 * * *'   # 12:30 UTC = 18:00 IST
+  workflow_dispatch:
+    inputs:
+      migrations_applied:
+        description: 'db/migrations changed since the running release AND were applied to staging'
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false   # never cut a deploy off half-way
+
+permissions:
+  contents: read
+  id-token: write
+  actions: read
+  statuses: write   # record deploy/<environment> on the commit after a real, healthy deploy
+
+jobs:
+  staging:
+    # Scheduled runs deploy main only; a manual run deploys the branch it was started from.
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/deploy-environment.yml
+    with:
+      environment: staging
+      migrations_applied: ${{ inputs.migrations_applied || false }}
