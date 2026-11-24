@@ -96,6 +96,7 @@ import { TeamService } from './services/team.service';
 import { TwoFactorService } from './services/two-factor.service';
 import { KycClaimsExpiryJob } from './jobs/kyc-claims-expiry.job';
 import { StaffInvitedHandler } from './events/handlers/staff-invited.handler';
+import { ErasureReadyHandler } from './events/handlers/erasure-ready.handler';
 import { OUTBOX_HANDLER_REGISTRY } from '../../core/outbox/event-envelope';
 import { OutboxHandlerRegistry } from '../../core/outbox/outbox.dispatcher';
 import { SMS_SENDER, SmsSender } from '../../core/auth/otp.service';
@@ -197,5 +198,8 @@ export class IdentityModule implements OnModuleInit {
     this.datasets.register(this.dpdpPersonDataset);
     this.outboxHandlers.register(new StaffInvitedHandler(this.uow, this.teamRepo, this.ui, this.sms,
       resolveKek(this.config.webhookSigningKek, this.config.isProd), this.config.tenantConsoleBaseUrl));
+    // PC-56 DPDP-1: the DPDP erasure executor (identity.erasure_ready) — registered unconditionally: a statutory right has no
+    // kill-switch (0214/0223 precedent). All its table work is behind migration 0245's SECURITY DEFINER wall (kv_relay: EXECUTE only).
+    this.outboxHandlers.register(new ErasureReadyHandler());
   }
 }

@@ -234,8 +234,10 @@ A public trace page shows a lot's journey but never a person. Your phone number 
 
 We keep personal data while your account is open and for as long as we need it for the purposes above. When you delete your account:
 
-- your profile, devices and identity documents are erased;
-- reviews, listings and images are kept without your name attached;
+- your profile, devices, sign-in sessions, identity documents, preferences, cart and notifications are erased;
+- files you uploaded (your photo, documents, voice notes) are withdrawn so that no one can open them;
+- your messages and reviews stay where they are for the other person, but their words are replaced and your name is removed; review star ratings are kept;
+- your listings are withdrawn;
 - orders and invoices are kept for the period tax law requires, and then removed;
 - payment and ledger records, your consent records and the platform's audit log are kept, because the law requires them as proof.
 
@@ -254,7 +256,8 @@ From [Delete my account](/account/delete) you can ask for your data to be erased
 
 - The page first checks what is still open. A deletion cannot be requested while you have orders that have not finished, money held for your orders, or a wallet balance that you have not yet paid out to your bank.
 - Once you confirm, there is a cooling-off period of 90 days. The date is set when you confirm.
-- After it, a person on the platform's data-protection desk erases your data class by class and records what was done. Nothing is erased automatically.
+- After it, the platform erases your data automatically and records what was done, class by class.
+- If something is still open at that point — an order, money in your wallet, a dispute, a loan or a payout — the erasure waits. We tell you, and it completes on its own once that is settled; we check every hour.
 - What the law makes us keep is kept, as section 6 explains.
 
 ### Withdraw consent

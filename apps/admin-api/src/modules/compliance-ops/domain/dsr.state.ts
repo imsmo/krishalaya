@@ -3,12 +3,18 @@
 //   open → in_progress → completed | rejected.  completed/rejected are terminal. A DPDP rights request
 //   (access/erasure/correction/portability) flows through this; an erasure additionally honours the 90-day
 //   cooling window (cooling_ends_at) before it can be COMPLETED (enforced in the entity).
-export const DSR_STATUSES = ['open', 'in_progress', 'completed', 'rejected'] as const;
+//
+// PC-56 DPDP-1 (0245): `blocked` — an erasure whose cooling ended but which something still open holds back (open order, wallet
+// balance, dispute, loan, payout…). ONLY the erasure executor moves a request into or out of it (in_progress ⇄ blocked → completed,
+// inside migration 0245's SECURITY DEFINER wall, re-checked hourly). An OPERATOR may only reject a blocked request (e.g. a legal hold):
+// completing it by hand would claim an erasure the executor refused to run.
+export const DSR_STATUSES = ['open', 'in_progress', 'blocked', 'completed', 'rejected'] as const;
 export type DsrStatus = (typeof DSR_STATUSES)[number];
 
 const TRANSITIONS: Readonly<Record<DsrStatus, readonly DsrStatus[]>> = Object.freeze({
   open:        ['in_progress', 'rejected'],
   in_progress: ['completed', 'rejected'],
+  blocked:     ['rejected'],
   completed:   [],
   rejected:    [],
 });

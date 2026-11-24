@@ -50,16 +50,15 @@ describe('ADMIN-5 · the erasure scope', () => {
     expect(isKeptByLaw('delete')).toBe(false);
     expect(isKeptByLaw('anonymise')).toBe(false);
   });
-  it('names the actions the platform has no pipeline for', () => {
-    // The retention worker implements action='delete' only and says so in its own comment.
+  it('names the actions the platform has no pipeline for — none, for an erasure, since the 0245 executor (PC-56 DPDP-1)', () => {
     expect(actionIsRunnable('delete')).toBe(true);
     expect(actionIsRunnable('keep_forever')).toBe(true);
-    expect(actionIsRunnable('anonymise')).toBe(false);
-    expect(actionIsRunnable('archive')).toBe(false);
-    expect([...ACTIONS_WITH_NO_PIPELINE].sort()).toEqual(['anonymise', 'archive']);
+    expect(actionIsRunnable('anonymise')).toBe(true);
+    expect(actionIsRunnable('archive')).toBe(true);
+    expect([...ACTIONS_WITH_NO_PIPELINE]).toEqual([]);
     const r = computeScope([pol({ tableName: 'listings', action: 'anonymise' })]);
     if (r.kind !== 'scope') throw new Error('unreachable');
-    expect(r.unrunnable).toEqual(['anonymise']);
+    expect(r.unrunnable).toEqual([]);
   });
   it('keep_forever has no retention window; archive reports the archive months', () => {
     const r = computeScope([

@@ -337,7 +337,7 @@ export class ComplianceRepository {
   async postureCounts(): Promise<{ openDsr: number; openBreaches: number; containedBreaches: number; mandatoryPurposes: number; purposesWithoutNotice: number }> {
     const r = await this.pool.query(
       `SELECT
-         (SELECT count(*)::int FROM data_subject_requests WHERE status IN ('open','in_progress') AND deleted_at IS NULL) AS open_dsr,
+         (SELECT count(*)::int FROM data_subject_requests WHERE status IN ('open','in_progress','blocked') AND deleted_at IS NULL) AS open_dsr,
          (SELECT count(*)::int FROM data_breaches WHERE status = 'open' AND deleted_at IS NULL) AS open_breaches,
          (SELECT count(*)::int FROM data_breaches WHERE status = 'contained' AND deleted_at IS NULL) AS contained_breaches,
          (SELECT count(*)::int FROM consent_purposes WHERE is_mandatory AND deleted_at IS NULL) AS mandatory_purposes,

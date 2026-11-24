@@ -241,6 +241,9 @@ export const NOTIFICATION_EVENT_MAP: readonly NotificationMapEntry[] = [
   { outboxType: 'identity.kyc_rejected',        eventCode: 'kyc.rejected',          recipientKeys: ['notifyUserId'] },
   { outboxType: 'identity.kyc_expiring',        eventCode: 'kyc.expiring',          recipientKeys: ['notifyUserId'] },
   { outboxType: 'identity.kyc_expired',         eventCode: 'kyc.expired',           recipientKeys: ['notifyUserId'] },
+  // PC-56 DPDP-1 (0245): an erasure request whose cooling ended but which something still open blocks — the person is told ONCE per new
+  // set of reasons (kv_dsr_erasure_block emits only on a change), and the deletion completes on its own when the blocker clears.
+  { outboxType: 'identity.erasure_blocked',     eventCode: 'dsr.erasure_blocked',   recipientKeys: ['userId'] },
   // PC-56 TENANT-9b · **W198: "Notice in-app + SMS + voice call" and "results published to all members" — and opening or
   // closing a vote told nobody anything (F-15).** `recipientUserIds` is every active member of the cooperative, put in the
   // payload by `GovernanceService.transition` in the same transaction as the act (ADMIN-6b's rule: a row over a payload with

@@ -54,7 +54,9 @@ export interface DsrExportView {
   jobId: string; status: ExportJobView['status']; standing: ExportJobView['standing']; receipt: ExportJobView['receipt'];
   download: ExportJobView['download']; failure: ExportJobView['failure']; expiresAt: string | null; generatedAt: string | null;
 }
-export interface DsrView { id: string; kind: 'export' | 'deletion'; status: string; coolingEndsAt: Date | null; requestedAt: Date | null; export: DsrExportView | null }
+/** PC-56 DPDP-1: `status` keeps the client vocabulary (open | in_progress | completed | rejected) — a BLOCKED erasure is still in
+ *  progress from the person's side (the storefront and the app show their pending deletion); `blockedReasons` names what it waits on. */
+export interface DsrView { id: string; kind: 'export' | 'deletion'; status: string; coolingEndsAt: Date | null; requestedAt: Date | null; export: DsrExportView | null; blockedReasons: string[] | null }
 
 function exportViewOf(v: ExportJobView | null): DsrExportView | null {
   if (!v) return null;
@@ -62,7 +64,8 @@ function exportViewOf(v: ExportJobView | null): DsrExportView | null {
 }
 function toJSON(d: DataSubjectRequest, job: ExportJobView | null = null): DsrView {
   const p = d.toProps();
-  return { id: p.id, kind: p.requestType === 'erasure' ? 'deletion' : 'export', status: p.status, coolingEndsAt: p.coolingEndsAt, requestedAt: p.createdAt ?? null, export: exportViewOf(job) };
+  return { id: p.id, kind: p.requestType === 'erasure' ? 'deletion' : 'export', status: p.status === 'blocked' ? 'in_progress' : p.status, coolingEndsAt: p.coolingEndsAt,
+    requestedAt: p.createdAt ?? null, export: exportViewOf(job), blockedReasons: p.status === 'blocked' ? (p.blockedReasons ?? []) : null };
 }
 /** The client's key, hashed with the person and the act (the STORE-3a shape — `idempotency_keys.key` is bounded). */
 const keyOf = (scope: string, userId: string, key: string) => createHash('sha256').update(`${scope}:${userId}:${key}`).digest('base64url');

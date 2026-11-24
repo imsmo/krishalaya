@@ -60,10 +60,11 @@ export class MediaRepository {
     await tx.query(`UPDATE media_assets SET exif_stripped=true, updated_at=now() WHERE id=$1 AND tenant_id IS NOT DISTINCT FROM $2`, [id, tenantId]);
   }
 
-  /** Download authz: the uploader, a moderator, OR any platform (tenant NULL) asset. */
+  /** Download authz: the uploader, a moderator, OR any platform (tenant NULL) asset. PC-56 DPDP-1: a soft-deleted asset (an erased
+   *  person's file, awaiting storage purge — 0245) is never presigned again, for anybody. */
   async getVisible(tenantId: string, id: string, viewerUserId: string, canModerate: boolean): Promise<MediaRow | null> {
     const r = await this.replica.forTenant(tenantId).query(
-      `SELECT ${COLS} FROM media_assets WHERE id=$1 AND (tenant_id=$2 OR tenant_id IS NULL) AND ($3=true OR uploader_user_id=$4 OR tenant_id IS NULL)`,
+      `SELECT ${COLS} FROM media_assets WHERE id=$1 AND deleted_at IS NULL AND (tenant_id=$2 OR tenant_id IS NULL) AND ($3=true OR uploader_user_id=$4 OR tenant_id IS NULL)`,
       [id, tenantId, canModerate, viewerUserId]);
     return r.rows[0] ? toRow(r.rows[0]) : null;
   }

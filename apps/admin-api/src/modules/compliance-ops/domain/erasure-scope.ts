@@ -56,10 +56,14 @@ export type ScopeResult =
  *  implements `action='delete'` and says in its comment that anonymise and archive are "left to their dedicated
  *  pipelines (flagged)" — which do not exist. A scope line promising anonymisation that nothing performs is the same
  *  class of lie as a completed erasure that erased nothing, so the console is told which lines are unrunnable. */
-export const ACTIONS_WITH_NO_PIPELINE: readonly RetentionAction[] = ['anonymise', 'archive'];
+//
+// PC-56 DPDP-1 (migration 0245): FOR AN ERASURE this list is now EMPTY. The erasure executor (`kv_dsr_erasure_execute`, consuming
+// `identity.erasure_ready`) deletes, anonymises, and keeps (`archive` / `keep_forever` = the record stays, unchanged or stripped of personal
+// fields) per data class, and writes the evidence row for each. The TIME-BASED retention sweep is a different question and its own
+// honesty lives in posture.ts (`anonymise` / `archive` still have no sweep there).
+export const ACTIONS_WITH_NO_PIPELINE: readonly RetentionAction[] = [];
 export function actionIsRunnable(a: RetentionAction): boolean {
-  // keep_forever is trivially "runnable" — doing nothing is a thing the platform can reliably do.
-  return a === 'delete' || a === 'keep_forever';
+  return !ACTIONS_WITH_NO_PIPELINE.includes(a);
 }
 
 /** `keep_forever` is the only action that keeps data because the law says so. `archive` also keeps it, but temporarily
@@ -146,9 +150,9 @@ export type CompletionCheck =
 /**
  * May this erasure be marked `completed`?
  *
- * ONLY IF EVERY IN-SCOPE DATA CLASS HAS A RECORDED ACTION. Today no class ever will, because `identity.erasure_ready`
- * has no consumer and nothing writes `dsr_erasure_actions` — so this function currently REFUSES every erasure
- * completion, and that is the correct behaviour rather than a bug to work around. Before 0107 an operator could set
+ * ONLY IF EVERY IN-SCOPE DATA CLASS HAS A RECORDED ACTION. Until PC-56 DPDP-1 no class ever had one, because
+ * `identity.erasure_ready` had no consumer. Since migration 0245 the erasure executor writes a row per class and completes the
+ * request itself; this guard still stands between an OPERATOR and a hand-completed erasure the executor did not run. Before 0107 an operator could set
  * `status = 'completed'` with a free-text resolution while every row still existed; the platform recorded a discharged
  * statutory obligation that had not been discharged. A request honestly stuck in `in_progress` with a list of
  * unevidenced classes is recoverable. A dishonestly `completed` one is not, because nobody ever looks again.

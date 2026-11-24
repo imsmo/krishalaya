@@ -1078,6 +1078,24 @@ INSERT INTO notification_event_variables (event_code, name, source_ref, sample_v
  ('dairy.rate_card_approved','effectiveFrom','milk_rate_cards.effective_from as DD/MM/YYYY (a whole day, never a timezone shift)','01/12/2026',true)
 ON CONFLICT (event_code, name) DO NOTHING;
 
+-- PC-56 DPDP-1 (0245) · **AN ACCOUNT DELETION THAT IS WAITING IS SAID SO, ONCE PER CHANGE.** The erasure executor
+-- (`kv_dsr_erasure_block`) emits `identity.erasure_blocked` only when the SET of reasons changes, so the hourly re-check never repeats
+-- this message. NO VARIABLES: the reasons travel in the payload as codes, and the app's Delete account screen names what is still open
+-- (orders, wallet money, disputes, loans, payouts) from its own catalogue. Migration 0245 catalogues the event; copy lives HERE, above the
+-- version backfill below (the TENANT-6d-1 NOTE). Push + in-app × en/hi/gu; no SMS (no DLT registration).
+INSERT INTO notification_events (code, default_name, priority, default_channels, user_can_opt_out, batchable) VALUES
+ ('dsr.erasure_blocked', 'Your account deletion is waiting on something still open', 'important', '["push","inapp"]', false, false)
+ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO notification_templates (event_code, channel, language_code, tenant_id, subject, body, provider_template_ref, is_active) VALUES
+ ('dsr.erasure_blocked','push','en',NULL,'Account deletion is waiting','We could not delete your account yet: something is still open, like an order, money in your wallet, a dispute, a loan or a payout. Once it is settled, the deletion completes on its own — we check every hour.',NULL,true),
+ ('dsr.erasure_blocked','push','hi',NULL,'खाता हटाना रुका हुआ है','हम अभी आपका खाता नहीं हटा सके: कुछ अभी खुला है, जैसे कोई ऑर्डर, वॉलेट में पैसे, कोई विवाद, ऋण या भुगतान। इसके निपटते ही खाता अपने-आप हट जाएगा — हम हर घंटे जाँचते हैं।',NULL,true),
+ ('dsr.erasure_blocked','push','gu',NULL,'ખાતું કાઢવાનું બાકી છે','અમે હજી તમારું ખાતું કાઢી શક્યા નથી: કંઈક હજી ખુલ્લું છે, જેમ કે ઓર્ડર, વૉલેટમાં પૈસા, વિવાદ, લોન અથવા ચુકવણી. તે પતી જાય એટલે ખાતું આપમેળે નીકળી જશે — અમે દર કલાકે તપાસીએ છીએ.',NULL,true),
+ ('dsr.erasure_blocked','inapp','en',NULL,'Account deletion is waiting','We could not delete your account yet: something is still open, like an order, money in your wallet, a dispute, a loan or a payout. Once it is settled, the deletion completes on its own — we check every hour.',NULL,true),
+ ('dsr.erasure_blocked','inapp','hi',NULL,'खाता हटाना रुका हुआ है','हम अभी आपका खाता नहीं हटा सके: कुछ अभी खुला है, जैसे कोई ऑर्डर, वॉलेट में पैसे, कोई विवाद, ऋण या भुगतान। इसके निपटते ही खाता अपने-आप हट जाएगा — हम हर घंटे जाँचते हैं।',NULL,true),
+ ('dsr.erasure_blocked','inapp','gu',NULL,'ખાતું કાઢવાનું બાકી છે','અમે હજી તમારું ખાતું કાઢી શક્યા નથી: કંઈક હજી ખુલ્લું છે, જેમ કે ઓર્ડર, વૉલેટમાં પૈસા, વિવાદ, લોન અથવા ચુકવણી. તે પતી જાય એટલે ખાતું આપમેળે નીકળી જશે — અમે દર કલાકે તપાસીએ છીએ.',NULL,true)
+ON CONFLICT DO NOTHING;
+
 -- NOTE (TENANT-6d-1): the block above sits BEFORE this backfill on purpose. The first draft appended it to the END
 -- of the file and the three new SMS rows shipped with `serving_version_id = NULL` - which is EXACTLY the defect
 -- TENANT-6c-2 closed (0122's send-time gate INNER JOINs the serving version, so an unversioned template resolves to

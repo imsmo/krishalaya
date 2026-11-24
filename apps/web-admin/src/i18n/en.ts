@@ -689,6 +689,7 @@ export const en: Messages = {
   'compliance.reqType.portability': 'Portability',
   'compliance.dsrState.open': 'Open',
   'compliance.dsrState.in_progress': 'In progress',
+  'compliance.dsrState.blocked': 'Blocked — waiting on something still open',
   'compliance.dsrState.completed': 'Completed',
   'compliance.dsrState.rejected': 'Rejected',
   'compliance.coolingEndsAt': 'Erasure cooling ends',

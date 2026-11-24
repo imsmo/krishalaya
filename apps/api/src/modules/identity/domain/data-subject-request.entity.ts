@@ -1,7 +1,9 @@
 // modules/identity/domain/data-subject-request.entity.ts · DPDP rights workflow (access/erase/etc).
 import { DomainError } from '../../../shared/errors/app-error';
 export type DsrType = 'access' | 'erasure' | 'correction' | 'portability';
-export type DsrStatus = 'open' | 'in_progress' | 'completed' | 'rejected';
+/** PC-56 DPDP-1 (0245): `blocked` — an erasure whose cooling ended but which something still open (an order, wallet money, a dispute, a
+ *  loan, a payout…) holds back; the executor re-checks it hourly and completes it when the blocker clears. Set ONLY by the executor. */
+export type DsrStatus = 'open' | 'in_progress' | 'blocked' | 'completed' | 'rejected';
 export interface DsrProps {
   id: string; userId: string; requestType: DsrType; status: DsrStatus;
   coolingEndsAt: Date | null; resolution: string | null; exportMediaId: string | null;
@@ -9,11 +11,13 @@ export interface DsrProps {
   exportJobId?: string | null;
   /** When the request was made (read back from the row; null before insert). */
   createdAt?: Date | null;
+  /** PC-56 DPDP-1 (0245): what a `blocked` erasure is waiting on (machine-readable codes); null otherwise. */
+  blockedReasons?: string[] | null;
 }
 /** PC-56 STORE-4a (founder D3 — "keep 90 days and say 90"): the erasure cooling-off, ONE constant — the request row's `cooling_ends_at` is
  *  computed from it and the confirm page is told it (`GET /v1/privacy/commitments` → `coolingDays`), so the two can never disagree. */
 export const ERASURE_COOLING_DAYS = 90;
-const NEXT: Record<DsrStatus, DsrStatus[]> = { open: ['in_progress','rejected'], in_progress: ['completed','rejected'], completed: [], rejected: [] };
+const NEXT: Record<DsrStatus, DsrStatus[]> = { open: ['in_progress','rejected'], in_progress: ['completed','rejected','blocked'], blocked: ['in_progress','completed','rejected'], completed: [], rejected: [] };
 export class DataSubjectRequest {
   private constructor(private props: DsrProps) {}
   static open(input: { id: string; userId: string; requestType: DsrType }): DataSubjectRequest {

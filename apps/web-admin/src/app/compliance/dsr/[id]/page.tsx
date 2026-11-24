@@ -4,7 +4,8 @@
 //
 // Before this wave, `Complete` moved an erasure to `completed` with a free-text resolution — and nothing had erased
 // anything, because the cooling job's `identity.erasure_ready` event has no consumer anywhere in the monorepo. The
-// platform recorded a discharged statutory obligation that had not been discharged.
+// platform recorded a discharged statutory obligation that had not been discharged. (PC-56 DPDP-1, migration 0245: the event is now
+// consumed — the executor erases, records each class and completes the request itself, or holds it `blocked` with its reasons.)
 //
 // Now the Complete control IS NOT RENDERED until every in-scope data class carries a recorded action, and the
 // outstanding classes are listed in its place. That is maker-checker-by-absence applied to a guard rather than a person:

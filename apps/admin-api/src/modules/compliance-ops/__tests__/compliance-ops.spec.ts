@@ -23,7 +23,9 @@ describe('DSR state machine + entity', () => {
     expect(dsrCan('open', 'in_progress')).toBe(true);
     expect(dsrCan('in_progress', 'completed')).toBe(true);
     expect(dsrCan('completed', 'open')).toBe(false);
-    expect(DSR_STATUSES.length).toBe(4);
+    expect(DSR_STATUSES.length).toBe(5);   // PC-56 DPDP-1: + blocked (executor-only; an operator may only reject it)
+    expect(dsrCan('blocked', 'rejected')).toBe(true);
+    expect(dsrCan('blocked', 'completed')).toBe(false);
   });
   it('erasure cannot complete during the cooling window (DPDP)', () => {
     const future = new Date(Date.now() + 86_400_000);

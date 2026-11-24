@@ -15,7 +15,7 @@ import type { StatusTone } from '@krishalaya/ui';
 
 export const DSR_TYPES = ['access', 'erasure', 'correction', 'portability'] as const;
 export type DsrType = (typeof DSR_TYPES)[number];
-export const DSR_STATUSES = ['open', 'in_progress', 'completed', 'rejected'] as const;
+export const DSR_STATUSES = ['open', 'in_progress', 'blocked', 'completed', 'rejected'] as const;   // PC-56 DPDP-1: + blocked (0245)
 export type DsrStatus = (typeof DSR_STATUSES)[number];
 
 export const REJECTION_GROUNDS = ['identity_unverified', 'legal_hold', 'manifestly_unfounded'] as const;

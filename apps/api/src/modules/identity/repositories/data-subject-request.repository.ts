@@ -4,8 +4,9 @@ import { READ_REPLICA, ReadReplicaProvider } from '../../../core/database/read-r
 import { TxContext } from '../../../core/database/unit-of-work';
 import { DataSubjectRequest, DsrProps, DsrStatus, DsrType } from '../domain/data-subject-request.entity';
 
-const COLS = `id, user_id, request_type, status, cooling_ends_at, resolution, export_media_id, export_job_id, created_at`;
-const toDomain = (r: any): DataSubjectRequest => DataSubjectRequest.rehydrate({ id: r.id, userId: r.user_id, requestType: r.request_type as DsrType, status: r.status as DsrStatus, coolingEndsAt: r.cooling_ends_at, resolution: r.resolution, exportMediaId: r.export_media_id, exportJobId: r.export_job_id ?? null, createdAt: r.created_at ?? null });
+const COLS = `id, user_id, request_type, status, cooling_ends_at, resolution, export_media_id, export_job_id, created_at, blocked_reasons`;
+const toDomain = (r: any): DataSubjectRequest => DataSubjectRequest.rehydrate({ id: r.id, userId: r.user_id, requestType: r.request_type as DsrType, status: r.status as DsrStatus, coolingEndsAt: r.cooling_ends_at, resolution: r.resolution, exportMediaId: r.export_media_id, exportJobId: r.export_job_id ?? null, createdAt: r.created_at ?? null,
+  blockedReasons: Array.isArray(r.blocked_reasons) ? r.blocked_reasons.filter((x: unknown): x is string => typeof x === 'string') : null });
 /** PC-56 STORE-4a: a person's request history is BOUNDED (Law 11) — newest first. */
 export const DSR_LIST_CAP = 50;
 
@@ -26,10 +27,11 @@ export class DataSubjectRequestRepository {
     const r = await this.replica.forTenant(tenantId).query(`SELECT ${COLS} FROM data_subject_requests WHERE user_id=$1 AND deleted_at IS NULL ORDER BY created_at DESC, id DESC LIMIT $2`, [userId, cap]);
     return r.rows.map(toDomain);
   }
-  /** An existing NOT-yet-resolved request of this type (the dedupe guard — one open request per kind per user). PC-56 STORE-4a: locked (the
+  /** An existing NOT-yet-resolved request of this type (PC-56 DPDP-1: a `blocked` erasure is still unresolved — a second deletion request
+   *  answers the same one) (the dedupe guard — one open request per kind per user). PC-56 STORE-4a: locked (the
    *  caller holds the person's advisory lock first, so two first requests serialise and one row is written). */
   async findOpen(tx: TxContext, userId: string, requestType: DsrType): Promise<DataSubjectRequest | null> {
-    const r = await tx.query(`SELECT ${COLS} FROM data_subject_requests WHERE user_id=$1 AND request_type=$2 AND status IN ('open','in_progress') AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1 FOR UPDATE`, [userId, requestType]);
+    const r = await tx.query(`SELECT ${COLS} FROM data_subject_requests WHERE user_id=$1 AND request_type=$2 AND status IN ('open','in_progress','blocked') AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1 FOR UPDATE`, [userId, requestType]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;
   }
   /** PC-56 STORE-4a: one person's DSR acts serialise on a transaction-scoped advisory lock (two first requests in two tabs → one row). */

@@ -23,8 +23,9 @@ const ISO_DT_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
 export function isIsoDateTime(v: string | null | undefined): boolean { return ISO_DT_RE.test((v ?? '').trim()); }
 
 /* ===================== data-subject requests (DPDP rights) ===================== */
-// Mirrors admin-api dsr.state.ts: open → in_progress → completed | rejected.
-export const DSR_STATUSES = ['open', 'in_progress', 'completed', 'rejected'] as const;
+// Mirrors admin-api dsr.state.ts: open → in_progress → completed | rejected; PC-56 DPDP-1: an erasure the executor could not run yet
+// is `blocked` (it moves on by itself when the blocker clears — an operator may only reject it).
+export const DSR_STATUSES = ['open', 'in_progress', 'blocked', 'completed', 'rejected'] as const;
 export type DsrStatus = (typeof DSR_STATUSES)[number];
 export const DSR_REQUEST_TYPES = ['access', 'erasure', 'correction', 'portability'] as const;
 export type DsrRequestType = (typeof DSR_REQUEST_TYPES)[number];
@@ -35,7 +36,7 @@ export function dsrStatusKey(s: string | null | undefined): DsrStatus {
 export function isDsrTerminal(s: DsrStatus): boolean { return s === 'completed' || s === 'rejected'; }
 export function canStartDsr(s: DsrStatus): boolean { return s === 'open'; }
 export function canCompleteDsr(s: DsrStatus): boolean { return s === 'in_progress'; }
-export function canRejectDsr(s: DsrStatus): boolean { return s === 'open' || s === 'in_progress'; }
+export function canRejectDsr(s: DsrStatus): boolean { return s === 'open' || s === 'in_progress' || s === 'blocked'; }
 
 export const DSR_ACTIONS = ['start', 'complete', 'reject'] as const;
 export type DsrAction = (typeof DSR_ACTIONS)[number];

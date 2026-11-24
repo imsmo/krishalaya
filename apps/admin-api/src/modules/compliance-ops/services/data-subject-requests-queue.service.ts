@@ -8,6 +8,8 @@
 //
 // Now: completing an erasure requires that EVERY in-scope data class has a recorded action in `dsr_erasure_actions`.
 // Today none will, so an erasure CANNOT be completed — which is the correct behaviour and not a bug to route around.
+// PC-56 DPDP-1 (0245): the erasure executor now consumes `identity.erasure_ready`, writes a row per class and completes the request
+// itself (or marks it `blocked`, which an operator may only reject). This guard keeps refusing a hand-completion it cannot evidence.
 // The refusal names the outstanding classes, so the queue shows the request honestly stuck rather than dishonestly
 // closed. When the executor is built it writes those rows and the guard passes on its own, with no change here.
 //

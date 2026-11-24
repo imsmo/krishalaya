@@ -555,6 +555,20 @@ const CASES: Record<string, Case> = {
     },
   },
 
+  // ── identity (PC-56 DPDP-1): the DPDP erasure executor — every table write is behind migration 0245's SECURITY DEFINER wall; kv_relay
+  //    holds EXECUTE on kv_dsr_erasure_claim / _block / _execute and NO table grant was added. A fresh person whose cooling ended. ──
+  'identity.erasure_ready → modules/identity/events/handlers/erasure-ready.handler#ErasureReadyHandler': {
+    depth: 'write',
+    build: async (w) => {
+      const userId = await makeUser(w.admin, randomUUID());
+      const dsrId = uuidv7();
+      await w.admin.query(`INSERT INTO data_subject_requests (id, user_id, request_type, status, cooling_ends_at) VALUES ($1,$2,'erasure','in_progress', now() - interval '1 day')`, [dsrId, userId]);
+      return { aggregateType: 'user', aggregateId: userId, payload: { v: 1, dsrId, userId },
+        verify: async () => expect(await q1(w, `SELECT d.status, u.phone FROM data_subject_requests d JOIN users u ON u.id = d.user_id WHERE d.id=$1`, [dsrId]))
+          .toEqual({ status: 'completed', phone: `erased:${userId}` }) };
+    },
+  },
+
   // ── partner console (PC-56 PARTNER-0) ──
   'partner.member_invited → modules/partner-console/events/handlers/partner-member-invited.handler#PartnerMemberInvitedHandler': {
     depth: 'write',   // a pending partner invite with a KEK-sealed token: the SMS leaves (noop sender), the invite is marked sent, the sealed copy cleared
