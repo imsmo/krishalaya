@@ -13,7 +13,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, FlatList, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import type { WorkerCard, LabourLookups } from '@krishalaya/sdk-js';
-import { Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
+import { EmptyState, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
 import { browseWorkers, labourLookups } from '../../../features/labour/hire.api';

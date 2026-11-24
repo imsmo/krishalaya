@@ -15,7 +15,7 @@ import { formatDate } from '@krishalaya/i18n';
 import { Button, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../../core/i18n/useTranslation';
 import { useFlag } from '../../../../core/flags/useFlag';
-import { monthMatrix, isoOf } from '../../../../features/labour/availability-calendar';
+import { monthMatrix } from '../../../../features/labour/availability-calendar';
 import { BOOKING_HOURS } from '../../../../features/labour/book-worker';
 import { chevBack, chevFwd, isolate } from '../../../../core/i18n/bidi';
 

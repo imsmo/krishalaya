@@ -12,7 +12,7 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { WorkerProfile, UserProfile, LabourLookups } from '@krishalaya/sdk-js';
+import type { UserProfile, LabourLookups } from '@krishalaya/sdk-js';
 import { Button, Card, Input, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
@@ -25,7 +25,6 @@ export default function WorkerProfileEdit() {
   const router = useRouter();
   const enabled = useFlag('worker_app');
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [worker, setWorker] = useState<WorkerProfile | null>(null);
   const [lookups, setLookups] = useState<LabourLookups | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -45,7 +44,7 @@ export default function WorkerProfileEdit() {
   const load = useCallback(async () => {
     setLoading(true);
     const [p, w, lk] = await Promise.all([getMyProfile(), getMyWorker(), labourLookups()]);
-    setProfile(p); setWorker(w); setLookups(lk);
+    setProfile(p); setLookups(lk);
     if (p?.displayName) setFullName(p.displayName);
     if (p?.locale && (LANGUAGE_CODES as readonly string[]).includes(p.locale)) setLanguages([p.locale as LanguageCode]);
     if (w) {

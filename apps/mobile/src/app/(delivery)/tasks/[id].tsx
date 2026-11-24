@@ -5,7 +5,7 @@
 // A location ping button appends a real tracking point — GPS wiring comes with device perms; here the rider
 // confirms the ping explicitly.
 import React, { useCallback, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
+import { Text, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams, useFocusEffect } from 'expo-router';
 import type { Shipment } from '@krishalaya/sdk-js';
 import { Button, Card, EmptyState, Input, ScreenScaffold, SkeletonCard, StatusPill, color, font, space } from '@krishalaya/ui-native';

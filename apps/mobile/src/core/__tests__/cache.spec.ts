@@ -17,7 +17,7 @@ const policy = { ttlMs: 1000, swrMs: 5000 };
 
 describe('Cache (SWR)', () => {
   it('MISS → fetches, stores, returns fresh value', async () => {
-    const store = memStore(); let now = 100;
+    const store = memStore(); const now = 100;
     const cache = new Cache(store, () => now);
     let calls = 0;
     const r = await cache.read({ scope: 'u', ns: 'n', policy, fetcher: async () => { calls++; return 42; } });

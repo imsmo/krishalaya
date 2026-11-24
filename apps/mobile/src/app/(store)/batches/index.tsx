@@ -2,7 +2,7 @@
 // batches (product.manage-gated). Expiry is a CALENDAR compare (expired / ≤30-day soon / ok); recall pulls a
 // batch from sale with an audited reason. Goods-inward lives on the add screen (idempotent).
 import React, { useCallback, useState } from 'react';
-import { View, Text, FlatList, Pressable, StyleSheet, Alert } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Alert } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import type { ProductBatch } from '@krishalaya/sdk-js';
 import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, StatusPill, Toggle, color, font, space } from '@krishalaya/ui-native';

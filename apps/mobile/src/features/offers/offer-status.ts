@@ -20,6 +20,7 @@ export function offerStatusTone(status: string): PillTone {
 
 /** Which actions a screen may OFFER for (status, box). A live negotiation (open/countered) lets the other party
  * accept/counter/reject; terminal states offer nothing. The server enforces who may actually act. */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- `box` stays in the contract; both parties see the same controls today
 export function offerActions(status: string, box: OfferBox): OfferAction[] {
   // Negotiation is live while open or countered. For UX both parties see the same controls; the server rejects an
   // out-of-turn action (e.g. you can't accept your own just-made offer).

@@ -1,5 +1,5 @@
 // Unit tests for the PURE worker-reviews logic (screen 40).
-import { starDistribution, barPct, filterReviews, starString, type ReviewFilter } from '../../features/labour/worker-reviews';
+import { starDistribution, barPct, filterReviews, starString } from '../../features/labour/worker-reviews';
 import type { PublicReview } from '@krishalaya/sdk-js';
 
 const r = (stars: number, createdAt: string): PublicReview => ({

@@ -10,7 +10,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { OrderDetail, OrderRole, ReviewSummary, OrderBuyerSummary } from '@krishalaya/sdk-js';
+import type { OrderDetail, ReviewSummary, OrderBuyerSummary } from '@krishalaya/sdk-js';
 import { SdkError } from '@krishalaya/sdk-js';
 import { Button, Card, EmptyState, MoneyText, ScreenScaffold, SkeletonCard, Icon, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
@@ -22,11 +22,10 @@ import { sellerNetMinor, decisionMinutesLeft, businessTypeKey } from '../../../f
 import { isolate } from '../../../core/i18n/bidi';
 
 export default function OrderDecision() {
-  const { id, party, role } = useLocalSearchParams<{ id: string; party?: string; role?: string }>();
+  const { id, party } = useLocalSearchParams<{ id: string; party?: string }>();
   const { t, lang } = useTranslation();
   const router = useRouter();
   const canAct = useFlag('orders_fulfilment');
-  const orderRole: OrderRole = role === 'buyer' ? 'buyer' : 'seller';
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [buyer, setBuyer] = useState<ReviewSummary | null>(null);
   const [summary, setSummary] = useState<OrderBuyerSummary | null>(null);

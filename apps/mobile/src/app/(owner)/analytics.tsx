@@ -14,7 +14,7 @@
 // seller reference; full names + CSV export live on the web console. Every read is tenant-scoped SERVER-SIDE.
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import type { TenantAnalytics } from '@krishalaya/sdk-js';
 import { Card, EmptyState, MoneyText, ScreenScaffold, SegmentedControl, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
@@ -34,7 +34,6 @@ function shortRef(id: string): string {
 
 export default function GmvAnalytics() {
   const { t, lang } = useTranslation();
-  const router = useRouter();
   const enabled = useFlag('tenant_admin_lite');
   const [win, setWin] = useState<GmvWindow>('30d');
   const [data, setData] = useState<TenantAnalytics | null>(null);

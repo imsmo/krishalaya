@@ -14,7 +14,6 @@
 // per-user data — so they are fixed labels, not fabricated values.
 import React, { useRef, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
 import { Card, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
@@ -24,7 +23,6 @@ import { chevFwd } from '../../core/i18n/bidi';
 
 export default function WorkerHelp() {
   const { t, lang } = useTranslation();
-  const router = useRouter();
   const enabled = useFlag('worker_app');
   const [openFaq, setOpenFaq] = useState<string | null>(null);
   const [reporting, setReporting] = useState(false);

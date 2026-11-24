@@ -11,8 +11,8 @@
 //    "Bidder" + initials avatar, the caller's own bids as "You"; no name/location is invented.
 //  • % above reserve, bidder/bid counts, current price, reserve all come from the REAL auction + bid history.
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, FlatList, Pressable, StyleSheet, Alert, Share } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { View, Text, FlatList, StyleSheet, Alert, Share } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { Auction, BidHistoryItem } from '@krishalaya/sdk-js';
 import { Button, EmptyState, Input, MoneyText, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
@@ -28,7 +28,6 @@ const POLL_MS = 4000;
 export default function YourAuction() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, lang } = useTranslation();
-  const router = useRouter();
   const { state } = useAuth();
   const myId = state.profile?.id ?? '';
   const enabled = useFlag('auctions');

@@ -36,7 +36,7 @@ export function BrowseList({ query, ListHeader, emptyTitle, emptyMessage, onCoun
     const page = await browseListings({ ...query, cursor: undefined });
     setItems(page.items); setCursor(page.nextCursor); setLoading(false);
     await refreshSaved();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Deps keyed on queryKey (the query's stable string), not the query object (no react-hooks rule is registered; see app/_layout.tsx).
   }, [queryKey, refreshSaved]);
   useEffect(() => { loadFirst(); }, [loadFirst]);
 
@@ -44,7 +44,7 @@ export function BrowseList({ query, ListHeader, emptyTitle, emptyMessage, onCoun
     setRefreshing(true);
     try { const page = await browseListings({ ...query, cursor: undefined }); setItems(page.items); setCursor(page.nextCursor); await refreshSaved(); }
     finally { setRefreshing(false); }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Deps keyed on queryKey, not the query object (see above).
   }, [queryKey, refreshSaved]);
 
   const onEndReached = useCallback(async () => {
@@ -52,7 +52,7 @@ export function BrowseList({ query, ListHeader, emptyTitle, emptyMessage, onCoun
     setPaging(true);
     try { const page = await browseListings({ ...query, cursor }); setItems((prev) => [...prev, ...page.items]); setCursor(page.nextCursor); }
     finally { setPaging(false); }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Deps keyed on queryKey, not the query object (see above).
   }, [paging, cursor, queryKey]);
 
   const onToggleSave = useCallback(async (card: ListingCard) => {

@@ -11,7 +11,7 @@
 // honest note (withdraw points the user at the toggles above, which ARE per-purpose consent withdrawal) rather than
 // pretending to act. The privacy-policy link opens config.privacyUrl only when it's a real https URL.
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Linking, Alert } from 'react-native';
+import { View, Text, StyleSheet, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Card, Toggle, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';

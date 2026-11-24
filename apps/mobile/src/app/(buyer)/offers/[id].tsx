@@ -3,7 +3,7 @@
 // order SERVER-SIDE → we route to the new order. The server authorizes who may act (a 403/409 is shown, never
 // bypassed). Behind `offers_chat`. Money is bigint paise (Law 2). Degrade-never-die.
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { ListingOffer } from '@krishalaya/sdk-js';
 import { SdkError } from '@krishalaya/sdk-js';

@@ -17,16 +17,14 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import type { Dispute } from '@krishalaya/sdk-js';
-import { formatDate } from '@krishalaya/i18n';
-import { Card, EmptyState, MoneyText, SegmentedControl, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
+import { Card, EmptyState, MoneyText, SegmentedControl, StatusPill, ScreenScaffold, SkeletonCard, color, font, space } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { disputesList } from '../../features/tenant/tenant.api';
-import { disputeStatusTone, disputeTab, disputeTabCounts, filterDisputesByTab, daysAgo, isDisputeUrgent, type DisputeTab } from '../../features/tenant/tenant-admin';
+import { disputeStatusTone, disputeTabCounts, filterDisputesByTab, daysAgo, isDisputeUrgent, type DisputeTab } from '../../features/tenant/tenant-admin';
 import { isolate } from '../../core/i18n/bidi';
 
 const TABS: DisputeTab[] = ['open', 'review', 'resolved'];
-const DT: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
 
 export default function Disputes() {
   const { t, lang } = useTranslation();

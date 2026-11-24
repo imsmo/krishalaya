@@ -48,7 +48,7 @@ export function MyBidsScreen() {
       }
     }
   }, [titles]);
-  useEffect(() => { if (enabled) load(); }, [enabled]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (enabled) load(); }, [enabled]); // deliberately runs on the flag only (no react-hooks rule is registered; see app/_layout.tsx)
 
   if (!enabled) return <ScreenScaffold title={t('auction.myBids')}><EmptyState title={t('common.unavailable')} /></ScreenScaffold>;
 

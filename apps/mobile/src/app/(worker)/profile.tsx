@@ -21,7 +21,6 @@ import { useFlag } from '../../core/flags/useFlag';
 import { getMyWorker, workerRating, labourLookups } from '../../features/labour/labour.api';
 import { walletEarnings } from '../../features/wallet/wallet.api';
 import { listKyc } from '../../features/kyc/kyc.api';
-import { canAcceptWork } from '../../features/labour/labour-status';
 import { initials } from '../../features/labour/worker-home';
 import { workerYears, regionName, compactLakh } from '../../features/labour/worker-profile';
 import { formatDate } from '@krishalaya/i18n';

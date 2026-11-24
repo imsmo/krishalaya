@@ -20,7 +20,7 @@ import { Button, Card, EmptyState, SegmentedControl, StatusPill, ScreenScaffold,
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
 import { listCampaigns } from '../../features/tenant/tenant.api';
-import { campaignTab, campaignTabCounts, filterCampaignsByTab, type CampaignTab } from '../../features/tenant/tenant-admin';
+import { campaignTabCounts, filterCampaignsByTab, type CampaignTab } from '../../features/tenant/tenant-admin';
 
 const TABS: CampaignTab[] = ['live', 'scheduled', 'done'];
 function statusTone(status: string): 'success' | 'warning' | 'danger' | 'neutral' {

@@ -21,7 +21,6 @@ import { weatherSeverityTone, forecastDayLabel, weatherEmoji, weatherConditionKe
 export default function WeatherDetail() {
   const { t, lang } = useTranslation();
   const enabled = useFlag('mandi_weather');
-  const [region, setRegion] = useState<string | null>(null);
   const [items, setItems] = useState<WeatherAlert[]>([]);
   const [forecast, setForecast] = useState<ForecastResult | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,7 +28,6 @@ export default function WeatherDetail() {
   const load = useCallback(async () => {
     setLoading(true);
     const [r, geo] = await Promise.all([defaultRegionId(), defaultLatLng()]);
-    setRegion(r);
     setItems(r ? await weatherAlerts(r) : []);
     setForecast(geo ? await weatherForecast(geo.lat, geo.lng, r) : null);
     setLoading(false);

@@ -15,7 +15,7 @@
 // current value with a flagged note; the design's "adjust if some sold offline" can't be honored yet. "Same
 // photos / Same description" are inherent to a repost (same aggregate) → shown ON + disabled. The "Market is up
 // ₹40 vs last week" delta needs a week-over-week series we don't expose, so only the real "Suggested: ₹p50" shows.
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -47,7 +47,6 @@ export default function RepostListing() {
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | undefined>();
-  const idemKey = useRef<string>(`repost:${id ?? ''}`); // stable per screen instance (re-tap safe)
 
   const load = useCallback(async () => {
     if (!id) return;

@@ -71,11 +71,17 @@ export default function Payment() {
     } finally { setBusy(false); }
   };
 
+  // The error sits in the footer, right above Pay, so a failed order (cart changed / coupon invalid / failed) is seen
+  // wherever the buyer has scrolled. PC-56 LINT-1: before this, setError ran but nothing rendered it — a failed tap
+  // looked like nothing happened.
   const footer = (
-    <View style={styles.footerRow}>
-      <Button title={t('common.back')} variant="outline" onPress={() => router.back()} />
-      <View style={{ flex: 1 }}>
-        <Button title={t('payment.pay', { total: moneyText(totalMinor, ccy, lang) })} variant="accent" onPress={onPay} loading={busy} disabled={!preview} fullWidth />
+    <View>
+      {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
+      <View style={styles.footerRow}>
+        <Button title={t('common.back')} variant="outline" onPress={() => router.back()} />
+        <View style={{ flex: 1 }}>
+          <Button title={t('payment.pay', { total: moneyText(totalMinor, ccy, lang) })} variant="accent" onPress={onPay} loading={busy} disabled={!preview} fullWidth />
+        </View>
       </View>
     </View>
   );
@@ -186,4 +192,5 @@ const styles = StyleSheet.create({
   escrowText: { flex: 1, fontFamily: font.body, fontSize: font.size.xs, color: color.successDark, lineHeight: font.size.xs * 1.5 },
   escrowBold: { fontWeight: font.weight.bold },
   footerRow: { flexDirection: 'row', gap: space[3], alignItems: 'center' },
+  error: { fontFamily: font.body, fontSize: font.size.sm, color: color.danger, marginBottom: space[2], textAlign: 'center' },
 });

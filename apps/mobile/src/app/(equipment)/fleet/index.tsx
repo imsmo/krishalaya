@@ -5,7 +5,7 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import type { EquipmentAsset } from '@krishalaya/sdk-js';
-import { Button, Card, EmptyState, ScreenScaffold, SkeletonCard, StatusPill, color, font, space } from '@krishalaya/ui-native';
+import { Button, Card, EmptyState, ScreenScaffold, SkeletonCard, StatusPill, color, font } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { myFleet } from '../../../features/equipment/equipment.api';
 import { assetTone } from '../../../features/equipment/equipment';

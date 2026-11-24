@@ -14,6 +14,7 @@ type ExpoLocation = {
 };
 
 function load(): ExpoLocation | null {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, no-restricted-syntax -- optional native module, loaded lazily inside try/catch so the app degrades (Law 12) when it is absent
   try { return require('expo-location') as ExpoLocation; } catch { return null; }
 }
 

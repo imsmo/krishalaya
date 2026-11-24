@@ -48,7 +48,6 @@ export default function BookWorker() {
     return Number.isFinite(lat) && Number.isFinite(lng) && (wp.farmLat ?? '') !== '' && (wp.farmLng ?? '') !== '' ? { lat, lng } : null;
   });
   const [errors, setErrors] = useState<BookingDraftField[]>([]);
-  const [busy, setBusy] = useState(false);
   const [locating, setLocating] = useState(false);
 
   useEffect(() => { if (enabled) labourLookups().then(setLookups); }, [enabled]);
@@ -79,7 +78,7 @@ export default function BookWorker() {
   const footer = (
     <View style={styles.footerRow}>
       <Button title={t('common.back')} variant="outline" onPress={() => router.back()} />
-      <View style={{ flex: 1 }}><Button title={t('bookWorker.review')} onPress={proceed} loading={busy} fullWidth /></View>
+      <View style={{ flex: 1 }}><Button title={t('bookWorker.review')} onPress={proceed} fullWidth /></View>
     </View>
   );
 

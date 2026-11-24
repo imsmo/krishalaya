@@ -39,7 +39,7 @@ export default function BuyerSearch() {
   // whenever the params change (returning from the filter sheet).
   const [form, setForm] = useState<FilterForm>(paramsForm);
   const paramsKey = JSON.stringify(paramsForm);
-  useEffect(() => { setForm(paramsForm); }, [paramsKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setForm(paramsForm); }, [paramsKey]); // deliberately keyed on paramsKey only (no react-hooks rule is registered; see app/_layout.tsx)
 
   // Debounce the free-text term into the query (keeps the cache key + network calls stable while typing).
   const [debouncedQ, setDebouncedQ] = useState(form.q ?? '');

@@ -12,7 +12,7 @@
 // is not invented — we show the real (masked) member id; "Ramesh Patel"/"Anand"/"SBI ••••2247" etc. are never faked.
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import type { UserProfile, RoleAssignment } from '@krishalaya/sdk-js';
 import { Button, Card, EmptyState, StatusPill, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
@@ -27,7 +27,6 @@ const SECTIONS = ['personal', 'activity', 'subscription'] as const;
 export default function FarmerDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, lang } = useTranslation();
-  const router = useRouter();
   const enabled = useFlag('tenant_admin_lite');
   const [user, setUser] = useState<UserProfile | null>(null);
   const [assignment, setAssignment] = useState<RoleAssignment | null>(null);

@@ -10,7 +10,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import type { WorkerProfile, LabourLookups } from '@krishalaya/sdk-js';
+import type { LabourLookups } from '@krishalaya/sdk-js';
 import { Button, Card, EmptyState, ScreenScaffold, SkeletonCard, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../../core/i18n/useTranslation';
 import { useFlag } from '../../../core/flags/useFlag';
@@ -22,7 +22,6 @@ export default function WorkerAddSkill() {
   const { t } = useTranslation();
   const router = useRouter();
   const enabled = useFlag('worker_app');
-  const [worker, setWorker] = useState<WorkerProfile | null>(null);
   const [lookups, setLookups] = useState<LabourLookups | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [experience, setExperience] = useState<ExperienceKey | ''>('');
@@ -33,7 +32,7 @@ export default function WorkerAddSkill() {
   const load = useCallback(async () => {
     setLoading(true); setFailed(false);
     const [w, lk] = await Promise.all([getMyWorker(), labourLookups()]);
-    setWorker(w); setLookups(lk);
+    setLookups(lk);
     setSelected(new Set(w?.skillIds ?? []));
     if (!lk) setFailed(true);
     setLoading(false);
