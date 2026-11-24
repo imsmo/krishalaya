@@ -3,7 +3,7 @@
 // the cached inbox. Degrade-never-die everywhere. Keyset paginated. The server enforces ownership (no IDOR).
 import type { NotificationItem, NotificationPreference, QuietHours } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
-import { cache } from '../../core/offline/sqlite.db';
+import { cache } from '../../core/offline/sqlite.store';
 import { currentScope } from '../../core/offline/scope';
 import { POLICY } from '../../core/offline/cache-policies';
 

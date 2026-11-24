@@ -1,6 +1,6 @@
 # mobile — Krishalaya app (one account, role-switching)
 
-Expo SDK 51 + **expo-router** (file-based routing under `src/app`). Offline-first, vernacular (hi/en/gu),
+Expo SDK 58 (React Native 0.88, React 19.3, Android target API 36) + **expo-router** (file-based routing under `src/app`). Offline-first, vernacular (hi/en/gu),
 built for budget Android in low-signal villages. Built on the shared `@krishalaya/sdk-js` (resilient typed API
 client), `@krishalaya/i18n` (formatters + translator), and `@krishalaya/ui-native` (the RN component library
 on the Phase-1 design tokens). Target: small APK, usable on 2 GB-RAM phones, works on 2G.
@@ -794,8 +794,8 @@ completion (target resolved server-side, anti-IDOR). **Report** (135) files a di
 
 Sell faster. **Create listing** (screen 10) now picks the product from the catalogue (real `productId`/`categoryId`/
 unit — never fabricated), adds up to 6 photos via `core/media` (compress + presigned-PUT upload, per-tile progress/
-retry/queue), and lets the farmer **describe by voice**: `core/voice` wraps on-device STT (`@react-native-voice/
-voice`) with a **pure** `sttLocaleFor` language→locale map (hi-IN/gu-IN/en-IN, default en-IN), used by the
+retry/queue), and lets the farmer **describe by voice**: `core/voice` wraps the platform speech recognizer
+(`expo-speech-recognition`, since MOB-SDK-1) with a **pure** `sttLocaleFor` language→locale map (hi-IN/gu-IN/en-IN, default en-IN), used by the
 `useVoiceDictation` hook + ui-native `VoiceButton`. Submit creates a draft and routes to **preview** (screen 11) to
 **publish**. **Edit price** (113) is the real edit path — it reloads the listing for its current price + `version`
 and PATCHes with optimistic concurrency (a conflict shows a friendly "reopen & retry"). **Repost** (116) prefills
@@ -858,7 +858,7 @@ helpers (`rupees→paise` via BigInt, terminal-status mapping) are unit-tested.
 
 The app is usable with no signal. Reads go through a **stale-while-revalidate** cache: `cache-policies.ts` (pure:
 per-user-scoped keys + TTL/SWR freshness) + `cache.ts` (read-through engine, store+clock injected) backed by
-**`sqlite.db.ts`** (expo-sqlite). FRESH → no network; STALE → serve cached + revalidate in background; MISS →
+**`sqlite.store.ts`** (expo-sqlite). FRESH → no network; STALE → serve cached + revalidate in background; MISS →
 fetch, **falling back to cached on failure** (degrade-never-die). Cache keys are scoped to the signed-in user
 (`scope.ts`) and **wiped on sign-out**, so one account can never read another's cached data (anti-IDOR). Writes
 ride the **single dispatched offline queue** (`sync-queue.ts`); the **sync engine** (`sync.engine.ts` +

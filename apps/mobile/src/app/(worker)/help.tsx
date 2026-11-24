@@ -14,6 +14,7 @@
 // per-user data — so they are fixed labels, not fabricated values.
 import React, { useRef, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView, Alert } from 'react-native';
+import type { ScrollViewInstance } from 'react-native';
 import { Card, EmptyState, ScreenScaffold, color, font, space, radius } from '@krishalaya/ui-native';
 import { useTranslation } from '../../core/i18n/useTranslation';
 import { useFlag } from '../../core/flags/useFlag';
@@ -26,7 +27,7 @@ export default function WorkerHelp() {
   const enabled = useFlag('worker_app');
   const [openFaq, setOpenFaq] = useState<string | null>(null);
   const [reporting, setReporting] = useState(false);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const rightsY = useRef(0);
 
   if (!enabled) return <ScreenScaffold title={t('workerHelp.title')}><EmptyState title={t('common.unavailable')} /></ScreenScaffold>;

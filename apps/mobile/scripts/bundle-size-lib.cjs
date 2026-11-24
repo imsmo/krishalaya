@@ -8,8 +8,12 @@ const path = require('node:path');
  *  where `expo export` treats the root as the project and fails with "Unable to resolve module ../../App"). */
 const APP_DIR = path.resolve(__dirname, '..');
 
-/** Default budget, KB (1 KB = 1,024 B). The limit stays 6,000 KB (founder, BUNDLE-1); MOBILE_BUNDLE_BUDGET_KB overrides. */
-const DEFAULT_BUDGET_KB = 6000;
+/** Default budget, KB (1 KB = 1,024 B). MOBILE_BUNDLE_BUDGET_KB overrides.
+ *  6,000 KB (founder, BUNDLE-1) → 6,500 KB (PC-56 MOB-SDK-1, lead as product owner): Expo SDK 51 → 58 (required for Google
+ *  Play's API 36 target) grew the Hermes bundle 4,395 → 6,261 KB with NO new app code — the Hermes V1 compiler emits ~42%
+ *  more bytecode for ~15% more source, and Expo Router 58 bundles its own React Navigation. 6,500 keeps ~4% headroom so the
+ *  gate still catches real growth; it is a ceiling to lower again, not a target. */
+const DEFAULT_BUDGET_KB = 6500;
 
 /** The `npx` argv for the export. `--source-maps` makes hermesc emit `-output-source-map`, which moves the debug tables
  *  out of the .hbc — exactly as release builds do (@react-native/gradle-plugin ReactExtension.kt:115-117 defaults

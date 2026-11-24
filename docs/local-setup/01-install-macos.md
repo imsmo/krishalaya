@@ -34,22 +34,22 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 
 ---
 
-## 1.3 Node.js 20 (via nvm — the repo pins Node 20 in `.nvmrc`)
+## 1.3 Node.js 22 (via nvm — the repo pins Node 22 in `.nvmrc`; Expo SDK 58 needs ≥ 22.13)
 
-Install nvm (the Node Version Manager), then Node 20:
+Install nvm (the Node Version Manager), then Node 22:
 ```bash
 brew install nvm
 mkdir -p ~/.nvm
 echo 'export NVM_DIR="$HOME/.nvm"' >> ~/.zshrc
 echo '[ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && . "/opt/homebrew/opt/nvm/nvm.sh"' >> ~/.zshrc
 source ~/.zshrc
-nvm install 20
-nvm alias default 20
+nvm install 22
+nvm alias default 22
 ```
 
-**Verify:** `node -v` prints `v20.x`. (If it prints v18 or v22, run `nvm use 20`.)
+**Verify:** `node -v` prints `v22.x` (22.13 or newer). (If it prints anything else, run `nvm use 22`.)
 
-> Tip: inside the repo you can just run `nvm use` and it reads `.nvmrc` (→ 20) automatically.
+> Tip: inside the repo you can just run `nvm use` and it reads `.nvmrc` (→ 22) automatically.
 
 ---
 
@@ -125,7 +125,7 @@ brew install postgresql@16   # gives you the `psql` client (handy; the DB itself
 ## 1.9 Final check — all green?
 
 ```bash
-echo "node:    $(node -v)"        # v20.x
+echo "node:    $(node -v)"        # v22.x
 echo "pnpm:    $(pnpm -v)"        # 9.x
 echo "docker:  $(docker --version)"
 echo "compose: $(docker compose version | head -1)"
@@ -133,4 +133,4 @@ echo "psql:    $(psql --version 2>/dev/null || echo 'optional - not installed')"
 echo "python:  $(python3.11 --version 2>/dev/null || echo 'optional - not installed')"
 ```
 
-If node is 20.x, pnpm is 9.x, and docker works → continue to **`02-infra-and-database.md`**.
+If node is 22.x, pnpm is 9.x, and docker works → continue to **`02-infra-and-database.md`**.

@@ -3,10 +3,10 @@
 #   docker build -f infra/docker/node-service.Dockerfile \
 #     --build-arg APP=api --build-arg APP_PKG=@krishalaya/api -t <ECR>/krishalaya-api:<tag> .
 # Works for: api, admin-api, wallet-service, worker, realtime-gateway.
-ARG RUNTIME_BASE=node:20-alpine
+ARG RUNTIME_BASE=node:22-alpine
 
 # ---- build stage: install workspace, build the one target ----
-FROM node:20-alpine AS build
+FROM node:22-alpine AS build
 ARG APP_PKG
 WORKDIR /repo
 RUN corepack enable
@@ -18,7 +18,7 @@ RUN pnpm install --frozen-lockfile \
   && pnpm --filter "${APP_PKG}..." build
 
 # ---- prune stage: production-only deps for the target app ----
-FROM node:20-alpine AS prune
+FROM node:22-alpine AS prune
 ARG APP_PKG
 WORKDIR /repo
 RUN corepack enable
@@ -33,7 +33,7 @@ FROM ${RUNTIME_BASE} AS runtime
 ARG APP
 ENV NODE_ENV=production APP_DIR=${APP}
 WORKDIR /app
-# tini + non-root if the base didn't provide them (plain node:20-alpine path)
+# tini + non-root if the base didn't provide them (plain node:22-alpine path)
 USER root
 RUN apk add --no-cache tini curl 2>/dev/null || true; \
     (getent group app || addgroup -S app); (id app 2>/dev/null || adduser -S app -G app)

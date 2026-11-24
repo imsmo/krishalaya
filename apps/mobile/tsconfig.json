@@ -9,7 +9,9 @@
     "moduleResolution": "bundler",
     "noEmit": true,
     "declaration": false,
-    "allowJs": true
+    "allowJs": true,
+    "types": ["jest", "node"],
+    "rootDir": "../.."
   },
   "include": [
     "src/**/*.ts",

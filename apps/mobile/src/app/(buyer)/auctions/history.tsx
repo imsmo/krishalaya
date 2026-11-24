@@ -129,7 +129,7 @@ export function HistoryScreen() {
               </Pressable>
             );
           }}
-          ListFooterComponent={cursor ? <View style={{ margin: space[4] }}><Button title={t('common.loadMore')} variant="outline" loading={loading} onPress={() => load(cursor)} /></View> : null}
+          ListFooterComponent={cursor ? <View style={{ margin: space[4] }}><Button title={t('common.loadMore')} variant="outline" loading={loading} onPress={() => load(cursor)} /></View> : undefined}
         />
       )}
     </ScreenScaffold>

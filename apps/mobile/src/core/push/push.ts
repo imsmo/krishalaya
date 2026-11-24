@@ -15,7 +15,8 @@ export function setQuietWindow(win: { starts: string; ends: string } | null): vo
 Notifications.setNotificationHandler({
   handleNotification: async () => {
     const quiet = quietWindow ? isWithinQuietHours(new Date(), quietWindow.starts, quietWindow.ends) : false;
-    return { shouldShowAlert: !quiet, shouldPlaySound: !quiet, shouldSetBadge: true };
+    // MOB-SDK-1: `shouldShowAlert` is deprecated — banner + list together are its exact equivalent.
+    return { shouldShowBanner: !quiet, shouldShowList: !quiet, shouldPlaySound: !quiet, shouldSetBadge: true };
   },
 });
 

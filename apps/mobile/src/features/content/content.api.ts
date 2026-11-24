@@ -8,7 +8,7 @@
 // filters cached tips locally. Degrade-never-die throughout.
 import type { LearningResource, ResourceKind, AssistantReply, CropCalendar } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
-import { cache } from '../../core/offline/sqlite.db';
+import { cache } from '../../core/offline/sqlite.store';
 import { POLICY } from '../../core/offline/cache-policies';
 import { asyncStorageKv as kv } from '../../core/offline/kv';
 import { currentScope } from '../../core/offline/scope';

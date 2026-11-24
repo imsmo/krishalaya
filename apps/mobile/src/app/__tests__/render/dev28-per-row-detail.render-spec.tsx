@@ -10,7 +10,7 @@
 import React from 'react';
 import { act } from 'react-test-renderer';
 import { Pressable, Text } from 'react-native';
-import { renderScreen } from '../../../test-utils/render';
+import { isOfType, renderScreen } from '../../../test-utils/render';
 import { mockPush, resetExpoRouterMock } from '../../../test-utils/expo-router-mock';
 import MyListings from '../../(farmer)/listings/index';
 import Orders from '../../(farmer)/orders';
@@ -60,8 +60,8 @@ async function flush(): Promise<void> {
 }
 
 /** Find and invoke the first Pressable whose own accessibilityLabel/child text includes `needle`. */
-async function tapRowContaining(renderer: { root: { findAllByType: (t: unknown) => { props: Record<string, unknown> }[] } }, needle: string): Promise<void> {
-  const candidates = renderer.root.findAllByType(Pressable).filter((n) => {
+async function tapRowContaining(renderer: { root: { findAll: (p: (n: { type: unknown; props: Record<string, unknown> }) => boolean) => { props: Record<string, unknown> }[] } }, needle: string): Promise<void> {
+  const candidates = renderer.root.findAll((n) => isOfType(n, Pressable)).filter((n) => {
     const label = n.props.accessibilityLabel;
     return typeof label === 'string' && label.includes(needle);
   });

@@ -37,7 +37,7 @@ jobs:
       - uses: pnpm/action-setup@v4            # version from package.json "packageManager"
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'                  # MOB-SDK-1: Expo SDK 58 / React Native 0.88 require Node ≥ 22.13
           cache: pnpm
       - name: Install (frozen lockfile)
         run: pnpm install --frozen-lockfile
@@ -72,7 +72,7 @@ jobs:
       - name: OTA update (JS-only) to channel
         if: ${{ github.event.inputs.action == 'ota-update' }}
         working-directory: apps/mobile
-        run: eas update --channel ${{ github.event.inputs.profile }} --message "${{ github.sha }}" --non-interactive
+        run: eas update --channel ${{ github.event.inputs.profile }} --environment production --message "${{ github.sha }}" --non-interactive   # --environment is required since SDK 55; both beta and production build with EXPO_PUBLIC_APP_ENV=production (eas.json)
       - name: OTA rollback (revert to previous publish)
         if: ${{ github.event.inputs.action == 'ota-rollback' }}
         working-directory: apps/mobile

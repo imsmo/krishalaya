@@ -5,7 +5,7 @@
 // server-snapshotted (the vet is PAID via the farmer's confirm — earnings are read, never computed).
 import type { VetProfile, VetService, VetBooking, LookupValue } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
-import { cache } from '../../core/offline/sqlite.db';
+import { cache } from '../../core/offline/sqlite.store';
 import { POLICY } from '../../core/offline/cache-policies';
 import { newId } from '../../core/util/ids';
 

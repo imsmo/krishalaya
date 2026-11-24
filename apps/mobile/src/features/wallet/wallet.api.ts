@@ -101,7 +101,7 @@ export async function exportWalletStatement(opts: { format?: 'csv' | 'pdf'; from
   if (!file) return null;
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires, no-restricted-syntax -- optional native module, loaded lazily inside try/catch so the app degrades (Law 12) when it is absent
-    const FileSystem = require('expo-file-system') as typeof import('expo-file-system');
+    const FileSystem = require('expo-file-system/legacy') as typeof import('expo-file-system/legacy');
     const dir = FileSystem.documentDirectory ?? FileSystem.cacheDirectory ?? '';
     const uri = `${dir}${file.filename}`;
     await FileSystem.writeAsStringAsync(uri, file.content, {

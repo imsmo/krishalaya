@@ -2,8 +2,8 @@
 # Build + push ONCE, then service images use it as their runtime base:
 #   docker build -f infra/docker/node-base.Dockerfile -t <ECR>/krishalaya-node-base:20 .
 #   docker push <ECR>/krishalaya-node-base:20
-# (Optional accelerator — node-service.Dockerfile defaults to plain node:20-alpine if you skip this.)
-FROM node:20-alpine
+# (Optional accelerator — node-service.Dockerfile defaults to plain node:22-alpine if you skip this.)
+FROM node:22-alpine
 # tini = proper PID 1 (signal handling, zombie reaping); curl for container healthchecks
 RUN apk add --no-cache tini curl \
   && corepack enable \

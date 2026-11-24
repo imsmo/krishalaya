@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: "20" }
+        with: { node-version: "22" }   # Node 20 is end-of-life (Apr 2026); the workspace requires 22 since MOB-SDK-1
       - run: npm install pg@^8.12.0 --no-audit --no-fund
       - name: Ops scripts unit tests (pure helpers)
         run: node --test db/scripts/__tests__/*.test.js

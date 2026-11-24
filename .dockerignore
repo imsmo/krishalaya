@@ -20,3 +20,6 @@ infra/terraform/**/.terraform
 docs
 **/*.md
 apps/mobile
+# MOB-SDK-1: mobile-only (React Native 0.88 devDependencies) and no service imports it — kept out of every image's
+# build context so images stay small. (Images run node:22-alpine since MOB-SDK-1; Node 20 is end-of-life.)
+packages/ui-native

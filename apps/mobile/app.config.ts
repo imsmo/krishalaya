@@ -17,24 +17,50 @@ const config: ExpoConfig = {
   version: '0.1.0',
   orientation: 'portrait',
   userInterfaceStyle: 'light',
-  newArchEnabled: true,
+  // New Architecture: mandatory since SDK 55 (the `newArchEnabled` key was removed from the config schema) — MOB-SDK-1.
   jsEngine: 'hermes', // Hermes bytecode in release (smaller + harder to reverse than plain JS) — §4/§5
   splash: { backgroundColor: '#1e6f3f', resizeMode: 'contain' },
   assetBundlePatterns: ['**/*'],
   ios: { supportsTablet: false, bundleIdentifier: 'com.krishalaya.app' },
   android: { package: 'com.krishalaya.app', adaptiveIcon: { backgroundColor: '#1e6f3f' } },
   plugins: [
-    'expo-router', 'expo-secure-store', 'expo-localization', 'expo-font',
-    // Release anti-tamper/anti-reversing + transport hardening (§4). Cleartext is OFF (HTTPS-only); R8/ProGuard
-    // + resource shrinking minify + strip; Hermes is the engine. ProGuard keeps the RN/OkHttp/Hermes runtime.
+    'expo-router', 'expo-secure-store', 'expo-localization', 'expo-font', 'expo-sqlite',
+    // Speech-to-text via the platform recognizer (core/voice/stt.client) — used only behind the `voice_listing` / `voice_assistant`
+    // flags (both OFF at launch). Adds RECORD_AUDIO (the replaced @react-native-voice/voice merged the same permission
+    // from its own manifest) and the iOS microphone + speech usage descriptions the OS shows before it asks.
+    ['expo-speech-recognition', {
+      microphonePermission: 'Krishalaya uses the microphone only while you hold the voice button, to turn your words into text.',
+      speechRecognitionPermission: 'Krishalaya turns your speech into text so you can fill forms without typing.',
+    }],
+    // Release anti-tamper/anti-reversing + transport hardening (§4). Cleartext is OFF (HTTPS-only); R8 + resource
+    // shrinking minify + strip; Hermes is the engine. ProGuard keeps the RN/OkHttp/Hermes runtime.
+    // MOB-SDK-1: Google Play requires target API 36 (Android 16) for new apps and updates since 31 Aug 2026 — the
+    // target is pinned here explicitly so an SDK default can never silently drop below it. compileSdk is 37 (the
+    // SDK 58 default) and cannot be 36: every Expo SDK 58 module's AAR metadata requires compileSdk >= 37 (the release
+    // build fails checkReleaseAarMetadata on 36). Play gates on targetSdk only. `enableProguardInReleaseBuilds` was
+    // renamed `enableMinifyInReleaseBuilds` (SDK 54); the old key is no longer read.
     ['expo-build-properties', {
       android: {
-        enableProguardInReleaseBuilds: true,
+        compileSdkVersion: 37,
+        targetSdkVersion: 36,
+        enableMinifyInReleaseBuilds: true,
         enableShrinkResourcesInReleaseBuilds: true,
         usesCleartextTraffic: false,
-        extraProguardRules: '-keep class com.facebook.hermes.** { *; }\n-keep class com.facebook.jni.** { *; }\n-keep class com.swmansion.** { *; }\n-dontwarn okhttp3.**\n-dontwarn okio.**',
+        extraProguardRules: [
+          '-keep class com.facebook.hermes.** { *; }',
+          '-keep class com.facebook.jni.** { *; }',
+          '-keep class com.swmansion.** { *; }',
+          // Razorpay checkout (its documented rules): the checkout WebView calls back into Java by reflection.
+          '-keepclassmembers class * { @android.webkit.JavascriptInterface <methods>; }',
+          '-keepattributes JavascriptInterface',
+          '-keepattributes *Annotation*',
+          '-keep class com.razorpay.** { *; }',
+          '-dontwarn com.razorpay.**',
+          '-keepclasseswithmembers class * { public void onPayment*(...); }',
+          '-dontwarn okhttp3.**',
+          '-dontwarn okio.**',
+        ].join('\n'),
       },
-      ios: { flipper: false },
     }],
   ],
   experiments: { typedRoutes: true },

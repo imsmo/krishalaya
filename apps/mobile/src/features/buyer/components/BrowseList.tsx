@@ -74,7 +74,7 @@ export function BrowseList({ query, ListHeader, emptyTitle, emptyMessage, onCoun
       ListEmptyComponent={<EmptyState title={emptyTitle} message={emptyMessage} />}
       onEndReachedThreshold={0.4}
       onEndReached={onEndReached}
-      ListFooterComponent={paging ? <ActivityIndicator color={color.primary600} style={{ marginVertical: space[4] }} /> : null}
+      ListFooterComponent={paging ? <ActivityIndicator color={color.primary600} style={{ marginVertical: space[4] }} /> : undefined}
       renderItem={({ item }) => (
         <BuyerListingCard
           card={item} langCode={lang} saved={savedIds.has(item.id)}

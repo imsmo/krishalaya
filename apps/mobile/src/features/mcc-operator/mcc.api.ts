@@ -4,7 +4,7 @@
 // the same owner-or-manage collection/bill endpoints the farmer's own app reads (one truth, two viewers).
 import type { DairyMcc, DairyMembership, DairyCollection, MilkBill } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
-import { cache } from '../../core/offline/sqlite.db';
+import { cache } from '../../core/offline/sqlite.store';
 import { POLICY } from '../../core/offline/cache-policies';
 import { newId } from '../../core/util/ids';
 

@@ -145,7 +145,7 @@ export default function SavedScreen() {
                 ))}
               </Card>
             </View>
-          ) : null}
+          ) : undefined}
           renderItem={({ item }) => {
             const chips = criteriaChips(item);
             return (
@@ -166,7 +166,7 @@ export default function SavedScreen() {
       ) : (
         <FlatList
           data={sellers} keyExtractor={(s) => s} style={{ marginTop: space[3] }}
-          ListHeaderComponent={sellers.length > 0 ? <Text style={styles.subtitle}>{t('savedSellers.subtitle')}</Text> : null}
+          ListHeaderComponent={sellers.length > 0 ? <Text style={styles.subtitle}>{t('savedSellers.subtitle')}</Text> : undefined}
           ItemSeparatorComponent={() => <View style={{ height: space[2] }} />}
           ListEmptyComponent={<EmptyState title={t('buyer.saved.empty.sellers')} />}
           renderItem={({ item }) => {

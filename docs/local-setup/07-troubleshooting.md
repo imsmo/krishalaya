@@ -45,7 +45,7 @@ up → migrate). Never edit applied migrations; add a new numbered one.
 `pnpm --filter "@krishalaya/*" build`).
 
 **`Unsupported engine` / wrong Node version**
-→ `nvm use` (reads `.nvmrc` → Node 20). If `nvm` isn't found, re-do Step 1.3 (the `~/.zshrc` lines), then
+→ `nvm use` (reads `.nvmrc` → Node 22). If `nvm` isn't found, re-do Step 1.3 (the `~/.zshrc` lines), then
 `source ~/.zshrc`.
 
 **`pnpm: command not found`**

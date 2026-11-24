@@ -1161,9 +1161,10 @@ How: change `default = "1.36"` → `"1.37"` in [`modules/eks/variables.tf`](terr
 `apply` **staging** → run Part 10 checks → then production → update the Cluster Autoscaler `image.tag` to the matching
 `v1.37.x` (7.7). One minor version at a time.
 
-### 13.3 Remove the audit exceptions
-The 26 accepted advisories in [`docs/security/AUDIT-EXCEPTIONS.md`](../docs/security/AUDIT-EXCEPTIONS.md) all disappear
-with the **Expo SDK upgrade** of the mobile app. Schedule it; then delete the exceptions.
+### 13.3 Keep the audit exceptions at zero
+Done (MOB-SDK-1, Expo SDK 58): the 26 Expo SDK 51 advisories are gone and nothing is ignored any more — see
+[`docs/security/AUDIT-EXCEPTIONS.md`](../docs/security/AUDIT-EXCEPTIONS.md). Upgrade the mobile app's Expo SDK at least
+once a year: Google Play raises the required Android target API every August.
 
 ---
 

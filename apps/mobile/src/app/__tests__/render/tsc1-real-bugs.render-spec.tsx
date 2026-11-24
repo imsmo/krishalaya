@@ -13,7 +13,7 @@ import React from 'react';
 import { Pressable, Text, View, StyleSheet, type StyleProp, type TextStyle } from 'react-native';
 import { Button, EmptyState, SkeletonCard, StatusPill } from '@krishalaya/ui-native';
 import { act } from 'react-test-renderer';
-import { renderScreen } from '../../../test-utils/render';
+import { isOfType, renderScreen } from '../../../test-utils/render';
 import { mockPush, resetExpoRouterMock, searchParams } from '../../../test-utils/expo-router-mock';
 import JobDetail from '../../(worker)/jobs/[id]';
 import TipsLibrary from '../../(farmer)/tips/index';
@@ -90,7 +90,7 @@ describe('TSC-1 · (worker)/jobs/[id] — Apply opens the confirm-and-apply scre
 describe('TSC-1 · (farmer)/tips — the topic tabs render', () => {
   it('renders the five category tabs with only "All" usable', async () => {
     const r = await renderScreen(<TipsLibrary />);
-    const tabs = r.root.findAll((n) => n.type === Pressable && n.props.accessibilityRole === 'tab');
+    const tabs = r.root.findAll((n) => isOfType(n, Pressable) && n.props.accessibilityRole === 'tab');
     expect(tabs).toHaveLength(5);
     expect(tabs.filter((tab) => !tab.props.disabled)).toHaveLength(1);
   });
@@ -118,7 +118,7 @@ describe('TSC-1 · styles that were referenced but never defined', () => {
   it('(owner)/farmer-analytics: the retry control is styled', async () => {
     const r = await renderScreen(<FarmerAnalytics />);
     expect(r.root.findAllByType(EmptyState).length).toBeGreaterThan(0);
-    const retry = r.root.findAll((n) => n.type === Pressable && n.props.accessibilityRole === 'button' && typeof n.props.onPress === 'function'
+    const retry = r.root.findAll((n) => isOfType(n, Pressable) && n.props.accessibilityRole === 'button' && typeof n.props.onPress === 'function'
       && n.findAllByType(Text).some((tx) => textOf(tx) === 'Retry'));
     expect(retry.length).toBeGreaterThan(0);
     expect(flat(retry[0].props.style)).toMatchObject({ alignItems: 'center' });

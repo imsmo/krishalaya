@@ -168,7 +168,7 @@
 - **Laws:** general
 - **Priority:** Wave 0/1
 
-### `apps/mobile/src/core/offline/sqlite.db.ts` 
+### `apps/mobile/src/core/offline/sqlite.store.ts` 
 - **Layer:** Mobile Core
 - **Implement:** Cross-cutting mobile plumbing: api client (tenant header, retry, offline-queue), auth+role-switcher, SQLite offline sync (server-wins), i18n+Indic numerals, STT voice flow, geofence, push, analytics. 
 - **Laws:** general

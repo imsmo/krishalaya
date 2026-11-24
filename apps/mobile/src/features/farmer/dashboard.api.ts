@@ -3,7 +3,7 @@
 // logic lives here. Mandi pulse is best-effort — on failure it returns null so the screen HIDES the section
 // rather than inventing prices (degrade-never-die, never fake data). Money stays as bigint-minor strings.
 import { apiClient } from '../../core/api/client';
-import { cache } from '../../core/offline/sqlite.db';
+import { cache } from '../../core/offline/sqlite.store';
 import { currentScope } from '../../core/offline/scope';
 import { POLICY } from '../../core/offline/cache-policies';
 import { myListings } from '../listings/listings.api';

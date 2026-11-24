@@ -15,7 +15,7 @@ cd /Users/sanjayodedra/Documents/Personal/farmer/krishalaya
 ## 2.1 Install all workspace dependencies (once)
 
 ```bash
-nvm use            # switches to Node 20 (reads .nvmrc)
+nvm use            # switches to Node 22 (reads .nvmrc)
 pnpm install       # installs every app + package in the monorepo (takes a few minutes the first time)
 ```
 

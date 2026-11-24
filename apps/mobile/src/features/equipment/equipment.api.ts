@@ -4,7 +4,7 @@
 // the real taxonomy. Reads degrade-never-die; writes THROW.
 import type { EquipmentAsset, EquipmentRate, EquipmentRental, CategoryNode } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
-import { cache } from '../../core/offline/sqlite.db';
+import { cache } from '../../core/offline/sqlite.store';
 import { POLICY } from '../../core/offline/cache-policies';
 import { newId } from '../../core/util/ids';
 

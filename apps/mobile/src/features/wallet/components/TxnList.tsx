@@ -60,7 +60,7 @@ export function TxnList<T>({ fetchPage, present, titleFor, statusFor, onOpen, la
       ListEmptyComponent={<EmptyState title={emptyTitle} message={emptyMessage} />}
       onEndReachedThreshold={0.4}
       onEndReached={onEndReached}
-      ListFooterComponent={paging ? <ActivityIndicator color={color.primary600} style={{ marginVertical: space[4] }} /> : null}
+      ListFooterComponent={paging ? <ActivityIndicator color={color.primary600} style={{ marginVertical: space[4] }} /> : undefined}
       renderItem={({ item }) => {
         const v = present(item);
         return <TxnRow txn={v} title={titleFor(v)} statusLabel={statusFor(v)} langCode={langCode} onPress={() => onOpen(v)} />;

@@ -1,4 +1,4 @@
-// apps/mobile/src/core/offline/sqlite.db.ts · the durable read-cache store, backed by expo-sqlite. Implements the
+// apps/mobile/src/core/offline/sqlite.store.ts · the durable read-cache store, backed by expo-sqlite. Implements the
 // CacheStore port the SWR engine depends on (one table: key → JSON value + fetchedAt). SQLite (not AsyncStorage)
 // because the cache holds many list/detail rows and we need prefix deletes for scope/namespace invalidation.
 // NON-SECRET reads only — tokens never touch this (those live in SecureStore). Fails soft: a storage error

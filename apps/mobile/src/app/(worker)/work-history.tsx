@@ -101,7 +101,7 @@ export default function WorkHistory() {
           renderItem={({ item }) => <DayCard att={item} lang={lang} t={t} />}
           ListEmptyComponent={<EmptyState title={t('workerHistory.empty.title')} message={t('workerHistory.empty.message')} />}
           contentContainerStyle={{ paddingBottom: space[8] }}
-          ListFooterComponent={more ? <View style={{ paddingVertical: space[3] }}><SkeletonCard lines={2} /></View> : null}
+          ListFooterComponent={more ? <View style={{ paddingVertical: space[3] }}><SkeletonCard lines={2} /></View> : undefined}
         />
       )}
     </ScreenScaffold>

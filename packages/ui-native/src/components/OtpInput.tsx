@@ -4,6 +4,7 @@
 // caller so the verify screen can clear it on error.
 import React, { useRef } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import type { TextInputInstance } from 'react-native';
 import { color, font, radius, space } from '../theme';
 
 export interface OtpInputProps {
@@ -17,7 +18,7 @@ export interface OtpInputProps {
 }
 
 export function OtpInput({ value, onChange, length = 6, onComplete, autoFocus, error, testID }: OtpInputProps) {
-  const ref = useRef<TextInput>(null);
+  const ref = useRef<TextInputInstance>(null);
   const handle = (raw: string) => {
     const digits = raw.replace(/[^0-9]/g, '').slice(0, length);
     onChange(digits);

@@ -15,7 +15,7 @@
 #    start → a prod-only, self-contained tree via `pnpm deploy --prod` (as node-service does), started with the app's
 #    own pinned binary — never npx.
 #  • `--frozen-lockfile=false` could build different dependency versions than CI tested → frozen.
-FROM node:20-alpine AS build
+FROM node:22-alpine AS build
 ARG APP
 ARG APP_PKG
 ARG NEXT_PUBLIC_ENV=""
@@ -30,7 +30,7 @@ RUN pnpm install --frozen-lockfile \
   && pnpm --filter "${APP_PKG}" deploy --prod /app \
   && rm -rf /app/.next/cache
 
-FROM node:20-alpine AS runtime
+FROM node:22-alpine AS runtime
 ENV NODE_ENV=production PORT=3000 NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 RUN apk add --no-cache tini curl && addgroup -S app && adduser -S app -G app

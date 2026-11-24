@@ -8,7 +8,7 @@ tooling** — so every step is spelled out, including the small things that usua
 
 | Step | File | What you'll do | Time |
 |------|------|----------------|------|
-| 1 | `01-install-macos.md` | Install Homebrew, Node 20, pnpm, Docker, Python, mobile tools | ~45 min (mostly downloads) |
+| 1 | `01-install-macos.md` | Install Homebrew, Node 22, pnpm, Docker, Python, mobile tools | ~45 min (mostly downloads) |
 | 2 | `02-infra-and-database.md` | Start Postgres/Redis/etc, create the DB, run migrations + seeds | ~15 min |
 | 3 | `03-run-backend.md` | Run the API + wallet + worker + (optional) admin/realtime/AI | ~15 min |
 | 4 | `04-run-web.md` | Run the 4 Next.js web apps | ~10 min |

@@ -6,7 +6,7 @@
 // scope it under a fixed 'public' bucket rather than the user, and never cache another tenant's private data.
 import type { ListingCard, ListingQuery, ReviewSummary, CategoryNode, SellerPublicProfile, PublicReview } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
-import { cache } from '../../core/offline/sqlite.db';
+import { cache } from '../../core/offline/sqlite.store';
 import { POLICY } from '../../core/offline/cache-policies';
 
 export interface BrowsePage { items: ListingCard[]; nextCursor: string | null; total: number | null }

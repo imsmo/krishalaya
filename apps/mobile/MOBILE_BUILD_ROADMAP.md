@@ -51,12 +51,12 @@ These are cross-cutting capabilities almost every later screen needs. Do them be
 
 ### P-02 · Connectivity + offline read-cache + sync engine (P0) — *infra* — ✅ DONE
 - Built: `core/offline/cache-policies` (pure, user-scoped keys + TTL/SWR) + `cache` (read-through SWR, injected
-  store+clock) + `sqlite.db` (expo-sqlite store) + `scope` (per-user, cleared on sign-out); `core/connectivity`
+  store+clock) + `sqlite.store` (expo-sqlite store) + `scope` (per-user, cleared on sign-out); `core/connectivity`
   (NetInfo store + hook); `sync.engine` (flush queue on offline→online edge + foreground, concurrent-guarded);
   ui-native `OfflineBanner`; farmer home/listings/orders reads routed through cache (wallet left live). 70 mobile
   unit tests green (cache policies, SWR engine, sync guards). Threats note in README.
 - **Why:** "degrade-never-die" + offline-first promise; every list/detail benefits.
-- **Build:** `core/offline/sqlite.db.ts` (durable read cache), `cache-policies.ts` (stale-while-revalidate, TTL,
+- **Build:** `core/offline/sqlite.store.ts` (durable read cache), `cache-policies.ts` (stale-while-revalidate, TTL,
   tenant-prefixed keys, invalidation), `sync.engine.ts` (flush the write OfflineQueue + revalidate on
   reconnect/foreground), NetInfo-based connectivity banner. Wire the existing `OfflineQueue.flush` loop.
 - **DoD:** app usable airplane-mode (cached reads); a queued create replays on reconnect (same idempotency key);

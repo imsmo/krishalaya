@@ -5,6 +5,8 @@
     "rootDir": "src",
     "composite": true,
     "jsx": "react-jsx",
+    "module": "node16",
+    "moduleResolution": "node16",
     "lib": ["ES2021", "DOM"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],

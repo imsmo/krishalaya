@@ -42,7 +42,7 @@ jobs:
       # CI must fail on lockfile drift, not silently rewrite the lockfile it is about to audit.
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: pnpm }
+        with: { node-version: 22, cache: pnpm }   # MOB-SDK-1: the workspace now holds Expo SDK 58 (Node ≥ 22.13, engine-strict)
       - run: pnpm install --frozen-lockfile
       - name: pnpm audit (fail on high/critical)
         run: pnpm audit --audit-level high || (echo "High/critical advisories found — triage before release." && exit 1)

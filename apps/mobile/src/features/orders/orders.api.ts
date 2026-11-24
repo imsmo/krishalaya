@@ -7,7 +7,7 @@
 // + an uploaded photo and delivers the shipment server-side.
 import type { OrderListItem, OrderDetail, OrderRole, Shipment, OrderTracking, OrderBuyerSummary } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
-import { cache } from '../../core/offline/sqlite.db';
+import { cache } from '../../core/offline/sqlite.store';
 import { currentScope } from '../../core/offline/scope';
 import { POLICY } from '../../core/offline/cache-policies';
 import { newId } from '../../core/util/ids';

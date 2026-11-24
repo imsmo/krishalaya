@@ -1804,7 +1804,7 @@ apps/mobile/src/core/i18n/useTranslation.ts,Mobile Core,Wave 0/1,07_mobile
 apps/mobile/src/core/location/geofence.ts,Mobile Core,Wave 0/1,07_mobile
 apps/mobile/src/core/location/gps.ts,Mobile Core,Wave 0/1,07_mobile
 apps/mobile/src/core/offline/cache-policies.ts,Mobile Core,Wave 0/1,07_mobile
-apps/mobile/src/core/offline/sqlite.db.ts,Mobile Core,Wave 0/1,07_mobile
+apps/mobile/src/core/offline/sqlite.store.ts,Mobile Core,Wave 0/1,07_mobile
 apps/mobile/src/core/offline/sync.engine.ts,Mobile Core,Wave 0/1,07_mobile
 apps/mobile/src/core/push/fcm.ts,Mobile Core,Wave 0/1,07_mobile
 apps/mobile/src/core/push/notification-router.ts,Mobile Core,Wave 0/1,07_mobile

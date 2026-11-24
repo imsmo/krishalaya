@@ -10,7 +10,7 @@ import { apiClient } from '../../core/api/client';
 import type { QueuedOp, ReplayResult } from '../../core/api/offline-queue';
 import { isConnectivityFailure, classifyReplayFailure } from '../../core/api/write-classify';
 import { registerOpHandler, enqueueOp } from '../../core/offline/sync-queue';
-import { cache } from '../../core/offline/sqlite.db';
+import { cache } from '../../core/offline/sqlite.store';
 import { currentScope } from '../../core/offline/scope';
 import { POLICY } from '../../core/offline/cache-policies';
 import { newId } from '../../core/util/ids';

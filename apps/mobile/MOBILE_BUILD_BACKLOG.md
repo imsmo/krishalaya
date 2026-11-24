@@ -57,7 +57,7 @@ PRODUCTION-GRADE CONTRACT (apps/mobile) — obey for everything you build. The m
 MOBILE_AI_AGENT_BUILD_GUIDE.md + CLAUDE.md 12 Laws remain supreme:
 - This is large-scale multi-tenant SaaS product for millions of users / billions of ops, under
   active attack. Write code that withstands that — never a demo.
-- This is the farmer/buyer/worker/ambassador/tenant-lite Expo (SDK 51, expo-router) app on the shared platform API
+- This is the farmer/buyer/worker/ambassador/tenant-lite Expo (SDK 58, expo-router) app on the shared platform API
   via @krishalaya/sdk-js. Build production for rural users on low-end Android + flaky 2G/3G. Offline-first.
 - SERVER IS THE ONLY SECURITY AUTHORITY. The app trusts its own role for NAVIGATION ONLY; the API re-enforces
   RBAC + RLS + every state transition + every money move on every call. Never widen scope client-side.

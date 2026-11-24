@@ -2,7 +2,7 @@
 // retry) → confirm. OFFLINE-FIRST: on a network/timeout failure the op is enqueued durably and replayed later
 // with the SAME idempotency keys, so a reconnect can never create a duplicate asset (Law 3). The raw bytes go
 // straight to S3 (ticket.uploadUrl) via expo-file-system — never proxied through the API or logged.
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy'; // MOB-SDK-1: SDK 54 made the File/Directory API the default export; the classic API (createUploadTask with progress, readAsStringAsync) lives here
 import { SdkError } from '@krishalaya/sdk-js';
 import type { MediaKind } from '@krishalaya/sdk-js';
 import { apiClient } from '../api/client';

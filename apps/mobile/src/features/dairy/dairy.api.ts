@@ -6,7 +6,7 @@
 // operator; the farmer's app is the TRUST MIRROR of what the cooperative did.
 import type { DairyMembership, DairyCollection, MilkBill, DairyRateCard, DairyMcc, MilkBillStatus } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
-import { cache } from '../../core/offline/sqlite.db';
+import { cache } from '../../core/offline/sqlite.store';
 import { POLICY } from '../../core/offline/cache-policies';
 import { newId } from '../../core/util/ids';   // PC-55 B6: the dairy layer's FIRST write (D2C subscribe) needs an idempotency key
 

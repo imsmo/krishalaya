@@ -121,7 +121,7 @@ export default function CartScreen() {
                 <Text style={styles.protectText}>{t('cart.protection')}</Text>
               </View>
             </View>
-          ) : null}
+          ) : undefined}
         />
       )}
     </ScreenScaffold>

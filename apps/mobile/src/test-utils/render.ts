@@ -11,6 +11,10 @@
 // environment down ("Cannot log after tests are done" / "trying to access ... after it has been torn down").
 // Every renderer this module creates is tracked and unmounted in a module-level `afterEach`, so this is handled
 // once, centrally, instead of every spec file remembering to call `.unmount()` itself.
+// MOB-SDK-1 (React 19.3): react-test-renderer is deprecated upstream but still published in lock-step with React
+// (pinned 19.3.0 = the app's React) and runs every spec here unchanged and warning-free. The successor is
+// @testing-library/react-native 14 on `test-renderer` (what jest-expo 58 itself uses); moving the 34 specs there
+// is a separate, test-only change — nothing in the app depends on this file.
 import TestRenderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import type { ReactElement } from 'react';
 
@@ -42,4 +46,11 @@ export async function renderScreen(element: ReactElement): Promise<ReactTestRend
  * every screen read in this batch. */
 function flushMicrotasks(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0)).then(() => new Promise((resolve) => setTimeout(resolve, 0)));
+}
+
+/** True when a rendered node is an instance of `component`. MOB-SDK-1: React Native 0.88 wraps `Pressable` (and other
+ * core components) in `React.memo`; react-test-renderer records the INNER function as the node's type, so a plain
+ * `node.type === Pressable` / `findAllByType(Pressable)` silently matches nothing. Compare against both. */
+export function isOfType(node: { type: unknown }, component: unknown): boolean {
+  return node.type === component || (component != null && node.type === (component as { type?: unknown }).type);
 }

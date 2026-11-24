@@ -6,7 +6,7 @@
 // on every op and replays only the signed-in owner's (core/offline/sync-queue.ts). The auth store now sets the scope from the token at
 // sign-in and at boot restore (core/offline/owner.ts says why), as well as from the profile. Signing out resets both — the queue is NOT
 // cleared (a farmer who signs out keeps their queued listing), it is simply held until its owner signs in again.
-import { cache } from './sqlite.db';
+import { cache } from './sqlite.store';
 
 let scope = 'anon';
 let tenant: string | null = null;

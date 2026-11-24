@@ -106,7 +106,7 @@ export default function Leaderboard() {
                 <Text style={styles.motBody}>{t('amb.leaderboard.topBonus')}</Text>
               </View>
             </View>
-          ) : null}
+          ) : undefined}
           contentContainerStyle={{ paddingBottom: space[4], gap: space[2] }}
         />
       )}
@@ -116,7 +116,7 @@ export default function Leaderboard() {
 
 function Row({ entry, mine, lang, t }: { entry: LeaderboardEntry; mine: boolean; lang: string; t: (k: string, v?: Record<string, string | number>) => string }) {
   return (
-    <Card style={StyleSheet.flatten([styles.row, mine && styles.mineRow])}>
+    <Card style={{ ...styles.row, ...(mine ? styles.mineRow : null) }}>
       <Text style={styles.rank}>{entry.rank}</Text>
       <View style={{ flex: 1 }}>
         <View style={styles.nameRow}>

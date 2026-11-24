@@ -6,7 +6,7 @@
 // SERVER computed (Law 2/11 — the app never prices a visit).
 import type { Animal, AnimalSpecies, AnimalBreed, VetProfile, VetService, VetBooking } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
-import { cache } from '../../core/offline/sqlite.db';
+import { cache } from '../../core/offline/sqlite.store';
 import { POLICY } from '../../core/offline/cache-policies';
 import { newId } from '../../core/util/ids';
 

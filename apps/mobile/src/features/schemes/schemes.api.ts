@@ -6,7 +6,7 @@
 // confirm) and returns a mediaId. Reads degrade-never-die (empty/null). Money is bigint minor strings (Law 2).
 import type { Scheme, SchemeAuthority, SchemeApplication, EligibilityResult, DbtTransfer, SchemeApplicationDocument } from '@krishalaya/sdk-js';
 import { apiClient } from '../../core/api/client';
-import { cache } from '../../core/offline/sqlite.db';
+import { cache } from '../../core/offline/sqlite.store';
 import { POLICY } from '../../core/offline/cache-policies';
 import { newId } from '../../core/util/ids';
 import { processImage, uploadProcessed, type PickedImage } from '../../core/media';

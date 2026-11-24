@@ -7,7 +7,7 @@ mismatches — use the values below verbatim and you won't hit auth errors).
 > Each service runs in **its own terminal tab/window** and stays running (it's a server). Open a new tab with
 > `Cmd+T`. To stop a service, click its terminal and press `Ctrl+C`.
 
-Common rule for all: run `nvm use` first in each new terminal (so it's Node 20).
+Common rule for all: run `nvm use` first in each new terminal (so it's Node 22).
 
 ---
 

@@ -54,9 +54,10 @@ The app downloads the JS bundle (first time is slow) and launches. You should la
 If the app is stuck on "Downloading…" or shows a network error, your Wi-Fi may block device-to-device traffic
 (common on office/college networks). Use Expo's tunnel, which routes through the internet instead of the LAN:
 ```bash
-pnpm start --tunnel
+pnpm start --tunnel ngrok
 ```
-The first time it installs `@expo/ngrok`; accept. Re-scan the new QR. With `--tunnel` the LAN IP doesn't matter,
+(Expo SDK 58: plain `--tunnel` is Expo's new tunnel and needs `npx expo login` first; `--tunnel ngrok` uses the
+`@expo/ngrok` dev dependency the app already has, no account needed.) Re-scan the new QR. With `--tunnel` the LAN IP doesn't matter,
 **but** the app still calls your API at `EXPO_PUBLIC_API_URL`, which on a tunnel must be publicly reachable — so
 for tunnel mode either keep on the same Wi-Fi (LAN IP still works for the API) or expose the API too. For a
 beginner: **first try same-Wi-Fi (5.2 + 5.3); only use --tunnel if that fails**, and stay on the same Wi-Fi so the

@@ -10,7 +10,7 @@
 // alert per flush pass (not one per item — a bad batch must not spam the farmer with N popups).
 // PC-56 HOTFIX-8 · D2: a queued op older than 30 days is dropped unsent at its owner's flush ('expired') — told in its own words
 // (`sync.itemExpired`), never as "could not be sent, try again". Only the signed-in owner's ops are flushed (core/offline/sync-queue.ts).
-import { AppState, type AppStateStatus, Alert } from 'react-native';
+import { AppState, Alert } from 'react-native';
 import { startConnectivity, subscribeConnectivity, isOnline } from '../connectivity/connectivity';
 import { flushQueue, onDroppedOp } from './sync-queue';
 import { shouldFlushOnConnectivity, shouldFlushOnAppState } from './sync-policy';
@@ -42,7 +42,7 @@ async function flushOnce(): Promise<void> {
 export function startSyncEngine(): () => void {
   const stopNet = startConnectivity();
   let prevOnline = isOnline();
-  let prevAppState: AppStateStatus = AppState.currentState;
+  let prevAppState: string = AppState.currentState ?? 'unknown'; // RN 0.88 types currentState as nullable
 
   const unsubConn = subscribeConnectivity(() => {
     const next = isOnline();
