@@ -19,7 +19,7 @@ function spyReplica(rows: unknown[]) {
   return { replica, calls };
 }
 const flat = (sql: string) => sql.replace(/\s+/g, ' ');
-const MIG = path.join(__dirname, '../../../../../../DB/migrations/0201_logistics_ops.sql');
+const MIG = path.join(__dirname, '../../../../../../db/migrations/0201_logistics_ops.sql');
 
 describe('PC-56 OPS-4c · E13 · the fleet reads SIGNED readings only', () => {
   it('joins the logger registry to its own device readings by device_id, source = device; never device_ref', async () => {

@@ -3,6 +3,12 @@
 // `unit` runs everywhere (pure/mocked, no infra). `integration` needs a real
 // Postgres (DATABASE_URL) and runs in the CI service-container job. As each
 // further PRD module is implemented, add its path to the testMatch globs.
+//
+// PC-56 CI-4: pin the timezone. Specs that prove date columns are not "a day early in +05:30" (e.g.
+// partner-loans.rules.spec.ts) assume Asia/Kolkata, which was only true on a developer machine set to IST; GitHub
+// runners are UTC. Set here, before jest spawns its workers, so every worker inherits it.
+process.env.TZ = 'Asia/Kolkata';
+
 module.exports = {
   projects: [
     {
