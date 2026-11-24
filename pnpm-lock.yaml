@@ -31,6 +31,8 @@ overrides:
   source-map-js@>=1.0.0 <1.2.2: ~1.2.2
   undici@>=6.0.0 <6.29.1: ~6.29.1
   '@nestjs/microservices': '-'
+  babel-plugin-react-compiler>zod: ~4.6.7
+  zod-validation-error>zod: ~4.6.7
 
 importers:
 
@@ -2014,7 +2016,7 @@ packages:
 
   '@expo/bunyan@4.0.1':
     resolution: {integrity: sha512-+Lla7nYSiHZirgK+U/uYzsLv/X+HaJienbD5AKX1UQZHYfWaP+9uuQluRB4GrEVWF0GZ7vEVp/jzaOT9k/SQlg==}
-    engines: {'0': node >=0.10.0}
+    engines: {node: '>=0.10.0'}
 
   '@expo/cli@0.18.31':
     resolution: {integrity: sha512-v9llw9fT3Uv+TCM6Xllo54t672CuYtinEQZ2LPJ2EJsCwuTc4Cd2gXQaouuIVD21VoeGQnr5JtJuWbF97sBKzQ==}
@@ -8044,10 +8046,7 @@ packages:
     resolution: {integrity: sha512-VJh93e2wb4c3tWtGgTa0OF/dTt/zoPCPzXq4V11ZjxmEAFaPi/Zss1xIZdEB5RD8GD00U0/iVXgqkF77RV7pdQ==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
-      zod: ^3.18.0
-
-  zod@3.25.76:
-    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
+      zod: ~4.6.7
 
   zod@4.6.7:
     resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
@@ -11605,8 +11604,8 @@ snapshots:
       chalk: 4.1.2
       invariant: 2.2.4
       pretty-format: 24.9.0
-      zod: 3.25.76
-      zod-validation-error: 2.1.0(zod@3.25.76)
+      zod: 4.6.7
+      zod-validation-error: 2.1.0(zod@4.6.7)
 
   babel-plugin-react-native-web@0.19.13: {}
 
@@ -16804,10 +16803,8 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  zod-validation-error@2.1.0(zod@3.25.76):
+  zod-validation-error@2.1.0(zod@4.6.7):
     dependencies:
-      zod: 3.25.76
-
-  zod@3.25.76: {}
+      zod: 4.6.7
 
   zod@4.6.7: {}
