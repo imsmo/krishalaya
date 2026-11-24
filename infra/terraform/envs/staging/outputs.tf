@@ -68,6 +68,8 @@ output "app_hostnames" {
     admin_api  = "admin-api.${var.root_domain}"
     partner    = "partner.${var.root_domain}"
     tenant     = "tenant.${var.root_domain}"
+    gov        = "gov.${var.root_domain}"   # PC-56 DEPLOY-1: web-gov + web-ops get hosts (covered by the wildcard cert)
+    ops        = "ops.${var.root_domain}"
     realtime   = "rt.${var.root_domain}"
   }
 }

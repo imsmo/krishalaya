@@ -16,6 +16,9 @@
 #   AWS_DEPLOY_ROLE_ARN   terraform output github_deploy_role_arn
 #   EKS_CLUSTER_NAME      terraform output eks_cluster_name
 #   IRSA_ROLE_ARNS        terraform output -json irsa_role_arns   (the JSON map, as one line)
+#   ROOT_DOMAIN           staging.krishalaya.com | krishalaya.com  (every public host is <app>.<ROOT_DOMAIN>)
+#   ACM_CERT_ARN          terraform output -raw acm_certificate_arn   (the wildcard TLS certificate)
+#   WAF_ACL_ARN           terraform output -raw waf_web_acl_arn       (the web firewall in front of every host)
 #   AWS_REGION            optional, default ap-south-1
 #   NEXT_PUBLIC_ENV_WEB_STOREFRONT, _WEB_TENANT, _WEB_ADMIN, _WEB_PARTNER, _WEB_GOV, _WEB_OPS
 #                         each web app's PUBLIC build-time settings as dotenv text (multi-line). Public values only.
@@ -61,6 +64,9 @@ jobs:
           ROLE: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
           CLUSTER: ${{ vars.EKS_CLUSTER_NAME }}
           IRSA: ${{ vars.IRSA_ROLE_ARNS }}
+          ROOT_DOMAIN: ${{ vars.ROOT_DOMAIN }}
+          ACM_CERT_ARN: ${{ vars.ACM_CERT_ARN }}
+          WAF_ACL_ARN: ${{ vars.WAF_ACL_ARN }}
           WEB_STOREFRONT: ${{ vars.NEXT_PUBLIC_ENV_WEB_STOREFRONT }}
           WEB_TENANT: ${{ vars.NEXT_PUBLIC_ENV_WEB_TENANT }}
           WEB_ADMIN: ${{ vars.NEXT_PUBLIC_ENV_WEB_ADMIN }}
@@ -72,6 +78,9 @@ jobs:
           [ -n "$ROLE" ]    || missing+=("AWS_DEPLOY_ROLE_ARN")
           [ -n "$CLUSTER" ] || missing+=("EKS_CLUSTER_NAME")
           [ -n "$IRSA" ]    || missing+=("IRSA_ROLE_ARNS")
+          [ -n "$ROOT_DOMAIN" ]  || missing+=("ROOT_DOMAIN")
+          [ -n "$ACM_CERT_ARN" ] || missing+=("ACM_CERT_ARN")
+          [ -n "$WAF_ACL_ARN" ]  || missing+=("WAF_ACL_ARN")
           for v in WEB_STOREFRONT WEB_TENANT WEB_ADMIN WEB_PARTNER WEB_GOV WEB_OPS; do
             [ -n "${!v}" ] || missing+=("NEXT_PUBLIC_ENV_$v")
           done
@@ -152,33 +161,49 @@ jobs:
         if: steps.cfg.outputs.ready == 'true'
         env:
           IRSA: ${{ vars.IRSA_ROLE_ARNS }}
+          D: ${{ vars.ROOT_DOMAIN }}
+          CERT: ${{ vars.ACM_CERT_ARN }}
+          WAF: ${{ vars.WAF_ACL_ARN }}
         run: |
           set -euo pipefail
           cd infra/helm
           for c in api admin-api wallet-service worker realtime-gateway ai-services web web-partner; do helm dependency build "./$c" >/dev/null; done
           role() { echo "$IRSA" | jq -er --arg k "$1" '.[$k]'; }
-          release() {  # <release> <chart> <image-repo> [irsa key]
+          # <release> <chart> <image-repo> <irsa key or -> <public hosts as a JSON array, or - for internal-only>
+          # Every release passes its OWN ingress values: a helm upgrade resets anything not given to the chart default,
+          # and the defaults are placeholders (REPLACE_ACM_CERT_ARN) and prod hosts shared by every `web` release.
+          release() {
             local args=(upgrade --install "$1" "./$2" -n "$NAMESPACE" --atomic --wait --timeout 10m
                         --set "image.repository=${ECR}/$3" --set "image.tag=${TAG}")
-            [ -n "${4:-}" ] && args+=(--set "serviceAccount.roleArn=$(role "$4")")
-            echo ">> $1"; helm "${args[@]}"
+            [ "$4" != "-" ] && args+=(--set "serviceAccount.roleArn=$(role "$4")")
+            [ "$5" != "-" ] && args+=(--set "ingress.certArn=${CERT}" --set "ingress.wafArn=${WAF}" --set-json "ingress.hosts=$5")
+            echo ">> $1 ${5}"; helm "${args[@]}"
           }
-          # wallet-service first: the api calls it over gRPC.
-          release wallet-service   wallet-service   krishalaya-wallet-service   wallet-service
-          release api              api              krishalaya-api              api
-          release admin-api        admin-api        krishalaya-admin-api        admin-api
-          release worker           worker           krishalaya-worker           worker
-          release realtime-gateway realtime-gateway krishalaya-realtime-gateway realtime-gateway
-          release ai-services      ai-services      krishalaya-ai-services      ai-services
-          for app in web-storefront web-tenant web-admin web-gov web-ops; do release "$app" web "krishalaya-$app"; done
-          release web-partner      web-partner      krishalaya-web-partner
+          # wallet-service first: the api calls it over gRPC. wallet-service, worker and ai-services stay internal.
+          release wallet-service   wallet-service   krishalaya-wallet-service   wallet-service   -
+          release api              api              krishalaya-api              api              "[\"api.$D\"]"
+          release admin-api        admin-api        krishalaya-admin-api        admin-api        "[\"admin-api.$D\"]"
+          release worker           worker           krishalaya-worker           worker           -
+          release realtime-gateway realtime-gateway krishalaya-realtime-gateway realtime-gateway "[\"rt.$D\"]"
+          release ai-services      ai-services      krishalaya-ai-services      ai-services      -
+          release web-storefront   web              krishalaya-web-storefront   -                "[\"$D\",\"www.$D\"]"
+          release web-tenant       web              krishalaya-web-tenant       -                "[\"tenant.$D\"]"
+          release web-admin        web              krishalaya-web-admin        -                "[\"admin.$D\"]"
+          release web-gov          web              krishalaya-web-gov          -                "[\"gov.$D\"]"
+          release web-ops          web              krishalaya-web-ops          -                "[\"ops.$D\"]"
+          release web-partner      web-partner      krishalaya-web-partner      -                "[\"partner.$D\"]"
 
-      - name: Smoke — /healthz inside the cluster
+      - name: Smoke — /healthz inside the cluster and over public HTTPS
         if: steps.cfg.outputs.ready == 'true'
+        env:
+          ROOT_DOMAIN: ${{ vars.ROOT_DOMAIN }}
         run: |
           kubectl -n "$NAMESPACE" get pods,svc,hpa
           kubectl -n "$NAMESPACE" run "smoke-${GITHUB_RUN_ID}" --rm -i --restart=Never --image=curlimages/curl:8.10.1 -- \
             curl -fsS --max-time 10 "http://api.${NAMESPACE}.svc.cluster.local/healthz"
+          # …and from the internet, through WAF → ALB → TLS (the path users take).
+          curl -fsS --max-time 15 "https://api.${ROOT_DOMAIN}/healthz"
+          curl -fsS --max-time 15 -o /dev/null "https://${ROOT_DOMAIN}/"
           { echo "### Deployed to ${{ inputs.environment }}"; echo; echo "Commit \`${GITHUB_SHA}\` · images \`${TAG}\` · namespace \`${NAMESPACE}\`"; } >> "$GITHUB_STEP_SUMMARY"
 
       # Proof for promotion: set ONLY after a real deploy whose smoke test passed (a skipped/unconfigured run never sets

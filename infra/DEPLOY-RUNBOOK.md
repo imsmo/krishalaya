@@ -165,6 +165,9 @@ ends green with a "Deploy skipped — not configured" notice.
    | `AWS_DEPLOY_ROLE_ARN` | `terraform output -raw github_deploy_role_arn` |
    | `EKS_CLUSTER_NAME` | `terraform output -raw eks_cluster_name` |
    | `IRSA_ROLE_ARNS` | `terraform output -json irsa_role_arns` (one line of JSON) |
+   | `ROOT_DOMAIN` | `staging.krishalaya.com` (staging) or `krishalaya.com` (production) — every public host is `<app>.<ROOT_DOMAIN>` |
+   | `ACM_CERT_ARN` | `terraform output -raw acm_certificate_arn` |
+   | `WAF_ACL_ARN` | `terraform output -raw waf_web_acl_arn` |
    | `AWS_REGION` | optional; default `ap-south-1` |
    | `NEXT_PUBLIC_ENV_WEB_STOREFRONT` … `_WEB_TENANT`, `_WEB_ADMIN`, `_WEB_PARTNER`, `_WEB_GOV`, `_WEB_OPS` | each web app's **public** build-time settings as dotenv lines (e.g. `NEXT_PUBLIC_API_URL=https://api.staging.krishalaya.com`). They are baked into the browser bundle — never a secret. |
 4. Steps 3 (namespace + env Secrets from Secrets Manager) of this runbook must be done once per cluster; the workflow
