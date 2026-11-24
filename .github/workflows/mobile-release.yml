@@ -2,6 +2,13 @@
 # picks a track: an EAS BINARY build (beta/production) or an OTA UPDATE (expo-updates, JS-only). Binary builds
 # upload source maps PRIVATELY to the crash service then strip them; production submits start a 1% staged rollout.
 # OTA publishes to a channel and can be rolled back. All secrets live in GitHub/EAS secrets — never in the repo.
+#
+# PC-56 REL-1: this file could never run. (1) Not valid YAML: `${{ … }}` inside `{ … }` flow mappings breaks the parser
+# (same fault mobile-ci.yml had) → block style. (2) `npm ci` / `npm run -w` / `npm audit` in a pnpm workspace → pnpm, as
+# mobile-ci.yml does (ui-native built first; mobile resolves it through its gitignored dist/). (3) Every `eas` step ran
+# from the repo root, but app.config.ts and eas.json live in apps/mobile → those steps now run there. The release
+# gates now also run lint, matching mobile-ci. What each track does (build/submit/update/rollback, flags, secrets,
+# the production environment gate) is unchanged.
 name: mobile-release
 
 on:
@@ -16,7 +23,9 @@ on:
         required: true
         default: 'beta'
 
-concurrency: { group: mobile-release, cancel-in-progress: false }
+concurrency:
+  group: mobile-release
+  cancel-in-progress: false
 
 jobs:
   release:
@@ -25,28 +34,46 @@ jobs:
     environment: ${{ github.event.inputs.profile }}   # required reviewers gate production
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4            # version from package.json "packageManager"
       - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: 'npm' }
-      - run: npm ci
+        with:
+          node-version: '20'
+          cache: pnpm
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+      - name: Build ui-native (mobile resolves it through its gitignored dist/)
+        run: pnpm --filter @krishalaya/ui-native build
       - name: Re-run CI gates before release (defence-in-depth)
-        run: npm run -w apps/mobile typecheck && npm run -w apps/mobile test -- --ci && npm audit --omit=dev --audit-level=high
+        run: >-
+          pnpm --filter @krishalaya/mobile typecheck &&
+          pnpm --filter @krishalaya/mobile lint &&
+          pnpm --filter @krishalaya/mobile test -- --ci &&
+          pnpm audit --prod --audit-level high
       - uses: expo/expo-github-action@v8
-        with: { eas-version: latest, token: ${{ secrets.EXPO_TOKEN }} }
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
 
       - name: EAS binary build
         if: ${{ github.event.inputs.action == 'binary-build' }}
+        working-directory: apps/mobile
         run: eas build --platform all --profile ${{ github.event.inputs.profile }} --non-interactive
       - name: Upload source maps (private) to crash service
         if: ${{ github.event.inputs.action == 'binary-build' }}
+        working-directory: apps/mobile
         run: npx sentry-expo-upload-sourcemaps dist || echo "sourcemap upload step (configured with SENTRY_AUTH_TOKEN)"
-        env: { SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }} }
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       - name: Submit (production starts at 1% staged rollout)
         if: ${{ github.event.inputs.action == 'binary-build' }}
+        working-directory: apps/mobile
         run: eas submit --platform all --profile ${{ github.event.inputs.profile }} --non-interactive
 
       - name: OTA update (JS-only) to channel
         if: ${{ github.event.inputs.action == 'ota-update' }}
+        working-directory: apps/mobile
         run: eas update --channel ${{ github.event.inputs.profile }} --message "${{ github.sha }}" --non-interactive
       - name: OTA rollback (revert to previous publish)
         if: ${{ github.event.inputs.action == 'ota-rollback' }}
+        working-directory: apps/mobile
         run: eas update:rollback --channel ${{ github.event.inputs.profile }} --non-interactive
