@@ -14,7 +14,7 @@ module "vpc" {
   name               = var.project
   cidr_block         = var.vpc_cidr
   az_count           = var.az_count
-  single_nat_gateway = true # lean: one NAT
+  single_nat_gateway = false # PC-56 DEPLOY-5: one NAT per AZ — with one, losing that AZ cuts every pod off from Razorpay/SMS/eKYC/ECR (~₹3.2k/mo more)
 }
 
 # 3) Runtime plane
@@ -75,7 +75,7 @@ module "aurora" {
   min_acu                    = var.aurora_min_acu
   max_acu                    = var.aurora_max_acu
   reader_count               = 1
-  backup_retention_days      = 7
+  backup_retention_days      = 35 # PC-56 DEPLOY-5: the Aurora maximum — a data fault noticed after a week is still recoverable
 }
 
 module "redis" {

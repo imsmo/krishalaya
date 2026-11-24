@@ -15,7 +15,7 @@ eks_public_access_cidrs = ["REPLACE_WITH_YOUR_IP/32"]
 
 # lean sizing — raise these to scale up later (no rewrite)
 eks_node_instance_types  = ["t3.large"]
-eks_node_capacity_type   = "SPOT"
+eks_node_capacity_type   = "ON_DEMAND" # PC-56 DEPLOY-5: a single-type SPOT group can lose every node at once in a capacity crunch — not for live payments/auctions (~₹5k/mo more for 2 nodes)
 eks_node_desired         = 2
 aurora_min_acu           = 0.5
 aurora_max_acu           = 4
