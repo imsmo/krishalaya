@@ -84,3 +84,8 @@ output "github_deploy_role_arn" {
   description = "Set as the GitHub Environment 'production' variable AWS_DEPLOY_ROLE_ARN."
   value       = module.github_deploy.role_arn
 }
+
+output "cluster_autoscaler_role_arn" {
+  description = "Annotate kube-system/cluster-autoscaler with this (beginner guidebook, Cluster Autoscaler step)."
+  value       = module.eks.cluster_autoscaler_role_arn
+}

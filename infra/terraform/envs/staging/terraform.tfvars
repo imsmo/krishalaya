@@ -31,8 +31,8 @@ eks_public_access_cidrs = ["REPLACE_WITH_YOUR_IP/32"]
 #   Cost: EKS control plane ~₹6,000/mo (fixed, same as prod) + 2× t3.medium SPOT ~₹2,700/mo  ≈ ₹8,700/mo
 eks_node_instance_types = ["t3.medium"]
 eks_node_capacity_type  = "SPOT"
-eks_node_desired        = 2
-eks_node_max_size       = 3   # autoscaler ceiling — caps a runaway HPA from silently blowing the cost ceiling
+eks_node_desired        = 3   # PC-56 DEPLOY-3: 12 app releases at 1 replica + system + monitoring need ~31 pods; a t3.medium holds 17 → 2 nodes (34) left no room
+eks_node_max_size       = 4   # autoscaler ceiling — caps a runaway HPA from silently blowing the cost ceiling
 
 # Aurora Serverless v2 — 0.5-2 ACU (prod runs 0.5-4), single writer instance, no reader, deletion_protection off
 # (staging must be destroyable while you iterate; flip true once real pilot traffic depends on this data).

@@ -169,12 +169,17 @@ jobs:
           cd infra/helm
           for c in api admin-api wallet-service worker realtime-gateway ai-services web web-partner; do helm dependency build "./$c" >/dev/null; done
           role() { echo "$IRSA" | jq -er --arg k "$1" '.[$k]'; }
+          # Staging is not HA: one replica per service (HPA may still scale up under load) and no PDB (a PDB with one
+          # replica would block node drains). It is what lets 12 releases fit 3 t3.medium nodes (PC-56 DEPLOY-3).
+          # Production keeps the charts' defaults: 2+ replicas, PDB minAvailable 1.
+          SIZE=()
+          [ "$SUFFIX" = "staging" ] && SIZE=(--set replicaCount=1 --set autoscaling.minReplicas=1 --set pdb.enabled=false)
           # <release> <chart> <image-repo> <irsa key or -> <public hosts as a JSON array, or - for internal-only>
           # Every release passes its OWN ingress values: a helm upgrade resets anything not given to the chart default,
           # and the defaults are placeholders (REPLACE_ACM_CERT_ARN) and prod hosts shared by every `web` release.
           release() {
             local args=(upgrade --install "$1" "./$2" -n "$NAMESPACE" --atomic --wait --timeout 10m
-                        --set "image.repository=${ECR}/$3" --set "image.tag=${TAG}")
+                        --set "image.repository=${ECR}/$3" --set "image.tag=${TAG}" "${SIZE[@]}")
             [ "$4" != "-" ] && args+=(--set "serviceAccount.roleArn=$(role "$4")")
             [ "$5" != "-" ] && args+=(--set "ingress.certArn=${CERT}" --set "ingress.wafArn=${WAF}" --set-json "ingress.hosts=$5")
             echo ">> $1 ${5}"; helm "${args[@]}"

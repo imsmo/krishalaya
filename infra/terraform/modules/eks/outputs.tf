@@ -45,3 +45,8 @@ output "cluster_arn" {
   description = "Cluster ARN (scope for eks:DescribeCluster grants, e.g. the GitHub deploy role)."
   value       = aws_eks_cluster.this.arn
 }
+
+output "cluster_autoscaler_role_arn" {
+  description = "IRSA role for kube-system/cluster-autoscaler (PC-56 DEPLOY-3)."
+  value       = aws_iam_role.cluster_autoscaler.arn
+}

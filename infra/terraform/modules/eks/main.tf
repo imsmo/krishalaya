@@ -158,8 +158,8 @@ resource "aws_eks_node_group" "default" {
   }
 
   tags = merge(local.tags, {
-    "k8s.io/cluster-autoscaler/enabled"          = "true"
-    "k8s.io/cluster-autoscaler/${var.name}"      = "owned"
+    "k8s.io/cluster-autoscaler/enabled"     = "true"
+    "k8s.io/cluster-autoscaler/${var.name}" = "owned"
   })
 
   lifecycle {
@@ -183,4 +183,64 @@ resource "aws_eks_addon" "this" {
   resolve_conflicts_on_update = "OVERWRITE"
   tags                        = local.tags
   depends_on                  = [aws_eks_node_group.default]
+}
+
+# ---------- Cluster Autoscaler IAM (IRSA) ----------
+# PC-56 DEPLOY-3: the node group carried the autoscaler discovery tags, but nothing ever installed an autoscaler, so
+# HPAs could add pods that no node had room for (they would sit Pending under load). This role lets the Kubernetes
+# Cluster Autoscaler (kube-system/cluster-autoscaler, installed per the beginner guidebook) add nodes up to the node
+# group's max_size under load and remove idle ones (cost). It may resize ONLY Auto Scaling groups tagged for THIS cluster.
+data "aws_iam_policy_document" "cluster_autoscaler_trust" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    principals {
+      type        = "Federated"
+      identifiers = [aws_iam_openid_connect_provider.this.arn]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(aws_iam_openid_connect_provider.this.url, "https://", "")}:sub"
+      values   = ["system:serviceaccount:kube-system:cluster-autoscaler"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(aws_iam_openid_connect_provider.this.url, "https://", "")}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "cluster_autoscaler" {
+  name               = "${var.name}-cluster-autoscaler"
+  assume_role_policy = data.aws_iam_policy_document.cluster_autoscaler_trust.json
+  tags               = local.tags
+}
+
+data "aws_iam_policy_document" "cluster_autoscaler" {
+  statement {
+    sid = "Describe"
+    actions = [
+      "autoscaling:DescribeAutoScalingGroups", "autoscaling:DescribeAutoScalingInstances",
+      "autoscaling:DescribeLaunchConfigurations", "autoscaling:DescribeScalingActivities", "autoscaling:DescribeTags",
+      "ec2:DescribeImages", "ec2:DescribeInstanceTypes", "ec2:DescribeLaunchTemplateVersions", "ec2:GetInstanceTypesFromInstanceRequirements",
+      "eks:DescribeNodegroup",
+    ]
+    resources = ["*"] # describe calls have no resource-level scope
+  }
+  statement {
+    sid       = "ResizeOnlyThisClustersGroups"
+    actions   = ["autoscaling:SetDesiredCapacity", "autoscaling:TerminateInstanceInAutoScalingGroup"]
+    resources = ["*"]
+    condition {
+      test     = "StringEquals"
+      variable = "aws:ResourceTag/k8s.io/cluster-autoscaler/${var.name}"
+      values   = ["owned"]
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "cluster_autoscaler" {
+  name   = "cluster-autoscaler"
+  role   = aws_iam_role.cluster_autoscaler.id
+  policy = data.aws_iam_policy_document.cluster_autoscaler.json
 }
