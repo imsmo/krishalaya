@@ -7,9 +7,9 @@
 import { z } from 'zod';
 
 export const QueryAppealsSchema = z.object({
-  status: z.enum(['pending', 'upheld', 'overturned']).default('pending'),
+  status: z.enum(['pending', 'upheld', 'overturned']).prefault('pending'),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(25),
+  limit: z.coerce.number().int().min(1).max(100).prefault(25),
 }).strict();
 export type QueryAppealsDto = z.infer<typeof QueryAppealsSchema>;
 

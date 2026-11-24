@@ -12,8 +12,8 @@ export const RegisterMandateSchema = z.object({
   // validate against; additive only, no existing mandate's purpose is affected.
   purpose: z.enum(['membership', 'loan_emi', 'general', 'insurance_premium']),
   maxAmountMinor: minorUnits,
-  currencyCode: z.string().length(3).default('INR'),
-  frequency: z.enum(['as_presented', 'daily', 'weekly', 'monthly']).default('as_presented'),
+  currencyCode: z.string().length(3).prefault('INR'),
+  frequency: z.enum(['as_presented', 'daily', 'weekly', 'monthly']).prefault('as_presented'),
   validUntil: z.string().datetime().optional(),     // ISO; optional open-ended mandate
 }).strict();
 export type RegisterMandateDto = z.infer<typeof RegisterMandateSchema>;

@@ -7,7 +7,7 @@ import { CREDENTIAL_FORM_FIELDS, PROFILE_FORM_FIELDS } from '../domain/instructo
 import { TEMPLATE_FORM_FIELDS } from '../domain/course-template';
 
 const loose = z.string().max(4000);
-const shape = <T extends readonly string[]>(names: T, v: z.ZodTypeAny) => Object.fromEntries(names.map((n) => [n, v.optional()])) as Record<T[number], z.ZodOptional<z.ZodTypeAny>>;
+const shape = <T extends readonly string[], V extends z.ZodType>(names: T, v: V) => Object.fromEntries(names.map((n) => [n, v.optional()])) as Record<T[number], z.ZodOptional<V>>;
 
 /** PC-26's bio-only body, kept for `PUT /instructors/me` callers that send only a bio. */
 export const CreateInstructorSchema = z.object({ bio: z.string().max(2000).nullish() }).strict();
@@ -46,7 +46,7 @@ export type InstructorActDto = z.infer<typeof InstructorActSchema>;
 export const QueryInstructorsSchema = z.object({
   verified: z.enum(['true', 'false']).optional(),
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryInstructorsDto = z.infer<typeof QueryInstructorsSchema>;
 

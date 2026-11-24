@@ -303,7 +303,8 @@ describe('TENANT-4d-4 · the join that was missing, and the clock', () => {
     expect(mod).toContain('if (this.config.jobs.saasBillingCycle.enabled) this.jobRegistry.register(this.saasBillingCycleCadenceJob)');
     const env = fs.readFileSync(path.join(__dirname, '../../../core/config/env.validation.ts'), 'utf8');
     expect(env).toContain('SAAS_BILLING_CYCLE_JOB_ENABLED');
-    expect(env).toMatch(/SAAS_BILLING_CYCLE_JOB_INTERVAL_MS[^\n]*default\(86_400_000\)/);
+    // PC-56 SEC-4 (zod 4): the env schema's defaults are `.prefault(…)` (v3's default-the-input semantics); same value.
+    expect(env).toMatch(/SAAS_BILLING_CYCLE_JOB_INTERVAL_MS[^\n]*(?:default|prefault)\(86_400_000\)/);
   });
 
   it('the job never reads a settings table itself — it is handed a reader for the ONE key it needs', () => {

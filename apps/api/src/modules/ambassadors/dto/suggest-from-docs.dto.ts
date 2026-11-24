@@ -7,7 +7,7 @@ import { z } from 'zod';
 export const SuggestFromDocsSchema = z.object({
   farmerUserId: z.string().uuid(),
   docText: z.string().min(1).max(4000),                          // transient; never stored
-  locale: z.enum(['hi', 'en', 'gu']).default('hi'),
-  mediaIds: z.array(z.string().uuid()).max(10).default([]),
+  locale: z.enum(['hi', 'en', 'gu']).prefault('hi'),
+  mediaIds: z.array(z.string().uuid()).max(10).prefault([]),
 }).strict();
 export type SuggestFromDocsDto = z.infer<typeof SuggestFromDocsSchema>;

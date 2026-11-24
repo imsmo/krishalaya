@@ -3,6 +3,7 @@
 // (no-HTML) + safe-URL guards, entity mutation split (meta NO version bump / rules BUMPS version / window NO
 // bump) + no-op guards, owner-RBAC least-privilege (no escalation, no '*'), zod .strict DTOs, and the services'
 // audit-in-tx + duplicate-code / bad-category / 404 / fail-closed behaviour (pool/repo/audit mocked).
+// PC-56 SEC-4 (zod 4): fixture ids carry valid RFC version/variant digits (`.uuid()` now checks them).
 import {
   assertCode, assertSchemeName, assertLevel, assertJsonObject, assertUuidArray, assertWindow, assertFeeMinor,
   assertSourceUrl, assertPlainText,
@@ -45,9 +46,9 @@ describe('scheme-rules — validation guards', () => {
     expect(() => assertJsonObject({ big: 'x'.repeat(9000) }, 'benefit_summary')).toThrow();
   });
   it('uuid arrays validated + capped', () => {
-    expect(assertUuidArray(['11111111-1111-1111-1111-111111111111'], 'doc', 100)).toHaveLength(1);
+    expect(assertUuidArray(['11111111-1111-4111-8111-111111111111'], 'doc', 100)).toHaveLength(1);
     expect(() => assertUuidArray(['nope'], 'doc', 100)).toThrow();
-    expect(() => assertUuidArray(new Array(101).fill('11111111-1111-1111-1111-111111111111'), 'doc', 100)).toThrow();
+    expect(() => assertUuidArray(new Array(101).fill('11111111-1111-4111-8111-111111111111'), 'doc', 100)).toThrow();
   });
   it('window is MM-DD (+optional season), year-wrap allowed', () => {
     expect(assertWindow({ opens: '06-01', closes: '07-31', season: 'kharif' })).toEqual({ opens: '06-01', closes: '07-31', season: 'kharif' });
@@ -125,11 +126,11 @@ describe('DTO — zod .strict() validation', () => {
     expect(CreateAuthoritySchema.safeParse({ defaultName: 'NABARD', level: 'body', reason: 'init', evil: 1 }).success).toBe(false);
   });
   it('create scheme requires code/name/authority/category/benefit/eligibility/reason', () => {
-    const ok = CreateSchemeSchema.safeParse({ code: 'pm_kisan', defaultName: 'PM-KISAN', authorityId: '11111111-1111-1111-1111-111111111111', categoryId: '22222222-2222-2222-2222-222222222222', benefitSummary: { a: 1 }, eligibilityRules: { b: 2 }, reason: 'add scheme' });
+    const ok = CreateSchemeSchema.safeParse({ code: 'pm_kisan', defaultName: 'PM-KISAN', authorityId: '11111111-1111-4111-8111-111111111111', categoryId: '22222222-2222-4222-8222-222222222222', benefitSummary: { a: 1 }, eligibilityRules: { b: 2 }, reason: 'add scheme' });
     expect(ok.success).toBe(true);
     if (ok.success) { expect(ok.data.processingFeeMinor).toBe('0'); expect(ok.data.requiredDocTypeIds).toEqual([]); }
-    expect(CreateSchemeSchema.safeParse({ code: 'BAD CODE', defaultName: 'x', authorityId: '11111111-1111-1111-1111-111111111111', categoryId: '22222222-2222-2222-2222-222222222222', benefitSummary: { a: 1 }, eligibilityRules: { b: 2 }, reason: 'r' }).success).toBe(false);
-    expect(CreateSchemeSchema.safeParse({ code: 'pm_kisan', defaultName: 'x', authorityId: '11111111-1111-1111-1111-111111111111', categoryId: '22222222-2222-2222-2222-222222222222', benefitSummary: { a: 1 }, eligibilityRules: { b: 2 }, reason: 'r', processingFeeMinor: '10.5' }).success).toBe(false);
+    expect(CreateSchemeSchema.safeParse({ code: 'BAD CODE', defaultName: 'x', authorityId: '11111111-1111-4111-8111-111111111111', categoryId: '22222222-2222-4222-8222-222222222222', benefitSummary: { a: 1 }, eligibilityRules: { b: 2 }, reason: 'r' }).success).toBe(false);
+    expect(CreateSchemeSchema.safeParse({ code: 'pm_kisan', defaultName: 'x', authorityId: '11111111-1111-4111-8111-111111111111', categoryId: '22222222-2222-4222-8222-222222222222', benefitSummary: { a: 1 }, eligibilityRules: { b: 2 }, reason: 'r', processingFeeMinor: '10.5' }).success).toBe(false);
   });
   it('rules/window/meta updates require ≥1 field + valid shapes', () => {
     expect(UpdateSchemeRulesSchema.safeParse({ reason: 'noop' }).success).toBe(false);
@@ -145,7 +146,7 @@ const actor = { userId: 'u1', roles: ['platform_schemes_ops'], ip: '10.0.0.1', r
 function fakeTxPool() { const client = {}; return { withTx: jest.fn(async (fn: any) => fn(client)) } as any; }
 
 describe('SchemeCrudService — FK checks + duplicate + audit-in-tx + 404', () => {
-  const baseCreate = { code: 'pm_kisan', defaultName: 'PM-KISAN', authorityId: '11111111-1111-1111-1111-111111111111', categoryId: '22222222-2222-2222-2222-222222222222', benefitSummary: { a: 1 }, eligibilityRules: { b: 2 }, requiredDocTypeIds: [], applicableRegionIds: [], processingFeeMinor: '0', reason: 'add' } as any;
+  const baseCreate = { code: 'pm_kisan', defaultName: 'PM-KISAN', authorityId: '11111111-1111-4111-8111-111111111111', categoryId: '22222222-2222-4222-8222-222222222222', benefitSummary: { a: 1 }, eligibilityRules: { b: 2 }, requiredDocTypeIds: [], applicableRegionIds: [], processingFeeMinor: '0', reason: 'add' } as any;
 
   it('createScheme: authority+category FK ok, no dup → inserts INACTIVE + change + audit in same tx', async () => {
     const pool = fakeTxPool(); const audit = { write: jest.fn() } as any;

@@ -3,7 +3,7 @@
 import { z } from 'zod';
 export const AttributeTemplateItemSchema = z.object({
   attributeId: z.string().uuid(),
-  required: z.boolean().default(false),
+  required: z.boolean().prefault(false),
   defaultValue: z.union([z.string(), z.number(), z.boolean(), z.null()]).optional(),
   sortOrder: z.number().int().min(0).max(32767).optional(),
 }).strict();

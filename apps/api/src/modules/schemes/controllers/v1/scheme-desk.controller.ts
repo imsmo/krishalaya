@@ -23,7 +23,7 @@ import { ApplicationNotFoundError } from '../../domain/schemes.errors';
 
 const ipOf = (r: Request) => r.ip || null;
 const UUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-const PipelineQuery = z.object({ group: z.enum(PIPELINE_GROUPS).default('under_verification'), cursor: z.string().max(200).optional(), limit: z.coerce.number().int().min(1).max(100).default(50) }).strict();
+const PipelineQuery = z.object({ group: z.enum(PIPELINE_GROUPS).prefault('under_verification'), cursor: z.string().max(200).optional(), limit: z.coerce.number().int().min(1).max(100).prefault(50) }).strict();
 const SweepBody = z.object({ schemeCode: z.string().trim().min(1).max(60), reason: z.string().trim().min(3).max(300) }).strict();
 const RevealBody = z.object({ field: z.string().trim().min(1).max(80), reason: z.string().trim().min(20).max(500) }).strict();
 

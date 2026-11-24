@@ -17,7 +17,7 @@ export type ConsentDto = z.infer<typeof ConsentSchema>;
 
 export const CreateAuctionSchema = z.object({
   listingId: z.string().uuid(),
-  kind: z.enum(['english_open', 'sealed']).default('english_open'),   // reverse/dutch not supported yet
+  kind: z.enum(['english_open', 'sealed']).prefault('english_open'),   // reverse/dutch not supported yet
   startPriceMinor: minor,
   reservePriceMinor: minor.optional(),
   minIncrementMinor: minor.optional(),

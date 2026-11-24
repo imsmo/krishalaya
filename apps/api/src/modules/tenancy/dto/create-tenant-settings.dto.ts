@@ -4,7 +4,7 @@
 // (20–500, checked in the domain so the refusal names the field); confirm / refuse / languages.
 import { z } from 'zod';
 const KEY = z.string().trim().min(1).max(80).regex(/^[a-z0-9_.]+$/);
-const VALUE = z.union([z.string(), z.number(), z.boolean(), z.record(z.unknown()), z.array(z.unknown())]);
+const VALUE = z.union([z.string(), z.number(), z.boolean(), z.record(z.string(), z.unknown()), z.array(z.unknown())]);
 export const PutTenantSettingSchema = z.object({
   key: KEY,
   value: VALUE,

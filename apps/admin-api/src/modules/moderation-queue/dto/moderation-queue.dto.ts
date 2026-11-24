@@ -40,14 +40,14 @@ export type RemoveDto = z.infer<typeof RemoveSchema>;
 
 export const QueryHeldSchema = z.object({
   cursor: Cursor,
-  limit: z.coerce.number().int().min(1).max(100).default(25),
+  limit: z.coerce.number().int().min(1).max(100).prefault(25),
 }).strict();
 export type QueryHeldDto = z.infer<typeof QueryHeldSchema>;
 
 export const QueryReportsSchema = z.object({
   subjectType: z.enum(['listing', 'review', 'message', 'user']).optional(),
   cursor: Cursor,
-  limit: z.coerce.number().int().min(1).max(100).default(25),
+  limit: z.coerce.number().int().min(1).max(100).prefault(25),
 }).strict();
 export type QueryReportsDto = z.infer<typeof QueryReportsSchema>;
 

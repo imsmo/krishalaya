@@ -10,7 +10,7 @@ const RegionIds = z.array(z.string().uuid()).max(2000);
 const Reason = z.string().trim().min(20).max(500);
 
 export const ProposeZoneSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('create'), defaultName: z.string().trim().min(1).max(120), pincodes: Pincodes.default([]), regionIds: RegionIds.default([]),
+  z.object({ kind: z.literal('create'), defaultName: z.string().trim().min(1).max(120), pincodes: Pincodes.prefault([]), regionIds: RegionIds.prefault([]),
     chargeDefinitionId: z.string().uuid().nullable().optional(), reason: Reason }).strict(),
   z.object({ kind: z.literal('repoint_fee'), zoneId: z.string().uuid(), chargeDefinitionId: z.string().uuid().nullable(), reason: Reason }).strict(),
   z.object({ kind: z.literal('deactivate'), zoneId: z.string().uuid(), reason: Reason }).strict(),
@@ -21,8 +21,8 @@ export type ProposeZoneDto = z.infer<typeof ProposeZoneSchema>;
 /** Backwards name for the create shape (SDK / older callers). */
 export const CreateDeliveryZoneSchema = z.object({
   defaultName: z.string().trim().min(1).max(120),
-  pincodes: Pincodes.default([]),
-  regionIds: RegionIds.default([]),
+  pincodes: Pincodes.prefault([]),
+  regionIds: RegionIds.prefault([]),
   chargeDefinitionId: z.string().uuid().nullable().optional(),
   reason: Reason,
 }).strict();
@@ -46,7 +46,7 @@ export const QueryZoneProposalSchema = z.object({
   status: z.enum(['proposed', 'confirmed', 'refused', 'expired']).optional(),
   zoneId: z.string().uuid().optional(),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryZoneProposalDto = z.infer<typeof QueryZoneProposalSchema>;
 

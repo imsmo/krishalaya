@@ -19,7 +19,8 @@ import { TenantCellAssignmentService } from '../services/tenant-cell-assignment.
 
 const cellProps = (o: Partial<any> = {}) => ({ id: 'c1', code: 'in-west-1', displayName: 'IN West', countryCode: 'IN', status: 'active', isDefault: false, residencyLocked: true, capacityTenants: null, placedCount: 0, notes: null, ...o });
 const shardProps = (o: Partial<any> = {}) => ({ id: 's1', cellId: 'c1', shardIndex: 0, status: 'active', weight: 100, placedCount: 0, dsnSecretRef: null, notes: null, ...o });
-const U = (n: number) => `${String(n).repeat(8)}-${String(n).repeat(4)}-${String(n).repeat(4)}-${String(n).repeat(4)}-${String(n).repeat(12)}`;
+// PC-56 SEC-4 (zod 4): `.uuid()` checks the RFC version/variant digits — fixtures are real v4-shaped ids (one per n).
+const U = (n: number) => `${String(n).repeat(8)}-${String(n).repeat(4)}-4${String(n).repeat(3)}-8${String(n).repeat(3)}-${String(n).repeat(12)}`;
 
 describe('node.state — status state machine (Law 5)', () => {
   it('valid transitions', () => {

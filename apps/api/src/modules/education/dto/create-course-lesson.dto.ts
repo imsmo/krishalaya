@@ -10,7 +10,7 @@ import { LESSON_FORM_FIELDS, SUBTITLE_FORM_FIELDS, MAX_SUBTITLE_BODY } from '../
 import { QUESTION_FORM_FIELDS, MAX_QUESTION_TEXT, MAX_OPTION_TEXT, MAX_EXPLANATION_TEXT } from '../domain/quiz';
 
 const loose = z.string().max(400);
-const shape = <T extends readonly string[]>(names: T, v: z.ZodTypeAny) => Object.fromEntries(names.map((n) => [n, v.optional()])) as Record<T[number], z.ZodOptional<z.ZodTypeAny>>;
+const shape = <T extends readonly string[], V extends z.ZodType>(names: T, v: V) => Object.fromEntries(names.map((n) => [n, v.optional()])) as Record<T[number], z.ZodOptional<V>>;
 
 /* ---- the lesson ---- */
 export const LessonFormSchema = z.object({

@@ -7,6 +7,6 @@ import { z } from 'zod';
 export const CreateCheckoutGroupSchema = z.object({
   buyerUserId: z.string().uuid(),
   totalMinor: z.string().regex(/^\d{1,18}$/, 'totalMinor must be a non-negative integer string of minor units'),
-  currencyCode: z.string().length(3).default('INR'),
+  currencyCode: z.string().length(3).prefault('INR'),
 }).strict();
 export type CreateCheckoutGroupDto = z.infer<typeof CreateCheckoutGroupSchema>;

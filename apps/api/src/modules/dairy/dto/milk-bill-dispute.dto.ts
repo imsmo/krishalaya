@@ -19,7 +19,7 @@ export const ResolveDisputeSchema = z.object({
    * combination): this platform cannot amend a milk bill's arithmetic in place, so releasing the pours and letting the
    * cycle rebuild is the correction.
    */
-  voidBill: z.boolean().default(false),
+  voidBill: z.boolean().prefault(false),
 }).strict();
 export type ResolveDisputeDto = z.infer<typeof ResolveDisputeSchema>;
 

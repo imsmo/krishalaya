@@ -74,6 +74,6 @@ export const QueryShipmentEventsSchema = z.object({
   filter: z.enum(['all', 'failed', 'at_hub', 'door_open', 'gps_gap']).optional(),
   shipmentId: z.string().uuid().optional(),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(25),
+  limit: z.coerce.number().int().min(1).max(100).prefault(25),
 }).strict();
 export type QueryShipmentEventsDto = z.infer<typeof QueryShipmentEventsSchema>;

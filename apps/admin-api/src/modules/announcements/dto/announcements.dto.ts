@@ -7,7 +7,7 @@ import { SEVERITIES, PLACEMENTS, MAX_PLANS, MAX_COUNTRIES } from '../domain/cont
 
 const Reason = z.string().min(3).max(1000);
 const Cursor = z.string().max(200).optional();
-const Limit = z.coerce.number().int().min(1).max(100).default(50);
+const Limit = z.coerce.number().int().min(1).max(100).prefault(50);
 const PlanCode = z.string().regex(/^[a-z0-9_]{1,40}$/);
 const CountryCode = z.string().regex(/^[A-Z]{2}$/);
 
@@ -25,10 +25,10 @@ export type QueryChangesDto = z.infer<typeof QueryChangesSchema>;
 export const CreateAnnouncementSchema = z.object({
   title: z.string().min(1).max(200),
   body: z.string().min(1).max(4000),
-  severity: z.enum(SEVERITIES).default('info'),
-  placement: z.enum(PLACEMENTS).default('banner'),
-  plans: z.array(PlanCode).max(MAX_PLANS).default([]),
-  countries: z.array(CountryCode).max(MAX_COUNTRIES).default([]),
+  severity: z.enum(SEVERITIES).prefault('info'),
+  placement: z.enum(PLACEMENTS).prefault('banner'),
+  plans: z.array(PlanCode).max(MAX_PLANS).prefault([]),
+  countries: z.array(CountryCode).max(MAX_COUNTRIES).prefault([]),
   reason: Reason,
 }).strict();
 export type CreateAnnouncementDto = z.infer<typeof CreateAnnouncementSchema>;
@@ -38,8 +38,8 @@ export const UpdateAnnouncementSchema = z.object({
   body: z.string().min(1).max(4000),
   severity: z.enum(SEVERITIES),
   placement: z.enum(PLACEMENTS),
-  plans: z.array(PlanCode).max(MAX_PLANS).default([]),
-  countries: z.array(CountryCode).max(MAX_COUNTRIES).default([]),
+  plans: z.array(PlanCode).max(MAX_PLANS).prefault([]),
+  countries: z.array(CountryCode).max(MAX_COUNTRIES).prefault([]),
   reason: Reason,
 }).strict();
 export type UpdateAnnouncementDto = z.infer<typeof UpdateAnnouncementSchema>;

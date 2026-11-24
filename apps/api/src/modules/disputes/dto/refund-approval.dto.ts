@@ -24,6 +24,6 @@ export type DecideRefundDto = z.infer<typeof DecideRefundSchema>;
 
 export const QueryRefundApprovalsSchema = z.object({
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(100).prefault(20),
 }).strict();
 export type QueryRefundApprovalsDto = z.infer<typeof QueryRefundApprovalsSchema>;

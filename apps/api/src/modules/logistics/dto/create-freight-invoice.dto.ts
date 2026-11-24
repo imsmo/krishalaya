@@ -24,17 +24,17 @@ export const CreateFreightInvoiceSchema = z.object({
   invoiceNo: z.string().trim().min(3).max(60),
   /** W241's third row is an own-fleet cost note ("fuel + wages … cost centre, not billed"), which is freight spend
    *  with no counterparty. Defaults to a carrier invoice because that is what "Upload carrier invoice" means. */
-  sourceKind: z.enum(['carrier_invoice', 'own_fleet_cost_note']).default('carrier_invoice'),
+  sourceKind: z.enum(['carrier_invoice', 'own_fleet_cost_note']).prefault('carrier_invoice'),
   periodStart: day,
   periodEnd: day,
   billedMinor: minor,
-  currencyCode: z.string().length(3).default('INR'),
+  currencyCode: z.string().length(3).prefault('INR'),
   /** The uploaded document, as a confirmed `media_assets` id. Optional: a tenant may key an invoice in from paper
    *  before the scan exists, and refusing the record would push the desk back into a spreadsheet. */
   invoiceMediaId: z.string().uuid().optional(),
   /** Up to 5,000 lines — 0070's own bound reasoning ("tens to low hundreds, per the canon's 86 shipments"), with
    *  room for a carrier that bills a quarter in one file. A cost note may carry none. */
-  lines: z.array(FreightLineInputSchema).max(5000).default([]),
+  lines: z.array(FreightLineInputSchema).max(5000).prefault([]),
 }).strict();
 export type CreateFreightInvoiceDto = z.infer<typeof CreateFreightInvoiceSchema>;
 

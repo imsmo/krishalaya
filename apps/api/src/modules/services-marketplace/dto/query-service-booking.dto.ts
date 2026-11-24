@@ -2,9 +2,9 @@
 import { z } from 'zod';
 import { BOOKING_STATUSES } from '../domain/service-booking.state';
 export const QueryBookingsSchema = z.object({
-  box: z.enum(['customer', 'provider', 'all']).default('customer'),
+  box: z.enum(['customer', 'provider', 'all']).prefault('customer'),
   status: z.enum(BOOKING_STATUSES as unknown as [string, ...string[]]).optional(),
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryBookingsDto = z.infer<typeof QueryBookingsSchema>;

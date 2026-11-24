@@ -16,9 +16,9 @@ import { CodLedgerService } from '../../services/cod-ledger.service';
 
 const ipOf = (r: Request) => r.ip || null;
 const reqKey = (k: string) => { if (!k) throw new BadRequestError('Idempotency-Key header required'); return k; };
-const ShortfallQuery = z.object({ status: z.enum(['open', 'collected']).optional(), cursor: z.string().max(200).optional(), limit: z.coerce.number().int().min(1).max(100).default(50) }).strict();
+const ShortfallQuery = z.object({ status: z.enum(['open', 'collected']).optional(), cursor: z.string().max(200).optional(), limit: z.coerce.number().int().min(1).max(100).prefault(50) }).strict();
 const CollectShortfall = z.object({ depositRef: z.string().trim().min(3).max(120), note: z.string().trim().max(500).optional() }).strict();
-const CloseDay = z.object({ carries: z.array(z.object({ remittanceId: z.string().uuid(), reason: z.string().trim().min(10).max(500) }).strict()).max(500).default([]), note: z.string().trim().min(3).max(500).optional() }).strict();
+const CloseDay = z.object({ carries: z.array(z.object({ remittanceId: z.string().uuid(), reason: z.string().trim().min(10).max(500) }).strict()).max(500).prefault([]), note: z.string().trim().min(3).max(500).optional() }).strict();
 
 @Controller({ path: 'logistics/cod', version: '1' })
 @UseGuards(AuthGuard, PermissionsGuard, FeatureFlagGuard)

@@ -12,7 +12,7 @@ const s = (max: number) => z.string().max(max).optional();
 const BASE = {
   placement: s(80), mediaId: s(60), groupKey: s(120), targetUrl: s(600), roles: s(1200), regions: s(2000),
   startsDate: s(20), startsTime: s(10), endsDate: s(20), endsTime: s(10), reason: s(400),
-  intent: z.enum(BANNER_INTENTS as unknown as [string, ...string[]]).default('new'),
+  intent: z.enum(BANNER_INTENTS as unknown as [string, ...string[]]).prefault('new'),
   expect: s(80),
 };
 export const BannerFormSchema = z.object(BASE).catchall(z.string().max(600)).superRefine((o, ctx) => {
@@ -32,8 +32,8 @@ export const BannerWriterSchema = z.object({
 });
 
 /** Every act's body: a reason (the audit row's sentence). */
-export const BannerActSchema = z.object({ reason: z.string().max(400).default('') }).strict();
+export const BannerActSchema = z.object({ reason: z.string().max(400).prefault('') }).strict();
 export type BannerActDto = z.infer<typeof BannerActSchema>;
 
-export const SlotMoveSchema = z.object({ id: z.string().max(60), direction: z.enum(['up', 'down']), reason: z.string().max(400).default('') }).strict();
+export const SlotMoveSchema = z.object({ id: z.string().max(60), direction: z.enum(['up', 'down']), reason: z.string().max(400).prefault('') }).strict();
 export type SlotMoveDto = z.infer<typeof SlotMoveSchema>;

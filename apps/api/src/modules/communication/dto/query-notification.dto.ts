@@ -14,7 +14,7 @@ export const QueryNotificationsSchema = z.object({
   module: z.string().regex(/^[a-z][a-z0-9_]{0,39}$/).optional(),
   channel: z.enum(NOTIF_CHANNELS as unknown as [string, ...string[]]).optional(),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryNotificationsDto = z.infer<typeof QueryNotificationsSchema>;
 

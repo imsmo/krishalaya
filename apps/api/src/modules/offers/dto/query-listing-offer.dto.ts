@@ -7,10 +7,10 @@ export const OFFER_BOXES = ['outgoing', 'incoming'] as const;
 export type OfferBox = (typeof OFFER_BOXES)[number];
 
 export const QueryOffersSchema = z.object({
-  box: z.enum(OFFER_BOXES).default('outgoing'),
+  box: z.enum(OFFER_BOXES).prefault('outgoing'),
   listingId: z.string().uuid().optional(),
   status: z.enum(OFFER_STATUSES).optional(),
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(100).prefault(20),
 }).strict();
 export type QueryOffersDto = z.infer<typeof QueryOffersSchema>;

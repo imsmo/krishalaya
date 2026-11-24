@@ -7,10 +7,10 @@ export const SHIPMENT_BOXES = ['all', 'mine'] as const;
 export type ShipmentBox = (typeof SHIPMENT_BOXES)[number];
 
 export const QueryShipmentsSchema = z.object({
-  box: z.enum(SHIPMENT_BOXES).default('all'),
+  box: z.enum(SHIPMENT_BOXES).prefault('all'),
   status: z.enum(SHIPMENT_STATUSES).optional(),
   orderId: z.string().uuid().optional(),
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(100).prefault(20),
 }).strict();
 export type QueryShipmentsDto = z.infer<typeof QueryShipmentsSchema>;

@@ -8,7 +8,7 @@ export const QueryInvoicesSchema = z.object({
   /** A GST period, YYYY-MM. Absent = the most recent invoices regardless of month. */
   period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'period must be YYYY-MM').optional(),
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(25),
+  limit: z.coerce.number().int().min(1).max(100).prefault(25),
 }).strict();
 export type QueryInvoicesDto = z.infer<typeof QueryInvoicesSchema>;
 

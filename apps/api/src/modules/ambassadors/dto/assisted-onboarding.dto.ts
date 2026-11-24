@@ -6,8 +6,8 @@ import { z } from 'zod';
 export const AssistedOnboardingSchema = z.object({
   phone: z.string().min(8).max(20),
   fullName: z.string().trim().min(1).max(200).optional(),
-  languageCode: z.string().min(2).max(8).default('hi'),
-  countryCode: z.string().length(2).default('IN'),
+  languageCode: z.string().min(2).max(8).prefault('hi'),
+  countryCode: z.string().length(2).prefault('IN'),
   regionId: z.string().uuid().optional(),
   consents: z.array(z.object({
     purposeCode: z.string().min(2).max(60),

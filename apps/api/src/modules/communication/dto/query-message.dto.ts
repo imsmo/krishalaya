@@ -2,6 +2,6 @@
 import { z } from 'zod';
 export const QueryMessagesSchema = z.object({
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryMessagesDto = z.infer<typeof QueryMessagesSchema>;

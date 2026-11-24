@@ -14,7 +14,7 @@ export const SaasInvoiceLineSchema = z.object({
 export const CreateSaasInvoiceSchema = z.object({
   subscriptionId: z.string().uuid().nullable().optional(),
   currencyCode: z.string().trim().length(3),
-  taxMinor: Minor.default('0'),
+  taxMinor: Minor.prefault('0'),
   dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   lineItems: z.array(SaasInvoiceLineSchema).min(1).max(200),
 }).strict();

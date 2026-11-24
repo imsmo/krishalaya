@@ -2,7 +2,7 @@
 import { z } from 'zod';
 export const QuerySchemesSchema = z.object({
   categoryId: z.string().uuid().optional(),
-  activeOnly: z.coerce.boolean().default(true),
+  activeOnly: z.coerce.boolean().prefault(true),
 }).strict();
 export type QuerySchemesDto = z.infer<typeof QuerySchemesSchema>;
 

@@ -7,7 +7,7 @@ import { BREACH_STATUSES } from '../domain/breach.state';
 
 const Text = z.string().min(3).max(2000);
 const Cursor = z.string().max(200).optional();
-const Limit = z.coerce.number().int().min(1).max(100).default(50);
+const Limit = z.coerce.number().int().min(1).max(100).prefault(50);
 
 /* ---- data-subject requests (DPDP rights) ---- */
 export const QueryDsrSchema = z.object({
@@ -52,7 +52,7 @@ export const QueryAuditSchema = z.object({
   from: z.string().datetime().optional(),        // partition-prune lower bound
   to: z.string().datetime().optional(),
   /** ADMIN-5e — W039's one-tap saved views. */
-  view: z.enum(['all', 'writes', 'money']).default('all'),
+  view: z.enum(['all', 'writes', 'money']).prefault('all'),
   cursor: Cursor, limit: Limit,
 }).strict();
 export type QueryAuditDto = z.infer<typeof QueryAuditSchema>;
@@ -61,7 +61,7 @@ export type QueryAuditDto = z.infer<typeof QueryAuditSchema>;
  *  refusal explains the shape rather than quoting a regex. */
 export const QueryEntityTrailSchema = z.object({
   ref: z.string().min(3).max(200),
-  limit: z.coerce.number().int().min(1).max(500).default(200),
+  limit: z.coerce.number().int().min(1).max(500).prefault(200),
 }).strict();
 export type QueryEntityTrailDto = z.infer<typeof QueryEntityTrailSchema>;
 
@@ -72,7 +72,7 @@ export const UpsertRetentionSchema = z.object({
   archiveMonths: z.number().int().min(0).max(1200).nullable(),
   legalBasis: z.string().max(200).nullish(),
   action: z.enum(['archive', 'anonymise', 'delete', 'keep_forever']),
-  isActive: z.boolean().default(true),
+  isActive: z.boolean().prefault(true),
   reason: Text,
 }).strict();
 export type UpsertRetentionDto = z.infer<typeof UpsertRetentionSchema>;
@@ -86,11 +86,11 @@ export type QueryBreachesDto = z.infer<typeof QueryBreachesSchema>;
 
 export const OpenBreachSchema = z.object({
   affectedTenantId: z.string().uuid().nullish(),
-  severity: z.enum(['low', 'medium', 'high', 'critical']).default('high'),
+  severity: z.enum(['low', 'medium', 'high', 'critical']).prefault('high'),
   title: z.string().min(3).max(200),
   description: Text,
   affectedData: z.string().min(1).max(500),       // categories only (e.g. 'phone,email') — NO raw PII
-  affectedCount: z.number().int().min(0).default(0),
+  affectedCount: z.number().int().min(0).prefault(0),
   detectedAt: z.string().datetime(),
 }).strict();
 export type OpenBreachDto = z.infer<typeof OpenBreachSchema>;
@@ -116,7 +116,7 @@ export const RecordErasureActionSchema = z.object({
   dataClass: z.string().regex(/^[a-z0-9_]{2,100}$/),
   action: z.enum(['deleted', 'anonymised', 'archived', 'blocked_by_law', 'retracted']),
   // Zero is legitimate — a class the farmer had no rows in was still checked, and that is worth recording.
-  rowsAffected: z.coerce.number().int().min(0).max(1_000_000_000).default(0),
+  rowsAffected: z.coerce.number().int().min(0).max(1_000_000_000).prefault(0),
   note: z.string().min(1).max(1000).optional(),
 }).strict();
 export type RecordErasureActionDto = z.infer<typeof RecordErasureActionSchema>;

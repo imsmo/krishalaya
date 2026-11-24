@@ -12,7 +12,7 @@ export const QueryInsightsSchema = z.object({
   // console cannot disagree about which windows exist.
   window: z.coerce.number().int().refine((n): n is (typeof INSIGHT_WINDOWS)[number] => (INSIGHT_WINDOWS as readonly number[]).includes(n), {
     message: `window must be one of ${INSIGHT_WINDOWS.join(', ')}`,
-  }).default(DEFAULT_INSIGHT_WINDOW),
+  }).prefault(DEFAULT_INSIGHT_WINDOW),
 }).strict();
 
 export type QueryInsightsDto = z.infer<typeof QueryInsightsSchema>;

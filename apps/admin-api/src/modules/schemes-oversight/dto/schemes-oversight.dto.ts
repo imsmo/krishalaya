@@ -14,7 +14,7 @@ export const QueryApplicationsSchema = z.object({
   tenantId: Uuid.optional(),
   assistedOnly: z.string().max(5).optional(),
   cursor: Cursor,
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryApplicationsDto = z.infer<typeof QueryApplicationsSchema>;
 
@@ -35,14 +35,14 @@ export const QueryDbtSchema = z.object({
   days: z.coerce.number().int().min(1).max(365).optional(),
   schemeId: Uuid.optional(),
   cursor: Cursor,
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryDbtDto = z.infer<typeof QueryDbtSchema>;
 
 export const QueryBouncesSchema = z.object({
   days: z.coerce.number().int().min(1).max(365).optional(),
   resolution: z.enum(['open', 'recredited', 'abandoned']).optional(),
-  limit: z.coerce.number().int().min(1).max(200).default(100),
+  limit: z.coerce.number().int().min(1).max(200).prefault(100),
 }).strict();
 export type QueryBouncesDto = z.infer<typeof QueryBouncesSchema>;
 

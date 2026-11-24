@@ -43,7 +43,7 @@ export const PartnerApplicationsQuerySchema = z.object({
 export type PartnerApplicationsQueryDto = z.infer<typeof PartnerApplicationsQuerySchema>;
 
 const minorStr = z.string().regex(/^\d{1,15}$/, 'must be a positive integer (minor units)');
-export const PartnerApproveSchema = z.object({ amountApprovedMinor: minorStr, coolingOffHours: z.number().int().min(0).max(720).default(24) }).strict();
+export const PartnerApproveSchema = z.object({ amountApprovedMinor: minorStr, coolingOffHours: z.number().int().min(0).max(720).prefault(24) }).strict();
 export type PartnerApproveDto = z.infer<typeof PartnerApproveSchema>;
 export const PartnerRejectSchema = z.object({ note: z.string().max(500).optional() }).strict();
 export type PartnerRejectDto = z.infer<typeof PartnerRejectSchema>;

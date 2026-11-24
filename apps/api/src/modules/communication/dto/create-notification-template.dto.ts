@@ -22,7 +22,7 @@ export const OverrideWriterSchema = z.object({
 });
 
 export const OverrideActSchema = z.object({
-  reason: z.string().max(400).default(''),
+  reason: z.string().max(400).prefault(''),
   versionId: z.string().max(40).optional(),
 }).strict();
 export type OverrideActDto = z.infer<typeof OverrideActSchema>;

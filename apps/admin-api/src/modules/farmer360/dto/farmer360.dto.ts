@@ -8,7 +8,7 @@ import { z } from 'zod';
 export const SearchFarmersSchema = z.object({
   /** name substring (≥2 chars so a single letter cannot sweep the population) or an exact uuid */
   q: z.string().min(2).max(120),
-  limit: z.coerce.number().int().min(1).max(25).default(10),
+  limit: z.coerce.number().int().min(1).max(25).prefault(10),
 }).strict();
 export type SearchFarmersDto = z.infer<typeof SearchFarmersSchema>;
 

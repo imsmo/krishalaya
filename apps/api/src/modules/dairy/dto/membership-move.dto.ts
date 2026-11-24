@@ -20,6 +20,6 @@ export const PreviewMoveSchema = MoveMembershipSchema;
 export type PreviewMoveDto = MoveMembershipDto;
 
 export const QueryRouteTrailSchema = z.object({
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryRouteTrailDto = z.infer<typeof QueryRouteTrailSchema>;

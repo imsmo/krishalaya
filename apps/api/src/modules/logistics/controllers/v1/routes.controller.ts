@@ -101,7 +101,7 @@ const ALERT_REASON = z.string().max(500).optional();   // ≥ 10 characters (tri
 const CreateAlertRuleSchema = z.object({
   kind: z.enum(ALERT_KINDS),
   ruleName: z.string().trim().min(3).max(150),
-  threshold: z.record(z.unknown()).optional(),          // validated PER KIND in the service (typos rejected)
+  threshold: z.record(z.string(), z.unknown()).optional(),          // validated PER KIND in the service (typos rejected)
   recipientUserIds: z.array(z.string().uuid()).min(1).max(50),
   channelHint: z.enum(['push', 'sms', 'whatsapp', 'email', 'inapp']).optional(),
   cooldownMinutes: z.number().int().min(5).max(10080).optional(),
@@ -109,7 +109,7 @@ const CreateAlertRuleSchema = z.object({
 }).strict();
 const UpdateAlertRuleSchema = z.object({
   ruleName: z.string().trim().min(3).max(150).optional(),
-  threshold: z.record(z.unknown()).optional(),
+  threshold: z.record(z.string(), z.unknown()).optional(),
   recipientUserIds: z.array(z.string().uuid()).min(1).max(50).optional(),
   channelHint: z.enum(['push', 'sms', 'whatsapp', 'email', 'inapp']).nullable().optional(),
   cooldownMinutes: z.number().int().min(5).max(10080).optional(),
@@ -123,7 +123,7 @@ const AlertFeedQuerySchema = z.object({
   kind: z.enum(ALERT_KINDS).optional(),
   severity: z.enum(ALERT_SEVERITIES).optional(),
   unacknowledgedOnly: z.enum(['true', 'false']).optional(),
-  limit: z.coerce.number().int().min(1).max(200).default(100),
+  limit: z.coerce.number().int().min(1).max(200).prefault(100),
 }).strict();
 
 @Controller({ path: 'logistics/cold-chain', version: '1' })

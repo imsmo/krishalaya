@@ -8,7 +8,7 @@ import { IMPERSONATION_SCOPES } from '../domain/scope';
 
 const Reason = z.string().min(8).max(1000);   // act-as demands a real justification — min length is deliberate
 const Cursor = z.string().max(200).optional();
-const Limit = z.coerce.number().int().min(1).max(100).default(50);
+const Limit = z.coerce.number().int().min(1).max(100).prefault(50);
 
 export const QueryGrantsSchema = z.object({
   adminUserId: z.string().uuid().optional(),
@@ -27,8 +27,8 @@ export const StartGrantSchema = z.object({
   targetTenantId: z.string().uuid(),
   targetUserId: z.string().uuid(),
   reason: Reason,
-  ttlSec: z.coerce.number().int().min(60).max(3600).default(900),   // 1–60 min requested; domain clamps to config cap
-  scope: z.enum(IMPERSONATION_SCOPES).default('read_only'),
+  ttlSec: z.coerce.number().int().min(60).max(3600).prefault(900),   // 1–60 min requested; domain clamps to config cap
+  scope: z.enum(IMPERSONATION_SCOPES).prefault('read_only'),
 }).strict();
 export type StartGrantDto = z.infer<typeof StartGrantSchema>;
 

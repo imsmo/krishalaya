@@ -26,7 +26,7 @@ export const RecordCollectionSchema = z.object({
    * diverted evening and a backdated entry both recorded the wrong village.
    */
   mccId: z.string().uuid().optional(),
-  waterFlag: z.boolean().default(false),
-  adulterationFlags: z.array(z.string().max(40)).max(10).default([]),
+  waterFlag: z.boolean().prefault(false),
+  adulterationFlags: z.array(z.string().max(40)).max(10).prefault([]),
 }).strict();
 export type RecordCollectionDto = z.infer<typeof RecordCollectionSchema>;

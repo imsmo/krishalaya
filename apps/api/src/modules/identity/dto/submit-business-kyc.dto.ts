@@ -9,7 +9,7 @@ export const SubmitBusinessKycSchema = z.object({
   legalName: z.string().trim().min(2).max(200),
   gstin: z.string().trim().length(15).optional(),
   pan: z.string().trim().length(10),                         // PAN is mandatory for a business entity
-  docMediaIds: z.array(z.string().uuid()).max(10).default([]),
+  docMediaIds: z.array(z.string().uuid()).max(10).prefault([]),
 }).strict();
 export type SubmitBusinessKycDto = z.infer<typeof SubmitBusinessKycSchema>;
 

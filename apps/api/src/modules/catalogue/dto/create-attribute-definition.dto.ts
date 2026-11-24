@@ -15,7 +15,7 @@ export const CreateAttributeDefinitionSchema = z.object({
   defaultName: z.string().min(1).max(150),
   dataType: z.enum(DATA_TYPES),
   unitCode: z.string().max(20).nullable().optional(),
-  validation: AttributeValidationSchema.default({}),
-  isActive: z.boolean().default(true),
+  validation: AttributeValidationSchema.prefault({}),
+  isActive: z.boolean().prefault(true),
 }).strict();
 export type CreateAttributeDefinitionDto = z.infer<typeof CreateAttributeDefinitionSchema>;

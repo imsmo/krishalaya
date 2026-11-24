@@ -5,10 +5,10 @@ import { EmployerConsentSchema } from './labour-act.dto';
 
 export const ATTENDANCE_REVIEW_FILTERS = ['all', 'clean', 'needs_review', 'paper_backfill', 'unconfirmed_24h', 'confirmed', 'refused'] as const;
 export const AttendanceReviewQuerySchema = z.object({
-  status: z.enum(ATTENDANCE_REVIEW_FILTERS).default('all'),
+  status: z.enum(ATTENDANCE_REVIEW_FILTERS).prefault('all'),
   since: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type AttendanceReviewQueryDto = z.infer<typeof AttendanceReviewQuerySchema>;
 /** vouch / refuse: the reason is what the next reader needs — 10–500 characters (the database CHECK is the same). */
@@ -18,7 +18,7 @@ export const AttendanceBackfillSchema = z.object({
   assignmentId: z.string().uuid(),
   workDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   hoursRegular: z.number().min(0.5).max(12),
-  hoursOvertime: z.number().min(0).max(8).default(0),
+  hoursOvertime: z.number().min(0).max(8).prefault(0),
   mediaId: z.string().uuid(),
   reason: z.string().trim().min(10).max(500),
 }).strict();
@@ -26,7 +26,7 @@ export type AttendanceBackfillDto = z.infer<typeof AttendanceBackfillSchema>;
 
 export const WageHistorySchema = z.object({
   before: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  limit: z.coerce.number().int().min(1).max(60).default(14),
+  limit: z.coerce.number().int().min(1).max(60).prefault(14),
 }).strict();
 export type WageHistoryDto = z.infer<typeof WageHistorySchema>;
 
@@ -44,6 +44,6 @@ export const AdvanceListSchema = z.object({
   status: z.enum(ADVANCE_FILTERS).optional(),
   bookingId: z.string().uuid().optional(),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type AdvanceListDto = z.infer<typeof AdvanceListSchema>;

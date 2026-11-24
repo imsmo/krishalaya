@@ -4,9 +4,9 @@ export const QueryTemplatesSchema = z.object({
   eventCode: z.string().max(80).optional(),
   channel: z.string().max(15).optional(),
   languageCode: z.string().max(8).optional(),
-  only: z.enum(['all', 'overrides']).default('all'),
+  only: z.enum(['all', 'overrides']).prefault('all'),
   cursor: z.string().max(400).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryTemplatesDto = z.infer<typeof QueryTemplatesSchema>;
 

@@ -12,7 +12,7 @@ import { BODY_MAX, SLUG_MAX, TITLE_MAX } from '../domain/page-rules';
 const s = (max: number) => z.string().max(max).optional();
 export const PageFormSchema = z.object({
   slug: s(200), pageKind: s(30), defaultTitle: s(300), body: s(BODY_MAX + 1000), languageCode: s(8), topic: s(40), reason: s(300),
-  intent: z.enum(PAGE_INTENTS as unknown as [string, ...string[]]).default('version'),
+  intent: z.enum(PAGE_INTENTS as unknown as [string, ...string[]]).prefault('version'),
   expect: s(40),
 }).strict();
 export type PageFormDto = z.infer<typeof PageFormSchema>;
@@ -29,7 +29,7 @@ export const PageWriterSchema = z.object({
 
 /** The acts' body: a reason always; an archive reason code for archive. */
 export const PageActSchema = z.object({
-  reason: z.string().max(400).default(''),
+  reason: z.string().max(400).prefault(''),
   archiveReason: z.string().max(40).optional(),
 }).strict();
 export type PageActDto = z.infer<typeof PageActSchema>;
@@ -38,6 +38,6 @@ export type PageActDto = z.infer<typeof PageActSchema>;
 export const FaqMoveSchema = z.object({
   slug: z.string().max(200),
   direction: z.enum(['up', 'down']),
-  reason: z.string().max(400).default(''),
+  reason: z.string().max(400).prefault(''),
 }).strict();
 export type FaqMoveDto = z.infer<typeof FaqMoveSchema>;

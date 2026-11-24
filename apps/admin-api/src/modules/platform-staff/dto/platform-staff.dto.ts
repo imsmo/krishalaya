@@ -9,7 +9,7 @@ const Reason = z.string().trim().min(10).max(2_000);
 export const QueryOperatorsSchema = z.object({
   status: z.enum(['active', 'suspended']).optional(),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(25),
+  limit: z.coerce.number().int().min(1).max(100).prefault(25),
 }).strict();
 export type QueryOperatorsDto = z.infer<typeof QueryOperatorsSchema>;
 

@@ -23,7 +23,7 @@ const SubscribeSchema = z.object({ planId: z.string().uuid(), addressId: z.strin
 const SettleDeliverySchema = z.object({
   dueOn: dateStr,                                              // the partition key — a drop is identified by (id, date)
   qty: z.string().regex(/^\d{1,5}(\.\d{1,3})?$/).optional(),  // actual quantity handed over
-  qualityMeta: z.record(z.unknown()).optional(),               // {fat, snf, temp_c} farm-to-fork transparency
+  qualityMeta: z.record(z.string(), z.unknown()).optional(),               // {fat, snf, temp_c} farm-to-fork transparency
 }).strict();
 const PauseSchema = z.object({ pausedUntil: dateStr }).strict();
 

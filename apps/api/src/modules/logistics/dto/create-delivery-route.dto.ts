@@ -7,7 +7,7 @@ const RegionIds = z.array(z.string().uuid()).max(2000);
 export const CreateDeliveryRouteSchema = z.object({
   defaultName: z.string().trim().min(1).max(150),
   runWeekday: Weekday.nullable().optional(),
-  villageRegionIds: RegionIds.default([]),
+  villageRegionIds: RegionIds.prefault([]),
   vehicleId: z.string().uuid().nullable().optional(),
   consolidationUserId: z.string().uuid().nullable().optional(),
 }).strict();

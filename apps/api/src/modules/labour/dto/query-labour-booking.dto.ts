@@ -3,12 +3,12 @@
 import { z } from 'zod';
 import { BOOKING_STATUSES } from '../domain/labour-booking.state';
 export const QueryBookingsSchema = z.object({
-  box: z.enum(['mine', 'open', 'all']).default('mine'),  // mine=employer's own; open=marketplace; all=desk/manage
+  box: z.enum(['mine', 'open', 'all']).prefault('mine'),  // mine=employer's own; open=marketplace; all=desk/manage
   status: z.enum(BOOKING_STATUSES as unknown as [string, ...string[]]).optional(),
   taskSkillId: z.string().uuid().optional(),
-  sort: z.enum(['recent', 'starts']).default('recent'),
+  sort: z.enum(['recent', 'starts']).prefault('recent'),
   counts: z.enum(['0', '1']).optional(),
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryBookingsDto = z.infer<typeof QueryBookingsSchema>;

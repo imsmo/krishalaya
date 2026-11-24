@@ -4,7 +4,7 @@
 import { z } from 'zod';
 
 const Iso = z.string().datetime().optional();
-const Currency = z.string().regex(/^[A-Z]{3}$/).default('INR');
+const Currency = z.string().regex(/^[A-Z]{3}$/).prefault('INR');
 
 export const QueryWindowSchema = z.object({ from: Iso, to: Iso, currency: Currency }).strict();
 export type QueryWindowDto = z.infer<typeof QueryWindowSchema>;
@@ -28,7 +28,7 @@ export const RunReportSchema = z.object({
   metric: z.enum(['orders', 'gmv_minor', 'new_tenants', 'new_users', 'dbt_minor']),
   from: z.string().datetime(),
   to: z.string().datetime(),
-  bucket: z.enum(['day', 'week', 'month']).default('day'),
+  bucket: z.enum(['day', 'week', 'month']).prefault('day'),
 }).strict();
 export type RunReportDto = z.infer<typeof RunReportSchema>;
 
@@ -36,24 +36,24 @@ export const SaveReportSchema = z.object({
   slug: z.string().trim().regex(/^[a-z][a-z0-9-]{1,59}$/),
   title: z.string().trim().min(3).max(160),
   metric: z.enum(['orders', 'gmv_minor', 'new_tenants', 'new_users', 'dbt_minor']),
-  bucket: z.enum(['day', 'week', 'month']).default('day'),
+  bucket: z.enum(['day', 'week', 'month']).prefault('day'),
   // RELATIVE, never two dates — a saved definition pinned to absolute dates is wrong the day after it is saved, and
   // nobody notices because it keeps producing a file.
-  windowDays: z.number().int().min(1).max(366).default(30),
-  currency: z.string().length(3).default('INR'),
-  filters: z.record(z.unknown()).optional(),
-  isShared: z.boolean().default(false),
+  windowDays: z.number().int().min(1).max(366).prefault(30),
+  currency: z.string().length(3).prefault('INR'),
+  filters: z.record(z.string(), z.unknown()).optional(),
+  isShared: z.boolean().prefault(false),
   notes: z.string().trim().max(2_000).optional(),
 }).strict();
 export type SaveReportDto = z.infer<typeof SaveReportSchema>;
 
 export const QueryReceiptsSchema = z.object({
   report: z.string().trim().max(60).optional(),
-  limit: z.coerce.number().int().min(1).max(200).default(50),
+  limit: z.coerce.number().int().min(1).max(200).prefault(50),
 }).strict();
 export type QueryReceiptsDto = z.infer<typeof QueryReceiptsSchema>;
 
 export const QueryDashboardSchema = z.object({
-  currency: z.string().length(3).default('INR'),
+  currency: z.string().length(3).prefault('INR'),
 }).strict();
 export type QueryDashboardDto = z.infer<typeof QueryDashboardSchema>;

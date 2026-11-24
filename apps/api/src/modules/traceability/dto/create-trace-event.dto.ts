@@ -7,7 +7,7 @@ import { TRACE_STEPS, TraceStep } from '../domain/traceability.events';
 import { traceMetaSchema } from '../domain/trace-meta';
 
 const perStep = (TRACE_STEPS as readonly TraceStep[]).map((step) =>
-  z.object({ eventCode: z.literal(step), meta: traceMetaSchema(step).default({}) }).strict());
+  z.object({ eventCode: z.literal(step), meta: traceMetaSchema(step).prefault({}) }).strict());
 
 export const AppendEventSchema = z.discriminatedUnion('eventCode', perStep as unknown as [typeof perStep[number], typeof perStep[number], ...Array<typeof perStep[number]>]);
 export type AppendEventDto = { eventCode: TraceStep; meta: Record<string, string | number | undefined> };

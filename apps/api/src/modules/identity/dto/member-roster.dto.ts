@@ -8,7 +8,7 @@ export const QueryRosterSchema = z.object({
   kycStatus: z.enum(['none', 'pending', 'verified', 'rejected', 'expired']).optional(),
   dormantDays: z.coerce.number().int().min(1).max(3650).optional(),
   cursor: z.string().trim().max(400).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(25),
+  limit: z.coerce.number().int().min(1).max(100).prefault(25),
 }).strict();
 export type QueryRosterDto = z.infer<typeof QueryRosterSchema>;
 

@@ -6,6 +6,6 @@ export const QueryAuctionsSchema = z.object({
   status: z.enum(AUCTION_STATUSES).optional(),
   group: z.enum(AUCTION_GROUPS).optional(),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(100).prefault(20),
 }).strict();
 export type QueryAuctionsDto = z.infer<typeof QueryAuctionsSchema>;

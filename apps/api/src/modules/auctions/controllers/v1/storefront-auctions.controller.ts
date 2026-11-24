@@ -23,9 +23,9 @@ import { PUBLIC_AUCTION_GROUPS } from '../../repositories/auction.repository';
 import { decodeCursor } from '../../domain/cursor';
 
 export const PublicAuctionListSchema = z.object({
-  group: z.enum(PUBLIC_AUCTION_GROUPS).default('live'),
+  group: z.enum(PUBLIC_AUCTION_GROUPS).prefault('live'),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(PUBLIC_AUCTION_LIST_MAX).default(20),
+  limit: z.coerce.number().int().min(1).max(PUBLIC_AUCTION_LIST_MAX).prefault(20),
   mine: z.enum(['1', 'true']).optional(),
 }).strict();
 export type PublicAuctionListDto = z.infer<typeof PublicAuctionListSchema>;

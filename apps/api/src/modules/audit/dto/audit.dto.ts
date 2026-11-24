@@ -17,7 +17,7 @@ export const QueryAuditSchema = z.object({
   from: DAY.optional(),                                // first day, inclusive, the cooperative's zone
   to: DAY.optional(),                                  // last day, inclusive, the cooperative's zone
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryAuditDto = z.infer<typeof QueryAuditSchema>;
 

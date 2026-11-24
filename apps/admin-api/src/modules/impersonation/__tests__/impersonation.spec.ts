@@ -4,6 +4,7 @@
 // typ checks, actor claim, NEVER typ='access'); owner-RBAC for the impersonation roles + the no-escalation / no-'*'
 // property (Law 11); DTO validation; and the services proving the kill-switch, target validation (404 non-member,
 // 403 privileged), audit-in-tx, illegal-transition guard, and that recordAction refuses a stale/foreign grant.
+// PC-56 SEC-4 (zod 4): fixture ids carry valid RFC version/variant digits (`.uuid()` now checks them).
 import { ImpersonationGrant } from '../domain/grant.entity';
 import { canTransition, assertTransition, isTerminal, GRANT_STATUSES } from '../domain/grant.state';
 import { assertScope, assertTtl, assertNotSelf } from '../domain/scope';
@@ -16,9 +17,9 @@ import { StartGrantSchema, EndGrantSchema, RecordActionSchema, QueryGrantsSchema
 import { resolveOwnerPermissions, hasOwnerPermission, OwnerPermissions } from '../../../core/rbac/owner-roles';
 
 const SECRET = 's'.repeat(40);
-const ADMIN = '00000000-0000-0000-0000-0000000000a1';
-const TENANT = '11111111-1111-1111-1111-111111111111';
-const TARGET = '22222222-2222-2222-2222-222222222222';
+const ADMIN = '00000000-0000-4000-8000-0000000000a1';
+const TENANT = '11111111-1111-4111-8111-111111111111';
+const TARGET = '22222222-2222-4222-8222-222222222222';
 const actor = { userId: ADMIN, roles: ['platform_support_impersonator'], ip: '10.0.0.1', requestId: 'req1' } as any;
 const cfg = (enabled = true) => ({ impersonation: { enabled, secret: SECRET, issuer: 'krishalaya-impersonation', audience: 'krishalaya-api', maxTtlSec: 1800 } }) as any;
 const grant = (status: any = 'active', expiresInMs = 60000, adminId = ADMIN) => ImpersonationGrant.rehydrate({

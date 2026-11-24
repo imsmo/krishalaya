@@ -7,7 +7,7 @@ const minorUnits = z.string().regex(/^[1-9]\d{0,15}$/, 'amountMinor must be a po
 export const CreatePaymentIntentSchema = z.object({
   purpose: z.enum(['wallet_recharge', 'direct_order', 'subscription', 'boost', 'emd', 'course', 'insurance_premium']),
   amountMinor: minorUnits,
-  currencyCode: z.string().length(3).default('INR'),
+  currencyCode: z.string().length(3).prefault('INR'),
   referenceType: z.string().max(50).optional(),
   referenceId: z.string().uuid().optional(),
 }).strict();

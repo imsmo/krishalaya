@@ -22,13 +22,13 @@ export type ReasonRequiredDto = z.infer<typeof ReasonRequiredSchema>;
 
 export const QueryKeysSchema = z.object({
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryKeysDto = z.infer<typeof QueryKeysSchema>;
 
 export const QueryKeyProposalsSchema = z.object({
   status: z.enum(['proposed', 'confirmed', 'refused', 'expired']).optional(),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(25),
+  limit: z.coerce.number().int().min(1).max(100).prefault(25),
 }).strict();
 export type QueryKeyProposalsDto = z.infer<typeof QueryKeyProposalsSchema>;

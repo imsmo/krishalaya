@@ -9,7 +9,7 @@ export const CreateVehicleSchema = z.object({
   regNo: z.string().trim().min(4).max(24),
   vehicleTypeId: z.string().uuid().nullable().optional(),
   capacityKg: Capacity.nullable().optional(),
-  isRefrigerated: z.boolean().default(false),
+  isRefrigerated: z.boolean().prefault(false),
   rcDocId: z.string().uuid().nullable().optional(),
 }).strict();
 export type CreateVehicleDto = z.infer<typeof CreateVehicleSchema>;

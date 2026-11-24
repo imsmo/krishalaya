@@ -6,8 +6,8 @@ export const CreatePayoutSchema = z.object({
   bankAccountId: z.string().uuid(),
   // PC-56 TENANT-7d-money: `course_royalty` — an instructor's royalty (0174), mapped to the `instructor` role in 0125's map and
   // declared in its own lookup meta to RIDE THE BATCH (never claimed unbatched — two humans before it leaves).
-  purpose: z.enum(['settlement', 'wage', 'commission', 'refund', 'course_royalty']).default('settlement'),
-  currencyCode: z.string().length(3).default('INR'),
+  purpose: z.enum(['settlement', 'wage', 'commission', 'refund', 'course_royalty']).prefault('settlement'),
+  currencyCode: z.string().length(3).prefault('INR'),
   referenceType: z.string().max(50).optional(),
   referenceId: z.string().uuid().optional(),
 }).strict();

@@ -6,8 +6,8 @@ const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 export const CreateRateSchema = z.object({
   rateBasis: z.enum(RATE_BASES as unknown as [string, ...string[]]),
   rateMinor: minorStr,
-  includesOperator: z.boolean().default(true),
-  includesFuel: z.boolean().default(false),
+  includesOperator: z.boolean().prefault(true),
+  includesFuel: z.boolean().prefault(false),
   effectiveFrom: dateStr.optional(),
   effectiveTo: dateStr.optional(),
 }).strict();

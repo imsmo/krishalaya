@@ -6,13 +6,13 @@ import { z } from 'zod';
 const Note = z.string().trim().min(20).max(300);
 
 export const QueryPulseSchema = z.object({
-  movers: z.coerce.number().int().min(1).max(50).default(10),
+  movers: z.coerce.number().int().min(1).max(50).prefault(10),
 }).strict();
 export type QueryPulseDto = z.infer<typeof QueryPulseSchema>;
 
 export const QueryQuarantineSchema = z.object({
   includeDecided: z.coerce.boolean().optional(),
-  limit: z.coerce.number().int().min(1).max(200).default(50),
+  limit: z.coerce.number().int().min(1).max(200).prefault(50),
 }).strict();
 export type QueryQuarantineDto = z.infer<typeof QueryQuarantineSchema>;
 

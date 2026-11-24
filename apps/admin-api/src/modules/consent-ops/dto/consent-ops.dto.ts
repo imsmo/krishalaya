@@ -12,7 +12,7 @@ export const QueryConsentsSchema = z.object({
   channel: z.string().max(30).optional(),
   withdrawnOnly: z.string().max(5).optional(),
   cursor: Cursor,
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryConsentsDto = z.infer<typeof QueryConsentsSchema>;
 

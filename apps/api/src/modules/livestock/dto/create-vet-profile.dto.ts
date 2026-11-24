@@ -13,7 +13,7 @@ export type RegisterVetDto = z.infer<typeof RegisterVetSchema>;
 export const UpsertVetServiceSchema = z.object({
   serviceTypeCode: z.string().min(1).max(40),
   priceMinor: minorStr,
-  pricingUnit: z.enum(VET_SERVICE_PRICING_UNITS as unknown as [string, ...string[]]).default('per_visit'),
-  isEmergencyAvailable: z.boolean().default(false),
+  pricingUnit: z.enum(VET_SERVICE_PRICING_UNITS as unknown as [string, ...string[]]).prefault('per_visit'),
+  isEmergencyAvailable: z.boolean().prefault(false),
 }).strict();
 export type UpsertVetServiceDto = z.infer<typeof UpsertVetServiceSchema>;

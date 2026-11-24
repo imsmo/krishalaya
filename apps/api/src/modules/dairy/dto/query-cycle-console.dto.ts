@@ -9,11 +9,11 @@ export const CycleConsoleSchema = z.object({
   cycleId: z.string().uuid().optional(),
   cursor: z.string().optional(),
   /** 25 by default: W169's register is a page of a fortnight, and 312 rows in one response is a 2G timeout. */
-  limit: z.coerce.number().int().min(1).max(100).default(25),
+  limit: z.coerce.number().int().min(1).max(100).prefault(25),
   /** The canon draws Gross sorted DESCENDING (`aria-sort="descending"`) — who is owed the most, first. Ascending is
    *  offered because the smallest bills are where a missing pour hides, and nothing else is: a sort on a column the
    *  canon does not sort on would be an invented feature with an invented index. */
-  direction: z.enum(['desc', 'asc']).default('desc'),
+  direction: z.enum(['desc', 'asc']).prefault('desc'),
 }).strict();
 export type CycleConsoleDto = z.infer<typeof CycleConsoleSchema>;
 

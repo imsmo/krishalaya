@@ -6,9 +6,9 @@
 //            `progress_delta` watch event at the server's clock — so the existing mobile client feeds the curve without a release.
 import { z } from 'zod';
 export const MarkProgressSchema = z.object({
-  secondsWatched: z.coerce.number().int().min(0).max(86400).default(0),
+  secondsWatched: z.coerce.number().int().min(0).max(86400).prefault(0),
   quizScore: z.coerce.number().min(0).max(100).nullish(),
-  completed: z.boolean().default(false),
+  completed: z.boolean().prefault(false),
   answers: z.array(z.number().int().min(0).max(5).nullable()).min(1).max(50).optional(),
   watch: z.object({ startedAt: z.string().datetime({ offset: true }), endedAt: z.string().datetime({ offset: true }) }).strict().optional(),
 }).strict();

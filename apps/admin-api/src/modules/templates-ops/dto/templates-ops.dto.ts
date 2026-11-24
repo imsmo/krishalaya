@@ -18,12 +18,12 @@ export const QueryTemplatesSchema = z.object({
   eventCode: EventCode.optional(),
   platformOnly: z.coerce.boolean().optional(),
   cursor: z.string().trim().max(120).optional(),
-  limit: z.coerce.number().int().min(1).max(200).default(50),
+  limit: z.coerce.number().int().min(1).max(200).prefault(50),
 }).strict();
 export type QueryTemplatesDto = z.infer<typeof QueryTemplatesSchema>;
 
 export const QueryCoverageSchema = z.object({
-  limit: z.coerce.number().int().min(1).max(500).default(200),
+  limit: z.coerce.number().int().min(1).max(500).prefault(200),
 }).strict();
 export type QueryCoverageDto = z.infer<typeof QueryCoverageSchema>;
 

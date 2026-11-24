@@ -10,7 +10,7 @@ export const IngestPriceSchema = z.object({
   minMinor: minor.nullish(),
   maxMinor: minor.nullish(),
   modalMinor: minor,
-  unitCode: z.string().min(1).max(20).default('quintal'),
+  unitCode: z.string().min(1).max(20).prefault('quintal'),
   arrivalsQty: z.string().regex(/^\d{1,12}(\.\d{1,2})?$/).nullish(),
   // PC-56 TENANT-12 (F-4): the tenant API writes ONLY tenant observations. The source is FORCED to 'tenant_manual' by the service;
   // a caller that names any other source is refused here (a typed price is never 'agmarknet').

@@ -5,6 +5,6 @@ export const GeneratePredictionSchema = z.object({
   regionId: z.string().uuid(),
   gradeOptionId: z.string().uuid().nullish(),
   targetDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  lookbackDays: z.coerce.number().int().min(7).max(365).default(90),
+  lookbackDays: z.coerce.number().int().min(7).max(365).prefault(90),
 }).strict();
 export type GeneratePredictionDto = z.infer<typeof GeneratePredictionSchema>;

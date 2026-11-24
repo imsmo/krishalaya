@@ -7,9 +7,9 @@ export const QueryAmbassadorsSchema = z.object({
   activeOnly: bool.optional(),
   tier: z.string().regex(/^[a-z_]{2,40}$/).optional(),
   inactive: bool.optional(),
-  sort: z.enum(ROSTER_SORTS as unknown as [string, ...string[]]).default('recent'),
+  sort: z.enum(ROSTER_SORTS as unknown as [string, ...string[]]).prefault('recent'),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryAmbassadorsDto = z.infer<typeof QueryAmbassadorsSchema>;
 

@@ -11,7 +11,7 @@ export const QueryKeysSchema = z.object({
   registry: Registry.optional(),
   revoked: z.coerce.boolean().optional(),
   cursor: z.string().trim().max(40).optional(),
-  limit: z.coerce.number().int().min(1).max(200).default(50),
+  limit: z.coerce.number().int().min(1).max(200).prefault(50),
 }).strict();
 export type QueryKeysDto = z.infer<typeof QueryKeysSchema>;
 
@@ -24,11 +24,11 @@ export type RevokeKeyDto = z.infer<typeof RevokeKeySchema>;
 export const QueryInboundSchema = z.object({
   providerCode: z.string().trim().max(60).optional(),
   failuresOnly: z.coerce.boolean().optional(),
-  limit: z.coerce.number().int().min(1).max(200).default(50),
+  limit: z.coerce.number().int().min(1).max(200).prefault(50),
 }).strict();
 export type QueryInboundDto = z.infer<typeof QueryInboundSchema>;
 
 export const QueryCircuitHistorySchema = z.object({
-  limit: z.coerce.number().int().min(1).max(200).default(50),
+  limit: z.coerce.number().int().min(1).max(200).prefault(50),
 }).strict();
 export type QueryCircuitHistoryDto = z.infer<typeof QueryCircuitHistorySchema>;

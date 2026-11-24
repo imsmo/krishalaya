@@ -15,7 +15,7 @@ export const QueryDairyInsightsSchema = z.object({
     .refine((n): n is (typeof INSIGHT_WINDOWS)[number] => (INSIGHT_WINDOWS as readonly number[]).includes(n), {
       message: `window must be one of ${INSIGHT_WINDOWS.join(', ')}`,
     })
-    .default(DEFAULT_INSIGHT_WINDOW),
+    .prefault(DEFAULT_INSIGHT_WINDOW),
 }).strict();
 
 export type QueryDairyInsightsDto = z.infer<typeof QueryDairyInsightsSchema>;

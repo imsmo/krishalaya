@@ -34,6 +34,6 @@ export const QueryTenantsSchema = z.object({
   status: z.enum(TENANT_STATUSES).optional(),
   riskMin: z.coerce.number().int().min(0).max(100).optional(),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryTenantsDto = z.infer<typeof QueryTenantsSchema>;

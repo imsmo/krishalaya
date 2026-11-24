@@ -4,6 +4,6 @@
 import { z } from 'zod';
 
 export const QueryOrderItemsSchema = z.object({
-  limit: z.coerce.number().int().min(1).max(500).default(200),
+  limit: z.coerce.number().int().min(1).max(500).prefault(200),
 }).strict();
 export type QueryOrderItemsDto = z.infer<typeof QueryOrderItemsSchema>;

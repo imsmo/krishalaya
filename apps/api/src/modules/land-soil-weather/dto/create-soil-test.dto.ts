@@ -6,8 +6,8 @@ export const RecordSoilTestSchema = z.object({
   labName: z.string().max(200).optional(),
   shcCardNo: z.string().max(60).optional(),
   sampledOn: dateStr,
-  results: z.record(z.union([z.string(), z.number(), z.boolean()])),
-  recommendations: z.record(z.unknown()).default({}),
+  results: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
+  recommendations: z.record(z.string(), z.unknown()).prefault({}),
   reportMediaId: z.string().uuid().optional(),
   validUntil: dateStr.optional(),
 }).strict();

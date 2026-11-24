@@ -11,8 +11,8 @@ import { WallClockSchema } from './create-mcc-centre.dto';
  * footer reconciles. A secretary who sees "312 total, 300 shown" needs a way to look at the other twelve.
  */
 export const QueryMccConsoleSchema = z.object({
-  includeInactive: z.coerce.boolean().default(false),
-  limit: z.coerce.number().int().min(1).max(200).default(100),
+  includeInactive: z.coerce.boolean().prefault(false),
+  limit: z.coerce.number().int().min(1).max(200).prefault(100),
 }).strict();
 export type QueryMccConsoleDto = z.infer<typeof QueryMccConsoleSchema>;
 
@@ -46,6 +46,6 @@ export const SetMccShiftWindowSchema = z.object({
 export type SetMccShiftWindowDto = z.infer<typeof SetMccShiftWindowSchema>;
 
 export const QueryMccCustodySchema = z.object({
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(100).prefault(20),
 }).strict();
 export type QueryMccCustodyDto = z.infer<typeof QueryMccCustodySchema>;

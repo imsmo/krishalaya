@@ -23,7 +23,7 @@ export const CreateGroupLotSchema = z.object({
   unitCode: z.string().min(1).max(20),
   pledgeDeadline: z.string().datetime({ offset: true }),
   // ONE cap (F-27e): 2000 bps = 20 %. See domain/group-lot.entity MAX_FEE_BPS for why the stricter of the two old caps wins.
-  coordinationFeeBps: z.number().int().min(0).max(MAX_FEE_BPS).default(0),
+  coordinationFeeBps: z.number().int().min(0).max(MAX_FEE_BPS).prefault(0),
   /** tenant_admin (group_lot.manage) appoints another member; omitted = the caller coordinates their own lot. */
   coordinatorUserId: z.string().uuid().optional(),
   consent: CoordinatorConsentSchema.optional(),
@@ -71,11 +71,11 @@ export const RefuseSchema = z.object({ reason }).strict();
 export type RefuseDto = z.infer<typeof RefuseSchema>;
 
 export const QueryGroupLotsSchema = z.object({
-  box: z.enum(['mine', 'all']).default('all'),    // mine = the lots the caller coordinates; all = browse (any member)
+  box: z.enum(['mine', 'all']).prefault('all'),    // mine = the lots the caller coordinates; all = browse (any member)
   status: z.enum(GROUP_LOT_STATUSES as unknown as [string, ...string[]]).optional(),
-  sort: z.enum(['recent', 'deadline']).default('recent'),
+  sort: z.enum(['recent', 'deadline']).prefault('recent'),
   counts: z.enum(['0', '1']).optional(),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(25),
+  limit: z.coerce.number().int().min(1).max(100).prefault(25),
 }).strict();
 export type QueryGroupLotsDto = z.infer<typeof QueryGroupLotsSchema>;

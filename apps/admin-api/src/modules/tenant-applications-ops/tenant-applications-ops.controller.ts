@@ -17,7 +17,7 @@ const QuerySchema = z.object({
   status: z.enum(['draft', 'submitted', 'under_review', 'approved', 'rejected', 'withdrawn']).optional(),
   countryCode: z.string().length(2).optional(),
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 const ApproveSchema = z.object({
   slug: z.string().trim().regex(/^[a-z0-9-]{3,50}$/).optional(),   // explicit slug when the derived one collides

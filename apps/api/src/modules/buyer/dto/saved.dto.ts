@@ -10,7 +10,7 @@ export type SaveItemDto = z.infer<typeof SaveItemSchema>;
 
 export const CreateSavedSearchSchema = z.object({
   name: z.string().min(1).max(150),
-  query: z.record(z.unknown()),                 // {text, categoryId, filters{}, sort} — stored as jsonb
+  query: z.record(z.string(), z.unknown()),                 // {text, categoryId, filters{}, sort} — stored as jsonb
   notifyNewMatches: z.boolean().optional(),
 }).strict();
 export type CreateSavedSearchDto = z.infer<typeof CreateSavedSearchSchema>;

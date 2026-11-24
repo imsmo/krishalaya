@@ -27,7 +27,7 @@ export const QueryModelsSchema = z.object({
   code: z.string().max(80).optional(),
   status: z.enum(MODEL_STATUSES).optional(),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryModelsDto = z.infer<typeof QueryModelsSchema>;
 
@@ -69,7 +69,7 @@ export const QueryCasesSchema = z.object({
   queueKind: z.enum(['fraud_flag', 'low_confidence_grade', 'price_anomaly', 'dispute_triage', 'drift']).optional(),
   tenantId: z.string().uuid().optional(),
   cursor: z.string().max(500).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(25),
+  limit: z.coerce.number().int().min(1).max(100).prefault(25),
 });
 export type QueryCasesDto = z.infer<typeof QueryCasesSchema>;
 
@@ -88,7 +88,7 @@ export const QueryInferencesSchema = z.object({
   tenantId: z.string().uuid().optional(),
   overriddenOnly: z.coerce.boolean().optional(),
   cursor: z.string().max(500).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(25),
+  limit: z.coerce.number().int().min(1).max(100).prefault(25),
 });
 export type QueryInferencesDto = z.infer<typeof QueryInferencesSchema>;
 

@@ -12,7 +12,7 @@ import { LIVE_BOXES } from '../repositories/live-session.repository';
 import { LIVE_STATUSES } from '../domain/creator.events';
 
 const loose = z.string().max(600);
-const shape = <T extends readonly string[]>(names: T, v: z.ZodTypeAny) => Object.fromEntries(names.map((n) => [n, v.optional()])) as Record<T[number], z.ZodOptional<z.ZodTypeAny>>;
+const shape = <T extends readonly string[], V extends z.ZodType>(names: T, v: V) => Object.fromEntries(names.map((n) => [n, v.optional()])) as Record<T[number], z.ZodOptional<V>>;
 
 export const LiveFormSchema = z.object({ ...shape(LIVE_FORM_FIELDS, loose) }).strict();
 export type LiveFormDto = z.infer<typeof LiveFormSchema>;
@@ -31,11 +31,11 @@ export const LiveWriterSchema = z.object({
 }).strict();
 
 export const QueryLiveSchema = z.object({
-  box: z.enum(LIVE_BOXES).default('upcoming'),
+  box: z.enum(LIVE_BOXES).prefault('upcoming'),
   courseId: z.string().uuid().optional(),
   status: z.enum(LIVE_STATUSES).optional(),
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryLiveDto = z.infer<typeof QueryLiveSchema>;
 

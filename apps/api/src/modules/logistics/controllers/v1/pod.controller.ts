@@ -17,7 +17,7 @@ import { PodReviewService } from '../../services/pod-review.service';
 const ipOf = (r: Request) => r.ip || null;
 const reqKey = (k: string) => { if (!k) throw new BadRequestError('Idempotency-Key header required'); return k; };
 const BoardQuery = z.object({ status: z.enum(['awaiting', 'auto_cleared', 'flagged', 'approved', 'rejected']).optional(), cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50) }).strict();
+  limit: z.coerce.number().int().min(1).max(100).prefault(50) }).strict();
 const FlagBody = z.object({ reason: z.enum(['mismatch', 'no_photo', 'wrong_recipient', 'weight_variance', 'other']), note: z.string().trim().min(3).max(1000).optional(),
   varianceMinor: z.string().regex(/^[1-9]\d{0,15}$/).optional() }).strict();
 const NoteBody = z.object({ note: z.string().trim().min(3).max(1000).optional() }).strict();

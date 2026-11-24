@@ -10,7 +10,7 @@ import { ZodBody, ZodQuery } from '../../core/http/zod.pipe';
 import { SetupCallsOpsService } from './setup-calls-ops.service';
 
 const decodeCursor = (c?: string) => { if (!c) return undefined; const [cc, id] = Buffer.from(c, 'base64').toString().split('|'); return cc && id ? { c: cc, id } : undefined; };
-const ListSchema = z.object({ status: z.enum(['requested', 'scheduled', 'done', 'cancelled']).optional(), cursor: z.string().optional(), limit: z.coerce.number().int().min(1).max(100).default(50) }).strict();
+const ListSchema = z.object({ status: z.enum(['requested', 'scheduled', 'done', 'cancelled']).optional(), cursor: z.string().optional(), limit: z.coerce.number().int().min(1).max(100).prefault(50) }).strict();
 const ScheduleSchema = z.object({ scheduledAt: z.string().max(40) }).strict();
 const DoneSchema = z.object({ outcomeNote: z.string().max(500) }).strict();
 const CancelSchema = z.object({ reason: z.string().max(300) }).strict();

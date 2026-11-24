@@ -3,6 +3,6 @@ import { z } from 'zod';
 export const QueryAnalyticsSchema = z.object({
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
-  currency: z.string().length(3).default('INR'),
+  currency: z.string().length(3).prefault('INR'),
 }).strict();
 export type QueryAnalyticsDto = z.infer<typeof QueryAnalyticsSchema>;

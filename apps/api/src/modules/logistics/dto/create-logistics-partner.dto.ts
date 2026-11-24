@@ -10,7 +10,7 @@ const E164 = z.string().trim().regex(/^\+[1-9][0-9]{7,14}$/, 'phone must be E.16
 export const CarrierVehicleSchema = z.object({
   regNo: z.string().trim().min(4).max(20).regex(/^[A-Za-z0-9 -]+$/),
   capacityKg: z.number().positive().max(100000).nullable().optional(),
-  isRefrigerated: z.boolean().default(false),
+  isRefrigerated: z.boolean().prefault(false),
 }).strict();
 
 export const CreateLogisticsPartnerSchema = z.object({
@@ -18,7 +18,7 @@ export const CreateLogisticsPartnerSchema = z.object({
   defaultName: z.string().trim().min(1).max(150),
   providerCode: z.string().trim().min(2).max(60).nullable().optional(),
   riderUserId: z.string().uuid().nullable().optional(),
-  supportsColdChain: z.boolean().default(false),
+  supportsColdChain: z.boolean().prefault(false),
   contactPhone: E164.nullable().optional(),
   vehicle: CarrierVehicleSchema.nullable().optional(),
 }).strict()

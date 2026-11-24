@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { BILLING_CYCLES } from '../domain/tenancy.events';
 export const SubscribeSchema = z.object({
   planId: z.string().uuid(),
-  billingCycle: z.enum(BILLING_CYCLES as unknown as [string, ...string[]]).default('monthly'),
+  billingCycle: z.enum(BILLING_CYCLES as unknown as [string, ...string[]]).prefault('monthly'),
 }).strict();
 export type SubscribeDto = z.infer<typeof SubscribeSchema>;
 
@@ -13,5 +13,5 @@ export type SubscribeDto = z.infer<typeof SubscribeSchema>;
 export const ChangePlanSchema = z.object({ planId: z.string().uuid(), reason: z.string().trim().max(300).optional() }).strict();
 export type ChangePlanDto = z.infer<typeof ChangePlanSchema>;
 
-export const CancelSubscriptionSchema = z.object({ atPeriodEnd: z.boolean().default(false) }).strict();
+export const CancelSubscriptionSchema = z.object({ atPeriodEnd: z.boolean().prefault(false) }).strict();
 export type CancelSubscriptionDto = z.infer<typeof CancelSubscriptionSchema>;

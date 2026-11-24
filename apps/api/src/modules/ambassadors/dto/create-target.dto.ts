@@ -16,6 +16,6 @@ export type SetTargetDto = z.infer<typeof SetTargetSchema>;
 export const QueryLeaderboardSchema = z.object({
   periodStart: ymd.optional(),
   periodEnd: ymd.optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(100).prefault(20),
 }).strict();
 export type QueryLeaderboardDto = z.infer<typeof QueryLeaderboardSchema>;

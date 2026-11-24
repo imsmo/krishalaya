@@ -42,7 +42,7 @@ export type LedgerExportParams = z.infer<typeof LedgerExportParamsSchema>;
 export type PackExportParams = z.infer<typeof PackExportParamsSchema>;
 
 /** The enqueue body (`POST /v1/auditor/exports`). The params are validated by the PRODUCER's own schema in the plane. */
-export const AuditorExportEnqueueSchema = z.object({ datasetCode: z.enum(AUDITOR_DATASETS), params: z.record(z.unknown()) }).strict();
+export const AuditorExportEnqueueSchema = z.object({ datasetCode: z.enum(AUDITOR_DATASETS), params: z.record(z.string(), z.unknown()) }).strict();
 export type AuditorExportEnqueueDto = z.infer<typeof AuditorExportEnqueueSchema>;
 
 export const TRAIL_EXPORT_HEADER = ['entry_id', 'created_at_utc', 'action', 'entity_type', 'entity_id', 'actor_user_id', 'actor_role', 'reason', 'old_value_masked', 'new_value_masked', 'masked_fields'] as const;

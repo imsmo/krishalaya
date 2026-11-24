@@ -7,9 +7,9 @@ export const DISPUTE_BOXES = ['raised', 'against', 'all'] as const;
 export type DisputeBox = (typeof DISPUTE_BOXES)[number];
 
 export const QueryDisputesSchema = z.object({
-  box: z.enum(DISPUTE_BOXES).default('raised'),
+  box: z.enum(DISPUTE_BOXES).prefault('raised'),
   status: z.enum(DISPUTE_STATUSES).optional(),
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(100).prefault(20),
 }).strict();
 export type QueryDisputesDto = z.infer<typeof QueryDisputesSchema>;

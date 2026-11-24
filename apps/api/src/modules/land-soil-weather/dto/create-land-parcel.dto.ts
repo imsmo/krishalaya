@@ -8,9 +8,9 @@ export const RegisterParcelSchema = z.object({
   surveyNo: z.string().max(60).optional(),
   bhulekhRef: z.string().max(120).optional(),
   areaValue: z.string().regex(/^\d{1,6}(\.\d{1,4})?$/, 'area, up to 4 decimals'),
-  areaUnit: z.string().min(1).max(20).default('acre'),
+  areaUnit: z.string().min(1).max(20).prefault('acre'),
   irrigationTypeCode: z.string().min(1).max(40).optional(),
   boundaryGeojson: BoundarySchema.optional(),
-  isTenantFarmed: z.boolean().default(false),
+  isTenantFarmed: z.boolean().prefault(false),
 }).strict();
 export type RegisterParcelDto = z.infer<typeof RegisterParcelSchema>;

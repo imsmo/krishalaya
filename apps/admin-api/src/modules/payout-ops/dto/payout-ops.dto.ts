@@ -11,7 +11,7 @@ import { RUN_STATUSES } from '../domain/settlement-cycle';
 import { RETURN_REASON_MIN } from '../domain/batch-approval';
 
 const cursor = z.string().max(500).optional();
-const limit = z.coerce.number().int().min(1).max(100).default(25);
+const limit = z.coerce.number().int().min(1).max(100).prefault(25);
 
 export const QueryBatchesSchema = z.object({
   // The status filter is an ENUM rather than a free string, so a typo returns a 400 rather than an empty list. An

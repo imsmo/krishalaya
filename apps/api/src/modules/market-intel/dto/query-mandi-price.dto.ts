@@ -6,6 +6,6 @@ export const QueryPricesSchema = z.object({
   mandiId: z.string().uuid().optional(),
   fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryPricesDto = z.infer<typeof QueryPricesSchema>;

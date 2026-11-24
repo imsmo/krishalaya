@@ -8,12 +8,12 @@ const reason = z.string().trim().min(3).max(300);
 export const EnrollAmbassadorSchema = z.object({
   userId: z.string().uuid().optional(),
   phone: z.string().trim().min(8).max(20).optional(),
-  clusterRegionIds: z.array(z.string().uuid()).max(3).default([]),
+  clusterRegionIds: z.array(z.string().uuid()).max(3).prefault([]),
   tierId: z.string().uuid().nullish(),
   mentorAmbassadorId: z.string().uuid().nullish(),
-  kioskEnabled: z.boolean().default(false),
-  aepsEnabled: z.boolean().default(false),
-  monthlyStipendMinor: minor.default('0'),
+  kioskEnabled: z.boolean().prefault(false),
+  aepsEnabled: z.boolean().prefault(false),
+  monthlyStipendMinor: minor.prefault('0'),
 }).strict().refine((v) => (v.userId ? 1 : 0) + (v.phone ? 1 : 0) === 1, { message: 'name the recruit by exactly one of phone or userId' });
 export type EnrollAmbassadorDto = z.infer<typeof EnrollAmbassadorSchema>;
 
@@ -52,5 +52,5 @@ export const MessageAmbassadorSchema = z.object({ message: z.string().trim().min
 export type MessageAmbassadorDto = z.infer<typeof MessageAmbassadorSchema>;
 /** PC-56 TENANT-SW-b — a run act (prepare / confirm / refuse / pay) always carries a reason. */
 export const RunActSchema = z.object({ reason }).strict();
-export const RunListSchema = z.object({ cursor: z.string().max(200).optional(), limit: z.coerce.number().int().min(1).max(100).default(20) }).strict();
+export const RunListSchema = z.object({ cursor: z.string().max(200).optional(), limit: z.coerce.number().int().min(1).max(100).prefault(20) }).strict();
 export type RunListDto = z.infer<typeof RunListSchema>;

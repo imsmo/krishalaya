@@ -10,7 +10,7 @@ export type QcRejectDto = z.infer<typeof QcRejectSchema>;
 export const ConsoleListSchema = z.object({
   status: z.enum(LISTING_STATUSES).optional(),     // the closed vocabulary IS the filter — no free-text status
   cursor: z.string().max(200).optional(),          // "createdAtIso_id" keyset token, parsed below
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type ConsoleListDto = z.infer<typeof ConsoleListSchema>;
 

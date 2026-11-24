@@ -12,7 +12,7 @@ export type ApplyLoanDto = z.infer<typeof ApplyLoanSchema>;
 
 export const ApproveLoanSchema = z.object({
   amountApprovedMinor: minorStr,
-  coolingOffHours: z.number().int().min(0).max(720).default(24),   // PRD §59.4 — 24h default anti-predatory window
+  coolingOffHours: z.number().int().min(0).max(720).prefault(24),   // PRD §59.4 — 24h default anti-predatory window
 }).strict();
 export type ApproveLoanDto = z.infer<typeof ApproveLoanSchema>;
 

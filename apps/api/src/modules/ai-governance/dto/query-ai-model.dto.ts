@@ -5,6 +5,6 @@ export const QueryModelsSchema = z.object({
   code: z.string().min(1).max(80).optional(),
   status: z.enum(MODEL_STATUSES).optional(),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryModelsDto = z.infer<typeof QueryModelsSchema>;

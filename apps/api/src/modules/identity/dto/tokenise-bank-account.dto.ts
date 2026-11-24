@@ -7,6 +7,6 @@ export const TokeniseBankAccountSchema = z.object({
   accountNumber: z.string().regex(/^\d{9,18}$/),               // RAW — tokenised server-side, never persisted/logged
   ifsc: z.string().regex(/^[A-Z]{4}0[A-Z0-9]{6}$/),
   holderName: z.string().min(2).max(200),
-  isPrimary: z.boolean().default(false),
+  isPrimary: z.boolean().prefault(false),
 }).strict();
 export type TokeniseBankAccountDto = z.infer<typeof TokeniseBankAccountSchema>;

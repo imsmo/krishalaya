@@ -7,7 +7,7 @@ import { DISPUTE_VIEWS } from '../domain/dispute-console';
 export const QueryDisputeConsoleSchema = z.object({
   view: z.enum(DISPUTE_VIEWS as unknown as [string, ...string[]]).optional(),
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(100).prefault(20),
 }).strict();
 export type QueryDisputeConsoleDto = z.infer<typeof QueryDisputeConsoleSchema>;
 

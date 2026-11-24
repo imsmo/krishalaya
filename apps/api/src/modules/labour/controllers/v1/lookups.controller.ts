@@ -14,7 +14,7 @@ import { LabourLookupsService } from '../../services/labour-lookups.service';
 const FloorQuerySchema = z.object({
   regionId: z.string().uuid(),
   skillLevel: z.enum(['unskilled', 'semi_skilled', 'skilled', 'highly_skilled']),
-  wageKind: z.enum(['per_day', 'per_hour', 'per_task']).default('per_day'),
+  wageKind: z.enum(['per_day', 'per_hour', 'per_task']).prefault('per_day'),
   onDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 }).strict();
 type FloorQuery = z.infer<typeof FloorQuerySchema>;

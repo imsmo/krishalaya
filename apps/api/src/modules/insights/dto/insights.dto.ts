@@ -8,7 +8,7 @@ const Key = z.string().regex(/^[a-z][a-z0-9_]{1,40}$/);
 const Day = z.string().refine(isCivilDay, 'a calendar day YYYY-MM-DD');
 export const PageQuerySchema = z.object({ cursor: z.string().max(400).optional(), limit: z.coerce.number().int().min(1).max(100).optional() }).strict();
 export const DemandQuerySchema = PageQuerySchema.extend({ reach: z.enum(['all', 'districts']).optional() }).strict();
-export const DemandExportBodySchema = z.object({ reach: z.enum(['all', 'districts']).default('all') }).strict();
+export const DemandExportBodySchema = z.object({ reach: z.enum(['all', 'districts']).prefault('all') }).strict();
 export const EmptyBodySchema = z.object({}).strict();
 export const ReasonSchema = z.object({ reason: z.string().trim().min(10).max(500) }).strict();
 /** W2826's "record a manual wastage event" — accepted as a shape only so it can be REFUSED BY NAME (MANUAL_WASTAGE_REFUSED). */
@@ -16,7 +16,7 @@ export const ManualWastageSchema = z.object({}).passthrough();
 
 export const DefinitionBodySchema = z.object({
   title: z.string().trim().min(3).max(160),
-  datasetCode: Key, dimensions: z.array(Key).max(MAX_DIMENSIONS).default([]), measures: z.array(Key).min(1).max(MAX_MEASURES),
+  datasetCode: Key, dimensions: z.array(Key).max(MAX_DIMENSIONS).prefault([]), measures: z.array(Key).min(1).max(MAX_MEASURES),
   rangeDays: z.coerce.number().int().min(1).max(MAX_RANGE_DAYS),
 }).strict();
 

@@ -8,7 +8,7 @@ import { z } from 'zod';
 
 export const QueryHubSchema = z.object({
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
+  limit: z.coerce.number().int().min(1).max(50).prefault(20),
 }).strict();
 export type QueryHubDto = z.infer<typeof QueryHubSchema>;
 

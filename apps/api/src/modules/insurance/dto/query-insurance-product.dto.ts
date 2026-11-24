@@ -5,8 +5,8 @@ import { z } from 'zod';
 export const QueryInsuranceProductsSchema = z.object({
   partnerId: z.string().uuid().optional(),
   productKindId: z.string().uuid().optional(),
-  activeOnly: z.coerce.boolean().default(true),
+  activeOnly: z.coerce.boolean().prefault(true),
   afterId: z.string().uuid().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryInsuranceProductsDto = z.infer<typeof QueryInsuranceProductsSchema>;

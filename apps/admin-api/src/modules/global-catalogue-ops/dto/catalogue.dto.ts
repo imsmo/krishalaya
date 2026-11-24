@@ -6,21 +6,21 @@ import { COMMERCE_KINDS } from '../domain/category-tree';
 
 const Reason = z.string().min(3).max(1000);
 const Cursor = z.string().max(200).optional();
-const Limit = z.coerce.number().int().min(1).max(100).default(50);
+const Limit = z.coerce.number().int().min(1).max(100).prefault(50);
 const TypeCode = z.string().min(2).max(60).regex(/^[a-z][a-z0-9_]{1,59}$/);
 const ValueCode = z.string().min(1).max(80).regex(/^[a-z0-9][a-z0-9_.-]{0,79}$/);
 const Slug = z.string().min(1).max(40).regex(/^[a-z0-9_]{1,40}$/);
 const Name = z.string().min(1).max(150);
 const SortOrder = z.coerce.number().int().min(0).max(32767);
 const MetaPrimitive = z.union([z.string(), z.number(), z.boolean(), z.null()]);
-const Meta = z.record(z.union([MetaPrimitive, z.array(MetaPrimitive)]));
+const Meta = z.record(z.string(), z.union([MetaPrimitive, z.array(MetaPrimitive)]));
 const Uuid = z.string().uuid();
 
 /* ---------------- lookup types ---------------- */
 export const CreateLookupTypeSchema = z.object({
   code: TypeCode,
   defaultName: Name.max(100),
-  isTenantExtendable: z.boolean().default(false),
+  isTenantExtendable: z.boolean().prefault(false),
   reason: Reason,
 }).strict();
 export type CreateLookupTypeDto = z.infer<typeof CreateLookupTypeSchema>;
@@ -33,8 +33,8 @@ export const CreateLookupValueSchema = z.object({
   typeCode: TypeCode,
   code: ValueCode,
   defaultName: Name,
-  meta: Meta.default({}),
-  sortOrder: SortOrder.default(100),
+  meta: Meta.prefault({}),
+  sortOrder: SortOrder.prefault(100),
   reason: Reason,
 }).strict();
 export type CreateLookupValueDto = z.infer<typeof CreateLookupValueSchema>;
@@ -55,11 +55,11 @@ export const CreateCategorySchema = z.object({
   parentId: Uuid.nullable().optional(),
   slug: Slug,
   defaultName: Name,
-  commerceKind: z.enum(COMMERCE_KINDS).default('goods'),
-  requiresLicense: z.boolean().default(false),
-  requiresCertificate: z.boolean().default(false),
+  commerceKind: z.enum(COMMERCE_KINDS).prefault('goods'),
+  requiresLicense: z.boolean().prefault(false),
+  requiresCertificate: z.boolean().prefault(false),
   minAge: z.coerce.number().int().min(0).max(120).nullable().optional(),
-  sortOrder: SortOrder.default(100),
+  sortOrder: SortOrder.prefault(100),
   iconMediaId: Uuid.nullable().optional(),
   reason: Reason,
 }).strict();

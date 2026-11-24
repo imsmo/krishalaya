@@ -7,13 +7,13 @@ import { PLAN_STATUSES } from '../domain/plan.state';
 
 const Reason = z.string().min(3).max(1000);
 const Cursor = z.string().max(200).optional();
-const Limit = z.coerce.number().int().min(1).max(100).default(50);
+const Limit = z.coerce.number().int().min(1).max(100).prefault(50);
 const MinorUnits = z.string().regex(/^[0-9]{1,15}$/, 'amount must be a non-negative integer in minor units');
 const LimitValue = z.string().regex(/^(-1|[0-9]{1,18})$/, "limit must be '-1' (unlimited) or a non-negative integer");
 const PlanCode = z.string().regex(/^[a-z0-9_]{2,40}$/);
 const Country = z.string().regex(/^[A-Z]{2}$/);
 const Currency = z.string().regex(/^[A-Z]{3}$/);
-const FeatureConfig = z.record(z.unknown()).refine((o) => JSON.stringify(o).length <= 4000, 'config too large').optional();
+const FeatureConfig = z.record(z.string(), z.unknown()).refine((o) => JSON.stringify(o).length <= 4000, 'config too large').optional();
 
 export const QueryPlansSchema = z.object({
   code: PlanCode.optional(),
@@ -35,8 +35,8 @@ export const CreatePlanSchema = z.object({
   currencyCode: Currency,
   monthlyPriceMinor: MinorUnits,
   annualPriceMinor: MinorUnits,
-  setupFeeMinor: MinorUnits.default('0'),
-  isPublic: z.boolean().default(true),
+  setupFeeMinor: MinorUnits.prefault('0'),
+  isPublic: z.boolean().prefault(true),
   reason: Reason,
 }).strict();
 export type CreatePlanDto = z.infer<typeof CreatePlanSchema>;
@@ -50,7 +50,7 @@ export type UpdatePlanLifecycleDto = z.infer<typeof UpdatePlanLifecycleSchema>;
 export const SetPricingSchema = z.object({
   monthlyPriceMinor: MinorUnits,
   annualPriceMinor: MinorUnits,
-  setupFeeMinor: MinorUnits.default('0'),
+  setupFeeMinor: MinorUnits.prefault('0'),
   reason: Reason,
 }).strict();
 export type SetPricingDto = z.infer<typeof SetPricingSchema>;
@@ -58,14 +58,14 @@ export type SetPricingDto = z.infer<typeof SetPricingSchema>;
 export const VersionPlanSchema = z.object({
   monthlyPriceMinor: MinorUnits,
   annualPriceMinor: MinorUnits,
-  setupFeeMinor: MinorUnits.default('0'),
+  setupFeeMinor: MinorUnits.prefault('0'),
   isPublic: z.boolean().optional(),     // a private/custom (anchor) version stays unlisted
   reason: Reason,
 }).strict();
 export type VersionPlanDto = z.infer<typeof VersionPlanSchema>;
 
 export const SetFeatureSchema = z.object({
-  isIncluded: z.boolean().default(true),
+  isIncluded: z.boolean().prefault(true),
   config: FeatureConfig,
   reason: Reason,
 }).strict();

@@ -2,9 +2,9 @@
 import { z } from 'zod';
 export const QueryVehicleSchema = z.object({
   partnerId: z.string().uuid().optional(),
-  activeOnly: z.coerce.boolean().default(true),
+  activeOnly: z.coerce.boolean().prefault(true),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryVehicleDto = z.infer<typeof QueryVehicleSchema>;
 
@@ -12,8 +12,8 @@ export type QueryVehicleDto = z.infer<typeof QueryVehicleSchema>;
  *  point of a safety register is that a PARKED vehicle is the row you have to look at. */
 export const QueryFleetRegisterSchema = z.object({
   partnerId: z.string().uuid().optional(),
-  activeOnly: z.coerce.boolean().default(false),
+  activeOnly: z.coerce.boolean().prefault(false),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryFleetRegisterDto = z.infer<typeof QueryFleetRegisterSchema>;

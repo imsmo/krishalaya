@@ -24,7 +24,7 @@ export const WASTAGE_DATASET = 'wastage_events';
 export const UNSIGNED_NOTE = 'unsigned — signing is a founder-physical key; the sha256 is printed';
 
 export const NoParamsSchema = z.object({}).strict();
-export const DemandExportSchema = z.object({ reach: z.enum(['all', 'districts']).default('all') }).strict();
+export const DemandExportSchema = z.object({ reach: z.enum(['all', 'districts']).prefault('all') }).strict();
 export const ReportRunParamsSchema = z.object({ runId: z.string().uuid() }).strict();
 const off = (flag: string) => ({ kind: 'refused' as const, code: 'dataset_disabled' as const, detail: `flag ${flag} is off for this tenant` });
 const gen = <T,>(rows: T[]) => (async function* () { for (const r of rows) yield r; })();

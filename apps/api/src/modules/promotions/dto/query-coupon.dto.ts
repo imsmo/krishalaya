@@ -3,6 +3,6 @@ import { z } from 'zod';
 export const QueryCouponsSchema = z.object({
   promotionId: z.string().uuid(),
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(100).prefault(20),
 }).strict();
 export type QueryCouponsDto = z.infer<typeof QueryCouponsSchema>;

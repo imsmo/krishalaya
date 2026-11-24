@@ -15,7 +15,7 @@ export const QueryBlocksSchema = z.object({
   type: z.enum(['device', 'ip_range', 'phone_hash']).optional(),
   status: z.enum(['active', 'expired', 'lifted']).optional(),
   cursor: Cursor,
-  limit: z.coerce.number().int().min(1).max(100).default(25),
+  limit: z.coerce.number().int().min(1).max(100).prefault(25),
 }).strict();
 export type QueryBlocksDto = z.infer<typeof QueryBlocksSchema>;
 
@@ -71,7 +71,7 @@ export const RuleCodeParamSchema = EventCode;
 export const QueryRiskBoardSchema = z.object({
   band: z.enum(['trusted', 'standard', 'caution', 'restricted', 'blocked']).optional(),
   cursor: Cursor,
-  limit: z.coerce.number().int().min(1).max(100).default(25),
+  limit: z.coerce.number().int().min(1).max(100).prefault(25),
 }).strict();
 export type QueryRiskBoardDto = z.infer<typeof QueryRiskBoardSchema>;
 
@@ -84,6 +84,6 @@ export type ChangeBandDto = z.infer<typeof ChangeBandSchema>;
 /* ---------------- insights (W098) ---------------- */
 
 export const QueryInsightsSchema = z.object({
-  days: z.coerce.number().int().min(1).max(365).default(90),
+  days: z.coerce.number().int().min(1).max(365).prefault(90),
 }).strict();
 export type QueryInsightsDto = z.infer<typeof QueryInsightsSchema>;

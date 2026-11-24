@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { REJECTION_CODES } from '../domain/rejection-codes';
 export const ApplySchemeSchema = z.object({
   schemeId: z.string().uuid(),
-  formData: z.record(z.unknown()).default({}),
+  formData: z.record(z.string(), z.unknown()).prefault({}),
   assistedBy: z.string().uuid().optional(),
 }).strict();
 export type ApplySchemeDto = z.infer<typeof ApplySchemeSchema>;

@@ -8,11 +8,11 @@ export const REVIEW_BOXES = ['target', 'mine', 'organisation'] as const;
 export type ReviewBox = (typeof REVIEW_BOXES)[number];
 
 export const QueryReviewsSchema = z.object({
-  box: z.enum(REVIEW_BOXES).default('target'),
+  box: z.enum(REVIEW_BOXES).prefault('target'),
   targetType: z.enum(['seller', 'buyer'] as [ReviewTargetType, ReviewTargetType]).optional(),
   targetId: z.string().uuid().optional(),
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(100).prefault(20),
 }).strict();
 export type QueryReviewsDto = z.infer<typeof QueryReviewsSchema>;
 
@@ -33,7 +33,7 @@ export const PublicReviewsQuerySchema = z.object({
   targetType: z.enum(PUBLIC_REVIEW_TARGETS),
   targetId: z.string().uuid().optional(),
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
+  limit: z.coerce.number().int().min(1).max(50).prefault(20),
 }).strict();
 export type PublicReviewsQueryDto = z.infer<typeof PublicReviewsQuerySchema>;
 

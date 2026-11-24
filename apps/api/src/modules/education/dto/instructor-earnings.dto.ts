@@ -14,7 +14,7 @@ export type QueryEarningsDto = z.infer<typeof QueryEarningsSchema>;
 export const QueryStatementSchema = z.object({
   instructor: Uuid.optional(),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryStatementDto = z.infer<typeof QueryStatementSchema>;
 

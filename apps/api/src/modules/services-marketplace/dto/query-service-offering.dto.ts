@@ -2,10 +2,10 @@
 import { z } from 'zod';
 import { OFFERING_STATUSES } from '../domain/services-marketplace.events';
 export const QueryOfferingsSchema = z.object({
-  box: z.enum(['mine', 'browse', 'all']).default('browse'),   // mine=provider's; browse=published marketplace; all=admin
+  box: z.enum(['mine', 'browse', 'all']).prefault('browse'),   // mine=provider's; browse=published marketplace; all=admin
   categoryId: z.string().uuid().optional(),
   status: z.enum(OFFERING_STATUSES as unknown as [string, ...string[]]).optional(),
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryOfferingsDto = z.infer<typeof QueryOfferingsSchema>;

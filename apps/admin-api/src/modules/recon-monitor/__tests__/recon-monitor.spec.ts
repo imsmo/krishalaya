@@ -2,6 +2,7 @@
 // Covers: the investigation state machine + entity; the freeze/unfreeze guards (NO ledger posting); owner-RBAC
 // for the recon roles + the NO-privilege-escalation property (Law 11); DTO validation; and the services proving
 // every write audits IN-TX, the state machine is enforced, and a missing run/account/investigation is a 404.
+// PC-56 SEC-4 (zod 4): fixture ids carry valid RFC version/variant digits (`.uuid()` now checks them).
 import { Investigation } from '../domain/investigation.entity';
 import { canTransition, assertTransition, IllegalInvestigationTransitionError, INVESTIGATION_STATUSES } from '../domain/investigation.state';
 import { applyFreeze } from '../domain/account-freeze';
@@ -59,9 +60,9 @@ describe('owner roles for recon', () => {
 
 describe('dto validation', () => {
   it('open-investigation requires a uuid run + summary, rejects unknown keys', () => {
-    expect(OpenInvestigationSchema.safeParse({ runId: '11111111-1111-1111-1111-111111111111', summary: 'mismatch in hourly run' }).success).toBe(true);
+    expect(OpenInvestigationSchema.safeParse({ runId: '11111111-1111-4111-8111-111111111111', summary: 'mismatch in hourly run' }).success).toBe(true);
     expect(OpenInvestigationSchema.safeParse({ runId: 'not-a-uuid', summary: 'x' }).success).toBe(false);
-    expect(OpenInvestigationSchema.safeParse({ runId: '11111111-1111-1111-1111-111111111111', summary: 'ok ok', evil: 1 }).success).toBe(false);
+    expect(OpenInvestigationSchema.safeParse({ runId: '11111111-1111-4111-8111-111111111111', summary: 'ok ok', evil: 1 }).success).toBe(false);
   });
   it('freeze requires action + reason', () => {
     expect(FreezeAccountSchema.safeParse({ action: 'freeze', reason: 'suspected leak' }).success).toBe(true);
@@ -81,12 +82,12 @@ describe('MismatchInvestigationsService', () => {
   it('open: 404 when the run is missing', async () => {
     const { pool, audit } = harness();
     const repo = { runExists: jest.fn(async () => false) } as any;
-    await expect(new MismatchInvestigationsService(pool, audit, repo).open(actor, { runId: '11111111-1111-1111-1111-111111111111', severity: 'high', summary: 'mismatch found' })).rejects.toBeInstanceOf(ReconRunNotFoundError);
+    await expect(new MismatchInvestigationsService(pool, audit, repo).open(actor, { runId: '11111111-1111-4111-8111-111111111111', severity: 'high', summary: 'mismatch found' })).rejects.toBeInstanceOf(ReconRunNotFoundError);
   });
   it('open: inserts + audits in-tx', async () => {
     const { pool, audit, client } = harness();
     const repo = { runExists: jest.fn(async () => true), insertInvestigation: jest.fn(async () => undefined) } as any;
-    const out: any = await new MismatchInvestigationsService(pool, audit, repo).open(actor, { runId: '11111111-1111-1111-1111-111111111111', severity: 'high', summary: 'mismatch found' });
+    const out: any = await new MismatchInvestigationsService(pool, audit, repo).open(actor, { runId: '11111111-1111-4111-8111-111111111111', severity: 'high', summary: 'mismatch found' });
     expect(out.status).toBe('open');
     expect(repo.insertInvestigation).toHaveBeenCalledWith(client, expect.anything(), 'admin1');
     expect(audit.write).toHaveBeenCalledWith(client, expect.objectContaining({ action: 'recon.investigation_opened' }));

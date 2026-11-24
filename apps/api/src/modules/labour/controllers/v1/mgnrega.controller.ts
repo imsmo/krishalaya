@@ -56,9 +56,9 @@ const RecordMusterSchema = z.object({
 const QueryWorksSchema = z.object({
   status: z.enum(['planned', 'active', 'completed', 'suspended']).optional(),
   regionId: z.string().uuid().optional(),
-  limit: z.coerce.number().int().min(1).max(200).default(100),
+  limit: z.coerce.number().int().min(1).max(200).prefault(100),
 }).strict();
-const QueryCardsSchema = z.object({ regionId: z.string().uuid().optional(), limit: z.coerce.number().int().min(1).max(100).default(50) }).strict();
+const QueryCardsSchema = z.object({ regionId: z.string().uuid().optional(), limit: z.coerce.number().int().min(1).max(100).prefault(50) }).strict();
 
 
 // ===== PC-55 B2 · work demands + the audit-stamped export =====
@@ -80,7 +80,7 @@ const QueryDemandsSchema = z.object({
   status: z.enum(['demanded', 'allotted', 'withdrawn', 'closed']).optional(),
   regionId: z.string().uuid().optional(),
   jobCardId: z.string().uuid().optional(),
-  limit: z.coerce.number().int().min(1).max(500).default(200),
+  limit: z.coerce.number().int().min(1).max(500).prefault(200),
 }).strict();
 const ExportSchema = z.object({
   report: z.enum(['job_cards', 'works', 'demands']),

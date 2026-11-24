@@ -17,9 +17,9 @@ import { KYC_REVIEW } from '../../services/kyc-desk.service';
 
 // PC-54 W54-1: reviewer-queue query (status defaults to the actionable box) + keyset cursor codec.
 const ReviewQueueSchema = z.object({
-  status: z.enum(['pending', 'verified', 'rejected', 'expired']).default('pending'),
+  status: z.enum(['pending', 'verified', 'rejected', 'expired']).prefault('pending'),
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 type ReviewQueueDto = z.infer<typeof ReviewQueueSchema>;
 // [PC-56 TENANT-9a] F-7: the cursor carries the MICROSECOND instant the database printed; a malformed one is page one.

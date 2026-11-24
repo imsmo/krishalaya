@@ -23,7 +23,7 @@ export const EmptySchema = z.object({}).strict();
 export const QueryScenariosSchema = z.object({
   status: z.enum(SCENARIO_STATUSES as unknown as [string, ...string[]]).optional(),
   cursor: s(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(25),
+  limit: z.coerce.number().int().min(1).max(100).prefault(25),
 }).strict();
 export type QueryScenariosDto = z.infer<typeof QueryScenariosSchema>;
 
@@ -32,5 +32,5 @@ export type QueryResultsDto = z.infer<typeof QueryResultsSchema>;
 
 export const DeviceInputSchema = z.object({ kind: s(40), serial: s(200), label: s(400).nullish(), parcelId: z.string().uuid().nullish() }).strict();
 export type DeviceInputDto = z.infer<typeof DeviceInputSchema>;
-export const QueryDevicesSchema = z.object({ kind: s(40).optional(), cursor: s(200).optional(), limit: z.coerce.number().int().min(1).max(100).default(50) }).strict();
+export const QueryDevicesSchema = z.object({ kind: s(40).optional(), cursor: s(200).optional(), limit: z.coerce.number().int().min(1).max(100).prefault(50) }).strict();
 export type QueryDevicesDto = z.infer<typeof QueryDevicesSchema>;

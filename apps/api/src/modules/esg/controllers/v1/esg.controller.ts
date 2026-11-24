@@ -23,7 +23,7 @@ import { EsgExportParamsSchema } from '../../exports/esg-metrics.dataset';
 /** Transport bounds only — the REVIEW judges lengths, languages and numbers. */
 const DisclosureSchema = z.object({
   metricCode: z.string().max(40).optional(),
-  texts: z.record(z.string().regex(/^[a-z]{2,3}$/), z.string().max(4000)).default({}),
+  texts: z.record(z.string().regex(/^[a-z]{2,3}$/), z.string().max(4000)).prefault({}),
 }).strict();
 const PreviewSchema = DisclosureSchema.extend({ id: z.string().regex(UUID_RE).optional() }).strict();
 const ActSchema = z.object({ reasonCode: z.string().max(40).optional(), note: z.string().max(1000).optional() }).strict();

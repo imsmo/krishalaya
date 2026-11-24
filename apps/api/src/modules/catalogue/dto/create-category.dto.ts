@@ -7,11 +7,11 @@ export const CreateCategorySchema = z.object({
   parentId: z.string().uuid().nullable().optional(),
   slug: z.string().min(1).max(40).regex(/^[a-z0-9_]{1,40}$/),
   defaultName: z.string().min(1).max(150),
-  commerceKind: z.enum(COMMERCE_KINDS).default('goods'),
-  requiresLicense: z.boolean().default(false),
-  requiresCertificate: z.boolean().default(false),
+  commerceKind: z.enum(COMMERCE_KINDS).prefault('goods'),
+  requiresLicense: z.boolean().prefault(false),
+  requiresCertificate: z.boolean().prefault(false),
   minAge: z.coerce.number().int().min(0).max(120).nullable().optional(),
-  sortOrder: z.coerce.number().int().min(0).max(32767).default(100),
+  sortOrder: z.coerce.number().int().min(0).max(32767).prefault(100),
   iconMediaId: z.string().uuid().nullable().optional(),
 }).strict();
 export type CreateCategoryDto = z.infer<typeof CreateCategorySchema>;

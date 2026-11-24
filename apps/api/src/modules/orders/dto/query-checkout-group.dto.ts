@@ -4,6 +4,6 @@ import { z } from 'zod';
 
 export const QueryCheckoutGroupsSchema = z.object({
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(100).prefault(20),
 }).strict();
 export type QueryCheckoutGroupsDto = z.infer<typeof QueryCheckoutGroupsSchema>;

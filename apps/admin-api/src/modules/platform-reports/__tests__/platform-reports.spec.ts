@@ -3,6 +3,7 @@
 // window validation (forward + bounded); owner-RBAC for the reports role + no-escalation/no-'*' (Law 11); DTO
 // validation; and the services composing the read-model into the exec views (money stays bigint-string, ratios
 // stay integer bps).
+// PC-56 SEC-4 (zod 4): fixture ids carry valid RFC version/variant digits (`.uuid()` now checks them).
 import { monthlyMinor, arrMinor, sumMrr, bps, avgOrderValueMinor } from '../domain/metrics';
 import { resolveWindow, MAX_WINDOW_DAYS } from '../domain/window';
 import { InvalidWindowError } from '../domain/platform-reports.errors';
@@ -60,7 +61,7 @@ describe('dto validation', () => {
   it('window/gmv/regulator: currency default + iso + uuid; reject unknown keys + bad iso', () => {
     expect(QueryWindowSchema.safeParse({}).success).toBe(true);                                  // all optional
     const p = QueryWindowSchema.safeParse({}); if (p.success) expect(p.data.currency).toBe('INR');
-    expect(QueryGmvSchema.safeParse({ tenantId: '11111111-1111-1111-1111-111111111111' }).success).toBe(true);
+    expect(QueryGmvSchema.safeParse({ tenantId: '11111111-1111-4111-8111-111111111111' }).success).toBe(true);
     expect(QueryGmvSchema.safeParse({ tenantId: 'nope' }).success).toBe(false);
     expect(QueryWindowSchema.safeParse({ from: 'not-iso' }).success).toBe(false);
     expect(QueryRegulatorSchema.safeParse({ evil: 1 }).success).toBe(false);
@@ -83,9 +84,9 @@ describe('services compose the read-model (money bigint-string, ratios bps)', ()
   });
   it('gmv: passes window + tenant filter, returns avg', async () => {
     const reads = { gmv: jest.fn(async () => ({ gmvMinor: '1000', platformFeeMinor: '10', commissionMinor: '20', orders: 2 })) } as any;
-    const out: any = await new GmvRollupsService(reads).gmv({ currency: 'INR', tenantId: '11111111-1111-1111-1111-111111111111' } as any);
+    const out: any = await new GmvRollupsService(reads).gmv({ currency: 'INR', tenantId: '11111111-1111-4111-8111-111111111111' } as any);
     expect(out.avgOrderValueMinor).toBe('500');
-    expect(reads.gmv).toHaveBeenCalledWith(expect.any(Date), expect.any(Date), 'INR', '11111111-1111-1111-1111-111111111111');
+    expect(reads.gmv).toHaveBeenCalledWith(expect.any(Date), expect.any(Date), 'INR', '11111111-1111-4111-8111-111111111111');
   });
   it('regulator export is PII-free + stamps generatedAt/window', async () => {
     const reads = {

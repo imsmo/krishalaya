@@ -11,12 +11,12 @@ export const REQUIREMENT_BOXES = ['open', 'mine', 'all'] as const;
 export type RequirementBox = (typeof REQUIREMENT_BOXES)[number];
 
 export const QueryRequirementsSchema = z.object({
-  box: z.enum(REQUIREMENT_BOXES).default('open'),
+  box: z.enum(REQUIREMENT_BOXES).prefault('open'),
   status: z.enum(REQUIREMENT_STATUSES).optional(),
   categoryId: z.string().uuid().optional(),
-  sort: z.enum(['recent', 'need_by']).default('recent'),
+  sort: z.enum(['recent', 'need_by']).prefault('recent'),
   counts: z.enum(['1', 'true']).optional(),
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(100).prefault(20),
 }).strict();
 export type QueryRequirementsDto = z.infer<typeof QueryRequirementsSchema>;

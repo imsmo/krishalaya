@@ -3,6 +3,6 @@
 // server-side (the gate — see insurance-product.service.ts), so the DTO does not accept a partnerKind override.
 import { z } from 'zod';
 export const QueryInsurancePartnersSchema = z.object({
-  activeOnly: z.coerce.boolean().default(true),
+  activeOnly: z.coerce.boolean().prefault(true),
 }).strict();
 export type QueryInsurancePartnersDto = z.infer<typeof QueryInsurancePartnersSchema>;

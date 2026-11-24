@@ -35,6 +35,6 @@ export const QueryDeliveriesSchema = z.object({
   status: z.enum(DELIVERY_STATUS_FILTERS).optional(),
   since: z.string().datetime({ offset: true }).optional(),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(25),
+  limit: z.coerce.number().int().min(1).max(100).prefault(25),
 }).strict();
 export type QueryDeliveriesDto = z.infer<typeof QueryDeliveriesSchema>;

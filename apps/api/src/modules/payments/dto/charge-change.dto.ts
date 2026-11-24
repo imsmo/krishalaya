@@ -13,7 +13,7 @@ export const ProposeChargeSchema = z.object({
   // cannot price it (0141 DEFECT 4) — the service answers CHARGE_METHOD_UNSUPPORTED {method, supported} (a zod enum would have answered a bare
   // VALIDATION_ERROR that names nothing). Any other string is still refused here.
   calcMethod: z.enum([...SUPPORTED_CALC_METHODS, 'per_km'] as unknown as [string, ...string[]]).optional(),
-  config: z.record(z.unknown()).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
   currencyCode: z.string().length(3).optional(),
   effectiveFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'effective_from must be YYYY-MM-DD'),
   note: z.string().min(20, 'at least 20 characters').max(2000),

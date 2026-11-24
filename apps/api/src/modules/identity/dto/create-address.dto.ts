@@ -23,8 +23,10 @@ export const CreateAddressSchema = z.object({
   contactName: z.string().max(150).optional(),
   contactPhone: z.string().max(20).optional(),
   deliveryNote: NOTE.optional(),
-  isDefault: z.boolean().default(false),
+  isDefault: z.boolean().prefault(false),
 }).strict();
 export type CreateAddressDto = z.infer<typeof CreateAddressSchema>;
-export const UpdateAddressSchema = CreateAddressSchema.partial().strict();
+// PC-56 SEC-4 (zod 4): `.partial()` over a defaulted field now APPLIES the default, so an edit that never mentions
+// isDefault would reset it to false (a renamed default address would lose its default). Optional must win, as in v3.
+export const UpdateAddressSchema = CreateAddressSchema.extend({ isDefault: z.boolean().optional() }).partial().strict();
 export type UpdateAddressDto = z.infer<typeof UpdateAddressSchema>;

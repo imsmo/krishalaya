@@ -9,9 +9,9 @@ export const QueryLogisticsPartnerSchema = z.object({
   partnerKind: z.enum(PARTNER_KINDS).optional(),
   // PC-56 TENANT-SW-e (F-19): a query string's 'false' is a non-empty string, which z.coerce.boolean() reads as TRUE — the console's
   // "include inactive" could never be honoured. Read the words, as query-delivery-zone.dto does.
-  activeOnly: QueryBool.default('true'),
-  includePlatform: QueryBool.default('true'),   // include platform 3PLs (tenant_id NULL)
+  activeOnly: QueryBool.prefault('true'),
+  includePlatform: QueryBool.prefault('true'),   // include platform 3PLs (tenant_id NULL)
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryLogisticsPartnerDto = z.infer<typeof QueryLogisticsPartnerSchema>;

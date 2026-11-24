@@ -6,12 +6,12 @@ export const RecordMilestoneSchema = z.object({
   growerId: z.string().uuid().optional(),
   milestoneType: z.enum(MILESTONE_TYPES as unknown as [string, ...string[]]),
   dueOn: dateStr.optional(),
-  data: z.record(z.unknown()).default({}),
+  data: z.record(z.string(), z.unknown()).prefault({}),
 }).strict();
 export type RecordMilestoneDto = z.infer<typeof RecordMilestoneSchema>;
 
 export const CompleteMilestoneSchema = z.object({
   evidenceMediaId: z.string().uuid().optional(),
-  data: z.record(z.unknown()).default({}),
+  data: z.record(z.string(), z.unknown()).prefault({}),
 }).strict();
 export type CompleteMilestoneDto = z.infer<typeof CompleteMilestoneSchema>;

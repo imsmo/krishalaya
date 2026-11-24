@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { QUEUE_KINDS } from '../domain/ai-governance.events';
 export const CreateReviewSchema = z.object({
   queueKind: z.enum(QUEUE_KINDS),
-  priority: z.coerce.number().int().min(1).max(1000).default(100),
+  priority: z.coerce.number().int().min(1).max(1000).prefault(100),
   subjectType: z.string().min(1).max(50).nullish(),
   subjectId: z.string().uuid().nullish(),
 }).strict();

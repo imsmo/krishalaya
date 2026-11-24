@@ -43,7 +43,7 @@ export type ListingSort = (typeof LISTING_SORTS)[number];
 
 export const QueryListingSchema = z.object({
   cursor: z.string().max(512).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(100).prefault(20),
   q: z.string().max(120).optional(),                 // free-text: the title, ILIKE, in the language it was listed in (no vernacular synonyms — B31)
   categoryId: UUID.optional(),
   category: UUID.optional(),
@@ -55,7 +55,7 @@ export const QueryListingSchema = z.object({
   saleType: z.enum(['direct', 'auction', 'both', 'preorder', 'service', 'group_lot']).optional(),
   priceMinMinor: z.string().regex(/^\d+$/).optional(),
   priceMaxMinor: z.string().regex(/^\d+$/).optional(),
-  sort: z.enum(['relevance', 'newest', 'price_asc', 'price_desc', 'distance']).default('newest'),
+  sort: z.enum(['relevance', 'newest', 'price_asc', 'price_desc', 'distance']).prefault('newest'),
   lat: z.coerce.number().optional(), lng: z.coerce.number().optional(),
   // Owner view ("my listings"): the caller's OWN listings across every status (draft/paused/etc — see
   // ListingSearchReadModel), not just the public `published` feed. Requires auth — the controller 401s a

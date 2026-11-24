@@ -7,6 +7,6 @@ export const QueryFreightInvoiceSchema = z.object({
   carrierId: z.string().uuid().optional(),
   sourceKind: z.enum(['carrier_invoice', 'own_fleet_cost_note']).optional(),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryFreightInvoiceDto = z.infer<typeof QueryFreightInvoiceSchema>;

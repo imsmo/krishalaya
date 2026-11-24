@@ -10,10 +10,14 @@ import { BULK_ACTIONS, MAX_BULK_INVOICES } from '../domain/invoice-bulk';
 
 const Reason = z.string().min(3).max(1000);
 const Cursor = z.string().max(200).optional();
-const Limit = z.coerce.number().int().min(1).max(100).default(50);
+const Limit = z.coerce.number().int().min(1).max(100).prefault(50);
 // up to 15 digits ≈ 9,999,999,999,999 minor units — comfortably within int64; parsed to bigint downstream.
 const MinorUnits = z.string().regex(/^[0-9]{1,15}$/, 'amount must be a non-negative integer in minor units');
-const Currency = z.string().regex(/^[A-Z]{3}$/).default('INR');
+// PC-56 SEC-4 (zod 4): `.optional()` over a defaulted schema now APPLIES the default. The optional fields below use
+// CurrencyCode so an omitted currency stays omitted: an export is not narrowed to INR, and a plan change for a non-INR
+// tenant is not refused as a currency mismatch.
+const CurrencyCode = z.string().regex(/^[A-Z]{3}$/);
+const Currency = CurrencyCode.prefault('INR');
 
 export const QueryInvoicesSchema = z.object({
   tenantId: z.string().uuid().optional(),
@@ -44,7 +48,7 @@ export type QueryDunningQueueDto = z.infer<typeof QueryDunningQueueSchema>;
 
 export const RecordDunningSchema = z.object({
   channel: z.enum(DUNNING_CHANNELS),
-  outcome: z.enum(DUNNING_OUTCOMES).default('sent'),
+  outcome: z.enum(DUNNING_OUTCOMES).prefault('sent'),
   note: z.string().max(1000).optional(),
 }).strict();
 export type RecordDunningDto = z.infer<typeof RecordDunningSchema>;
@@ -112,7 +116,7 @@ export const PublishDunningPolicySchema = z.object({
     dayOffset: z.coerce.number().int().min(0).max(365),
     channel: z.enum(DUNNING_CHANNELS),
     templateCode: z.string().max(80).optional(),
-    escalate: z.coerce.boolean().default(false),
+    escalate: z.coerce.boolean().prefault(false),
   })).min(1).max(20),
 }).strict();
 export type PublishDunningPolicyDto = z.infer<typeof PublishDunningPolicySchema>;
@@ -122,7 +126,7 @@ export type PublishDunningPolicyDto = z.infer<typeof PublishDunningPolicySchema>
 export const CreateScheduleSchema = z.object({
   report: z.enum(EXPORT_REPORTS),
   cadence: z.enum(['daily', 'weekly', 'monthly']),
-  hourIst: z.coerce.number().int().min(0).max(23).default(7),
+  hourIst: z.coerce.number().int().min(0).max(23).prefault(7),
   weekdayIso: z.coerce.number().int().min(1).max(7).optional(),   // required for weekly, refused otherwise (domain)
   recipients: z.array(z.string().min(3).max(200)).min(1).max(20),
   notes: z.string().max(1000).optional(),
@@ -130,7 +134,7 @@ export const CreateScheduleSchema = z.object({
 export type CreateScheduleDto = z.infer<typeof CreateScheduleSchema>;
 
 export const ToggleScheduleSchema = z.object({
-  active: z.coerce.boolean().default(true),
+  active: z.coerce.boolean().prefault(true),
   reason: Reason,
 }).strict();
 export type ToggleScheduleDto = z.infer<typeof ToggleScheduleSchema>;
@@ -145,7 +149,7 @@ export type StreamCursorDto = z.infer<typeof StreamCursorSchema>;
 
 export const QueryTodaySchema = z.object({
   currency: Currency,
-  tzOffsetMinutes: z.coerce.number().int().min(-720).max(840).default(330),   // IST default
+  tzOffsetMinutes: z.coerce.number().int().min(-720).max(840).prefault(330),   // IST default
 }).strict();
 export type QueryTodayDto = z.infer<typeof QueryTodaySchema>;
 
@@ -157,8 +161,8 @@ export const QueryExportSchema = z.object({
   status: z.enum(INVOICE_STATUSES).optional(),
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  currency: Currency.optional(),
-  limit: z.coerce.number().int().min(1).max(5000).default(1000),
+  currency: CurrencyCode.optional(),
+  limit: z.coerce.number().int().min(1).max(5000).prefault(1000),
 }).strict();
 export type QueryExportDto = z.infer<typeof QueryExportSchema>;
 
@@ -174,16 +178,16 @@ export type BulkInvoiceDto = z.infer<typeof BulkInvoiceSchema>;
 /** Revenue series + cohorts (ADMIN-1-Q7). Bounded windows: an unbounded series is a full table scan on a chart. */
 export const QuerySeriesSchema = z.object({
   currency: Currency,
-  months: z.coerce.number().int().min(1).max(36).default(12),
-  quarters: z.coerce.number().int().min(1).max(12).default(8),
+  months: z.coerce.number().int().min(1).max(36).prefault(12),
+  quarters: z.coerce.number().int().min(1).max(12).prefault(8),
 }).strict();
 export type QuerySeriesDto = z.infer<typeof QuerySeriesSchema>;
 
 /** The renewal-run dry run (ADMIN-1-Q4, rescoped to visibility). */
 export const QueryRenewalPreviewSchema = z.object({
   through: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  limit: z.coerce.number().int().min(1).max(500).default(100),
-  days: z.coerce.number().int().min(1).max(90).default(14),
+  limit: z.coerce.number().int().min(1).max(500).prefault(100),
+  days: z.coerce.number().int().min(1).max(90).prefault(14),
 }).strict();
 export type QueryRenewalPreviewDto = z.infer<typeof QueryRenewalPreviewSchema>;
 
@@ -194,15 +198,15 @@ export const ChangePlanSchema = z.object({
   priceMinor: MinorUnits,
   billingCycle: z.enum(['monthly', 'annual']),
   discountPct: z.string().regex(/^\d{1,3}(\.\d{1,2})?$/).optional(),
-  currency: Currency.optional(),          // only to be REJECTED if it differs — never to convert
-  immediate: z.coerce.boolean().default(false),
+  currency: CurrencyCode.optional(),          // only to be REJECTED if it differs — never to convert
+  immediate: z.coerce.boolean().prefault(false),
   reason: Reason,
 }).strict();
 export type ChangePlanDto = z.infer<typeof ChangePlanSchema>;
 
 export const AddAddonSchema = z.object({
   addonCode: z.string().min(2).max(60),
-  quantity: z.coerce.number().int().min(1).max(10000).default(1),
+  quantity: z.coerce.number().int().min(1).max(10000).prefault(1),
   priceMinor: MinorUnits,
   startsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   endsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -213,7 +217,7 @@ export type AddAddonDto = z.infer<typeof AddAddonSchema>;
 /** `cancel: false` REVOKES a scheduled cancellation — a tenant who changes their mind must not need a new
  *  subscription. Defaults to true because that is the act the button performs. */
 export const CancelSubscriptionSchema = z.object({
-  cancel: z.coerce.boolean().default(true),
+  cancel: z.coerce.boolean().prefault(true),
   reason: Reason,
 }).strict();
 export type CancelSubscriptionDto = z.infer<typeof CancelSubscriptionSchema>;
@@ -239,7 +243,7 @@ export const ApplyAdjustmentSchema = z.object({
 export type ApplyAdjustmentDto = z.infer<typeof ApplyAdjustmentSchema>;
 
 export const QueryRevenueSchema = z.object({
-  currency: z.string().regex(/^[A-Z]{3}$/).default('INR'),
+  currency: z.string().regex(/^[A-Z]{3}$/).prefault('INR'),
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
 }).strict();

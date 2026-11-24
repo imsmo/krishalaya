@@ -4,6 +4,6 @@ export const QueryWorkersSchema = z.object({
   villageRegionId: z.string().uuid().optional(),
   ageVerified: z.coerce.boolean().optional(),
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryWorkersDto = z.infer<typeof QueryWorkersSchema>;

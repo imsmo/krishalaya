@@ -15,7 +15,8 @@ import { CreateCategorySchema } from '../dto/create-category.dto';
 import { QueryAttributeTemplateSchema } from '../dto/query-attribute-template.dto';
 import { QueryBrandSchema } from '../dto/query-brand.dto';
 
-const U = (n: number) => `${String(n).repeat(8)}-${String(n).repeat(4)}-${String(n).repeat(4)}-${String(n).repeat(4)}-${String(n).repeat(12)}`;
+// PC-56 SEC-4 (zod 4): `.uuid()` checks the RFC version/variant digits, so fixtures are real v4-shaped ids (still one per n).
+const U = (n: number) => `${String(n).repeat(8)}-${String(n).repeat(4)}-4${String(n).repeat(3)}-8${String(n).repeat(3)}-${String(n).repeat(12)}`;
 
 describe('Brand / AttributeOption entities (read models)', () => {
   it('Brand.toJSON exposes name/manufacturer/verified', () => {

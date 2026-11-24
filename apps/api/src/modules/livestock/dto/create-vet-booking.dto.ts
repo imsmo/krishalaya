@@ -7,8 +7,8 @@ export const BookVetSchema = z.object({
   vetId: z.string().uuid(),
   serviceId: z.string().uuid(),
   animalId: z.string().uuid().optional(),
-  urgency: z.enum(VET_BOOKING_URGENCIES as unknown as [string, ...string[]]).default('routine'),
-  mode: z.enum(VET_BOOKING_MODES as unknown as [string, ...string[]]).default('visit'),
+  urgency: z.enum(VET_BOOKING_URGENCIES as unknown as [string, ...string[]]).prefault('routine'),
+  mode: z.enum(VET_BOOKING_MODES as unknown as [string, ...string[]]).prefault('visit'),
   symptomsText: z.string().max(2000).optional(),
   scheduledAt: z.string().datetime().optional(),
 }).strict();

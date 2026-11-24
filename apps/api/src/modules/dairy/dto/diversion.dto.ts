@@ -36,6 +36,6 @@ export type CancelDiversionDto = z.infer<typeof CancelDiversionSchema>;
 
 export const QueryDiversionsSchema = z.object({
   from: day.optional(), to: day.optional(),
-  limit: z.coerce.number().int().min(1).max(200).default(50),
+  limit: z.coerce.number().int().min(1).max(200).prefault(50),
 }).strict();
 export type QueryDiversionsDto = z.infer<typeof QueryDiversionsSchema>;

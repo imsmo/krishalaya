@@ -5,6 +5,6 @@ import { RESPONSE_STATUSES } from '../domain/requirement-response.state';
 export const QueryResponsesSchema = z.object({
   status: z.enum(RESPONSE_STATUSES).optional(),
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(100).prefault(20),
 }).strict();
 export type QueryResponsesDto = z.infer<typeof QueryResponsesSchema>;

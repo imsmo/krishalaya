@@ -9,7 +9,8 @@ import { IllegalCertificateTransitionError, InvalidCertificateError } from '../d
 import { CreateCertificateSchema, DecideCertificateSchema } from '../dto/create-certificate.dto';
 import { QueryRegulatedRuleSchema } from '../dto/query-certificate.dto';
 
-const U = (n: number) => `${String(n).repeat(8)}-${String(n).repeat(4)}-${String(n).repeat(4)}-${String(n).repeat(4)}-${String(n).repeat(12)}`;
+// PC-56 SEC-4 (zod 4): `.uuid()` checks the RFC version/variant digits, so fixtures are real v4-shaped ids (still one per n).
+const U = (n: number) => `${String(n).repeat(8)}-${String(n).repeat(4)}-4${String(n).repeat(3)}-8${String(n).repeat(3)}-${String(n).repeat(12)}`;
 const TENANT = U(1); const USER = U(2); const SUBJ = U(3); const TYPE = U(4);
 const mk = (over: Partial<any> = {}) => Certificate.create({ id: U(9), tenantId: TENANT, ownerUserId: USER, certTypeId: TYPE, certNo: 'NPOP-1', issuingBody: 'APEDA', subjectType: 'product', subjectId: SUBJ, mediaId: null, validFrom: null, validUntil: null, blockchainAnchor: null, ...over });
 

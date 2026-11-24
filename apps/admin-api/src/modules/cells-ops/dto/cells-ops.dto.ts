@@ -7,7 +7,7 @@ import { NODE_STATUSES } from '../domain/node.state';
 
 const Reason = z.string().min(3).max(1000);
 const Cursor = z.string().max(200).optional();
-const Limit = z.coerce.number().int().min(1).max(100).default(50);
+const Limit = z.coerce.number().int().min(1).max(100).prefault(50);
 const Uuid = z.string().uuid();
 const CellCode = z.string().min(2).max(40).regex(/^[a-z][a-z0-9-]{1,39}$/);
 const Name = z.string().min(1).max(150);
@@ -24,8 +24,8 @@ export const CreateCellSchema = z.object({
   code: CellCode,
   displayName: Name,
   countryCode: Country,
-  isDefault: z.boolean().default(false),
-  residencyLocked: z.boolean().default(true),
+  isDefault: z.boolean().prefault(false),
+  residencyLocked: z.boolean().prefault(true),
   capacityTenants: Capacity,
   notes: Notes,
   reason: Reason,
@@ -54,7 +54,7 @@ export type SetResidencyLockDto = z.infer<typeof SetResidencyLockSchema>;
 export const CreateShardSchema = z.object({
   cellId: Uuid,
   shardIndex: ShardIndex,
-  weight: Weight.default(100),
+  weight: Weight.prefault(100),
   dsnSecretRef: DsnRef,
   notes: Notes,
   reason: Reason,
@@ -74,7 +74,7 @@ export const PlaceTenantSchema = z.object({
   tenantId: Uuid,
   cellId: Uuid,
   shardId: Uuid,
-  pinned: z.boolean().default(false),
+  pinned: z.boolean().prefault(false),
   reason: Reason,
 }).strict();
 export type PlaceTenantDto = z.infer<typeof PlaceTenantSchema>;
@@ -163,7 +163,7 @@ export const QueryProposalsSchema = z.object({
   status: z.enum(['open', 'applied', 'rejected', 'stale']).optional(),
   entityType: z.enum(['cell', 'shard', 'placement']).optional(),
   cursor: z.string().max(500).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(25),
+  limit: z.coerce.number().int().min(1).max(100).prefault(25),
 });
 export type QueryProposalsDto = z.infer<typeof QueryProposalsSchema>;
 
@@ -172,7 +172,7 @@ export const QueryMapHistorySchema = z.object({
   entityType: z.enum(['cell', 'shard', 'placement']).optional(),
   action: z.enum(['created', 'updated', 'status_changed', 'placed', 'moved', 'removed']).optional(),
   cursor: z.string().max(500).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(25),
+  limit: z.coerce.number().int().min(1).max(100).prefault(25),
 });
 export type QueryMapHistoryDto = z.infer<typeof QueryMapHistorySchema>;
 
@@ -184,7 +184,7 @@ export const QueryResidencySchema = z.object({
   days: z.coerce.number().int().min(1).max(400).optional(),
   country: z.string().length(2).optional(),
   cursor: z.string().max(500).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(25),
+  limit: z.coerce.number().int().min(1).max(100).prefault(25),
 });
 export type QueryResidencyDto = z.infer<typeof QueryResidencySchema>;
 
@@ -246,7 +246,7 @@ export const AddPlanStepSchema = z.object({
   action: z.enum(['add_shards', 'provision_cell', 'raise_capacity', 'retire_cell']),
   addsCapacity: z.number().int().min(0).max(100_000_000).optional(),
   // A CONDITION, not a date. `{"kind":"utilisation","percent":70}` survives a slow quarter; a calendar entry goes stale.
-  triggerSpec: z.record(z.unknown()).refine((v) => 'kind' in v, 'a trigger needs a kind'),
+  triggerSpec: z.record(z.string(), z.unknown()).refine((v) => 'kind' in v, 'a trigger needs a kind'),
   status: z.enum(['draft', 'planned', 'gated']),
   gateReason: z.string().trim().max(2_000).optional(),
   notes: z.string().trim().max(2_000).optional(),
@@ -261,6 +261,6 @@ export type StartProvisioningDto = z.infer<typeof StartProvisioningSchema>;
 
 export const RecordSmokeSchema = z.object({
   outcome: z.enum(['passed', 'failed']),
-  detail: z.record(z.unknown()).default({}),
+  detail: z.record(z.string(), z.unknown()).prefault({}),
 }).strict();
 export type RecordSmokeDto = z.infer<typeof RecordSmokeSchema>;

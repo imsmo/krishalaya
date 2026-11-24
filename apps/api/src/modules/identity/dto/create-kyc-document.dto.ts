@@ -38,6 +38,6 @@ export const DeskQueueSchema = z.object({
   docTypeCode: z.string().max(80).regex(/^[a-z_]+$/).optional(),
   expiringWithin: z.coerce.number().int().min(0).max(365).optional(),
   cursor: z.string().max(400).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(25),
+  limit: z.coerce.number().int().min(1).max(100).prefault(25),
 }).strict();
 export type DeskQueueDto = z.infer<typeof DeskQueueSchema>;

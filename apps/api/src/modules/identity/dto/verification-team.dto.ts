@@ -54,8 +54,8 @@ export const DisableTwoFactorSchema = z.object({
 }).strict().refine((v) => Boolean(v.code) !== Boolean(v.recoveryCode), { message: 'send a 6-digit code OR a recovery code', path: ['code'] });
 export type DisableTwoFactorDto = z.infer<typeof DisableTwoFactorSchema>;
 
-export const TeamQuerySchema = z.object({ cursor: z.string().max(400).optional(), limit: z.coerce.number().int().min(1).max(100).default(25) }).strict();
+export const TeamQuerySchema = z.object({ cursor: z.string().max(400).optional(), limit: z.coerce.number().int().min(1).max(100).prefault(25) }).strict();
 export type TeamQueryDto = z.infer<typeof TeamQuerySchema>;
-export const InvitesQuerySchema = z.object({ status: z.enum(['pending', 'accepted', 'expired', 'revoked']).optional(), cursor: z.string().max(400).optional(), limit: z.coerce.number().int().min(1).max(100).default(25) }).strict();
+export const InvitesQuerySchema = z.object({ status: z.enum(['pending', 'accepted', 'expired', 'revoked']).optional(), cursor: z.string().max(400).optional(), limit: z.coerce.number().int().min(1).max(100).prefault(25) }).strict();
 export type InvitesQueryDto = z.infer<typeof InvitesQuerySchema>;
-export const MemberSearchSchema = z.object({ q: z.string().max(60).default('') }).strict();
+export const MemberSearchSchema = z.object({ q: z.string().max(60).prefault('') }).strict();

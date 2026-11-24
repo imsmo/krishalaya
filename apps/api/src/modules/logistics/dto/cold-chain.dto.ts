@@ -21,10 +21,10 @@ export type RecordColdChainDto = z.infer<typeof RecordColdChainSchema>;
 export const QueryColdChainSchema = z.object({
   subjectType: z.enum(COLD_CHAIN_SUBJECTS),
   subjectId: z.string().uuid(),
-  breachOnly: z.coerce.boolean().default(false),
+  breachOnly: z.coerce.boolean().prefault(false),
   since: z.string().datetime().optional(),            // recorded_at lower bound (partition prune)
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(200).default(100),
+  limit: z.coerce.number().int().min(1).max(200).prefault(100),
 }).strict();
 export type QueryColdChainDto = z.infer<typeof QueryColdChainSchema>;
 
@@ -34,9 +34,9 @@ export const ThresholdSchema = z.object({
 export type ThresholdDto = z.infer<typeof ThresholdSchema>;
 
 export const SubjectQuerySchema = z.object({
-  hours: z.coerce.number().int().min(1).max(24 * 31).default(48),
+  hours: z.coerce.number().int().min(1).max(24 * 31).prefault(48),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(500).default(200),
+  limit: z.coerce.number().int().min(1).max(500).prefault(200),
 }).strict();
 export type SubjectQueryDto = z.infer<typeof SubjectQuerySchema>;
 
@@ -44,7 +44,7 @@ export type SubjectQueryDto = z.infer<typeof SubjectQuerySchema>;
 export const BreachListSchema = z.object({
   hours: z.coerce.number().int().min(1).max(24 * 400).optional(),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(200).default(50),
+  limit: z.coerce.number().int().min(1).max(200).prefault(50),
 }).strict();
 export type BreachListDto = z.infer<typeof BreachListSchema>;
 
@@ -75,7 +75,7 @@ export const DeviceReadingSchema = z.object({
 }).strict();
 export type DeviceReadingDto = z.infer<typeof DeviceReadingSchema>;
 
-export const ColdExportTrailSchema = z.object({ subjectType: z.enum(COLD_CHAIN_SUBJECTS), subjectId: z.string().uuid(), days: z.coerce.number().int().min(1).max(730).default(90) }).strict();
+export const ColdExportTrailSchema = z.object({ subjectType: z.enum(COLD_CHAIN_SUBJECTS), subjectId: z.string().uuid(), days: z.coerce.number().int().min(1).max(730).prefault(90) }).strict();
 export type ColdExportTrailParams = z.infer<typeof ColdExportTrailSchema>;
-export const ColdExportBreachesSchema = z.object({ months: z.coerce.number().int().min(1).max(24).default(12) }).strict();
+export const ColdExportBreachesSchema = z.object({ months: z.coerce.number().int().min(1).max(24).prefault(12) }).strict();
 export type ColdExportBreachesParams = z.infer<typeof ColdExportBreachesSchema>;

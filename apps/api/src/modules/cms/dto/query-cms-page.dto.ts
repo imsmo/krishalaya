@@ -7,7 +7,7 @@ export const QueryPagesSchema = z.object({
   state: opt(20),
   languageCode: opt(8),
   cursor: z.string().max(400).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryPagesDto = z.infer<typeof QueryPagesSchema>;
 

@@ -8,7 +8,7 @@ export const CreateProductSchema = z.object({
   defaultUnit: z.string().min(1).max(20),
   gstRatePct: z.number().min(0).max(100).optional(),
   hsnCode: z.string().max(12).optional(),
-  isPerishable: z.boolean().default(false),
+  isPerishable: z.boolean().prefault(false),
   shelfLifeDays: z.number().int().min(0).max(100000).optional(),
   attributes: z.array(ProductAttrSchema).max(50).optional(),
 }).strict();

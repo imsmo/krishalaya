@@ -11,8 +11,8 @@ export const CreateContractSchema = z.object({
   totalQuantity: qtyStr,
   unitCode: z.string().min(1).max(20),
   priceModel: z.enum(PRICE_MODELS as unknown as [string, ...string[]]),
-  priceTerms: z.record(z.unknown()),
-  qualitySpec: z.record(z.unknown()).default({}),
+  priceTerms: z.record(z.string(), z.unknown()),
+  qualitySpec: z.record(z.string(), z.unknown()).prefault({}),
   season: z.string().max(40).optional(),
 }).strict();
 export type CreateContractDto = z.infer<typeof CreateContractSchema>;

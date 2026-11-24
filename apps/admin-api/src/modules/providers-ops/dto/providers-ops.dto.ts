@@ -6,7 +6,7 @@ import { PROVIDER_CATEGORIES } from '../domain/category';
 
 const Reason = z.string().min(3).max(1000);
 const Cursor = z.string().max(200).optional();
-const Limit = z.coerce.number().int().min(1).max(100).default(50);
+const Limit = z.coerce.number().int().min(1).max(100).prefault(50);
 
 export const QueryProvidersSchema = z.object({
   category: z.enum(PROVIDER_CATEGORIES).optional(),

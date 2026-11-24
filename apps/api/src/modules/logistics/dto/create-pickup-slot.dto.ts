@@ -23,8 +23,8 @@ export type UpdatePickupSlotDto = z.infer<typeof UpdatePickupSlotSchema>;
 
 export const QueryPickupSlotSchema = z.object({
   weekday: z.coerce.number().int().min(0).max(6).optional(),
-  activeOnly: QueryBool.default('true'),   // PC-56 TENANT-SW-e: 'false' means false (z.coerce.boolean read it as true)
+  activeOnly: QueryBool.prefault('true'),   // PC-56 TENANT-SW-e: 'false' means false (z.coerce.boolean read it as true)
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryPickupSlotDto = z.infer<typeof QueryPickupSlotSchema>;

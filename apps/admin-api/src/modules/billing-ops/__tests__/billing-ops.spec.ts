@@ -6,6 +6,7 @@
 // adjustment is MAKER-CHECKER (PC-56 ADMIN-1b): a request moves no money, the requester cannot decide their own
 // request, applying is a separate act keyed by the ROW id, and a wallet failure leaves the row approved — never
 // half-applied.
+// PC-56 SEC-4 (zod 4): fixture ids carry valid RFC version/variant digits (`.uuid()` now checks them).
 import { SaasInvoice } from '../domain/invoice.entity';
 import { canTransition, assertTransition, IllegalInvoiceTransitionError, INVOICE_STATUSES } from '../domain/invoice.state';
 import { isDunnable, nextDunningAttempt, MAX_DUNNING_ATTEMPTS } from '../domain/dunning';
@@ -21,7 +22,7 @@ import { ManualAdjustmentService } from '../services/manual-adjustment.service';
 import { ApplyAdjustmentSchema, UpdateInvoiceSchema, RecordDunningSchema, QueryInvoicesSchema } from '../dto/billing-ops.dto';
 import { resolveOwnerPermissions, hasOwnerPermission, OwnerPermissions } from '../../../core/rbac/owner-roles';
 
-const TENANT = '11111111-1111-1111-1111-111111111111';
+const TENANT = '11111111-1111-4111-8111-111111111111';
 const actor = { userId: 'admin1', roles: ['platform_billing_ops'], ip: '10.0.0.1', requestId: 'req1' } as any;
 
 const invoice = (status: any, dunningAttempts = 0) => SaasInvoice.rehydrate({

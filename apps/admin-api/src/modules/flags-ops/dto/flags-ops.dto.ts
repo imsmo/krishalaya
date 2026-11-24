@@ -7,7 +7,7 @@ import { MAX_TENANT_IDS, MAX_PLANS, MAX_COUNTRIES } from '../domain/rollout';
 
 const Reason = z.string().min(3).max(1000);
 const Cursor = z.string().max(200).optional();
-const Limit = z.coerce.number().int().min(1).max(100).default(50);
+const Limit = z.coerce.number().int().min(1).max(100).prefault(50);
 const FlagKey = z.string().regex(/^[a-z][a-z0-9_.]{1,79}$/, 'key must match ^[a-z][a-z0-9_.]{1,79}$');
 const RolloutPct = z.coerce.number().int().min(0).max(100);
 const PlanCode = z.string().regex(/^[a-z0-9_]{1,40}$/);
@@ -27,10 +27,10 @@ export type QueryFlagHistoryDto = z.infer<typeof QueryFlagHistorySchema>;
 export const CreateFlagSchema = z.object({
   key: FlagKey,
   description: z.string().max(500).optional(),
-  rolloutPct: RolloutPct.default(0),                          // default OFF / 0% (Law 10)
-  tenantIds: z.array(z.string().uuid()).max(MAX_TENANT_IDS).default([]),
-  plans: z.array(PlanCode).max(MAX_PLANS).default([]),
-  countries: z.array(CountryCode).max(MAX_COUNTRIES).default([]),
+  rolloutPct: RolloutPct.prefault(0),                          // default OFF / 0% (Law 10)
+  tenantIds: z.array(z.string().uuid()).max(MAX_TENANT_IDS).prefault([]),
+  plans: z.array(PlanCode).max(MAX_PLANS).prefault([]),
+  countries: z.array(CountryCode).max(MAX_COUNTRIES).prefault([]),
   reason: Reason,
 }).strict();
 export type CreateFlagDto = z.infer<typeof CreateFlagSchema>;
@@ -42,9 +42,9 @@ export const UpdateFlagSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('set_rollout'), rolloutPct: RolloutPct, reason: Reason }).strict(),
   z.object({
     action: z.literal('set_targeting'),
-    tenantIds: z.array(z.string().uuid()).max(MAX_TENANT_IDS).default([]),
-    plans: z.array(PlanCode).max(MAX_PLANS).default([]),
-    countries: z.array(CountryCode).max(MAX_COUNTRIES).default([]),
+    tenantIds: z.array(z.string().uuid()).max(MAX_TENANT_IDS).prefault([]),
+    plans: z.array(PlanCode).max(MAX_PLANS).prefault([]),
+    countries: z.array(CountryCode).max(MAX_COUNTRIES).prefault([]),
     reason: Reason,
   }).strict(),
   z.object({ action: z.literal('kill'), reason: Reason }).strict(),     // emergency kill-switch (Law 10)

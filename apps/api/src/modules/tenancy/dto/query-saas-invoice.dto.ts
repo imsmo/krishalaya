@@ -9,7 +9,7 @@ export const QuerySaasInvoiceSchema = z.object({
    *  partially_paid) and collapsing the two would make "Issued 1" and the Issued page disagree. */
   tab: z.enum(INVOICE_TABS).optional(),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QuerySaasInvoiceDto = z.infer<typeof QuerySaasInvoiceSchema>;
 

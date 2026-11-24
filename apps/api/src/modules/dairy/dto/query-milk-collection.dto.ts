@@ -6,6 +6,6 @@ export const QueryCollectionsSchema = z.object({
   from: dateStr,
   to: dateStr,
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryCollectionsDto = z.infer<typeof QueryCollectionsSchema>;

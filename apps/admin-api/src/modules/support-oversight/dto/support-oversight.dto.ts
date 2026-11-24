@@ -7,7 +7,7 @@ import { SEVERITIES } from '../domain/sla';
 
 const Reason = z.string().min(3).max(1000);
 const Cursor = z.string().max(200).optional();
-const Limit = z.coerce.number().int().min(1).max(100).default(50);
+const Limit = z.coerce.number().int().min(1).max(100).prefault(50);
 const Bool = z.enum(['true', 'false']).optional();
 
 export const QueryTicketsSchema = z.object({
@@ -31,7 +31,7 @@ export type QueryBreachesDto = z.infer<typeof QueryBreachesSchema>;
 
 export const TenantHealthSchema = z.object({
   tenantId: z.string().uuid().optional(),   // present ⇒ single tenant; absent ⇒ top tenants by open SLA breaches
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(100).prefault(20),
 }).strict();
 export type TenantHealthDto = z.infer<typeof TenantHealthSchema>;
 
@@ -80,7 +80,7 @@ export const CreateMacroSchema = z.object({
 export type CreateMacroDto = z.infer<typeof CreateMacroSchema>;
 
 export const ToggleMacroSchema = z.object({
-  active: z.coerce.boolean().default(true),
+  active: z.coerce.boolean().prefault(true),
   reason: Reason,
 }).strict();
 export type ToggleMacroDto = z.infer<typeof ToggleMacroSchema>;

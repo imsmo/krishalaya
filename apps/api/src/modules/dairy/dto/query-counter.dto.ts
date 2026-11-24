@@ -10,7 +10,7 @@ export const QueryCounterSchema = z.object({
   // Omitted means "the database's today", resolved server-side: a console in one timezone and a counter stamping
   // current_date in another must not disagree about which day a pour belongs to.
   day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  shift: z.enum(MILK_SHIFTS).default('morning'),
+  shift: z.enum(MILK_SHIFTS).prefault('morning'),
   // Omitted means the tenant's most common membership preference — the cycle the dairy secretary is working to.
   cycle: z.enum(PAYMENT_CYCLES).optional(),
 }).strict();

@@ -2,10 +2,10 @@
 import { z } from 'zod';
 import { ASSET_STATUSES } from '../domain/equipment.events';
 export const QueryAssetsSchema = z.object({
-  box: z.enum(['mine', 'browse', 'all']).default('browse'),  // mine=owner's; browse=active marketplace; all=admin
+  box: z.enum(['mine', 'browse', 'all']).prefault('browse'),  // mine=owner's; browse=active marketplace; all=admin
   categoryId: z.string().uuid().optional(),
   status: z.enum(ASSET_STATUSES as unknown as [string, ...string[]]).optional(),
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).prefault(50),
 }).strict();
 export type QueryAssetsDto = z.infer<typeof QueryAssetsSchema>;

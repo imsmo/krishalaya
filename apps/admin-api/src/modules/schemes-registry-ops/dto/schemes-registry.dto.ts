@@ -8,13 +8,13 @@ import { FORM_FIELD_KINDS, MAX_FORM_FIELDS, isLocationKey, mustBePersonal } from
 
 const Reason = z.string().min(3).max(1000);
 const Cursor = z.string().max(200).optional();
-const Limit = z.coerce.number().int().min(1).max(100).default(50);
+const Limit = z.coerce.number().int().min(1).max(100).prefault(50);
 const Uuid = z.string().uuid();
 const Code = z.string().min(2).max(60).regex(/^[a-z][a-z0-9_]{1,59}$/);
 const SchemeName = z.string().min(1).max(250);
 const AuthorityName = z.string().min(1).max(200);
 const FeeMinor = z.string().regex(/^\d{1,15}$/, 'minor units as a non-negative integer string');
-const JsonObject = z.record(z.unknown());
+const JsonObject = z.record(z.string(), z.unknown());
 const UuidArray = z.array(Uuid);
 const MmDd = z.string().regex(/^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/);
 const Window = z.object({ opens: MmDd, closes: MmDd, season: z.string().regex(/^[a-z_]{1,20}$/).optional() }).strict();
@@ -45,10 +45,10 @@ export const CreateSchemeSchema = z.object({
   categoryId: Uuid,
   benefitSummary: JsonObject,
   eligibilityRules: JsonObject,
-  requiredDocTypeIds: UuidArray.default([]),
+  requiredDocTypeIds: UuidArray.prefault([]),
   applicationWindow: Window.nullable().optional(),
-  applicableRegionIds: UuidArray.default([]),
-  processingFeeMinor: FeeMinor.default('0'),
+  applicableRegionIds: UuidArray.prefault([]),
+  processingFeeMinor: FeeMinor.prefault('0'),
   sourceUrl: SourceUrl.nullable().optional(),
   reason: Reason,
 }).strict();
@@ -66,7 +66,7 @@ export type UpdateSchemeMetaDto = z.infer<typeof UpdateSchemeMetaSchema>;
 /** ADMIN-SWEEP-c2 · W071: the dry run carries ONLY the candidate rules — no version id, no reason, nothing to
  *  save. The validator (domain/eligibility-fields.ts) owns the real shape; zod only rules out the absurd. */
 export const DryRunRulesSchema = z.object({
-  eligibilityRules: z.record(z.unknown()),
+  eligibilityRules: z.record(z.string(), z.unknown()),
 }).strict();
 export type DryRunRulesDto = z.infer<typeof DryRunRulesSchema>;
 
@@ -157,7 +157,7 @@ export type PublishVersionDto = z.infer<typeof PublishVersionSchema>;
 export const DiscardDraftSchema = z.object({ versionId: Uuid, reason: Reason }).strict();
 export type DiscardDraftDto = z.infer<typeof DiscardDraftSchema>;
 
-export const QueryVersionsSchema = z.object({ limit: z.coerce.number().int().min(1).max(200).default(50) }).strict();
+export const QueryVersionsSchema = z.object({ limit: z.coerce.number().int().min(1).max(200).prefault(50) }).strict();
 export type QueryVersionsDto = z.infer<typeof QueryVersionsSchema>;
 
 /* ============================ DELTA-018: authority portal mapping ============================ */

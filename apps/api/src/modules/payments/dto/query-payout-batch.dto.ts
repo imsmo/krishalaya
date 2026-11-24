@@ -6,7 +6,7 @@ export const QueryPayoutBatchSchema = z.object({
   status: z.enum(['open', 'executing', 'executed', 'failed']).optional(),
   batchType: z.string().min(1).max(40).optional(),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(100).prefault(20),
 }).strict();
 export type QueryPayoutBatchDto = z.infer<typeof QueryPayoutBatchSchema>;
 

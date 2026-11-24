@@ -6,7 +6,7 @@ export const CreateAttributeOptionSchema = z.object({
   attributeId: z.string().uuid(),
   code: z.string().min(1).max(80).regex(/^[a-z0-9][a-z0-9_.-]{0,79}$/),
   defaultName: z.string().min(1).max(150),
-  sortOrder: z.coerce.number().int().min(0).max(32767).default(100),
-  isActive: z.boolean().default(true),
+  sortOrder: z.coerce.number().int().min(0).max(32767).prefault(100),
+  isActive: z.boolean().prefault(true),
 }).strict();
 export type CreateAttributeOptionDto = z.infer<typeof CreateAttributeOptionSchema>;

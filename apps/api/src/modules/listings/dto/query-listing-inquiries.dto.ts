@@ -4,6 +4,6 @@
 import { z } from 'zod';
 export const QueryListingInquiriesSchema = z.object({
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(100).prefault(20),
 }).strict();
 export type QueryListingInquiriesDto = z.infer<typeof QueryListingInquiriesSchema>;

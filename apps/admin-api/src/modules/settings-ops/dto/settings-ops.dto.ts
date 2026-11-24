@@ -12,7 +12,7 @@ export const QuerySettingsSchema = z.object({
   prefix: z.string().trim().max(60).optional(),
   riskClass: RiskClass.optional(),
   cursor: z.string().trim().max(80).optional(),
-  limit: z.coerce.number().int().min(1).max(200).default(50),
+  limit: z.coerce.number().int().min(1).max(200).prefault(50),
 }).strict();
 export type QuerySettingsDto = z.infer<typeof QuerySettingsSchema>;
 
@@ -21,8 +21,8 @@ export const DefineSettingSchema = z.object({
   valueType: ValueType,
   // 'user' is accepted because `setting_definitions.scope` allows it; nothing on this platform reads a user-scoped
   // setting yet, and refusing the value here would mean the console could not describe a row the schema permits.
-  scope: z.enum(['platform', 'tenant', 'user']).default('tenant'),
-  riskClass: RiskClass.default('ordinary'),
+  scope: z.enum(['platform', 'tenant', 'user']).prefault('tenant'),
+  riskClass: RiskClass.prefault('ordinary'),
   // `unknown` rather than a union: the value's shape is decided by `valueType` and validated in the domain, and a zod
   // union here would be a second, subtly different type system for the same field.
   //

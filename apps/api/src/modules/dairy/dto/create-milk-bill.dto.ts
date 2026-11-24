@@ -24,6 +24,6 @@ export const GenerateBillSchema = z.object({
   membershipId: z.string().uuid(),
   periodStart: dateStr,
   periodEnd: dateStr,
-  deductions: z.array(DeductionLineSchema).max(20).default([]),
+  deductions: z.array(DeductionLineSchema).max(20).prefault([]),
 }).strict();
 export type GenerateBillDto = z.infer<typeof GenerateBillSchema>;

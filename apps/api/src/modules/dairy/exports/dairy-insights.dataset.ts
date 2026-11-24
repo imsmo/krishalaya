@@ -26,7 +26,7 @@ export const DAIRY_INSIGHTS_DATASET_NAME_KEY = `exports.dataset.${DAIRY_INSIGHTS
 export const DairyInsightsExportParamsSchema = z.object({
   window: z.coerce.number().int()
     .refine((n): n is InsightWindow => (INSIGHT_WINDOWS as readonly number[]).includes(n), { message: `window must be one of ${INSIGHT_WINDOWS.join(', ')}` })
-    .default(DEFAULT_INSIGHT_WINDOW),
+    .prefault(DEFAULT_INSIGHT_WINDOW),
 }).strict();
 export type DairyInsightsExportParams = z.infer<typeof DairyInsightsExportParamsSchema>;
 

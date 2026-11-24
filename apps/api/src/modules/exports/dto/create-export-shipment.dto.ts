@@ -6,9 +6,9 @@ const minorStr = z.string().regex(/^\d{1,15}$/);
 export const CreateShipmentSchema = z.object({
   destinationCountry: z.string().regex(/^[A-Z]{2}$/, 'ISO-3166 alpha-2'),
   incoterm: z.string().max(10).optional(),
-  orderIds: z.array(z.string().uuid()).max(500).default([]),
+  orderIds: z.array(z.string().uuid()).max(500).prefault([]),
   totalValueMinor: minorStr.optional(),
-  currencyCode: z.string().regex(/^[A-Z]{3}$/).default('USD'),
+  currencyCode: z.string().regex(/^[A-Z]{3}$/).prefault('USD'),
 }).strict();
 export type CreateShipmentDto = z.infer<typeof CreateShipmentSchema>;
 

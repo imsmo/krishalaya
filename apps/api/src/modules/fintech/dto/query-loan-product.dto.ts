@@ -2,6 +2,6 @@
 import { z } from 'zod';
 export const QueryLoanProductsSchema = z.object({
   partnerId: z.string().uuid().optional(),
-  activeOnly: z.coerce.boolean().default(true),
+  activeOnly: z.coerce.boolean().prefault(true),
 }).strict();
 export type QueryLoanProductsDto = z.infer<typeof QueryLoanProductsSchema>;

@@ -8,6 +8,6 @@ export const QueryRateCardsSchema = z.object({
   // returned the approved list and the organisation's console never saw a card awaiting a second person (HOTFIX-12's Approve could not
   // appear). The house strict query boolean: 'true'/'1' → true, 'false'/'0' → false, anything else refused (422). WHO may see more than
   // the approved list is decided in `MilkRateCardService.list` (only a `dairy.manage` holder).
-  activeOnly: queryBoolean().default(true),
+  activeOnly: queryBoolean().prefault(true),
 }).strict();
 export type QueryRateCardsDto = z.infer<typeof QueryRateCardsSchema>;

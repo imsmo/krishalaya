@@ -12,7 +12,7 @@ export const QueryTxnsSchema = z.object({
   tenantId: z.string().uuid().optional(),
   accountCode: z.string().regex(/^[a-z][a-z0-9_]{1,39}$/).optional(),
   cursor: Cursor,
-  limit: z.coerce.number().int().min(1).max(100).default(25),
+  limit: z.coerce.number().int().min(1).max(100).prefault(25),
 }).strict();
 export type QueryTxnsDto = z.infer<typeof QueryTxnsSchema>;
 
@@ -35,6 +35,6 @@ export const QueryAccountsSchema = z.object({
   ownerKind: z.enum(['user', 'tenant']).optional(),
   frozenOnly: z.enum(['1', 'true']).optional(),
   cursor: Cursor,
-  limit: z.coerce.number().int().min(1).max(100).default(25),
+  limit: z.coerce.number().int().min(1).max(100).prefault(25),
 }).strict();
 export type QueryAccountsDto = z.infer<typeof QueryAccountsSchema>;

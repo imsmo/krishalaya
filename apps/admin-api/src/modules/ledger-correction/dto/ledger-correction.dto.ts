@@ -49,6 +49,6 @@ export type WithdrawDto = z.infer<typeof WithdrawSchema>;
 export const QueryDraftsSchema = z.object({
   status: z.enum(['drafting', 'awaiting_checker', 'posted', 'rejected', 'withdrawn']).optional(),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(25),
+  limit: z.coerce.number().int().min(1).max(100).prefault(25),
 }).strict();
 export type QueryDraftsDto = z.infer<typeof QueryDraftsSchema>;

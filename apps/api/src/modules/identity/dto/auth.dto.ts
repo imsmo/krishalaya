@@ -2,7 +2,7 @@
 import { z } from 'zod';
 const phone = z.string().min(8).max(20);
 
-export const RequestOtpSchema = z.object({ phone, channel: z.enum(['sms','whatsapp','ivr']).default('sms') }).strict();
+export const RequestOtpSchema = z.object({ phone, channel: z.enum(['sms','whatsapp','ivr']).prefault('sms') }).strict();
 export type RequestOtpDto = z.infer<typeof RequestOtpSchema>;
 
 const DeviceSchema = z.object({
@@ -29,7 +29,7 @@ export type VerifyOtpDto = z.infer<typeof VerifyOtpSchema>;
 export const RefreshSchema = z.object({ refreshToken: z.string().min(20).max(200), tenantId: z.string().uuid().optional() }).strict();
 export type RefreshDto = z.infer<typeof RefreshSchema>;
 
-export const LogoutSchema = z.object({ allDevices: z.coerce.boolean().default(false) }).strict();
+export const LogoutSchema = z.object({ allDevices: z.coerce.boolean().prefault(false) }).strict();
 export type LogoutDto = z.infer<typeof LogoutSchema>;
 
 export const ChangePhoneStartSchema = z.object({ newPhone: phone }).strict();

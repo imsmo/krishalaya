@@ -6,9 +6,9 @@ export const CreateInferenceSchema = z.object({
   modelCode: z.string().min(1).max(80),
   subjectType: z.string().min(1).max(50),
   subjectId: z.string().uuid(),
-  inputRef: z.record(z.unknown()).default({}),
-  output: z.record(z.unknown()),
+  inputRef: z.record(z.string(), z.unknown()).prefault({}),
+  output: z.record(z.string(), z.unknown()),
   confidence: z.number().min(0).max(1).nullish(),
-  forceReview: z.boolean().default(false),                 // caller can force HITL regardless of threshold
+  forceReview: z.boolean().prefault(false),                 // caller can force HITL regardless of threshold
 }).strict();
 export type CreateInferenceDto = z.infer<typeof CreateInferenceSchema>;

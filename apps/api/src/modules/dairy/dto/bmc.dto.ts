@@ -65,13 +65,13 @@ export const QueryBmcMonitorSchema = z.object({
   /** Which tank's chart to draw. Omitted lets the monitor choose the one that needs looking at. */
   unitId: z.string().uuid().optional(),
   /** W170 draws six. 1..168 so a week can be reviewed after an incident. */
-  hours: z.coerce.number().int().min(1).max(168).default(6),
+  hours: z.coerce.number().int().min(1).max(168).prefault(6),
 }).strict();
 export type QueryBmcMonitorDto = z.infer<typeof QueryBmcMonitorSchema>;
 
 export const QueryBmcUnitsSchema = z.object({
   mccId: z.string().uuid().optional(),
-  includeRetired: z.coerce.boolean().default(false),
+  includeRetired: z.coerce.boolean().prefault(false),
 }).strict();
 export type QueryBmcUnitsDto = z.infer<typeof QueryBmcUnitsSchema>;
 

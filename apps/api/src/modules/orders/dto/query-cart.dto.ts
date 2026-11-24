@@ -4,6 +4,6 @@ import { z } from 'zod';
 
 export const CART_STATUSES = ['active', 'converted', 'abandoned'] as const;
 export const QueryCartSchema = z.object({
-  status: z.enum(CART_STATUSES).default('active'),
+  status: z.enum(CART_STATUSES).prefault('active'),
 }).strict();
 export type QueryCartDto = z.infer<typeof QueryCartSchema>;
