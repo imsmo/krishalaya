@@ -33,8 +33,9 @@ export function generateMetadata(): Metadata {
 interface AttrView { items: AttributeRow[]; dataTypes: string[] }
 
 export default async function AttributesPage(
-  { searchParams }: { searchParams: { q?: string; dataType?: string; withUnit?: string; ok?: string; error?: string; why?: string } },
+  props: { searchParams: Promise<{ q?: string; dataType?: string; withUnit?: string; ok?: string; error?: string; why?: string }> }
 ) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

@@ -30,7 +30,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('rq.actTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function RequirementActPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | undefined> }) {
+export default async function RequirementActPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const base = actBase(params.id);
   await requireSession(base);
   const t = getTranslator();

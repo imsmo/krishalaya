@@ -40,7 +40,7 @@ import { C, reset, SLUG, OID, KEY, MINE, SELLER_UUID, BUYER_UUID, apiCalls } fro
 import { store5aRefusalKeys } from '../features/store5a/refusals';
 import { encodeReviewDraft, draftCookieName } from '../features/store5a/review';
 
-const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await ReviewPage({ params: { tenantSlug: SLUG, id: OID }, searchParams: sp }));
+const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await ReviewPage({ params: Promise.resolve({ tenantSlug: SLUG, id: OID }), searchParams: Promise.resolve(sp) }));
 const UUIDS = (h: string) => [...new Set(h.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi) ?? [])];
 beforeEach(() => { reset(); });
 
@@ -152,7 +152,7 @@ describe('STORE-5a · W290 the states (the server\'s answers only)', () => {
 });
 
 describe('STORE-5a · the doors to W290', () => {
-  const order = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantOrderPage({ params: { tenantSlug: SLUG, id: OID }, searchParams: sp }));
+  const order = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantOrderPage({ params: Promise.resolve({ tenantSlug: SLUG, id: OID }), searchParams: Promise.resolve(sp) }));
   it('a completed order: flag ON → "Write a review" to the ORGANISATION\'s review route; OFF → the honest sentence, no link', async () => {
     const on = await order();
     expect(on).toContain(`class="kv-btn" data-kv-review="w290" href="/${SLUG}/orders/${OID}/review"`);
@@ -164,6 +164,6 @@ describe('STORE-5a · the doors to W290', () => {
     expect(text(off)).toContain(en['store5a.ctaOff']);
   });
   it('the platform /orders/[id]/review sends a signed-in buyer to the organisation\'s, carrying the status', async () => {
-    await expect(PlatformReviewDoor({ params: { id: OID }, searchParams: { status: 'reviewed', junk: 'x' } })).rejects.toThrow(`REDIRECT /${SLUG}/orders/${OID}/review?status=reviewed`);
+    await expect(PlatformReviewDoor({ params: Promise.resolve({ id: OID }), searchParams: Promise.resolve({ status: 'reviewed', junk: 'x' }) })).rejects.toThrow(`REDIRECT /${SLUG}/orders/${OID}/review?status=reviewed`);
   });
 });

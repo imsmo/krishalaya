@@ -52,7 +52,8 @@ async function loadTab(statuses: string[], cursor?: string) {
   return { items: items.slice(0, 50), nextCursor: null as string | null, merged: items.length > 50 };
 }
 
-export default async function LogisticsPage({ searchParams }: { searchParams: { tab?: string; cursor?: string } }) {
+export default async function LogisticsPage(props: { searchParams: Promise<{ tab?: string; cursor?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession('/logistics');
   const t = getTranslator();
   const lang = getLang();

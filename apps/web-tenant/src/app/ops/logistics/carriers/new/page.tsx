@@ -16,7 +16,8 @@ import { createCarrierAction } from './actions';
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.carriers.new'), robots: { index: false, follow: false } }; }
 
-export default async function NewCarrierPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function NewCarrierPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   const base = `${CARRIERS_HREF}/new`;
   await requireSession(base);
   const t = getTranslator(); const lang = getLang();

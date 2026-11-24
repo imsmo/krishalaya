@@ -33,7 +33,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('mutate.instructor.title'), robots: { index: false, follow: false } };
 }
 
-export default async function InstructorActPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function InstructorActPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   const PATH = PROFILE_ACT_PATH;
   await requireSession(PATH);
   const t = getTranslator();

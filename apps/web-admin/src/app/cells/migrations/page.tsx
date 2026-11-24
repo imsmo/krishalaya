@@ -45,9 +45,12 @@ interface Meta {
 
 const STATUSES = ['queued', 'copying', 'verifying', 'cutover', 'done', 'rolled_back', 'failed'] as const;
 
-export default async function MigrationsPage({ searchParams }: {
-  searchParams: { status?: string; cursor?: string; ok?: string; error?: string };
-}) {
+export default async function MigrationsPage(
+  props: {
+    searchParams: Promise<{ status?: string; cursor?: string; ok?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const status = (STATUSES as readonly string[]).includes(searchParams.status ?? '') ? searchParams.status : undefined;

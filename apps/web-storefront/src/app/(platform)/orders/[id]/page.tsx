@@ -17,7 +17,9 @@ export function generateMetadata(): Metadata {
   return { title: t.t('order.detailTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function PlatformOrderDoor({ params, searchParams }: { params: { id: string }; searchParams: SP }) {
+export default async function PlatformOrderDoor(props: { params: Promise<{ id: string }>; searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const path = `/orders/${encodeURIComponent(params.id)}`;
   await requireSession(path);
   const slug = await sessionStoreSlug();

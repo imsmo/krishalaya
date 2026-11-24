@@ -26,7 +26,10 @@ export function generateMetadata(): Metadata {
 
 const ERR = new Set(['approve', 'add', 'phone', 'illegal', GOV_ROLE_REFUSAL]);
 
-export default async function TeamPage({ searchParams }: { searchParams: { pending?: string; ok?: string; error?: string } }) {
+export default async function TeamPage(
+  props: { searchParams: Promise<{ pending?: string; ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/team');
   const t = getTranslator();
   const pendingOnly = searchParams.pending === '1';

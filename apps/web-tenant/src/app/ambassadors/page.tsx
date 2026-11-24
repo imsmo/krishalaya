@@ -8,7 +8,8 @@ import { AMBASSADORS_HREF, detailHref, isUuid } from '../../features/ambassadors
 
 export const dynamic = 'force-dynamic';
 
-export default function AmbassadorsLegacyPage({ searchParams }: { searchParams: { ambassador?: string } }) {
+export default async function AmbassadorsLegacyPage(props: { searchParams: Promise<{ ambassador?: string }> }) {
+  const searchParams = await props.searchParams;
   if (isUuid(searchParams.ambassador)) redirect(detailHref(searchParams.ambassador));
   redirect(AMBASSADORS_HREF);
 }

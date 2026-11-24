@@ -25,7 +25,10 @@ export function generateMetadata(): Metadata {
 
 const ERR = new Set(['defaultName', 'level', 'regionId', 'reason', 'elevation', 'conflict', 'invalid', 'generic']);
 
-export default async function AuthoritiesPage({ searchParams }: { searchParams: { cursor?: string; level?: string; ok?: string; error?: string } }) {
+export default async function AuthoritiesPage(
+  props: { searchParams: Promise<{ cursor?: string; level?: string; ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const level = isAuthorityLevel(searchParams.level) ? searchParams.level : undefined;

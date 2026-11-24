@@ -40,8 +40,10 @@ interface MapView {
 }
 
 export default async function CropMappingPage(
-  { params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string; why?: string } },
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string; why?: string }> }
 ) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
 

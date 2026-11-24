@@ -28,7 +28,7 @@ import NotificationsPage from '../app/[tenantSlug]/notifications/page';
 import { text } from './store1b-harness';
 import { C, reset } from './hotfix6-fixtures';
 
-const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await NotificationsPage({ params: { tenantSlug: 'anand-fpo' }, searchParams: sp }));
+const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await NotificationsPage({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve(sp) }));
 beforeEach(() => { reset(); });
 
 describe('HOTFIX-6 · C3 the inbox\'s All tab lists read rows', () => {

@@ -18,7 +18,8 @@ export function generateMetadata(): Metadata {
 
 const REVEAL_ERRORS = ['NO_PERMISSION', 'REVEAL_REASON_TOO_SHORT', 'AUDIT_ENTRY_NOT_FOUND', 'AUDITOR_READ_ONLY', 'reveal'] as const;
 
-export default async function RevealPage({ searchParams }: { searchParams: { entry?: string; error?: string } }) {
+export default async function RevealPage(props: { searchParams: Promise<{ entry?: string; error?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession('/auditor');
   const t = getTranslator();
   const id = typeof searchParams.entry === 'string' && /^\d{1,19}$/.test(searchParams.entry) ? searchParams.entry : null;

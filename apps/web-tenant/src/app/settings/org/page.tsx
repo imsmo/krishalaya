@@ -31,7 +31,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('os.title'), robots: { index: false, follow: false } };
 }
 
-export default async function OrgSettingsPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function OrgSettingsPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   await requireSession(ORG_HREF);
   const t = getTranslator();
   const lang = getLang();

@@ -20,7 +20,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('gov5.mgnrega.title'), robots: { index: false, follow: false } };
 }
 
-export default async function MgnregaPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function MgnregaPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   const me = await requireGov('/mgnrega');
   const t = getTranslator();
   const chain = chain5For(searchParams);

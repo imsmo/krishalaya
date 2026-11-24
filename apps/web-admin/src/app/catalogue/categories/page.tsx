@@ -21,7 +21,10 @@ export function generateMetadata(): Metadata {
 
 const ERR = new Set(['parentId', 'slug', 'defaultName', 'commerceKind', 'minAge', 'sortOrder', 'iconMediaId', 'reason', 'elevation', 'conflict', 'invalid', 'generic']);
 
-export default async function CategoriesPage({ searchParams }: { searchParams: { cursor?: string; commerceKind?: string; active?: string; ok?: string; error?: string } }) {
+export default async function CategoriesPage(
+  props: { searchParams: Promise<{ cursor?: string; commerceKind?: string; active?: string; ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const commerceKind = isCommerceKind(searchParams.commerceKind) ? searchParams.commerceKind : undefined;

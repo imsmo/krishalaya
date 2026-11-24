@@ -46,7 +46,8 @@ interface Detail {
   display: { gross: string; commission: string; tax: string; net: string };
 }
 
-export default async function SettlementStatementPage({ params }: { params: { id: string } }) {
+export default async function SettlementStatementPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
 

@@ -43,7 +43,7 @@ async function verifyOtp(formData: FormData) {
     const msg = e instanceof SdkError ? e.code : 'LOGIN_FAILED';
     const challenge = e instanceof SdkError && e.code === 'TWO_FACTOR_PENDING' ? (e.details as { challengeToken?: unknown } | undefined)?.challengeToken : null;
     if (typeof challenge === 'string' && challenge.length >= 20) {
-      cookies().set(TFA_COOKIE, challenge, TFA_OPTS);
+      (await cookies()).set(TFA_COOKIE, challenge, TFA_OPTS);
       redirect(`/login?step=2fa&next=${encodeURIComponent(next)}`);
     }
     redirect(`/login?step=verify&phone=${encodeURIComponent(phone)}&next=${encodeURIComponent(next)}&error=${encodeURIComponent(msg)}`);
@@ -54,18 +54,21 @@ async function verifySecondFactor(formData: FormData) {
   'use server';
   const next = safeNext(String(formData.get('next') ?? '/dashboard'));
   const code = String(formData.get('code') ?? '').trim(); const recoveryCode = String(formData.get('recoveryCode') ?? '').trim();
-  const challenge = cookies().get(TFA_COOKIE)?.value ?? '';
+  const challenge = (await cookies()).get(TFA_COOKIE)?.value ?? '';
   let msg: string | null = null;
   try {
     const tk = await anonClient().auth.verifyTwoFactor({ tenantId: env.tenantId ?? '', challengeToken: challenge, ...(/^\d{6}$/.test(code) ? { code } : { recoveryCode }) });
     setSession(tk.accessToken, tk.refreshToken, tk.expiresInSec);
-    cookies().delete(TFA_COOKIE);
+    (await cookies()).delete(TFA_COOKIE);
   } catch (e) { msg = e instanceof SdkError ? e.code : 'LOGIN_FAILED'; }
   if (msg) redirect(`/login?step=2fa&next=${encodeURIComponent(next)}&error=${encodeURIComponent(msg)}`);
   redirect(next);
 }
 
-export default function LoginPage({ searchParams }: { searchParams: { step?: string; phone?: string; error?: string; next?: string } }) {
+export default async function LoginPage(
+  props: { searchParams: Promise<{ step?: string; phone?: string; error?: string; next?: string }> }
+) {
+  const searchParams = await props.searchParams;
   const t = getTranslator();
   const verifying = searchParams.step === 'verify';
   const secondFactor = searchParams.step === '2fa';

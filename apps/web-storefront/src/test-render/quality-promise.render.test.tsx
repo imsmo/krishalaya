@@ -21,7 +21,7 @@ import { S, SLUG, reset } from './sweep-fixtures';
 
 beforeEach(() => reset());
 const platform = () => renderToStaticMarkup(PlatformQuality());
-const store = async () => renderToStaticMarkup(await TenantQuality({ params: { tenantSlug: SLUG } }));
+const store = async () => renderToStaticMarkup(await TenantQuality({ params: Promise.resolve({ tenantSlug: SLUG }) }));
 const rule = (k: string) => en[k].replace('{hours}', String(QUALITY_WINDOW_HOURS));
 const printedRules = (h: string) => [...h.matchAll(/data-kv-rule="([a-z_]+)" data-kv-mechanism="([a-z_]+)"/g)].map((m) => m[1]);
 

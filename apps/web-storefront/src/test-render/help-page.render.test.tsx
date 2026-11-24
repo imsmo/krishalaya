@@ -26,7 +26,7 @@ import { S, SLUG, reset } from './sweep-fixtures';
 
 beforeEach(() => reset());
 const platform = () => renderToStaticMarkup(PlatformHelp());
-const store = async () => renderToStaticMarkup(await TenantHelp({ params: { tenantSlug: SLUG } }));
+const store = async () => renderToStaticMarkup(await TenantHelp({ params: Promise.resolve({ tenantSlug: SLUG }) }));
 const fill = (k: string) => en[k].replace('{hours}', '24');
 const FALSE_LINES = /held until|track (your )?deliver|support team|platform wallet|from within your account/i;
 

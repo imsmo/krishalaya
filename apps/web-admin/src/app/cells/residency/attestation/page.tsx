@@ -35,7 +35,8 @@ interface Result {
   signingGap: string;
 }
 
-export default async function AttestationPage({ searchParams }: { searchParams: { days?: string } }) {
+export default async function AttestationPage(props: { searchParams: Promise<{ days?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const arrow = rangeArrow(getAdminDir());

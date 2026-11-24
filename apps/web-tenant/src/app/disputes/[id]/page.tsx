@@ -42,7 +42,11 @@ const ERR = new Set(['review', 'escalate', 'resolve', 'type', 'amount', 'illegal
   'noteTooShort', 'refundPerm', 'proposalDuplicate', 'propose', 'decide']);
 const OK = new Set(['review', 'escalate', 'resolve', 'respond', 'message', 'proposed', 'approved', 'rejected']);
 
-export default async function DisputeDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function DisputeDetailPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   await requireSession(`/disputes/${params.id}`);
   const t = getTranslator();
   const lang = getLang();

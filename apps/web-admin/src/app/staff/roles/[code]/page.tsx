@@ -21,7 +21,8 @@ export function generateMetadata(): Metadata {
 
 interface Holders { permission: string; known: boolean; direct: string[]; godMode: string[] }
 
-export default async function PermissionHoldersPage({ params }: { params: { code: string } }) {
+export default async function PermissionHoldersPage(props: { params: Promise<{ code: string }> }) {
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
 

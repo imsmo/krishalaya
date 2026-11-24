@@ -36,7 +36,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('pages.editor.title'), robots: { index: false, follow: false } };
 }
 
-export default async function PageEditor({ params }: { params: { slug: string } }) {
+export default async function PageEditor(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const slug = decodeURIComponent(params.slug);
   await requireSession(pageHref(slug));
   const t = getTranslator();

@@ -26,7 +26,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('reg.title'), robots: { index: false, follow: false } };
 }
 
-export default async function ShareRegisterPage({ searchParams }: { searchParams: { cursor?: string } }) {
+export default async function ShareRegisterPage(props: { searchParams: Promise<{ cursor?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession('/governance/register');
   const t = getTranslator();
   const lang = getLang();

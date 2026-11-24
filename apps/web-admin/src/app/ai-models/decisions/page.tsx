@@ -42,9 +42,12 @@ interface Meta {
   inputsWithheld: boolean;
 }
 
-export default async function DecisionsPage({ searchParams }: {
-  searchParams: { from?: string; to?: string; modelId?: string; tenantId?: string; overriddenOnly?: string; cursor?: string };
-}) {
+export default async function DecisionsPage(
+  props: {
+    searchParams: Promise<{ from?: string; to?: string; modelId?: string; tenantId?: string; overriddenOnly?: string; cursor?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

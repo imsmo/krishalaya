@@ -19,7 +19,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('ops3.rates.title'), robots: { index: false, follow: false } };
 }
 
-export default async function RatesPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function RatesPage(
+  props: { searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/rates');
   const t = getTranslator(); const lang = getLang();
   const exp = chain3State('rate_export', searchParams);

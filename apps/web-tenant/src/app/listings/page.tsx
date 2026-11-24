@@ -32,9 +32,12 @@ export function generateMetadata(): Metadata {
 
 const ERR = new Set(['bulk_none', 'bulk_toomany']);
 
-export default async function ListingsPage({ searchParams }: {
-  searchParams: { cursor?: string; created?: string; status?: string; ok?: string; error?: string; done?: string; skipped?: string };
-}) {
+export default async function ListingsPage(
+  props: {
+    searchParams: Promise<{ cursor?: string; created?: string; status?: string; ok?: string; error?: string; done?: string; skipped?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/listings');
   const t = getTranslator();
   const lang = getLang();

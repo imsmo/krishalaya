@@ -44,9 +44,13 @@ interface Detail extends SettingRow {
 
 const show = (v: unknown) => (typeof v === 'object' && v !== null ? JSON.stringify(v) : String(v));
 
-export default async function SettingDetailPage({ params, searchParams }: {
-  params: { key: string }; searchParams: { ok?: string; error?: string };
-}) {
+export default async function SettingDetailPage(
+  props: {
+    params: Promise<{ key: string }>; searchParams: Promise<{ ok?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
   const arrow = rangeArrow(getAdminDir());

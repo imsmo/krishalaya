@@ -38,12 +38,12 @@ const rtl = async (node: React.ReactNode) => renderToStaticMarkup(<div dir="rtl"
 beforeEach(() => { reset(); S.lang = 'en'; });
 
 const SURFACES: Array<[string, () => Promise<React.ReactNode>]> = [
-  ['W275 browse', () => TenantStorefront({ params: { tenantSlug: 'anand-fpo' }, searchParams: { sort: 'price_asc' } })],
-  ['W276 platform search', () => PlatformSearch({ searchParams: { q: 'groundnut' } })],
-  ['W276 store search', () => TenantSearch({ params: { tenantSlug: 'anand-fpo' }, searchParams: { q: 'groundnut' } })],
-  ['W277 the lot', () => ListingDetail({ params: { tenantSlug: 'anand-fpo', id: L1 }, searchParams: {} })],
-  ['W280 the organisation', () => OrganisationSellerPage({ params: { tenantSlug: 'anand-fpo' }, searchParams: {} })],
-  ['W282 farm inputs', () => FarmInputs({ params: { tenantSlug: 'anand-fpo' }, searchParams: {} })],
+  ['W275 browse', () => TenantStorefront({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve({ sort: 'price_asc' }) })],
+  ['W276 platform search', () => PlatformSearch({ searchParams: Promise.resolve({ q: 'groundnut' }) })],
+  ['W276 store search', () => TenantSearch({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve({ q: 'groundnut' }) })],
+  ['W277 the lot', () => ListingDetail({ params: Promise.resolve({ tenantSlug: 'anand-fpo', id: L1 }), searchParams: Promise.resolve({}) })],
+  ['W280 the organisation', () => OrganisationSellerPage({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve({}) })],
+  ['W282 farm inputs', () => FarmInputs({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve({}) })],
 ];
 
 describe('STORE-2a · rtl', () => {

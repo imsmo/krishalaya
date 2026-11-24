@@ -29,7 +29,7 @@ import { W, reset, LINE, DRIFT, REASON, ID } from './store2b-fixtures';
 import { reset as resetA, L1 } from './store2a-fixtures';
 
 const rtl = async (node: React.ReactNode) => renderToStaticMarkup(<div dir="rtl">{await resolveTree(node, [])}</div>);
-const cart = (sp: Record<string, string> = {}) => TenantCart({ params: { tenantSlug: 'anand-fpo' }, searchParams: sp });
+const cart = (sp: Record<string, string> = {}) => TenantCart({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve(sp) });
 beforeEach(() => { reset(); resetA(); W.cart = { items: [LINE(ID.ok), DRIFT, REASON(ID.sold, 'sold_out')], subtotalMinor: '8198000', currencyCode: 'INR' }; });
 
 const STATES: Array<[string, () => Promise<React.ReactNode>]> = [
@@ -42,7 +42,7 @@ const STATES: Array<[string, () => Promise<React.ReactNode>]> = [
   ['error with Retry', async () => { W.cart = new Error('down'); return cart(); }],
   ['buying paused', async () => { W.flags = { ...W.flags, storefront_cart: false }; return cart(); }],
   ['sign-in required', async () => { W.token = null; return cart(); }],
-  ['W3099 the listing with a refused add', () => ListingDetail({ params: { tenantSlug: 'lot', id: L1 }, searchParams: { step: 'error', refusal: 'below_min', qty: '3' } })],
+  ['W3099 the listing with a refused add', () => ListingDetail({ params: Promise.resolve({ tenantSlug: 'lot', id: L1 }), searchParams: Promise.resolve({ step: 'error', refusal: 'below_min', qty: '3' }) })],
 ];
 
 describe('STORE-2b · rtl', () => {

@@ -53,8 +53,9 @@ function tomorrowIso(): string {
 }
 
 export default async function SupportPolicyPage(
-  { searchParams }: { searchParams: { ok?: string; error?: string; at?: string; why?: string } },
+  props: { searchParams: Promise<{ ok?: string; error?: string; at?: string; why?: string }> }
 ) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

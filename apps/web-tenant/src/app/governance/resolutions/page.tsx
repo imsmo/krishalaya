@@ -34,7 +34,10 @@ export function generateMetadata(): Metadata {
 const OK = new Set(['voted', 'changed']);
 const VOTE_ERR = new Set(['undeclared', 'notOpen', 'ineligible', 'generic']);
 
-export default async function ResolutionsPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function ResolutionsPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(RESOLUTIONS_HREF);
   const t = getTranslator();
   const lang = getLang();

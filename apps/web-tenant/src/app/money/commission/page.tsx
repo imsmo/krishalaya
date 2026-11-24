@@ -24,7 +24,8 @@ import { DirArrow } from '../../../components/DirArrow'; // PC-56 TENANT-CLOSE Â
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swa.com.title'), robots: { index: false, follow: false } }; }
 
-export default async function CommissionPage({ searchParams }: { searchParams: { source?: string; history?: string } }) {
+export default async function CommissionPage(props: { searchParams: Promise<{ source?: string; history?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession(COMMISSION_HREF);
   const t = getTranslator(); const lang = getLang();
   const day = (ymd: string | null) => (ymd ? formatDate(`${ymd}T00:00:00+05:30`, lang, { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' }) : 'â€”');

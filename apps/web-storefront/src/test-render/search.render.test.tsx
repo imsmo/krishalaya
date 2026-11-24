@@ -34,8 +34,8 @@ import { store2aRefusalKeys } from '../features/store2/refusals';
 import { renderResolved, text } from './store1b-harness';
 import { S, reset, PAGE, OFF } from './store2a-fixtures';
 
-const platform = async (sp: Record<string, string> = {}) => renderResolved(await PlatformSearch({ searchParams: sp }), []);
-const store = async (sp: Record<string, string> = {}) => renderResolved(await TenantSearch({ params: { tenantSlug: 'anand-fpo' }, searchParams: sp }), []);
+const platform = async (sp: Record<string, string> = {}) => renderResolved(await PlatformSearch({ searchParams: Promise.resolve(sp) }), []);
+const store = async (sp: Record<string, string> = {}) => renderResolved(await TenantSearch({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve(sp) }), []);
 beforeEach(reset);
 
 describe('STORE-2a · W276 search — the platform', () => {

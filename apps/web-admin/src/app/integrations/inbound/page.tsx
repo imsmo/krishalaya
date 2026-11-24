@@ -26,7 +26,8 @@ interface Meta {
   beganWithRelease: string;
 }
 
-export default async function InboundPage({ searchParams }: { searchParams: { failuresOnly?: string } }) {
+export default async function InboundPage(props: { searchParams: Promise<{ failuresOnly?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const failuresOnly = searchParams.failuresOnly === '1';

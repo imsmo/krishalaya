@@ -36,7 +36,8 @@ export function generateMetadata(): Metadata {
 const AUDIT_ACTION = { prepare: 'ambassador.payout_run.prepared', confirm: 'ambassador.payout_run.confirmed', pay: 'ambassador.payout_run.paid', refuse: 'ambassador.payout_run.refused' } as const;
 const num = (v: string | undefined) => (/^\d{1,9}$/.test(v ?? '') ? Number(v) : 0);
 
-export default async function RunActPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function RunActPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   await requireSession(EARNINGS_ACT_HREF);
   const t = getTranslator();
   const lang = getLang();

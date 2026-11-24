@@ -28,13 +28,13 @@ const ID = 'd_msg0000000000000000000';
 const IL = { title: 'Add {name}?', body: 'b', add: 'Add', notNow: 'Not now', added: 'Added {name}', notAdded: 'Not added', close: 'Close', appLink: 'App page', label: 'l' };
 const KL = { kept: 'k', restored: 'r {age}', ask: 'a', missing: 'm', link: 'On this phone', syncHref: '/x/sync', now: 'n', minutes: '{n} m', hours: '{n} h', days: '{n} d' };
 const STATES: Array<[string, () => Promise<React.ReactNode> | React.ReactNode]> = [
-  ['W315 platform', () => PlatformSync({ searchParams: {} })],
-  ['W315 organisation', () => TenantSync({ params: { tenantSlug: SLUG }, searchParams: {} })],
-  ['W3151 confirm', () => TenantSync({ params: { tenantSlug: SLUG }, searchParams: { discard: ID } })],
-  ['W3152 success', () => PlatformSync({ searchParams: { done: 'discarded' } })],
-  ['W3153 failure', () => TenantSync({ params: { tenantSlug: SLUG }, searchParams: { done: 'failed', discard: ID } })],
-  ['/app error (W3137)', () => TenantApp({ params: { tenantSlug: SLUG }, searchParams: { install: 'error' } })],
-  ['/app success (W3139)', () => TenantApp({ params: { tenantSlug: SLUG }, searchParams: { install: 'success' } })],
+  ['W315 platform', () => PlatformSync({ searchParams: Promise.resolve({}) })],
+  ['W315 organisation', () => TenantSync({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve({}) })],
+  ['W3151 confirm', () => TenantSync({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve({ discard: ID }) })],
+  ['W3152 success', () => PlatformSync({ searchParams: Promise.resolve({ done: 'discarded' }) })],
+  ['W3153 failure', () => TenantSync({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve({ done: 'failed', discard: ID }) })],
+  ['/app error (W3137)', () => TenantApp({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve({ install: 'error' }) })],
+  ['/app success (W3139)', () => TenantApp({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve({ install: 'success' }) })],
   ['the list', async () => <SyncListView chrome={PLATFORM_CHROME} state={{ kind: 'list' }} view={{ kind: 'ready', drafts: await (await phone()).visible(), now: NOW, expired: 1 }} labels={SYNC_LABELS} />],
   ['the confirm island', async () => <SyncListView chrome={tenantChrome(SLUG)} state={{ kind: 'confirm', id: ID }} view={{ kind: 'ready', drafts: await (await phone()).visible(), now: NOW, expired: 0 }} labels={SYNC_LABELS} />],
   ['the keeper', () => <DraftKeeperView kind="message" refId="r" state="restored" note={{ restored: '2 h', ask: true }} labels={KL} />],

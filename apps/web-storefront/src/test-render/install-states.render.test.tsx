@@ -26,7 +26,7 @@ import { text } from './store1b-harness';
 import { C, ORG, SLUG, reset } from './store6a-fixtures';
 
 beforeEach(() => reset());
-const tenant = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantApp({ params: { tenantSlug: SLUG }, searchParams: sp }));
+const tenant = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantApp({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve(sp) }));
 const SL = { notNow: en['store6b.app.status.notNow'], added: en['store6b.app.status.added'], cannot: en['store6b.app.cannot'] };
 
 describe('STORE-6b · /app — the invitation section', () => {
@@ -54,7 +54,7 @@ describe('STORE-6b · /app — the invitation section', () => {
     C.flags = { storefront_install_prompt: false };
     h = await tenant();
     expect(h).toContain('data-kv-invite="off"'); expect(text(h)).toContain(en['store6b.app.off'].replace('{name}', ORG));
-    const p = renderToStaticMarkup(PlatformApp({ searchParams: { install: 'error' } }));
+    const p = renderToStaticMarkup(PlatformApp({ searchParams: Promise.resolve({ install: 'error' }) }));
     expect(p).toContain('data-kv-invite="off"'); expect(text(p)).toContain(en['store6b.app.off'].replace('{name}', PLATFORM_BRAND.platformStoreName));
     expect(p).toContain('data-kv-install-state="error"');
   });

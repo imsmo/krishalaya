@@ -42,9 +42,12 @@ const OK = new Set(['dunning']);
 const ERR = new Set(['channel', 'outcome', 'note', 'elevation', 'illegal', 'notFound', 'generic']);
 const STATUS_TONE: Record<string, StatusTone> = { issued: 'neutral', partially_paid: 'warning', overdue: 'danger' };
 
-export default async function DunningQueuePage({ searchParams }: {
-  searchParams: { cursor?: string; tier?: string; ok?: string; error?: string };
-}) {
+export default async function DunningQueuePage(
+  props: {
+    searchParams: Promise<{ cursor?: string; tier?: string; ok?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const tier = isAgeingTier(searchParams.tier) ? searchParams.tier : undefined;

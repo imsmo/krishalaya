@@ -36,7 +36,7 @@ import { gu } from '../i18n/gu';
 import { text } from './store1b-harness';
 import { C, reset, SLUG, OID, ORDER } from './store5a-fixtures';
 
-const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantOrderPage({ params: { tenantSlug: SLUG, id: OID }, searchParams: sp }));
+const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantOrderPage({ params: Promise.resolve({ tenantSlug: SLUG, id: OID }), searchParams: Promise.resolve(sp) }));
 const form = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 beforeEach(() => { reset(); });
 

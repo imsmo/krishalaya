@@ -30,7 +30,11 @@ const NODE_TONE: Record<'ok' | 'warn' | 'danger' | 'muted', StatusTone> = {
 const OK = new Set(['created', 'updated', 'status', 'madeDefault', 'unset', 'locked', 'unlocked']);
 const ERR = new Set(['name', 'notes', 'reason', 'capacity', 'status', 'illegal', 'noChange', 'elevation', 'conflict', 'invalid', 'notFound', 'generic']);
 
-export default async function CellDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function CellDetailPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
   const id = params.id;

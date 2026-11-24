@@ -25,7 +25,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('int.proposal.title'), robots: { index: false, follow: false }, referrer: 'no-referrer' };
 }
 
-export default async function IntegrationProposalPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | undefined> }) {
+export default async function IntegrationProposalPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const base = proposalHref(params.id);
   await requireSession(base);
   const t = getTranslator();

@@ -45,7 +45,7 @@ export async function recordPourAction(formData: FormData): Promise<void> {
   try { rec = await c.dairy.recordCollection({ ...built.value, mccId: centre.id }, key); }
   catch (e) { recReason = e instanceof SdkError ? pourFailureReason(e.status, e.code) : 'record'; }
   if (!rec) return fail(recReason ?? 'record');
-  cookies().set(SLIP_COOKIE, encodeRecorded({
+  (await cookies()).set(SLIP_COOKIE, encodeRecorded({
     id: rec.id, memberCode: built.code, mccId: rec.mccId, shift: rec.shift, collectedOn: rec.collectedOn,
     weightKg: rec.weightKg ?? '', fatPct: rec.fatPct ?? '', snfPct: rec.snfPct ?? '', amountMinor: rec.amountMinor, rateCardId: rec.rateCardId,
     holdState: rec.holdState ?? 'none', createdAt: rec.createdAt ?? null, waterFlag: rec.waterFlag, adulterationFlags: rec.adulterationFlags ?? [],

@@ -16,8 +16,12 @@ export function generateMetadata(): Metadata {
   return { title: t.t('sweep.language.title'), robots: { index: false, follow: true } };
 }
 
-export default function TenantLanguagePage({ params, searchParams }: { params: { tenantSlug: string }; searchParams: Record<string, string | string[] | undefined> }) {
-  const h = headers();
+export default async function TenantLanguagePage(
+  props: { params: Promise<{ tenantSlug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+  const h = await headers();
   const home = h.get(TENANT_SLUG_HEADER) === params.tenantSlug ? '/' : `/${encodeURIComponent(params.tenantSlug)}`;
   const from = languageFrom(searchParams.from, h.get('referer'), h.get('host'), home);
   return <LanguageScreen chrome={tenantChrome(params.tenantSlug)} from={from} active={getLang()} />;

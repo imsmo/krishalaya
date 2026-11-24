@@ -23,7 +23,8 @@ export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('ops4.upkeep.title'), robots: { index: false, follow: false } }; }
 type SP = Record<string, string | string[] | undefined>;
 
-export default async function ChcMaintenancePage({ searchParams }: { searchParams?: SP }) {
+export default async function ChcMaintenancePage(props: { searchParams?: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   await requireSession(MAINT);
   const t = getTranslator(); const lang = getLang();
   const act = chain4State('chc_act', searchParams);
@@ -31,7 +32,7 @@ export default async function ChcMaintenancePage({ searchParams }: { searchParam
   const form = chain4State('chc_form', searchParams);
   if (form === 'failure') return <Ops4Chain t={t} chain="chc_form" state="failure" page={MAINT}><MaintFailureNote t={t} reason={parseFailure(searchParams?.reason)} /></Ops4Chain>;
   if (form === 'success') {
-    const entry = decodeRecorded(cookies().get(ENTRY_COOKIE)?.value);
+    const entry = decodeRecorded((await cookies()).get(ENTRY_COOKIE)?.value);
     return <Ops4Chain t={t} chain="chc_form" state="success" page={MAINT}><MaintRecorded t={t} lang={lang} entry={entry} machine={null} /></Ops4Chain>;
   }
 

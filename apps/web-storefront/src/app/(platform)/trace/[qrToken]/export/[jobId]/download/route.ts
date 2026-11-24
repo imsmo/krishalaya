@@ -5,6 +5,10 @@ import { PLATFORM_CHROME } from '../../../../../../../features/store4a/account';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: Request, { params }: { params: { qrToken: string; jobId: string } }): Promise<Response> {
+export async function GET(
+  req: Request,
+  props: { params: Promise<{ qrToken: string; jobId: string }> }
+): Promise<Response> {
+  const params = await props.params;
   return traceDownload(req, PLATFORM_CHROME, params.qrToken, params.jobId);
 }

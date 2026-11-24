@@ -27,7 +27,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('ship.tracking.title'), robots: { index: false, follow: false } };
 }
 
-export default async function ShipmentTrackingPage({ params }: { params: { id: string } }) {
+export default async function ShipmentTrackingPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   await requireSession(`/logistics/${params.id}/tracking`);
   const t = getTranslator();
   const lang = getLang();

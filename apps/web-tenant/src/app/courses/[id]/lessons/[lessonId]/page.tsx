@@ -44,7 +44,8 @@ const readQuiz = (raw: unknown): Quiz | null => {
   return { questions: qs.filter((x) => x && typeof x === 'object' && Array.isArray((x as Quiz['questions'][number]).options)) as Quiz['questions'] };
 };
 
-export default async function LessonRecordPage({ params }: { params: { id: string; lessonId: string } }) {
+export default async function LessonRecordPage(props: { params: Promise<{ id: string; lessonId: string }> }) {
+  const params = await props.params;
   const href = `/courses/${encodeURIComponent(params.id)}/lessons/${encodeURIComponent(params.lessonId)}`;
   await requireSession(href);
   const t = getTranslator();

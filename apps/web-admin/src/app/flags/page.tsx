@@ -22,7 +22,10 @@ export function generateMetadata(): Metadata {
 const STATE_TONE: Record<string, StatusTone> = { on: 'success', off: 'neutral', locked: 'danger' };
 const ERR = new Set(['key', 'rolloutPct', 'reason', 'tenantIds', 'plans', 'countries', 'elevation', 'locked', 'notFound', 'generic']);
 
-export default async function FlagsPage({ searchParams }: { searchParams: { cursor?: string; prefix?: string; enabled?: string; error?: string } }) {
+export default async function FlagsPage(
+  props: { searchParams: Promise<{ cursor?: string; prefix?: string; enabled?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const enabled = searchParams.enabled === 'true' || searchParams.enabled === 'false' ? searchParams.enabled : undefined;

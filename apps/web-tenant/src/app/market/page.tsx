@@ -16,7 +16,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('market.title'), robots: { index: false, follow: false } };
 }
 
-export default async function MarketPage({ searchParams }: { searchParams: { productId?: string } }) {
+export default async function MarketPage(props: { searchParams: Promise<{ productId?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession('/market');
   const t = getTranslator();
   const lang = getLang();

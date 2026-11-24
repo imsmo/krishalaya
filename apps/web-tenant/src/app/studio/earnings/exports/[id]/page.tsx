@@ -39,7 +39,11 @@ export function generateMetadata(): Metadata {
 
 const when = (iso: string | null, lang: string) => (iso ? formatDate(iso, lang, { dateStyle: 'medium', timeStyle: 'short' }) : null);
 
-export default async function EarningsExportPage({ params, searchParams }: { params: { id: string }; searchParams: { error?: string } }) {
+export default async function EarningsExportPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const id = params.id;
   await requireSession(exportHref(id));
   const t = getTranslator();

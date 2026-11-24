@@ -26,7 +26,11 @@ export function generateMetadata(): Metadata {
 const OK = new Set(['approve', 'suspend', 'archive', 'limits']);
 const ERR = new Set(['elevation', 'illegal', 'notFound', 'reason', 'limitCode', 'limitValue', 'expiresAt', 'generic']);
 
-export default async function TenantDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function TenantDetailPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
 

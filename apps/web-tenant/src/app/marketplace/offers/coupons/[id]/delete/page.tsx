@@ -26,7 +26,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('cpn.delete.title'), robots: { index: false, follow: false } };
 }
 
-export default async function DeleteCouponPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | undefined> }) {
+export default async function DeleteCouponPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const base = `${COUPONS_HREF}/${encodeURIComponent(params.id)}/delete`;
   await requireSession(base);
   const t = getTranslator();

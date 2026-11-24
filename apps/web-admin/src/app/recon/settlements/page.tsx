@@ -52,9 +52,12 @@ interface Meta {
   statementCount: number | null;
 }
 
-export default async function SettlementQueuePage({ searchParams }: {
-  searchParams: { cycle?: string; tenantId?: string; cursor?: string; ok?: string; error?: string };
-}) {
+export default async function SettlementQueuePage(
+  props: {
+    searchParams: Promise<{ cycle?: string; tenantId?: string; cursor?: string; ok?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const arrow = rangeArrow(getAdminDir());

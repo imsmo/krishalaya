@@ -29,7 +29,10 @@ export function generateMetadata(): Metadata {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export default async function ResolutionFormPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function ResolutionFormPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(NEW_RESOLUTION_HREF);
   const t = getTranslator();
   const step = chainStep(typeof searchParams.step === 'string' ? searchParams.step : undefined);

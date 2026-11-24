@@ -28,7 +28,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('swb.scm.actTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function SchemeActPage({ params, searchParams }: { params: { code: string }; searchParams: Record<string, string | undefined> }) {
+export default async function SchemeActPage(
+  props: { params: Promise<{ code: string }>; searchParams: Promise<Record<string, string | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const code = isSchemeCode(params.code) ? params.code : '';
   const base = code ? `${schemeHref(code)}/act` : SCHEMES_DESK_HREF;
   await requireSession(base);

@@ -16,7 +16,8 @@ export function generateMetadata(): Metadata {
   return { title: t.t('help.title'), description: t.t('help.lead') };
 }
 
-export default async function TenantHelpPage({ params }: { params: { tenantSlug: string } }) {
+export default async function TenantHelpPage(props: { params: Promise<{ tenantSlug: string }> }) {
+  const params = await props.params;
   let flags: StorefrontFlags | null = null;
   try { flags = await publicClient(params.tenantSlug).storefront.flags(); } catch { flags = null; }
   return <HelpScreen chrome={tenantChrome(params.tenantSlug)} flags={flags} />;

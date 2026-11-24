@@ -12,6 +12,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('store6.install.metaTitle'), robots: { index: false } };
 }
 
-export default function Page(props: { searchParams?: Record<string, string | string[] | undefined> }) {
-  return <InstallScreen chrome={PLATFORM_CHROME} name={PLATFORM_BRAND.platformStoreName} offlineReads={null} inviteOn={false} installState={readInstallState(props?.searchParams?.install)} />;
+export default async function Page(
+  props: { searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  return <InstallScreen chrome={PLATFORM_CHROME} name={PLATFORM_BRAND.platformStoreName} offlineReads={null} inviteOn={false} installState={readInstallState((await props?.searchParams)?.install)} />;
 }

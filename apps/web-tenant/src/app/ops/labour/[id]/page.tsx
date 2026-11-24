@@ -35,7 +35,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('lab.detail.title'), robots: { index: false, follow: false } };
 }
 
-export default async function JobDetailPage({ params }: { params: { id: string } }) {
+export default async function JobDetailPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const base = `${LABOUR_HREF}/${encodeURIComponent(params.id)}`;
   await requireSession(base);
   const t = getTranslator();

@@ -19,6 +19,9 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('offline.title'), robots: { index: false, follow: false } };
 }
 
-export default function OfflinePage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function OfflinePage(
+  props: { searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   return <OfflineScreen chrome={PLATFORM_CHROME} orgName={null} offlineReads={null} searchParams={searchParams ?? {}} />;
 }

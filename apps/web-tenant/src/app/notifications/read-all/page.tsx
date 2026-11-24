@@ -24,7 +24,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('notif.act.readAll'), robots: { index: false, follow: false } };
 }
 
-export default async function ReadAllPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function ReadAllPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(READ_ALL_HREF);
   const t = getTranslator();
   const lang = getLang();

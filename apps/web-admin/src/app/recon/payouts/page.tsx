@@ -37,9 +37,12 @@ interface Meta {
 
 const STATUSES = ['open', 'approved', 'returned', 'executing', 'executed', 'failed'] as const;
 
-export default async function PayoutBatchesPage({ searchParams }: {
-  searchParams: { status?: string; batchType?: string; cursor?: string };
-}) {
+export default async function PayoutBatchesPage(
+  props: {
+    searchParams: Promise<{ status?: string; batchType?: string; cursor?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const status = (STATUSES as readonly string[]).includes(searchParams.status ?? '') ? searchParams.status : undefined;

@@ -48,7 +48,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('review.title'), robots: { index: false, follow: false } };
 }
 
-export default async function ReviewPage({ params, searchParams }: { params: { tenantSlug: string; id: string }; searchParams: SP }) {
+export default async function ReviewPage(
+  props: { params: Promise<{ tenantSlug: string; id: string }>; searchParams: Promise<SP> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const { tenantSlug: slug, id } = params;
   await requireSession(reviewHref(slug, id));
   const t = getTranslator();
@@ -141,7 +145,8 @@ export default async function ReviewPage({ params, searchParams }: { params: { t
 
   // (4) the form or the confirm — the chain's key and draft (never the URL)
   const carried = readKey(searchParams.k, SUBMIT_KEY_RE);
-  const chunks = Array.from({ length: REVIEW_DRAFT_CHUNKS }, (_, i) => cookies().get(draftCookieName(i))?.value);
+  const jar = await cookies();
+  const chunks = Array.from({ length: REVIEW_DRAFT_CHUNKS }, (_, i) => jar.get(draftCookieName(i))?.value);
   const draft: ReviewDraft | null = carried ? decodeReviewDraft(chunks, carried, id) : null;
   const key = carried ?? submitKey(randomUUID());
   const failure = readFailure<SubmitFailure>(searchParams.failure, SUBMIT_FAILURES);

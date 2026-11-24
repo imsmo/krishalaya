@@ -57,9 +57,12 @@ function cycleOf(from?: string, to?: string): { from: string; to: string } {
   return { from: first.toISOString().slice(0, 10), to: last.toISOString().slice(0, 10) };
 }
 
-export default async function FreightPage({ searchParams }: {
-  searchParams: { tab?: string; cursor?: string; act?: string; id?: string; ok?: string; error?: string; cycleFrom?: string; cycleTo?: string };
-}) {
+export default async function FreightPage(
+  props: {
+    searchParams: Promise<{ tab?: string; cursor?: string; act?: string; id?: string; ok?: string; error?: string; cycleFrom?: string; cycleTo?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/logistics/freight');
   const t = getTranslator();
   const lang = getLang();

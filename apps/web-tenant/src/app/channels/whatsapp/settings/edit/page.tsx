@@ -21,7 +21,10 @@ export function generateMetadata(): Metadata { return { title: getTranslator().t
 
 const all = (v: string | string[] | undefined): string[] => (Array.isArray(v) ? v : typeof v === 'string' ? [v] : []).map((s) => s.trim()).filter(Boolean);
 
-export default async function OptinPolicyFormPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function OptinPolicyFormPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(WA_POLICY_FORM_HREF);
   const t = getTranslator();
   const step = chainStep(typeof searchParams.step === 'string' ? searchParams.step : undefined);

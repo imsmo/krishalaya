@@ -5,7 +5,11 @@ import { docHref } from '../../../../features/kyc/desk';
 
 export const dynamic = 'force-dynamic';
 
-export default function KycActMoved({ params, searchParams }: { params: { docId: string }; searchParams: Record<string, string | string[] | undefined> }) {
+export default async function KycActMoved(
+  props: { params: Promise<{ docId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const q = new URLSearchParams();
   for (const k of ['step', 'act', 'reasonCode', 'error', 'link']) { const v = searchParams[k]; if (typeof v === 'string') q.set(k, v); }
   redirect(`${docHref(params.docId)}/act${q.toString() ? `?${q.toString()}` : ''}`);

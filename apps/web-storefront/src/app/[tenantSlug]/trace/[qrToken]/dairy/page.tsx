@@ -9,6 +9,7 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('store5b.dairy.title'), robots: { index: false } };
 }
 
-export default function Page({ params }: { params: { tenantSlug: string; qrToken: string } }) {
+export default async function Page(props: { params: Promise<{ tenantSlug: string; qrToken: string }> }) {
+  const params = await props.params;
   return DairyTraceScreen({ chrome: tenantChrome(params.tenantSlug), qrToken: params.qrToken });
 }

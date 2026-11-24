@@ -63,7 +63,7 @@ const LEAKY = (over: Record<string, unknown> = {}) => ({
     { status: 'in_transit', at: '2026-10-16T08:30:00.000Z', lat: 23.701234, lng: 72.501234, note: 'ping near Kadi' },
   ],
 });
-const page = async (id: string) => renderToStaticMarkup(await TenantOrderPage({ params: { tenantSlug: SLUG, id }, searchParams: {} }));
+const page = async (id: string) => renderToStaticMarkup(await TenantOrderPage({ params: Promise.resolve({ tenantSlug: SLUG, id }), searchParams: Promise.resolve({}) }));
 const section = (h: string) => h.slice(h.indexOf('<section class="kv-order__section" aria-labelledby="tracking-h"'), h.indexOf('</section>', h.indexOf('kv-refused-tracking')) + 10);
 beforeEach(() => { reset(); T.tracking = {}; C.orders[OID.cod] = DETAIL(OID.cod, { status: 'confirmed' }); });
 

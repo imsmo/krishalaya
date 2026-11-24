@@ -29,7 +29,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('kyc.act.title'), robots: { index: false, follow: false } };
 }
 
-export default async function KycActPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | undefined> }) {
+export default async function KycActPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const base = `${docHref(params.id)}/act`;
   await requireSession(base);
   const t = getTranslator();

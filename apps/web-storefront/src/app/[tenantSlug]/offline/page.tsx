@@ -17,7 +17,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('offline.title'), robots: { index: false, follow: false } };
 }
 
-export default async function Page({ params, searchParams }: { params: { tenantSlug: string }; searchParams: SP }) {
+export default async function Page(
+  props: { params: Promise<{ tenantSlug: string }>; searchParams: Promise<SP> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const shell = await loadTenantShell(params.tenantSlug);
   const name = shell.kind === 'ok' ? (shell.branding?.brand?.displayName || shell.branding?.displayName || shell.tenant.displayName) : params.tenantSlug;
   let reads = false;

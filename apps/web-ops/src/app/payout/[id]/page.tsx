@@ -14,7 +14,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('ops1.payout.billTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function PayoutBillPage({ params }: { params: { id: string } }) {
+export default async function PayoutBillPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   await requireSession(`/payout/${params.id}`);
   const t = getTranslator(); const lang = getLang();
   const client = opsClient();

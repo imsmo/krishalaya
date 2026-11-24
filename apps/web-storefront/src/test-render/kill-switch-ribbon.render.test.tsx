@@ -28,7 +28,7 @@ import { C, SLUG, reset, withCookies } from './store6a-fixtures';
 
 const CHROMES = [
   ['the platform', async () => renderResolved(await PlatformLayout({ children: <p>page</p> }), [SiteHeader]), ''],
-  ['an organisation', async () => renderResolved(await TenantLayout({ children: <p>page</p>, params: { tenantSlug: SLUG } }), [TenantHeader]), `/${SLUG}`],
+  ['an organisation', async () => renderResolved(await TenantLayout({ children: <p>page</p>, params: Promise.resolve({ tenantSlug: SLUG }) }), [TenantHeader]), `/${SLUG}`],
 ] as const;
 const ribbon = (h: string) => { const i = h.indexOf('data-kv-ribbon='); return i < 0 ? '' : h.slice(h.lastIndexOf('<div', i), h.indexOf('</div>', i) + 6); };
 beforeEach(() => reset());

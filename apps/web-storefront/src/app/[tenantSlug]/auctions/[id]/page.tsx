@@ -47,7 +47,11 @@ const BID_STATUS_KEYS: Record<string, string> = {
   sealed_raise: 'store3c.bid.sealedRaise',   // PC-56 STORE-3c · B2 (founder D1)
 };
 
-export default async function TenantAuctionPage({ params, searchParams }: { params: { tenantSlug: string; id: string }; searchParams: SP }) {
+export default async function TenantAuctionPage(
+  props: { params: Promise<{ tenantSlug: string; id: string }>; searchParams: Promise<SP> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const t = getTranslator();
   const lang = getLang();
   const slug = params.tenantSlug;

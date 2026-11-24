@@ -30,7 +30,7 @@ import { text } from './store1b-harness';
 import { C, reset, TOKEN, CERT_ID, HASHES, SCAN, UUIDS } from './store5b-fixtures';
 import { store5bRefusalKeys } from '../features/store5b/refusals';
 
-const render = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TracePage({ params: { qrToken: TOKEN }, searchParams: sp }));
+const render = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TracePage({ params: Promise.resolve({ qrToken: TOKEN }), searchParams: Promise.resolve(sp) }));
 beforeEach(() => { reset(); });
 
 describe('STORE-5b · W303 the trace', () => {
@@ -85,7 +85,7 @@ describe('STORE-5b · W303 the trace', () => {
     C.fail.scan = new SdkError('TRACE_NO_LONGER_PUBLISHED', 404, 'x');
     const h = await render();
     expect(h).toContain('data-kv-trace="no-longer"'); expect(text(h)).toContain(en['store5b.trace.noLongerBody']);
-    expect(await generateMetadata({ params: { qrToken: TOKEN } })).toMatchObject({ title: en['store5b.trace.noLongerTitle'], robots: { index: false } });
+    expect(await generateMetadata({ params: Promise.resolve({ qrToken: TOKEN }) })).toMatchObject({ title: en['store5b.trace.noLongerTitle'], robots: { index: false } });
     C.fail.scan = new SdkError('TRACE_SCAN_NOT_FOUND', 404, 'x');
     await expect(render()).rejects.toThrow('NEXT_NOT_FOUND');
     C.fail.scan = new SdkError('UNAVAILABLE', 503, 'x');

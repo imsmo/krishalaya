@@ -7,7 +7,7 @@
 //   • `kv_2fa` (the challenge's own lifetime, ≤ 5 minutes): the second-factor challenge token (never in the URL, never in the HTML).
 // Both are cleared on success, on "wrong number?", and on sign-out.
 import 'server-only';
-import { cookies } from 'next/headers';
+import { cookies, type UnsafeUnwrappedCookies } from 'next/headers';
 
 const LOGIN_COOKIE = 'kv_login';
 const TWO_FA_COOKIE = 'kv_2fa';
@@ -34,7 +34,7 @@ function dec<T>(raw: string | undefined): T | null {
 }
 
 export function readPendingLogin(): PendingLogin | null {
-  const p = dec<PendingLogin>(cookies().get(LOGIN_COOKIE)?.value);
+  const p = dec<PendingLogin>((cookies() as unknown as UnsafeUnwrappedCookies).get(LOGIN_COOKIE)?.value);
   if (!p || typeof p.typed !== 'string') return null;
   return {
     typed: p.typed.slice(0, 32),
@@ -45,21 +45,21 @@ export function readPendingLogin(): PendingLogin | null {
   };
 }
 export function writePendingLogin(p: PendingLogin): void {
-  cookies().set(LOGIN_COOKIE, enc({ ...p, typed: p.typed.slice(0, 32) }), { ...OPTS, maxAge: LOGIN_MAX_AGE_SEC });
+  (cookies() as unknown as UnsafeUnwrappedCookies).set(LOGIN_COOKIE, enc({ ...p, typed: p.typed.slice(0, 32) }), { ...OPTS, maxAge: LOGIN_MAX_AGE_SEC });
 }
 
 export interface PendingTwoFactor { challengeToken: string; until: number }
 export function readPendingTwoFactor(): PendingTwoFactor | null {
-  const p = dec<PendingTwoFactor>(cookies().get(TWO_FA_COOKIE)?.value);
+  const p = dec<PendingTwoFactor>((cookies() as unknown as UnsafeUnwrappedCookies).get(TWO_FA_COOKIE)?.value);
   return p && typeof p.challengeToken === 'string' && p.challengeToken.length >= 20 && Number.isFinite(p.until) ? p : null;
 }
 export function writePendingTwoFactor(challengeToken: string, ttlSec: number): void {
   const sec = Math.max(30, Math.min(600, Math.floor(ttlSec)));
-  cookies().set(TWO_FA_COOKIE, enc({ challengeToken, until: Math.floor(Date.now() / 1000) + sec }), { ...OPTS, maxAge: sec });
+  (cookies() as unknown as UnsafeUnwrappedCookies).set(TWO_FA_COOKIE, enc({ challengeToken, until: Math.floor(Date.now() / 1000) + sec }), { ...OPTS, maxAge: sec });
 }
 
 export function clearLoginFlow(): void {
-  const c = cookies();
+  const c = (cookies() as unknown as UnsafeUnwrappedCookies);
   c.delete(LOGIN_COOKIE);
   c.delete(TWO_FA_COOKIE);
 }

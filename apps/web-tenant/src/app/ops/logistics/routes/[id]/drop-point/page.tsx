@@ -19,7 +19,11 @@ import { addDropPointAction } from './actions';
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.run.addDropPoint'), robots: { index: false, follow: false } }; }
 
-export default async function AddDropPointPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | undefined> }) {
+export default async function AddDropPointPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const routeId = isUuid(params.id) ? params.id : '';
   const back = routeHref(params.id); const base = `${back}/drop-point`;
   await requireSession(base);

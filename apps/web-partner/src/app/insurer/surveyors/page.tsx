@@ -17,7 +17,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('partner3.surveyors.title'), robots: { index: false, follow: false } };
 }
 
-export default async function InsurerSurveyorsPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function InsurerSurveyorsPage(
+  props: { searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requirePartner();
   const t = getTranslator();
   await insurerGate();

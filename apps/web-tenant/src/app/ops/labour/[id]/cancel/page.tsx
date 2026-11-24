@@ -26,7 +26,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('lab.cancel.title'), robots: { index: false, follow: false } };
 }
 
-export default async function CancelJobPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | string[] | undefined> }) {
+export default async function CancelJobPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const base = cancelHref(params.id);
   await requireSession(base);
   const t = getTranslator();

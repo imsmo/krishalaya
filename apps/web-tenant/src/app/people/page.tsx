@@ -43,7 +43,8 @@ function roleNames(roles: { roleCode: string; isActive: boolean }[], t: Translat
   return roles.filter((r) => r.isActive).map((r) => roleName(r.roleCode, t)).join(', ');
 }
 
-export default async function PeoplePage({ searchParams }: { searchParams: RawParams }) {
+export default async function PeoplePage(props: { searchParams: Promise<RawParams> }) {
+  const searchParams = await props.searchParams;
   await requireSession('/people');
   const t = getTranslator();
   const lang = getLang();

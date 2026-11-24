@@ -36,7 +36,7 @@ import { text } from './store1b-harness';
 import { C, reset, CONVO, FARMER_UUID } from './hotfix6-fixtures';
 import { STORE4_HOTFIX6_REFUSALS, store4RefusalKeys } from '../features/store4/refusals';
 
-const page = async (id = CONVO, sp: Record<string, string> = {}) => renderToStaticMarkup(await ThreadPage({ params: { tenantSlug: 'anand-fpo', id }, searchParams: sp }));
+const page = async (id = CONVO, sp: Record<string, string> = {}) => renderToStaticMarkup(await ThreadPage({ params: Promise.resolve({ tenantSlug: 'anand-fpo', id }), searchParams: Promise.resolve(sp) }));
 const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 beforeEach(() => { reset(); });
 

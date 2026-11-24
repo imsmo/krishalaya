@@ -53,10 +53,14 @@ interface Rollout {
   canApprove: boolean;
 }
 
-export default async function RolloutPage({ params, searchParams }: {
-  params: { id: string };
-  searchParams: { ok?: string; error?: string };
-}) {
+export default async function RolloutPage(
+  props: {
+    params: Promise<{ id: string }>;
+    searchParams: Promise<{ ok?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
   const arrow = rangeArrow(getAdminDir());

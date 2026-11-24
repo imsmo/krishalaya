@@ -31,7 +31,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('pu.title'), robots: { index: false, follow: false } };
 }
 
-export default async function PlanPage({ searchParams }: { searchParams: { error?: string } }) {
+export default async function PlanPage(props: { searchParams: Promise<{ error?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession('/plan');
   const t = getTranslator();
   const lang = getLang();

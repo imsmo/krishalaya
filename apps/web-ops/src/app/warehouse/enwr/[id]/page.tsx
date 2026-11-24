@@ -15,7 +15,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('ops2.enwrReceipt.title'), robots: { index: false, follow: false } };
 }
 
-export default async function EnwrReceiptPage({ params }: { params: { id: string } }) {
+export default async function EnwrReceiptPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const id = parseId(params.id);
   await requireSession(id ? `/warehouse/enwr/${id}` : '/warehouse/enwr/registry');
   const t = getTranslator(); const lang = getLang();

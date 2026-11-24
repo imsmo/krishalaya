@@ -24,7 +24,8 @@ export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('ops5.ins.title'), robots: { index: false, follow: false } }; }
 type SP = Record<string, string | string[] | undefined>;
 
-export default async function InsightsPage({ searchParams }: { searchParams?: SP }) {
+export default async function InsightsPage(props: { searchParams?: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   await requireSession('/insights');
   const t = getTranslator(); const lang = getLang();
   const w = windowParam(searchParams?.window);

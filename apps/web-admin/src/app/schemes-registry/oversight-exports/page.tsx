@@ -26,7 +26,8 @@ export function generateMetadata(): Metadata {
 
 const ERR = new Set(['soxp_report', 'soxp_limit', 'soxp_days', 'soxp_status', 'soxp_generic', 'elevation']);
 
-export default function OversightExportsPage({ searchParams }: { searchParams: { error?: string } }) {
+export default async function OversightExportsPage(props: { searchParams: Promise<{ error?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;

@@ -42,9 +42,12 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('route.title'), robots: { index: false, follow: false } };
 }
 
-export default async function RoutesPage({ searchParams }: {
-  searchParams: { tab?: string; cursor?: string; act?: string; id?: string; ok?: string; error?: string };
-}) {
+export default async function RoutesPage(
+  props: {
+    searchParams: Promise<{ tab?: string; cursor?: string; act?: string; id?: string; ok?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/logistics/routes');
   const t = getTranslator();
   const lang = getLang();

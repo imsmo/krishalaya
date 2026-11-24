@@ -26,9 +26,12 @@ const STATUS_TONE: Record<string, StatusTone> = {
   suspended: 'danger', archived: 'neutral', terminated: 'neutral',
 };
 
-export default async function TenantsPage({ searchParams }: {
-  searchParams: { cursor?: string; status?: string; q?: string; riskMin?: string };
-}) {
+export default async function TenantsPage(
+  props: {
+    searchParams: Promise<{ cursor?: string; status?: string; q?: string; riskMin?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const status = (TENANT_STATUSES as readonly string[]).includes(searchParams.status ?? '') ? searchParams.status : undefined;

@@ -32,7 +32,7 @@ import { text } from './store1b-harness';
 import { C, reset, IDS, FARMER_UUID } from './store4b-fixtures';
 import { store4bRefusalKeys } from '../features/store4b/refusals';
 
-const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await MessagesPage({ params: { tenantSlug: 'anand-fpo' }, searchParams: sp }));
+const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await MessagesPage({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve(sp) }));
 const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 beforeEach(() => { reset(); });
 
@@ -123,9 +123,9 @@ describe('STORE-4b · W297 states', () => {
 
 describe('STORE-4b · the platform /messages is a door', () => {
   it('→ the session store\'s /<slug>/messages, carrying the cursor; an unreadable store → said, with a Retry', async () => {
-    await expect(PlatformMessagesDoor({ searchParams: { cursor: 'abc' } })).rejects.toThrow('REDIRECT /anand-fpo/messages?cursor=abc');
+    await expect(PlatformMessagesDoor({ searchParams: Promise.resolve({ cursor: 'abc' }) })).rejects.toThrow('REDIRECT /anand-fpo/messages?cursor=abc');
     C.fail.storeSlug = new SdkError('UNAVAILABLE', 503, 'x');
-    const h = renderToStaticMarkup(await PlatformMessagesDoor({ searchParams: {} }));
+    const h = renderToStaticMarkup(await PlatformMessagesDoor({ searchParams: Promise.resolve({}) }));
     expect(h).toContain('data-kv-retry="reload"');
   });
 });

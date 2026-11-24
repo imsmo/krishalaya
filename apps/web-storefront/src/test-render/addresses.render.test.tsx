@@ -30,8 +30,8 @@ import { gu } from '../i18n/gu';
 import { text } from './store1b-harness';
 import { C, reset, ADDR, RECEIVER_PHONE } from './store4a-fixtures';
 
-const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await PlatformBook({ searchParams: sp }));
-const tenantPage = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantBook({ params: { tenantSlug: 'anand-fpo' }, searchParams: sp }));
+const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await PlatformBook({ searchParams: Promise.resolve(sp) }));
+const tenantPage = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantBook({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve(sp) }));
 beforeEach(() => { reset(); });
 
 describe('STORE-4a · W301 the address book', () => {

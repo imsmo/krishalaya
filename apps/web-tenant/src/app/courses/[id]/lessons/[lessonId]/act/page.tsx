@@ -31,7 +31,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('mutate.lesson.title'), robots: { index: false, follow: false } };
 }
 
-export default async function LessonActPage({ params, searchParams }: { params: { id: string; lessonId: string }; searchParams: Record<string, string | string[] | undefined> }) {
+export default async function LessonActPage(
+  props: { params: Promise<{ id: string; lessonId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const PATH = lessonActPath(params.id, params.lessonId);
   await requireSession(PATH);
   const t = getTranslator();

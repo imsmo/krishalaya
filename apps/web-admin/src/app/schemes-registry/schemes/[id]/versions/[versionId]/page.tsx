@@ -34,7 +34,11 @@ const ERR = new Set(['selfPublish', 'notDraft', 'checkerNote', 'reason', 'elevat
 
 interface VersionDetail extends VersionRow { comparedWith: number | null; diff: DiffEntry[] }
 
-export default async function VersionReviewPage({ params, searchParams }: { params: { id: string; versionId: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function VersionReviewPage(
+  props: { params: Promise<{ id: string; versionId: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
   const { id, versionId } = params;

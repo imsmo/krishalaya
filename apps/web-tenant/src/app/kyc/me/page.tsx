@@ -31,7 +31,8 @@ export function generateMetadata(): Metadata {
 
 const ERR = new Set(['email', 'dob', 'gender', 'language', 'empty', 'profile', 'doctype', 'docmedia', 'docno', 'submit']);
 
-export default async function KycPage({ searchParams }: { searchParams: { ok?: string; error?: string } }) {
+export default async function KycPage(props: { searchParams: Promise<{ ok?: string; error?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession('/kyc/me');
   const t = getTranslator();
 

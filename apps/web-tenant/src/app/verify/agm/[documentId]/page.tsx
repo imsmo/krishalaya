@@ -15,7 +15,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('swd.verify.title'), robots: { index: false, follow: false } };
 }
 
-export default async function VerifyAgmPage({ params }: { params: { documentId: string } }) {
+export default async function VerifyAgmPage(props: { params: Promise<{ documentId: string }> }) {
+  const params = await props.params;
   const t = getTranslator();
   let v: AgmVerification | null = null; let failed: 'notFound' | 'error' | null = null;
   try { v = await anonClient().agmPacks.verify(params.documentId); }

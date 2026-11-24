@@ -9,7 +9,7 @@
 // Errors surface as an error CODE in the query (never a phone, never a token). Tokens land in the httpOnly session cookies only.
 // 'use server' files export ONLY async functions.
 import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
+import { cookies, type UnsafeUnwrappedCookies } from 'next/headers';
 import { anonClient } from '../../lib/api-client';
 import { setSession } from '../../lib/partner-auth';
 import { env } from '../../lib/env';
@@ -23,18 +23,18 @@ const str = (fd: FormData, k: string) => String(fd.get(k) ?? '').trim();
 const enc = encodeURIComponent;
 
 function clearPending(): void {
-  for (const k of [PENDING_PHONE, CHOICE, CHALLENGE]) cookies().set(k, '', { ...short(0) });
+  for (const k of [PENDING_PHONE, CHOICE, CHALLENGE]) (cookies() as unknown as UnsafeUnwrappedCookies).set(k, '', { ...short(0) });
 }
 /** After a sign-in answer: a session, a chooser, or the second factor. Never returns. */
 function land(e: unknown): never {
   if (e instanceof SdkError && e.code === 'PARTNER_CHOICE_REQUIRED') {
     const d = (e.details ?? {}) as { choiceToken?: string; partners?: Array<{ id: string; name: string }> };
-    cookies().set(CHOICE, JSON.stringify({ token: d.choiceToken ?? '', partners: d.partners ?? [] }), short(300));
+    (cookies() as unknown as UnsafeUnwrappedCookies).set(CHOICE, JSON.stringify({ token: d.choiceToken ?? '', partners: d.partners ?? [] }), short(300));
     redirect('/login?step=choose');
   }
   if (e instanceof SdkError && e.code === 'TWO_FACTOR_PENDING') {
     const d = (e.details ?? {}) as { challengeToken?: string };
-    cookies().set(CHALLENGE, d.challengeToken ?? '', short(300));
+    (cookies() as unknown as UnsafeUnwrappedCookies).set(CHALLENGE, d.challengeToken ?? '', short(300));
     redirect('/login?step=2fa');
   }
   const code = e instanceof SdkError ? e.code : 'LOGIN_FAILED';
@@ -44,12 +44,12 @@ function land(e: unknown): never {
 export async function requestOtpAction(formData: FormData): Promise<void> {
   const phone = str(formData, 'phone');
   try { await anonClient().partner.auth.otp(phone); } catch { /* enumeration-safe: same next step regardless */ }
-  cookies().set(PENDING_PHONE, phone, short(600));
+  (await cookies()).set(PENDING_PHONE, phone, short(600));
   redirect('/login?step=verify');
 }
 
 export async function verifyOtpAction(formData: FormData): Promise<void> {
-  const phone = cookies().get(PENDING_PHONE)?.value ?? '';
+  const phone = (await cookies()).get(PENDING_PHONE)?.value ?? '';
   if (!phone) redirect('/login?error=PHONE_MISSING');
   let tokens;
   try { tokens = await anonClient().partner.auth.verify(phone, str(formData, 'code')); }
@@ -61,7 +61,7 @@ export async function verifyOtpAction(formData: FormData): Promise<void> {
 
 export async function chooseAction(formData: FormData): Promise<void> {
   let rec: { token?: string } = {};
-  try { rec = JSON.parse(cookies().get(CHOICE)?.value ?? '{}') as { token?: string }; } catch { rec = {}; }
+  try { rec = JSON.parse((await cookies()).get(CHOICE)?.value ?? '{}') as { token?: string }; } catch { rec = {}; }
   if (!rec.token) redirect('/login?error=PARTNER_CHOICE_INVALID');
   let tokens;
   try { tokens = await anonClient().partner.auth.choose(rec.token, str(formData, 'partnerId')); }
@@ -72,7 +72,7 @@ export async function chooseAction(formData: FormData): Promise<void> {
 }
 
 export async function twoFactorAction(formData: FormData): Promise<void> {
-  const challengeToken = cookies().get(CHALLENGE)?.value ?? '';
+  const challengeToken = (await cookies()).get(CHALLENGE)?.value ?? '';
   if (!challengeToken) redirect('/login?error=PARTNER_CHOICE_INVALID');
   let tokens;
   try { tokens = await anonClient().partner.auth.verifyTwoFactor({ challengeToken, code: str(formData, 'code') }); }

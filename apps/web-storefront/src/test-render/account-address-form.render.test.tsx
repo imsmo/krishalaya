@@ -33,8 +33,8 @@ import { text } from './store1b-harness';
 import { C, reset, RECEIVER_PHONE } from './store4a-fixtures';
 
 const KEY = 'address:0213c0de-0000-4000-8000-000000000001';
-const newPage = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await NewAddress({ searchParams: sp }));
-const book = async () => renderToStaticMarkup(await AddressBook({ searchParams: {} }));
+const newPage = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await NewAddress({ searchParams: Promise.resolve(sp) }));
+const book = async () => renderToStaticMarkup(await AddressBook({ searchParams: Promise.resolve({}) }));
 const form = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 const redirectOf = async (p: Promise<unknown>) => { try { await p; return null; } catch (e) { return String((e as Error).message); } };
 beforeEach(() => { reset(); });

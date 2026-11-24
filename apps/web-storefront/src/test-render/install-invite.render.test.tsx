@@ -34,7 +34,7 @@ import { C, ORG, SLUG, brandWith, reset } from './store6a-fixtures';
 const { InstallInvite: RealInvite, InstallSheetView } = jest.requireActual('../components/install/InstallInvite') as typeof import('../components/install/InstallInvite');
 beforeEach(() => reset());
 const count = (h: string, re: RegExp) => (h.match(re) ?? []).length;
-const tenant = async () => renderResolved(await TenantLayout({ children: <p>page</p>, params: { tenantSlug: SLUG } }), [TenantHeader]);
+const tenant = async () => renderResolved(await TenantLayout({ children: <p>page</p>, params: Promise.resolve({ tenantSlug: SLUG }) }), [TenantHeader]);
 const L = {
   title: en['store6b.invite.title'], body: en['store6b.invite.body'], add: en['store6b.invite.add'], notNow: en['store6b.invite.notNow'], added: en['store6b.invite.added'],
   notAdded: en['store6b.invite.notAdded'], close: en['store6b.invite.close'], appLink: en['store6b.invite.appLink'], label: en['store6b.invite.label'],
@@ -72,7 +72,7 @@ describe('STORE-6b · the invitation is mounted ONCE per chrome, with the manife
   it('the organisation\'s offline page (the session-free shell) mounts none', async () => {
     C.flags = { storefront_install_prompt: true };
     C.headers = { 'x-kv-shell': 'offline' };
-    const h = renderToStaticMarkup(await TenantLayout({ children: <p>page</p>, params: { tenantSlug: SLUG } }));
+    const h = renderToStaticMarkup(await TenantLayout({ children: <p>page</p>, params: Promise.resolve({ tenantSlug: SLUG }) }));
     expect(h).not.toContain('data-kv-invite-mounted');
   });
 });

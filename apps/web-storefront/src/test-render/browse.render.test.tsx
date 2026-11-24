@@ -33,7 +33,7 @@ import { S, reset, PAGE, CARD, OFF, ID } from './store2a-fixtures';
 
 const outsideRefusals = (html: string) => html.replace(/<section class="kv-refused"[\s\S]*?<\/section>/g, '');
 
-const browse = async (sp: Record<string, string> = {}) => renderResolved(await TenantStorefront({ params: { tenantSlug: 'anand-fpo' }, searchParams: sp }), []);
+const browse = async (sp: Record<string, string> = {}) => renderResolved(await TenantStorefront({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve(sp) }), []);
 beforeEach(reset);
 
 describe('STORE-2a · W275 browse — facets, chips, the capped count', () => {

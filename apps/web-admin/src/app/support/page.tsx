@@ -20,7 +20,10 @@ export function generateMetadata(): Metadata {
 
 const SEV_TONE: Record<string, StatusTone> = { P0: 'danger', P1: 'danger', P2: 'warning', P3: 'neutral' };
 
-export default async function SupportPage({ searchParams }: { searchParams: { cursor?: string; status?: string; severity?: string; slaBreached?: string; assigned?: string; tenantId?: string } }) {
+export default async function SupportPage(
+  props: { searchParams: Promise<{ cursor?: string; status?: string; severity?: string; slaBreached?: string; assigned?: string; tenantId?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const status = (TICKET_STATUSES as readonly string[]).includes(searchParams.status ?? '') ? searchParams.status : undefined;

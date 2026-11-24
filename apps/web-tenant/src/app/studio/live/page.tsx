@@ -22,7 +22,8 @@ const OK = new Set(['channel']);
 const ERR = new Set(['channel', 'chtitle', 'churl']);
 const PROVIDERS = ['youtube', 'vimeo', 'website', 'podcast', 'other'] as const;
 
-export default async function LiveStudioPage({ searchParams }: { searchParams: { ok?: string; error?: string } }) {
+export default async function LiveStudioPage(props: { searchParams: Promise<{ ok?: string; error?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession('/studio/live');
   const t = getTranslator();
 

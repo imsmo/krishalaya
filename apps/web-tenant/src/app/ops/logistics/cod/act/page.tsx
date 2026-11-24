@@ -27,7 +27,8 @@ const AUDIT: Record<string, [string, string]> = {
 };
 type Remit = { id: string; riderUserId?: string; status?: string; amountMinor?: string; createdAt?: string };
 
-export default async function CodActPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function CodActPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   const base = `${COD_HREF}/act`;
   await requireSession(base);
   const t = getTranslator(); const lang = getLang();

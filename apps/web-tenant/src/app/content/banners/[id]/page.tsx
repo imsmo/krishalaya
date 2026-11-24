@@ -38,7 +38,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('banner.title'), robots: { index: false, follow: false } };
 }
 
-export default async function BannerPage({ params }: { params: { id: string } }) {
+export default async function BannerPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const id = decodeURIComponent(params.id);
   await requireSession(bannerHref(id));
   const t = getTranslator();

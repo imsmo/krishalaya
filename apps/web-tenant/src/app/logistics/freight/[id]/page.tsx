@@ -50,10 +50,14 @@ const TONE_CLASS: Record<'ok' | 'warn' | 'bad' | 'muted', string> = {
   ok: 'kv-badge', warn: 'kv-badge kv-badge--warn', bad: 'kv-badge kv-badge--danger', muted: 'kv-badge kv-badge--muted',
 };
 
-export default async function FreightReconPage({ params, searchParams }: {
-  params: { id: string };
-  searchParams: { act?: string; line?: string; ok?: string; error?: string };
-}) {
+export default async function FreightReconPage(
+  props: {
+    params: Promise<{ id: string }>;
+    searchParams: Promise<{ act?: string; line?: string; ok?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   await requireSession(`/logistics/freight/${params.id}`);
   const t = getTranslator();
   const lang = getLang();

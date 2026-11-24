@@ -33,7 +33,7 @@ import { text } from './store1b-harness';
 import { C, reset, ADDR } from './store4a-fixtures';
 
 const KEY = 'address:0214beef-0000-4000-8000-000000000001';
-const book = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await AddressBook({ searchParams: sp }));
+const book = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await AddressBook({ searchParams: Promise.resolve(sp) }));
 const form = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 const redirectOf = async (p: Promise<unknown>) => { try { await p; return null; } catch (e) { return String((e as Error).message); } };
 beforeEach(() => { reset(); });
@@ -59,7 +59,7 @@ describe('STORE-4a · W3038 the confirms', () => {
     expect(h).toContain('data-kv-failure="not_found"'); expect(h).not.toContain('data-kv-proceed');
   });
   it('the tenant chrome\'s confirm posts with its own chrome field (one action module)', async () => {
-    const h = renderToStaticMarkup(await TenantBook({ params: { tenantSlug: 'anand-fpo' }, searchParams: { confirm: 'remove', id: ADDR.farm } }));
+    const h = renderToStaticMarkup(await TenantBook({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve({ confirm: 'remove', id: ADDR.farm }) }));
     expect(h).toContain('name="chrome" value="anand-fpo"');
   });
 });

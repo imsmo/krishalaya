@@ -33,8 +33,8 @@ import { en } from '../i18n/en';
 import { text } from './store1b-harness';
 import { C, reset, RECEIVER_PHONE, exportRequest } from './store4a-fixtures';
 
-const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await PlatformAccount({ searchParams: sp }));
-const tenantPage = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantAccount({ params: { tenantSlug: 'anand-fpo' }, searchParams: sp }));
+const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await PlatformAccount({ searchParams: Promise.resolve(sp) }));
+const tenantPage = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantAccount({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve(sp) }));
 beforeEach(() => { reset(); });
 
 describe('STORE-4a · W300 the account — the profile', () => {

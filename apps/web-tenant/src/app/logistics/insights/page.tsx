@@ -45,7 +45,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('logistics.insights.title'), robots: { index: false, follow: false } };
 }
 
-export default async function LogisticsInsightsPage({ searchParams }: { searchParams: { window?: string; error?: string } }) {
+export default async function LogisticsInsightsPage(props: { searchParams: Promise<{ window?: string; error?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession('/logistics/insights');
   const t = getTranslator();
   const lang = getLang();

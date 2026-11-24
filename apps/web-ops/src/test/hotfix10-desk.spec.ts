@@ -85,7 +85,8 @@ describe('HOTFIX-10 · H10-4 · one language cookie', () => {
     const src = code(read('lib/i18n.ts'));
     expect(src).toMatch(/import \{ LANG_COOKIE \} from '\.\/lang-cookie';/);
     expect(src).not.toMatch(/const LANG_COOKIE/);
-    expect(src).toMatch(/cookies\(\)\.get\(LANG_COOKIE\)/);
+    // PC-56 SEC-2 (Next 15): the read is now `(cookies() as unknown as UnsafeUnwrappedCookies).get(LANG_COOKIE)`; same constant, same reader.
+    expect(src).toMatch(/cookies\(\)(?: as unknown as UnsafeUnwrappedCookies\))?\.get\(LANG_COOKIE\)/);
   });
   it('no code file outside lib/lang-cookie.ts spells a language-cookie name', () => {
     const walk = (dir: string): string[] => readdirSync(dir).flatMap((f) => {

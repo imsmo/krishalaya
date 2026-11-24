@@ -40,8 +40,9 @@ interface QueueView {
 }
 
 export default async function ReviewQueuePage(
-  { searchParams }: { searchParams: { cursor?: string; languageCode?: string; ok?: string; error?: string; why?: string } },
+  props: { searchParams: Promise<{ cursor?: string; languageCode?: string; ok?: string; error?: string; why?: string }> }
 ) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const arrow = rangeArrow(getAdminDir());

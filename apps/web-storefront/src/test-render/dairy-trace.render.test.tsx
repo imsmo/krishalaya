@@ -31,7 +31,7 @@ beforeEach(() => { reset(); });
 
 describe('STORE-5b · W306 the dairy trace (refused)', () => {
   it('the refused state, the way back, the refusals — and no read', () => {
-    const html = renderToStaticMarkup(DairyPage({ params: { qrToken: TOKEN } }));
+    const html = renderToStaticMarkup(DairyPage({ params: Promise.resolve({ qrToken: TOKEN }) }));
     expect(html).toContain('data-kv-dairy="refused"');
     expect(text(html)).toContain(en['store5b.dairy.body']);
     expect(html).toContain(`href="/trace/${TOKEN}"`);
@@ -39,7 +39,7 @@ describe('STORE-5b · W306 the dairy trace (refused)', () => {
     expect(store5bRefusalKeys('dairy_trace')).toEqual(expect.arrayContaining(['store5b.refusal.dairyLineage', 'store5b.refusal.coldChainChart', 'store5b.refusal.memberSplit']));
     expect(text(html.replace(/<section class="kv-refused"[\s\S]*?<\/section>/, ''))).not.toMatch(/Gir cows|bilona|can number|4°C/);
     expect(C.calls).toEqual([]);
-    const t = renderToStaticMarkup(TenantDairyPage({ params: { tenantSlug: SLUG, qrToken: TOKEN } }));
+    const t = renderToStaticMarkup(TenantDairyPage({ params: Promise.resolve({ tenantSlug: SLUG, qrToken: TOKEN }) }));
     expect(t).toContain(`href="/${SLUG}/trace/${TOKEN}"`);
   });
 });

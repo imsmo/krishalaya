@@ -25,7 +25,10 @@ export function generateMetadata(): Metadata {
 const ST_TONE: Record<string, StatusTone> = { active: 'danger', ended: 'neutral', expired: 'neutral', revoked: 'warning' };
 const ERR = new Set(['targetTenantId', 'targetUserId', 'reason', 'ttlSec', 'scope', 'disabled', 'privileged', 'targetNotFound', 'activeExists', 'self', 'elevation', 'conflict', 'notFound', 'generic']);
 
-export default async function ImpersonationPage({ searchParams }: { searchParams: { cursor?: string; status?: string; ok?: string; error?: string } }) {
+export default async function ImpersonationPage(
+  props: { searchParams: Promise<{ cursor?: string; status?: string; ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const status = (GRANT_STATUSES as readonly string[]).includes(searchParams.status ?? '') ? searchParams.status : undefined;

@@ -19,7 +19,11 @@ export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('dairy.export.title.queued'), robots: { index: false, follow: false } }; }
 const when = (iso: string | null, lang: string) => (iso ? formatDate(iso, lang, { dateStyle: 'medium', timeStyle: 'short' }) : null);
 
-export default async function InsightExportPage({ params, searchParams }: { params: { id: string }; searchParams: { error?: string; from?: string } }) {
+export default async function InsightExportPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; from?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const from: InsightFrom = isInsightFrom(searchParams.from) ? searchParams.from : 'reports';
   const id = params.id; const self = insightExportHref(id, from); const back = backHrefFor(from);
   await requireSession(self);

@@ -39,12 +39,12 @@ export async function cancelOrderAction(fd: FormData): Promise<void> {
   }
   if (outcome) {
     // W3085: named, the values kept — the note in a cookie scoped to this store's order pages, ten minutes
-    cookies().set(CANCEL_DRAFT_COOKIE, encodeCancelDraft({ orderId: id, note: kept.note }), { httpOnly: true, sameSite: 'lax', secure: true, path: `/${slug}/orders`, maxAge: 600 });
+    (await cookies()).set(CANCEL_DRAFT_COOKIE, encodeCancelDraft({ orderId: id, note: kept.note }), { httpOnly: true, sameSite: 'lax', secure: true, path: `/${slug}/orders`, maxAge: 600 });
     const q: Record<string, string> = { error: outcome, k: key };
     if (kept.reasonId) q.r = kept.reasonId;
     redirect(cancelHref(slug, id, q));
   }
-  cookies().set(CANCEL_DRAFT_COOKIE, '', { httpOnly: true, sameSite: 'lax', secure: true, path: `/${slug}/orders`, maxAge: 0 });   // the draft is spent
+  (await cookies()).set(CANCEL_DRAFT_COOKIE, '', { httpOnly: true, sameSite: 'lax', secure: true, path: `/${slug}/orders`, maxAge: 0 });   // the draft is spent
   revalidatePath(orderHref(slug, id));
   revalidatePath(ordersHref(slug));
   redirect(orderHref(slug, id, { ok: 'cancelled' }));

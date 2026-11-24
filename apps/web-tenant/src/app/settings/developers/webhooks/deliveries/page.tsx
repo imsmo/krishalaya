@@ -25,7 +25,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('wh.log.title'), robots: { index: false, follow: false }, referrer: 'no-referrer' };
 }
 
-export default async function DeliveriesPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function DeliveriesPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   await requireSession(DELIVERIES_HREF);
   const t = getTranslator();
   const lang = getLang();

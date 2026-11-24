@@ -41,9 +41,12 @@ interface Owned {
 
 const OK = new Set(['verified', 'drift']);
 
-export default async function WalletAccountsPage({ searchParams }: {
-  searchParams: { ownerKind?: string; frozenOnly?: string; cursor?: string; ok?: string; error?: string; delta?: string };
-}) {
+export default async function WalletAccountsPage(
+  props: {
+    searchParams: Promise<{ ownerKind?: string; frozenOnly?: string; cursor?: string; ok?: string; error?: string; delta?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const ownerKind = searchParams.ownerKind === 'user' || searchParams.ownerKind === 'tenant' ? searchParams.ownerKind : undefined;

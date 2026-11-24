@@ -50,7 +50,8 @@ interface CsatView {
   scores: ScoreRow[]; verbatimsAvailable: boolean; verbatimCount?: number; estimatedRatedAtCount?: number;
 }
 
-export default async function CsatPage({ searchParams }: { searchParams: { days?: string; low?: string } }) {
+export default async function CsatPage(props: { searchParams: Promise<{ days?: string; low?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

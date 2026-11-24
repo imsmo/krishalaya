@@ -22,7 +22,7 @@ import { text } from './store1b-harness';
 import { C, ORG, SLUG, reset } from './store6a-fixtures';
 
 beforeEach(() => reset());
-const tenant = async () => renderToStaticMarkup(await TenantApp({ params: { tenantSlug: SLUG } }));
+const tenant = async () => renderToStaticMarkup(await TenantApp({ params: Promise.resolve({ tenantSlug: SLUG }) }));
 
 describe('STORE-6a · W319 · app & install', () => {
   it('on a store: installs as THE ORGANISATION — its name in the title, the steps, the icon line; never the platform store or a platform app', async () => {

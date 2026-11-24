@@ -26,7 +26,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('dom.title'), robots: { index: false, follow: false } };
 }
 
-export default async function DomainsPage({ searchParams }: { searchParams: { cursor?: string } }) {
+export default async function DomainsPage(props: { searchParams: Promise<{ cursor?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession(DOMAINS_HREF);
   const t = getTranslator();
   const lang = getLang();

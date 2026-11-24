@@ -44,7 +44,11 @@ interface Case {
 const OK = new Set(['claimed', 'upheld', 'overturned']);
 const ERR = new Set(['outcome', 'reason', 'language', 'elevation', 'conflict', 'invalid', 'notFound', 'generic']);
 
-export default async function AppealCasePage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function AppealCasePage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
   const viewer = adminUserId();

@@ -34,7 +34,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('notif.title'), robots: { index: false, follow: false } };
 }
 
-export default async function TenantNotificationsPage({ params, searchParams }: { params: { tenantSlug: string }; searchParams: SP }) {
+export default async function TenantNotificationsPage(
+  props: { params: Promise<{ tenantSlug: string }>; searchParams: Promise<SP> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const slug = params.tenantSlug;
   const { unreadOnly, cursor } = readInboxQuery(searchParams);
   await requireSession(inboxHref(slug, { unread: unreadOnly }));

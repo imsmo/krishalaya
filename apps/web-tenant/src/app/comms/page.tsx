@@ -36,7 +36,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('bc.title'), robots: { index: false, follow: false } };
 }
 
-export default async function CommsPage({ searchParams }: { searchParams: { status?: string; cursor?: string; error?: string } }) {
+export default async function CommsPage(
+  props: { searchParams: Promise<{ status?: string; cursor?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/comms');
   const t = getTranslator();
   const lang = getLang();

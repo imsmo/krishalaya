@@ -16,7 +16,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('store6.install.metaTitle'), robots: { index: false } };
 }
 
-export default async function Page({ params, searchParams }: { params: { tenantSlug: string }; searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function Page(
+  props: { params: Promise<{ tenantSlug: string }>; searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const shell = await loadTenantShell(params.tenantSlug);
   const name = shell.kind === 'ok' ? (shell.branding?.brand?.displayName || shell.branding?.displayName || shell.tenant.displayName) : params.tenantSlug;
   let reads = false; let invite = false;

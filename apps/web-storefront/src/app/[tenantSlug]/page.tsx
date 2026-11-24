@@ -51,7 +51,8 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-export async function generateMetadata({ params }: { params: { tenantSlug: string } }): Promise<Metadata> {
+export async function generateMetadata(props: { params: Promise<{ tenantSlug: string }> }): Promise<Metadata> {
+  const params = await props.params;
   const t = getTranslator();
   // PC-56 TENANT-13d: the tenant's own (published) name, never its slug; the layout's template adds it to every page title
   const shell = await loadTenantShell(params.tenantSlug);
@@ -62,8 +63,10 @@ export async function generateMetadata({ params }: { params: { tenantSlug: strin
 }
 
 export default async function TenantStorefront(
-  { params, searchParams }: { params: { tenantSlug: string }; searchParams: RawSearchParams },
+  props: { params: Promise<{ tenantSlug: string }>; searchParams: Promise<RawSearchParams> }
 ) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const t = getTranslator();
   const lang = getLang();
   const slug = params.tenantSlug;

@@ -39,7 +39,8 @@ function defaultWindow(): { from: string; to: string } {
   return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) };
 }
 
-export default async function SupportExportsPage({ searchParams }: { searchParams: { error?: string } }) {
+export default async function SupportExportsPage(props: { searchParams: Promise<{ error?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const win = defaultWindow();

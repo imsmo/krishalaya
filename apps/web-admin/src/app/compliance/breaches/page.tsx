@@ -24,7 +24,10 @@ const SEV_TONE: Record<string, StatusTone> = { low: 'neutral', medium: 'warning'
 const ST_TONE: Record<string, StatusTone> = { open: 'danger', contained: 'warning', notified: 'warning', closed: 'neutral' };
 const ERR = new Set(['affectedTenantId', 'severity', 'title', 'description', 'affectedData', 'affectedCount', 'detectedAt', 'elevation', 'conflict', 'invalid', 'generic']);
 
-export default async function BreachesPage({ searchParams }: { searchParams: { cursor?: string; status?: string; error?: string } }) {
+export default async function BreachesPage(
+  props: { searchParams: Promise<{ cursor?: string; status?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const status = (BREACH_STATUSES as readonly string[]).includes(searchParams.status ?? '') ? searchParams.status : undefined;

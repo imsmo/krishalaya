@@ -44,7 +44,11 @@ export function generateMetadata(): Metadata {
   return { title: t.t('store3a.cancel.title'), robots: { index: false, follow: false } };
 }
 
-export default async function TenantCancelPage({ params, searchParams }: { params: { tenantSlug: string; id: string }; searchParams: SP }) {
+export default async function TenantCancelPage(
+  props: { params: Promise<{ tenantSlug: string; id: string }>; searchParams: Promise<SP> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const slug = params.tenantSlug;
   await requireSession(cancelHref(slug, params.id));
   const t = getTranslator();
@@ -113,7 +117,7 @@ export default async function TenantCancelPage({ params, searchParams }: { param
   const warning = auctionCancelWarning(order);
   const failure = readCancelOutcome(searchParams.error);
   const keptReason = one(searchParams.r) ?? '';
-  const keptNote = failure ? decodeCancelDraft(cookies().get(CANCEL_DRAFT_COOKIE)?.value, order.id) ?? '' : '';
+  const keptNote = failure ? decodeCancelDraft((await cookies()).get(CANCEL_DRAFT_COOKIE)?.value, order.id) ?? '' : '';
   const k = one(searchParams.k);
   const key = k && KEY.test(k) ? k : actKey('cancel', order.id, randomUUID());
   const label = (o: { code: string; name: string }) => { const kk = cancelReasonKey(o.code); const v = t.t(kk); return v === kk ? o.name : v; };

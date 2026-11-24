@@ -53,7 +53,8 @@ interface Board {
   planTriggerPercentUsed: number;
 }
 
-export default async function CapacityPage({ searchParams }: { searchParams: { ok?: string; error?: string } }) {
+export default async function CapacityPage(props: { searchParams: Promise<{ ok?: string; error?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

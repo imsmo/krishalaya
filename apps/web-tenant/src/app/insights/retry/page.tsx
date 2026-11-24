@@ -13,7 +13,8 @@ import { RETRY_HREF, backHrefFor, isInsightFrom } from '../../../features/swf/co
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swf.retry'), robots: { index: false, follow: false } }; }
 
-export default async function InsightsRetryPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function InsightsRetryPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   const from = isInsightFrom(searchParams.from) ? searchParams.from : 'mandi';
   const back = backHrefFor(from);
   await requireSession(`${RETRY_HREF}?from=${from}`);

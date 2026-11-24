@@ -26,7 +26,8 @@ import { exportWastageAction } from './actions';
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swf.wastage.title'), robots: { index: false, follow: false } }; }
 
-export default async function WastagePage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function WastagePage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   await requireSession(WASTAGE_HREF);
   const t = getTranslator(); const lang = getLang();
   const canRerun = tenantHasPerm('insights.manage');

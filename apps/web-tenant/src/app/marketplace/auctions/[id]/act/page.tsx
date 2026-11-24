@@ -32,7 +32,11 @@ export function generateMetadata(): Metadata {
 }
 const AUDIT_ACTION = { approve: 'auction.approved', cancel: 'auction.cancelled', pause: 'auction.entry_paused', resume: 'auction.entry_resumed' } as const;
 
-export default async function AuctionActPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | undefined> }) {
+export default async function AuctionActPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const base = `${AUCTIONS_HREF}/${encodeURIComponent(params.id)}/act`;
   await requireSession(base);
   const t = getTranslator();

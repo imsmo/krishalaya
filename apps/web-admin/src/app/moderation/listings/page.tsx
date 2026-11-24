@@ -31,7 +31,8 @@ interface Row {
   thresholdMinor: string; slaHours: number;
 }
 
-export default async function HeldListingsPage({ searchParams }: { searchParams: { cursor?: string } }) {
+export default async function HeldListingsPage(props: { searchParams: Promise<{ cursor?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const viewer = adminUserId();

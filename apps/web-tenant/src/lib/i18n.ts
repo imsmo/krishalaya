@@ -3,7 +3,7 @@
 // and returns a @krishalaya/i18n Translator pre-loaded with en/hi/gu. Server-only: the catalogs are tiny +
 // framework-free, so there is no client provider and no per-request bundle cost.
 import 'server-only';
-import { cookies, headers } from 'next/headers';
+import { cookies, headers, type UnsafeUnwrappedCookies, type UnsafeUnwrappedHeaders } from 'next/headers';
 import { Translator, resolveServable, DEFAULT_LANGUAGE, type LanguageDef } from '@krishalaya/i18n';
 import { en } from '../i18n/en';
 import { hi } from '../i18n/hi';
@@ -19,9 +19,9 @@ export const LANG_COOKIE = 'kvt_lang';
  *  persisted by middleware), so it resolves as EXPLICIT and may serve the Arabic machine draft; Accept-Language is a
  *  browser preference, so it resolves as IMPLICIT and can never serve Arabic — an `ar` browser gets English. */
 export function getLang(): string {
-  const cookieLang = cookies().get(LANG_COOKIE)?.value;
+  const cookieLang = (cookies() as unknown as UnsafeUnwrappedCookies).get(LANG_COOKIE)?.value;
   if (cookieLang) return resolveServable(cookieLang, 'explicit').code;
-  const accept = headers().get('accept-language') ?? '';
+  const accept = (headers() as unknown as UnsafeUnwrappedHeaders).get('accept-language') ?? '';
   const first = accept.split(',')[0]?.trim();
   return resolveServable(first || DEFAULT_LANGUAGE, 'implicit').code;
 }

@@ -24,16 +24,16 @@ import { SLUG, reset, withCookies } from './store6a-fixtures';
 const rtl = async (node: React.ReactNode) => renderToStaticMarkup(<div dir="rtl">{await resolveTree(node, [])}</div>);
 const L = { offline: 'o', online: 'n', asOf: 'a', now: 'now', minutes: 'm', hours: 'h', days: 'd', ago: 'ago', pricesMoved: 'p', moneyWord: 'w', reload: 'r' };
 const STATES: Array<[string, () => Promise<React.ReactNode> | React.ReactNode]> = [
-  ['W313 platform', () => ShellOffline({ searchParams: {} })],
-  ['W313 organisation', () => TenantOffline({ params: { tenantSlug: SLUG }, searchParams: {} })],
-  ['W3127 error', () => TenantOffline({ params: { tenantSlug: SLUG }, searchParams: { form: 'error' } })],
-  ['W3128 review', () => ShellOffline({ searchParams: { form: 'review' } })],
-  ['W3129 success', () => TenantOffline({ params: { tenantSlug: SLUG }, searchParams: { form: 'success' } })],
-  ['W3130 failure', () => ShellOffline({ searchParams: { form: 'failure' } })],
+  ['W313 platform', () => ShellOffline({ searchParams: Promise.resolve({}) })],
+  ['W313 organisation', () => TenantOffline({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve({}) })],
+  ['W3127 error', () => TenantOffline({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve({ form: 'error' }) })],
+  ['W3128 review', () => ShellOffline({ searchParams: Promise.resolve({ form: 'review' }) })],
+  ['W3129 success', () => TenantOffline({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve({ form: 'success' }) })],
+  ['W3130 failure', () => ShellOffline({ searchParams: Promise.resolve({ form: 'failure' }) })],
   ['W314 platform', () => PlatformQueued()],
-  ['W314 organisation', () => TenantQueued({ params: { tenantSlug: SLUG } })],
+  ['W314 organisation', () => TenantQueued({ params: Promise.resolve({ tenantSlug: SLUG }) })],
   ['W319 platform', () => PlatformApp({})],
-  ['W319 organisation', () => TenantApp({ params: { tenantSlug: SLUG } })],
+  ['W319 organisation', () => TenantApp({ params: Promise.resolve({ tenantSlug: SLUG }) })],
   ['the kept-page band (full)', () => <CachedBandView at="2026-10-17T04:30:00.000Z" tier="full" online={false} labels={L} />],
   ['the update notice', () => <UpdateNoticeView show labels={{ ready: 'r', refresh: 'f', later: 'l' }} />],
 ];

@@ -26,7 +26,11 @@ const STATE_TONE: Record<string, StatusTone> = { on: 'success', off: 'neutral', 
 const OK = new Set(['created', 'enable', 'disable', 'kill', 'unlock', 'rollout', 'targeting']);
 const ERR = new Set(['reason', 'rolloutPct', 'tenantIds', 'plans', 'countries', 'elevation', 'locked', 'notFound', 'generic']);
 
-export default async function FlagDetailPage({ params, searchParams }: { params: { key: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function FlagDetailPage(
+  props: { params: Promise<{ key: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
   const key = decodeURIComponent(params.key);

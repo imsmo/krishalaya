@@ -34,7 +34,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('f360.title'), robots: { index: false, follow: false } };
 }
 
-export default async function Farmer360Page({ params }: { params: { userId: string } }) {
+export default async function Farmer360Page(props: { params: Promise<{ userId: string }> }) {
+  const params = await props.params;
   await requireSession(`/people/${params.userId}/360`);
   const t = getTranslator();
   const lang = getLang();

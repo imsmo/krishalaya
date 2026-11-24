@@ -28,9 +28,12 @@ interface Row {
 }
 interface Meta { releaseNote: string; feedbackOwner: string; emptyMeaning: string }
 
-export default async function QuarantinePage({ searchParams }: {
-  searchParams: { all?: string; ok?: string; error?: string };
-}) {
+export default async function QuarantinePage(
+  props: {
+    searchParams: Promise<{ all?: string; ok?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const includeDecided = searchParams.all === '1';

@@ -36,12 +36,12 @@ import { C, ORG, SESSION, SLUG, brandWith, reset, withCookies } from './store6a-
 
 const platform = async (cookies: Record<string, string> = {}, sp: Record<string, string> = {}) => {
   withCookies(cookies); C.api = [];
-  return renderResolved(ShellLayout({ children: <ShellOfflinePage searchParams={sp} /> }), [SiteHeader]);
+  return renderResolved(ShellLayout({ children: <ShellOfflinePage searchParams={Promise.resolve(sp)} /> }), [SiteHeader]);
 };
 const store = async (cookies: Record<string, string> = {}, sp: Record<string, string> = {}) => {
   withCookies(cookies); C.api = []; C.headers = { 'x-kv-shell': 'offline' };
-  const page = await TenantOfflinePage({ params: { tenantSlug: SLUG }, searchParams: sp });
-  return renderResolved(await TenantLayout({ children: page, params: { tenantSlug: SLUG } }), [TenantHeader]);
+  const page = await TenantOfflinePage({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve(sp) });
+  return renderResolved(await TenantLayout({ children: page, params: Promise.resolve({ tenantSlug: SLUG }) }), [TenantHeader]);
 };
 const SESSION_WORDS = [en['nav.account'], en['nav.notifications'], en['nav.logout'], en['nav.offers'], en['nav.messages'], en['nav.cart'], en['nav.orders']];
 beforeEach(() => reset());

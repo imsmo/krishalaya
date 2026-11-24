@@ -16,7 +16,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('gov4.verification.title'), robots: { index: false, follow: false } };
 }
 
-export default async function VerificationPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function VerificationPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   const me = await requireGov('/verification');
   const t = getTranslator();
   const chain = chain4For(searchParams);

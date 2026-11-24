@@ -27,7 +27,8 @@ interface Row {
 
 const STATUSES: DraftStatus[] = ['awaiting_checker', 'drafting', 'posted', 'rejected', 'withdrawn'];
 
-export default async function CorrectionQueuePage({ searchParams }: { searchParams: { status?: string; cursor?: string } }) {
+export default async function CorrectionQueuePage(props: { searchParams: Promise<{ status?: string; cursor?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const viewer = adminUserId();

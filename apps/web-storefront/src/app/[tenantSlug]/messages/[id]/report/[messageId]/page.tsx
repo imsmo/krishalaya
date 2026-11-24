@@ -29,7 +29,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('store4b.report.title'), robots: { index: false, follow: false } };
 }
 
-export default async function ReportMessagePage({ params, searchParams }: { params: { tenantSlug: string; id: string; messageId: string }; searchParams: SP }) {
+export default async function ReportMessagePage(
+  props: { params: Promise<{ tenantSlug: string; id: string; messageId: string }>; searchParams: Promise<SP> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const { tenantSlug: slug, id, messageId } = params;
   await requireSession(reportHref(slug, id, messageId));
   const t = getTranslator();

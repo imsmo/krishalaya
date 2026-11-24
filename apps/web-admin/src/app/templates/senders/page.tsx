@@ -24,7 +24,8 @@ interface Sender {
   provider: string | null; status: string; verifiedByProviderAt: string | null; providerVerified: boolean; note: string | null;
 }
 
-export default async function SendersPage({ searchParams }: { searchParams: { ok?: string; error?: string } }) {
+export default async function SendersPage(props: { searchParams: Promise<{ ok?: string; error?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   let rows: Sender[] = []; let notice: string | undefined; let owner = '';

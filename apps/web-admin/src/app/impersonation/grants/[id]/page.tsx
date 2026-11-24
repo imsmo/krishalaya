@@ -30,7 +30,11 @@ const ST_TONE: Record<string, StatusTone> = { active: 'danger', ended: 'neutral'
 const OK = new Set(['minted', 'ended', 'revoked']);
 const ERR = new Set(['reason', 'elevation', 'conflict', 'notFound', 'generic']);
 
-export default async function GrantDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function GrantDetailPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
 

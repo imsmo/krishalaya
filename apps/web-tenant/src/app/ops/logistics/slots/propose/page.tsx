@@ -16,7 +16,8 @@ import { proposeSlotsAction } from './actions';
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.slots.propose'), robots: { index: false, follow: false } }; }
 
-export default async function ProposeSlotsPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function ProposeSlotsPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   const base = `${SLOTS_HREF}/propose`;
   await requireSession(base);
   const t = getTranslator(); const lang = getLang();

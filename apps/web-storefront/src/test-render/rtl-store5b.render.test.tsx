@@ -33,15 +33,15 @@ const rtl = async (node: React.ReactNode) => renderToStaticMarkup(<div dir="rtl"
 beforeEach(() => { reset(); });
 
 const STATES: Array<[string, () => Promise<React.ReactNode> | React.ReactNode]> = [
-  ['W303 the trace', () => TracePage({ params: { qrToken: TOKEN }, searchParams: {} })],
-  ['W304 verify', () => VerifyPage({ params: { qrToken: TOKEN }, searchParams: {} })],
-  ['W3154 queued', () => ExportPage({ params: { qrToken: TOKEN }, searchParams: { job: JOB_ID } })],
-  ['W3155 ready', () => { C.job = READY(); return ExportPage({ params: { qrToken: TOKEN }, searchParams: { job: JOB_ID } }); }],
-  ['W3154 a failure', () => ExportPage({ params: { qrToken: TOKEN }, searchParams: { failure: 'server' } })],
-  ['W305 verified', () => CertPage({ params: { id: CERT_ID }, searchParams: {} })],
-  ['W305 rejected', () => { C.cert = CERT({ status: 'rejected', rejectionReason: 'x' }); return CertPage({ params: { id: CERT_ID }, searchParams: {} }); }],
-  ['W305 the form', () => LookupPage({ searchParams: {} })],
-  ['W306 refused', () => DairyPage({ params: { qrToken: TOKEN } })],
+  ['W303 the trace', () => TracePage({ params: Promise.resolve({ qrToken: TOKEN }), searchParams: Promise.resolve({}) })],
+  ['W304 verify', () => VerifyPage({ params: Promise.resolve({ qrToken: TOKEN }), searchParams: Promise.resolve({}) })],
+  ['W3154 queued', () => ExportPage({ params: Promise.resolve({ qrToken: TOKEN }), searchParams: Promise.resolve({ job: JOB_ID }) })],
+  ['W3155 ready', () => { C.job = READY(); return ExportPage({ params: Promise.resolve({ qrToken: TOKEN }), searchParams: Promise.resolve({ job: JOB_ID }) }); }],
+  ['W3154 a failure', () => ExportPage({ params: Promise.resolve({ qrToken: TOKEN }), searchParams: Promise.resolve({ failure: 'server' }) })],
+  ['W305 verified', () => CertPage({ params: Promise.resolve({ id: CERT_ID }), searchParams: Promise.resolve({}) })],
+  ['W305 rejected', () => { C.cert = CERT({ status: 'rejected', rejectionReason: 'x' }); return CertPage({ params: Promise.resolve({ id: CERT_ID }), searchParams: Promise.resolve({}) }); }],
+  ['W305 the form', () => LookupPage({ searchParams: Promise.resolve({}) })],
+  ['W306 refused', () => DairyPage({ params: Promise.resolve({ qrToken: TOKEN }) })],
 ];
 
 describe('STORE-5b · rtl', () => {

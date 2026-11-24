@@ -12,7 +12,7 @@
 // httpOnly SameSite=Strict cookie scoped to /login — never a URL, never a field. Errors surface as a named CODE in the query (features/gov1/
 // login.ts `landing`), never a phone or a token. Tokens land in the httpOnly session cookies only. 'use server' files export ONLY async functions.
 import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
+import { cookies, type UnsafeUnwrappedCookies } from 'next/headers';
 import { SdkError } from '@krishalaya/sdk-js';
 import { anonClient } from '../../lib/api-client';
 import { setSession } from '../../lib/auth';
@@ -29,7 +29,7 @@ const short = (maxAge: number) => ({ httpOnly: true, secure: process.env.NODE_EN
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? '').trim();
 
 function clearPending(): void {
-  for (const k of PENDING) cookies().set(k, '', short(0));
+  for (const k of PENDING) (cookies() as unknown as UnsafeUnwrappedCookies).set(k, '', short(0));
 }
 /** After a sign-in answer that is not a session: a step (with its credential in a cookie), or a named refusal. Never returns. */
 function land(e: unknown, step: LoginStep): never {
@@ -38,10 +38,10 @@ function land(e: unknown, step: LoginStep): never {
   const d = (err?.details ?? {}) as Record<string, unknown>;
   if (l.kind === 'step' && l.step === 'choose') {
     const authorities = Array.isArray(d.authorities) ? (d.authorities as Array<{ id: string; name: string }>) : [];
-    cookies().set(CHOICE, JSON.stringify({ token: String(d.choiceToken ?? ''), authorities }), short(300));
+    (cookies() as unknown as UnsafeUnwrappedCookies).set(CHOICE, JSON.stringify({ token: String(d.choiceToken ?? ''), authorities }), short(300));
   }
-  if (l.kind === 'step' && l.step === '2fa') cookies().set(CHALLENGE, String(d.challengeToken ?? ''), short(300));
-  if (l.kind === 'step' && l.step === 'enrol') cookies().set(ENROL, String(d.enrolToken ?? ''), short(600));
+  if (l.kind === 'step' && l.step === '2fa') (cookies() as unknown as UnsafeUnwrappedCookies).set(CHALLENGE, String(d.challengeToken ?? ''), short(300));
+  if (l.kind === 'step' && l.step === 'enrol') (cookies() as unknown as UnsafeUnwrappedCookies).set(ENROL, String(d.enrolToken ?? ''), short(600));
   redirect(landingHref(l, step));
 }
 function signedIn(tokens: { accessToken: string; refreshToken: string; expiresInSec: number }): never {
@@ -53,12 +53,12 @@ function signedIn(tokens: { accessToken: string; refreshToken: string; expiresIn
 export async function requestOtpAction(formData: FormData): Promise<void> {
   const phone = str(formData, 'phone');
   try { await anonClient().gov.auth.otp(phone); } catch { /* enumeration-safe: the same next step regardless */ }
-  cookies().set(PENDING_PHONE, phone, short(600));
+  (await cookies()).set(PENDING_PHONE, phone, short(600));
   redirect('/login?step=verify');
 }
 
 export async function verifyOtpAction(formData: FormData): Promise<void> {
-  const phone = cookies().get(PENDING_PHONE)?.value ?? '';
+  const phone = (await cookies()).get(PENDING_PHONE)?.value ?? '';
   if (!phone) redirect('/login?act=failure&error=PHONE_MISSING');
   let tokens;
   try { tokens = await anonClient().gov.auth.verify(phone, str(formData, 'code')); }
@@ -68,7 +68,7 @@ export async function verifyOtpAction(formData: FormData): Promise<void> {
 
 export async function chooseAction(formData: FormData): Promise<void> {
   let rec: { token?: string } = {};
-  try { rec = JSON.parse(cookies().get(CHOICE)?.value ?? '{}') as { token?: string }; } catch { rec = {}; }
+  try { rec = JSON.parse((await cookies()).get(CHOICE)?.value ?? '{}') as { token?: string }; } catch { rec = {}; }
   if (!rec.token) redirect('/login?act=failure&error=GOV_CHOICE_INVALID');
   let tokens;
   try { tokens = await anonClient().gov.auth.choose(rec.token, str(formData, 'authorityId')); }
@@ -77,7 +77,7 @@ export async function chooseAction(formData: FormData): Promise<void> {
 }
 
 export async function twoFactorAction(formData: FormData): Promise<void> {
-  const challengeToken = cookies().get(CHALLENGE)?.value ?? '';
+  const challengeToken = (await cookies()).get(CHALLENGE)?.value ?? '';
   if (!challengeToken) redirect('/login?act=failure&error=TWO_FACTOR_CHALLENGE_INVALID');
   let tokens;
   try { tokens = await anonClient().gov.auth.verifyTwoFactor({ challengeToken, ...secondFactorInput(str(formData, 'code')) }); }
@@ -86,23 +86,23 @@ export async function twoFactorAction(formData: FormData): Promise<void> {
 }
 
 export async function enrolAction(): Promise<void> {
-  const enrolToken = cookies().get(ENROL)?.value ?? '';
+  const enrolToken = (await cookies()).get(ENROL)?.value ?? '';
   if (!enrolToken) redirect('/login?act=failure&error=GOV_ENROL_TOKEN_INVALID');
   let key;
   try { key = await anonClient().gov.auth.enrol(enrolToken); }
   catch (e) { land(e, 'enrol'); }
-  cookies().set(ENROL_KEY, JSON.stringify({ secret: key.secret, otpauthUri: key.otpauthUri }), short(600));
+  (await cookies()).set(ENROL_KEY, JSON.stringify({ secret: key.secret, otpauthUri: key.otpauthUri }), short(600));
   redirect('/login?step=enrol-confirm');
 }
 
 export async function confirmEnrolAction(formData: FormData): Promise<void> {
-  const enrolToken = cookies().get(ENROL)?.value ?? '';
+  const enrolToken = (await cookies()).get(ENROL)?.value ?? '';
   if (!enrolToken) redirect('/login?act=failure&error=GOV_ENROL_TOKEN_INVALID');
   let out;
   try { out = await anonClient().gov.auth.confirm(enrolToken, str(formData, 'code')); }
   catch (e) { land(e, 'enrol-confirm'); }
-  for (const k of [ENROL, ENROL_KEY, PENDING_PHONE, CHOICE, CHALLENGE]) cookies().set(k, '', short(0));
-  cookies().set(RECOVERY, JSON.stringify(out.recoveryCodes ?? []), short(300));
+  for (const k of [ENROL, ENROL_KEY, PENDING_PHONE, CHOICE, CHALLENGE]) (await cookies()).set(k, '', short(0));
+  (await cookies()).set(RECOVERY, JSON.stringify(out.recoveryCodes ?? []), short(300));
   redirect('/login?step=enrolled');
 }
 

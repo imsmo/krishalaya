@@ -45,7 +45,11 @@ async function photoOf(slug: string, id: string): Promise<string | null> {
   try { const g: GalleryItem[] = await publicClient(slug).listings.media(id); return g[0]?.url ?? null; } catch { return null; }
 }
 
-export default async function TenantCart({ params, searchParams }: { params: { tenantSlug: string }; searchParams: SP }) {
+export default async function TenantCart(
+  props: { params: Promise<{ tenantSlug: string }>; searchParams: Promise<SP> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const t = getTranslator();
   const lang = getLang();
   const slug = params.tenantSlug;

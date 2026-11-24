@@ -36,7 +36,10 @@ export function generateMetadata(): Metadata {
 }
 const PAGE = 25;
 
-export default async function LabourJobsPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function LabourJobsPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(LABOUR_HREF);
   const t = getTranslator();
   const lang = getLang();

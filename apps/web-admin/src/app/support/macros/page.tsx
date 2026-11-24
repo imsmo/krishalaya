@@ -33,9 +33,12 @@ const OK = new Set(['created', 'archived', 'restored']);
 const ERR = new Set(['mac_slug', 'mac_title', 'mac_english', 'mac_body', 'mac_language', 'mac_duplicate',
   'mac_reason', 'elevation', 'notFound', 'generic', 'illegal']);
 
-export default async function MacrosPage({ searchParams }: {
-  searchParams: { ok?: string; error?: string; lang?: string; missing?: string };
-}) {
+export default async function MacrosPage(
+  props: {
+    searchParams: Promise<{ ok?: string; error?: string; lang?: string; missing?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

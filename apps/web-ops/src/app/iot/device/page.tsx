@@ -19,7 +19,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('ops4.iot.device.title'), robots: { index: false, follow: false } };
 }
 
-export default async function IotDevicePage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function IotDevicePage(
+  props: { searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(IOT.device);
   const t = getTranslator(); const lang = getLang();
   const type = subjectTypeParam(searchParams?.type);

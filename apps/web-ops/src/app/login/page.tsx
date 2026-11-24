@@ -39,7 +39,10 @@ async function verifyOtp(formData: FormData) {
   redirect(next);
 }
 
-export default function LoginPage({ searchParams }: { searchParams: { step?: string; phone?: string; error?: string; next?: string } }) {
+export default async function LoginPage(
+  props: { searchParams: Promise<{ step?: string; phone?: string; error?: string; next?: string }> }
+) {
+  const searchParams = await props.searchParams;
   const t = getTranslator();
   const verifying = searchParams.step === 'verify';
   const next = safeNext(searchParams.next);

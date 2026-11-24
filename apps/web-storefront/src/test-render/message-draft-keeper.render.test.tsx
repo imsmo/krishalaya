@@ -29,7 +29,7 @@ import { text } from './store1b-harness';
 import { C, reset, IDS } from './store4b-fixtures';
 
 beforeEach(() => reset());
-const page = async (sp: Record<string, string> = {}, id: string = IDS.order) => renderToStaticMarkup(await ThreadPage({ params: { tenantSlug: 'anand-fpo', id }, searchParams: sp }));
+const page = async (sp: Record<string, string> = {}, id: string = IDS.order) => renderToStaticMarkup(await ThreadPage({ params: Promise.resolve({ tenantSlug: 'anand-fpo', id }), searchParams: Promise.resolve(sp) }));
 const formOf = (h: string) => (h.match(/<form[^>]*data-kv-form="send"[\s\S]*?<\/form>/) ?? [''])[0];
 
 describe('STORE-6b · the composer mounts the keeper', () => {

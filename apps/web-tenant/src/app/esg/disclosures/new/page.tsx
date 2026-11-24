@@ -31,7 +31,10 @@ export function generateMetadata(): Metadata {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export default async function EsgDisclosureFormPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function EsgDisclosureFormPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   if (!env.featureEsg) notFound();
   await requireSession(NEW_DISCLOSURE_HREF);
   const t = getTranslator();

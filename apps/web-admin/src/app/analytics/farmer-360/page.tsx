@@ -47,7 +47,10 @@ function Tile({ t, labelKey }: { t: MoneyTile; labelKey: string }) {
   );
 }
 
-export default async function Farmer360Page({ searchParams }: { searchParams: { q?: string; u?: string; ok?: string; error?: string; receipt?: string } }) {
+export default async function Farmer360Page(
+  props: { searchParams: Promise<{ q?: string; u?: string; ok?: string; error?: string; receipt?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

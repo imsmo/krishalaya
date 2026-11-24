@@ -36,8 +36,9 @@ export function generateMetadata(): Metadata {
 interface CalendarsView { items: CalendarRow[]; seasons: string[]; basis: string; sourceRule: string }
 
 export default async function CropCalendarsPage(
-  { searchParams }: { searchParams: { categoryId?: string; season?: string; ok?: string; error?: string; why?: string } },
+  props: { searchParams: Promise<{ categoryId?: string; season?: string; ok?: string; error?: string; why?: string }> }
 ) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

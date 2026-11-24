@@ -19,7 +19,11 @@ export function generateMetadata(): Metadata {
 
 const ERR = new Set(['reply', 'empty', 'locked']);
 
-export default async function InboxThreadPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function InboxThreadPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   await requireSession(`/inbox/${params.id}`);
   const t = getTranslator();
   const lang = getLang();

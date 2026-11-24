@@ -27,7 +27,11 @@ export function generateMetadata(): Metadata {
 
 type Q = { q: string; options: string[]; answer: number; explanations?: string[] };
 
-export default async function QuizFormPage({ params, searchParams }: { params: { id: string; lessonId: string }; searchParams: Record<string, string | string[] | undefined> }) {
+export default async function QuizFormPage(
+  props: { params: Promise<{ id: string; lessonId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const PATH = quizFormPath(params.id, params.lessonId);
   await requireSession(PATH);
   const t = getTranslator();

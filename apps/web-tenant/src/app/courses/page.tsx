@@ -32,7 +32,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('courses.title'), robots: { index: false, follow: false } };
 }
 
-export default async function CoursesPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function CoursesPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(COURSES_HREF);
   const t = getTranslator();
   const lang = getLang();

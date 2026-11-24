@@ -9,6 +9,7 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('store6.queued.title'), robots: { index: false } };
 }
 
-export default function Page({ params }: { params: { tenantSlug: string } }) {
+export default async function Page(props: { params: Promise<{ tenantSlug: string }> }) {
+  const params = await props.params;
   return <QueuedActionsScreen chrome={tenantChrome(params.tenantSlug)} />;
 }

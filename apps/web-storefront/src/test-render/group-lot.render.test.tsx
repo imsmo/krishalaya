@@ -38,7 +38,7 @@ import { C, reset, GROUP_LOT, LOT, LISTING, SLUG, FARMER } from './store3c-fixtu
 import { GROUP_LOT_STATUS_LIST } from '../features/store3c/group-lot';
 import { STORE3C_REFUSALS } from '../features/store3c/refusals';
 
-const page = async () => renderToStaticMarkup(await TenantGroupLotPage({ params: { tenantSlug: SLUG, id: LOT }, searchParams: {} }));
+const page = async () => renderToStaticMarkup(await TenantGroupLotPage({ params: Promise.resolve({ tenantSlug: SLUG, id: LOT }), searchParams: Promise.resolve({}) }));
 const CATS: Record<string, Record<string, string>> = { en, hi, gu };
 beforeEach(() => { reset(); });
 
@@ -111,9 +111,9 @@ describe('STORE-3c · W279 off ≠ not found ≠ error; the refusals; the door',
     expect(text(h)).not.toMatch(/Register interest —|Interested buyers so far|Full lot value/);
   });
   it('the platform /g/[id] is a door: a session → its store\'s lot; anonymous → "which store"', async () => {
-    await expect(PlatformGroupLotDoor({ params: { id: LOT } })).rejects.toThrow(`REDIRECT /${SLUG}/g/${LOT}`);
+    await expect(PlatformGroupLotDoor({ params: Promise.resolve({ id: LOT }) })).rejects.toThrow(`REDIRECT /${SLUG}/g/${LOT}`);
     C.token = null;
-    const h = renderToStaticMarkup(await PlatformGroupLotDoor({ params: { id: LOT } }));
+    const h = renderToStaticMarkup(await PlatformGroupLotDoor({ params: Promise.resolve({ id: LOT }) }));
     expect(h).toContain('data-kv-state="which-store"');
   });
 });

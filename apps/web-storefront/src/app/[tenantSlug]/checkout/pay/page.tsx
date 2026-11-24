@@ -52,7 +52,11 @@ const timeText = (iso: string | null | undefined, lang: string) => {
   return d && Number.isFinite(d.getTime()) ? new Intl.DateTimeFormat(intlTag(lang), { hour: '2-digit', minute: '2-digit' }).format(d) : null;
 };
 
-export default async function TenantPayPage({ params, searchParams }: { params: { tenantSlug: string }; searchParams: SP }) {
+export default async function TenantPayPage(
+  props: { params: Promise<{ tenantSlug: string }>; searchParams: Promise<SP> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const slug = params.tenantSlug;
   const orderId = searchParams.o;
   await requireSession(payHref(slug, orderId ?? ''));

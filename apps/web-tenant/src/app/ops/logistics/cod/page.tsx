@@ -23,7 +23,8 @@ export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swa.cod.title'), robots: { index: false, follow: false } }; }
 const TILES = ['collectedTodayMinor', 'depositedTodayMinor', 'inRiderHandsMinor', 'unreconciledOver24hMinor', 'shortfallOpenMinor'] as const;
 
-export default async function CodLedgerPage({ searchParams }: { searchParams: { cursor?: string } }) {
+export default async function CodLedgerPage(props: { searchParams: Promise<{ cursor?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession(COD_HREF);
   const t = getTranslator(); const lang = getLang();
   const money = (m: string) => moneyText(m, 'INR', lang);

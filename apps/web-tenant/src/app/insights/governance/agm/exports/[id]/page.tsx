@@ -21,7 +21,11 @@ export function generateMetadata(): Metadata {
 const when = (iso: string | null, lang: string) => (iso ? formatDate(iso, lang, { dateStyle: 'medium', timeStyle: 'short' }) : null);
 const stateKey = (s: string) => (['notEnabled', 'restricted', 'notFound', 'error'].includes(s) ? `swd.agm.export.state.${s}` : `dairy.export.state.${s}`);
 
-export default async function AgmExportPage({ params, searchParams }: { params: { id: string }; searchParams: { error?: string } }) {
+export default async function AgmExportPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const id = params.id;
   await requireSession(agmExportHref(id));
   const t = getTranslator(); const lang = getLang();

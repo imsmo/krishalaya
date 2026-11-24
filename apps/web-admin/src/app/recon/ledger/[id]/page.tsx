@@ -38,9 +38,13 @@ interface Txn {
 
 const ERR = new Set(['elevation', 'conflict', 'invalid', 'notFound', 'generic']);
 
-export default async function LedgerTxnPage({ params, searchParams }: {
-  params: { id: string }; searchParams: { error?: string; verified?: string };
-}) {
+export default async function LedgerTxnPage(
+  props: {
+    params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; verified?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
 

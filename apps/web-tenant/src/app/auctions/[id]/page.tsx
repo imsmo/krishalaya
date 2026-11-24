@@ -5,6 +5,7 @@ import { AUCTIONS_HREF, isUuid, liveHref } from '../../../features/auctions/cons
 
 export const dynamic = 'force-dynamic';
 
-export default function AuctionDetailLegacyPage({ params }: { params: { id: string } }) {
+export default async function AuctionDetailLegacyPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   redirect(isUuid(params.id) ? liveHref(params.id) : AUCTIONS_HREF);
 }

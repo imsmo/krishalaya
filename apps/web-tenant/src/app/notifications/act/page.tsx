@@ -36,7 +36,10 @@ export function generateMetadata(): Metadata {
 const all = (v: string | string[] | undefined): string[] => (Array.isArray(v) ? v : typeof v === 'string' ? [v] : []);
 const SHOWN = 10;
 
-export default async function InboxActPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function InboxActPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(ACT_HREF);
   const t = getTranslator();
   const lang = getLang();

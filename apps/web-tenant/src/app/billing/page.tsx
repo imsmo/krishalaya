@@ -43,7 +43,10 @@ export function generateMetadata(): Metadata {
 const ERR = new Set(['plan', 'apply', 'cancel']);
 const OKK = new Set(['applied', 'changed', 'cancelScheduled', 'cancelled']);
 
-export default async function BillingPage({ searchParams }: { searchParams: { ok?: string; error?: string; tab?: string; payError?: string } }) {
+export default async function BillingPage(
+  props: { searchParams: Promise<{ ok?: string; error?: string; tab?: string; payError?: string }> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/billing');
   const t = getTranslator();
   const lang = getLang();

@@ -45,9 +45,12 @@ const STATUS_TONE: Record<string, StatusTone> = {
   returned: 'warning', rejected: 'neutral',
 };
 
-export default async function AdjustmentsPage({ searchParams }: {
-  searchParams: { cursor?: string; tenantId?: string; status?: string; ok?: string; error?: string };
-}) {
+export default async function AdjustmentsPage(
+  props: {
+    searchParams: Promise<{ cursor?: string; tenantId?: string; status?: string; ok?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   // display gating only — the DB CHECK and admin-api's 403 are the authority (see lib/admin-auth)

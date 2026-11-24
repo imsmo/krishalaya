@@ -71,7 +71,11 @@ function Steps({ slug, step, state }: { slug: string; step: CheckoutStep; state:
   );
 }
 
-export default async function TenantCheckout({ params, searchParams }: { params: { tenantSlug: string }; searchParams: SP }) {
+export default async function TenantCheckout(
+  props: { params: Promise<{ tenantSlug: string }>; searchParams: Promise<SP> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const t = getTranslator();
   const lang = getLang();
   const slug = params.tenantSlug;
@@ -158,8 +162,8 @@ export default async function TenantCheckout({ params, searchParams }: { params:
     <section className="kv-checkout" data-kv-checkout-step={step}>
       {head}
       <Steps slug={slug} step={step} state={state} />
-      {step === 'address' && await AddressStep({ slug, state, addresses, chosen, preview, previewRefusal, status, add: one(searchParams.add) === '1', lang })}
-      {step === 'payment' && await PaymentStep({ slug, state, preview, onlinePayments, lang })}
+      {step === 'address' && (await AddressStep({ slug, state, addresses, chosen, preview, previewRefusal, status, add: one(searchParams.add) === '1', lang }))}
+      {step === 'payment' && (await PaymentStep({ slug, state, preview, onlinePayments, lang }))}
       {step === 'review' && ReviewStep({ slug, org, state, preview, previewRefusal, onlinePayments, status, available: readDecimal(searchParams.available), region: one(searchParams.region) ?? null, lang })}
     </section>
   );

@@ -5,7 +5,7 @@
 // The browser never sees either raw token. Login/refresh write these from a Server Action; logout clears both.
 // PC-56 STORE-1a: a third cookie, `kv_tid`, remembers WHICH tenant the session was minted for (not a secret — a uuid).
 import 'server-only';
-import { cookies } from 'next/headers';
+import { cookies, type UnsafeUnwrappedCookies } from 'next/headers';
 import type { AuthTokens } from '@krishalaya/sdk-js';
 
 export const SESSION_COOKIE = 'kv_session';
@@ -20,12 +20,12 @@ const REFRESH_MAX_AGE_SEC = 60 * 60 * 24 * 30; // 30 days
 
 /** Server-only: the current access token (or undefined when the access cookie is absent/expired). */
 export function getSessionToken(): string | undefined {
-  return cookies().get(SESSION_COOKIE)?.value;
+  return (cookies() as unknown as UnsafeUnwrappedCookies).get(SESSION_COOKIE)?.value;
 }
 
 /** Server-only: the current refresh token (or undefined). Used only to mint a new access token server-side. */
 export function getRefreshToken(): string | undefined {
-  return cookies().get(REFRESH_COOKIE)?.value;
+  return (cookies() as unknown as UnsafeUnwrappedCookies).get(REFRESH_COOKIE)?.value;
 }
 
 /**
@@ -34,7 +34,7 @@ export function getRefreshToken(): string | undefined {
  * stops sending a stale token; the refresh cookie gets the longer cap.
  */
 export function setSession(tokens: AuthTokens, tenantId: string): void {
-  const c = cookies();
+  const c = (cookies() as unknown as UnsafeUnwrappedCookies);
   c.set(SESSION_COOKIE, tokens.accessToken, { ...BASE_OPTS, maxAge: Math.max(1, tokens.expiresInSec) });
   c.set(REFRESH_COOKIE, tokens.refreshToken, { ...BASE_OPTS, maxAge: REFRESH_MAX_AGE_SEC });
   c.set(SESSION_TENANT_COOKIE, tenantId, { ...BASE_OPTS, maxAge: REFRESH_MAX_AGE_SEC });
@@ -42,13 +42,13 @@ export function setSession(tokens: AuthTokens, tenantId: string): void {
 
 /** PC-56 STORE-1a · C8: the tenant this browser's session belongs to (a uuid), or undefined. */
 export function getSessionTenant(): string | undefined {
-  const v = cookies().get(SESSION_TENANT_COOKIE)?.value;
+  const v = (cookies() as unknown as UnsafeUnwrappedCookies).get(SESSION_TENANT_COOKIE)?.value;
   return v && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v) ? v : undefined;
 }
 
 /** Log out: drop every session cookie. */
 export function clearSession(): void {
-  const c = cookies();
+  const c = (cookies() as unknown as UnsafeUnwrappedCookies);
   c.delete(SESSION_COOKIE);
   c.delete(REFRESH_COOKIE);
   c.delete(SESSION_TENANT_COOKIE);

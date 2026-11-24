@@ -22,7 +22,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('partner1.dash.title'), robots: { index: false, follow: false } };
 }
 
-export default async function PartnerDashboard({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function PartnerDashboard(
+  props: { searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requirePartner();
   const t = getTranslator(); const lang = getLang();
   // PC-56 PARTNER-2a (founder Q9): this is the LENDER's dashboard — an insurer organisation lands on its own (`/insurer/dashboard`)

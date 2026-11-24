@@ -33,7 +33,10 @@ interface Row {
 const EMPTY = new Set(['queueClear', 'onlyYourOwn']);
 const ERR = new Set(['elevation', 'conflict', 'invalid', 'notFound', 'generic']);
 
-export default async function AppealsQueuePage({ searchParams }: { searchParams: { status?: string; cursor?: string; empty?: string; error?: string } }) {
+export default async function AppealsQueuePage(
+  props: { searchParams: Promise<{ status?: string; cursor?: string; empty?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const status = statusTab(searchParams.status);

@@ -20,7 +20,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('offers.title'), robots: { index: false, follow: false } };
 }
 
-export default async function OffersPage({ searchParams }: { searchParams: { listingId?: string; cursor?: string } }) {
+export default async function OffersPage(props: { searchParams: Promise<{ listingId?: string; cursor?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession('/offers');
   const t = getTranslator();
   const lang = getLang();

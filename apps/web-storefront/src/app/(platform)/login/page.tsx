@@ -12,6 +12,9 @@ export function generateMetadata(): Metadata {
   return { title: t.t('auth.title'), description: t.t('auth.lead'), robots: { index: false, follow: false } };
 }
 
-export default async function LoginPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function LoginPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   return <LoginScreen routeSlug={null} searchParams={searchParams} />;
 }

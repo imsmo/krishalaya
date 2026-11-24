@@ -23,7 +23,11 @@ import { asOfLabels } from '../../../../../features/swf/console';
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.cold.subjectTitle'), robots: { index: false, follow: false } }; }
 
-export default async function ColdSubjectPage({ params, searchParams }: { params: { id: string }; searchParams: { type?: string; hours?: string; cursor?: string; error?: string; recorded?: string } }) {
+export default async function ColdSubjectPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ type?: string; hours?: string; cursor?: string; error?: string; recorded?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const type = isColdSubjectType(searchParams.type) ? searchParams.type : 'shipment';
   const id = isUuid(params.id) ? params.id : '';
   const self = coldSubjectHref(type, params.id);

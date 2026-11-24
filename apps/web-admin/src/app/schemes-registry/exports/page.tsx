@@ -23,7 +23,8 @@ export function generateMetadata(): Metadata {
 
 const ERR = new Set(['sxp_report', 'sxp_limit', 'sxp_generic', 'elevation']);
 
-export default function SchemeExportsPage({ searchParams }: { searchParams: { error?: string } }) {
+export default async function SchemeExportsPage(props: { searchParams: Promise<{ error?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const errKey = searchParams.error && ERR.has(searchParams.error) ? searchParams.error : null;

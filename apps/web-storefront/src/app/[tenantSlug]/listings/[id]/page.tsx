@@ -60,7 +60,8 @@ async function safeGallery(tenantSlug: string, id: string): Promise<GalleryItem[
   try { return await publicClient(tenantSlug).listings.media(id); } catch { return []; }
 }
 
-export async function generateMetadata({ params }: { params: { tenantSlug: string; id: string } }): Promise<Metadata> {
+export async function generateMetadata(props: { params: Promise<{ tenantSlug: string; id: string }> }): Promise<Metadata> {
+  const params = await props.params;
   const t = getTranslator();
   const r = await readState<PublicListingDetail>(() => publicClient(params.tenantSlug).listings.getPublic(params.id));
   if (!r.ok) return { title: t.t('common.notFoundTitle'), robots: { index: false } };
@@ -79,8 +80,10 @@ export async function generateMetadata({ params }: { params: { tenantSlug: strin
 }
 
 export default async function ListingDetail(
-  { params, searchParams }: { params: { tenantSlug: string; id: string }; searchParams: { status?: string; step?: string; refusal?: string; qty?: string; price?: string } },
+  props: { params: Promise<{ tenantSlug: string; id: string }>; searchParams: Promise<{ status?: string; step?: string; refusal?: string; qty?: string; price?: string }> }
 ) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const t = getTranslator();
   const lang = getLang();
   const slug = params.tenantSlug;

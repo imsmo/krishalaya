@@ -117,8 +117,8 @@ async function page(who: Who, mount: () => Promise<React.ReactNode>): Promise<st
   const children = await mount();
   return renderToStaticMarkup(await RootLayout({ children: children as React.ReactElement }));
 }
-const listings = () => ListingsPage({ searchParams: {} });
-const importPage = () => ListingImportPage({ searchParams: {} });
+const listings = () => ListingsPage({ searchParams: Promise.resolve({}) });
+const importPage = () => ListingImportPage({ searchParams: Promise.resolve({}) });
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
 const htmlTag = (html: string) => html.match(/^<html[^>]*>/)?.[0] ?? '';
 const h1 = (html: string) => html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/)?.[1] ?? '';
@@ -270,7 +270,7 @@ describe('the rich() interpolation the isolates use', () => {
 // fallback to English, or one key left behind, turns this red). Counts must be Western digits in the ar locale's grouping.
 describe('4 · /dashboard and /people in Arabic (RTL-1b-2: the whole catalogue)', () => {
   const dashboard = () => DashboardPage();
-  const people = () => PeoplePage({ searchParams: {} });
+  const people = () => PeoplePage({ searchParams: Promise.resolve({}) });
   /** The page body only (inside <main>), so the chrome's own checks (section 2) are not re-counted here. */
   const main = (html: string) => html.match(/<main[^>]*>([\s\S]*)<\/main>/)?.[1] ?? '';
   /** The VISIBLE text (tags and their attributes removed — a `?kyc=verified` href is not copy), one node per line. */
@@ -361,8 +361,8 @@ describe('5 · every amount in the Indian shape, isolated (RTL-1b-3: /dashboard,
   /** The Indian (en-IN) shape: optional sign, symbol first, lakh grouping (last group of 3, then groups of 2), 2 decimals. */
   const INDIAN = /^-?₹(?:\d{1,2},(?:\d{2},)*\d{3}|\d{1,3})\.\d{2}$/;
   const dashboard = () => DashboardPage();
-  const people = () => PeoplePage({ searchParams: {} });
-  const invoices = () => InvoicesPage({ searchParams: {} });
+  const people = () => PeoplePage({ searchParams: Promise.resolve({}) });
+  const invoices = () => InvoicesPage({ searchParams: Promise.resolve({}) });
   const PAGES: Array<[string, () => Promise<React.ReactNode>, string[]]> = [
     ['/dashboard', dashboard, ['₹48,12,600.00', '₹3,42,180.00']],
     ['/people', people, ['₹12,345.00']],

@@ -21,7 +21,10 @@ export function generateMetadata(): Metadata {
 
 const errOf = (e: unknown): ReadError => (e instanceof SdkError ? { status: e.status, code: e.code } : { status: 500, code: 'UNKNOWN' });
 
-export default async function ApplicationsPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function ApplicationsPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   const me = await requireGov('/applications');
   const t = getTranslator();
   const chain = appChainFor(searchParams, false);

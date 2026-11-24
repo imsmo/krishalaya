@@ -38,7 +38,7 @@ import { gu } from '../i18n/gu';
 import { renderResolved, text } from './store1b-harness';
 import { ORG, SLUG, reset, withCookies } from './store6a-fixtures';
 
-const inStore = async (child: React.ReactNode) => renderResolved(await TenantLayout({ children: child, params: { tenantSlug: SLUG } }), [TenantHeader]);
+const inStore = async (child: React.ReactNode) => renderResolved(await TenantLayout({ children: child, params: Promise.resolve({ tenantSlug: SLUG }) }), [TenantHeader]);
 const onPlatform = async (child: React.ReactNode) => renderResolved(await PlatformLayout({ children: child }), [SiteHeader]);
 const boundary = (h: string) => h.slice(h.indexOf('<section class="kv-empty-state"'), h.indexOf('</section>', h.indexOf('data-kv-boundary=')) + 10);
 const err = Object.assign(new Error('boom'), { digest: '4182937' });

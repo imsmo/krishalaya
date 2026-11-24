@@ -32,7 +32,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('notif.ladder.title'), robots: { index: false, follow: false } };
 }
 
-export default async function LadderPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | string[] | undefined> }) {
+export default async function LadderPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const at = typeof searchParams.at === 'string' ? searchParams.at : '';
   await requireSession(`${INBOX_HREF}/${encodeURIComponent(params.id)}`);
   const t = getTranslator();

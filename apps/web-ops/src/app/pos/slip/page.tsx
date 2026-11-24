@@ -17,10 +17,13 @@ import { loadCounter } from '../../../features/ops3/counter-load';
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('ops3.pos.slip.title'), robots: { index: false, follow: false } }; }
 
-export default async function PosSlipPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function PosSlipPage(
+  props: { searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(POS.slip);
   const t = getTranslator(); const lang = getLang();
-  const pour = decodeRecorded(cookies().get(SLIP_COOKIE)?.value);
+  const pour = decodeRecorded((await cookies()).get(SLIP_COOKIE)?.value);
   let card: DairyRateCard | null = null; let cardRead = false;
   if (pour) { try { card = (await opsClient().dairy.listRateCards({})).find((c) => c.id === pour.rateCardId) ?? null; cardRead = true; } catch { cardRead = false; } }
   const ctx = pour ? await loadCounter(pour.mccId) : null;

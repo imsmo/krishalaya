@@ -45,7 +45,8 @@ interface Meta {
   membershipCaveatOwner: string;
 }
 
-export default async function RoleMatrixPage({ searchParams }: { searchParams: { group?: string } }) {
+export default async function RoleMatrixPage(props: { searchParams: Promise<{ group?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const group = (searchParams.group ?? '').trim() || undefined;

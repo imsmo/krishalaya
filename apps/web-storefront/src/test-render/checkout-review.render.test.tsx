@@ -38,7 +38,7 @@ import { text } from './store1b-harness';
 import { C, reset, A, Z, O } from './store2c-fixtures';
 import { store2cRefusalKeys } from '../features/store2/refusals';
 
-const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantCheckout({ params: { tenantSlug: 'anand-fpo' }, searchParams: { step: 'review', ...sp } }));
+const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantCheckout({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve({ step: 'review', ...sp }) }));
 const form = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 const redirectOf = async (p: Promise<void>) => p.then(() => 'no redirect', (e: Error) => e.message.replace(/^REDIRECT /, ''));
 const KEY = '0209bb00-0000-7000-8000-000000000001';

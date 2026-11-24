@@ -19,7 +19,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('compliance.auditTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function AuditExplorerPage({ searchParams }: { searchParams: { cursor?: string; actorUserId?: string; entityType?: string; entityId?: string; action?: string; tenantId?: string; from?: string; to?: string; view?: string } }) {
+export default async function AuditExplorerPage(
+  props: { searchParams: Promise<{ cursor?: string; actorUserId?: string; entityType?: string; entityId?: string; action?: string; tenantId?: string; from?: string; to?: string; view?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const f = {

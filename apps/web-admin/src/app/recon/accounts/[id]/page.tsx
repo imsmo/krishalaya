@@ -24,7 +24,11 @@ export function generateMetadata(): Metadata {
 const OK = new Set(['freeze', 'unfreeze']);
 const ERR = new Set(['reason', 'elevation', 'illegal', 'notFound', 'generic']);
 
-export default async function ReconAccountPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function ReconAccountPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
 

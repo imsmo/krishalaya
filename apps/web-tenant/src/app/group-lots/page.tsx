@@ -4,7 +4,8 @@ import { redirect } from 'next/navigation';
 
 const UUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
-export default function GroupLotsRedirect({ searchParams }: { searchParams: { lot?: string } }) {
+export default async function GroupLotsRedirect(props: { searchParams: Promise<{ lot?: string }> }) {
+  const searchParams = await props.searchParams;
   const id = typeof searchParams.lot === 'string' && UUID.test(searchParams.lot) ? searchParams.lot : null;
   redirect(id ? `/marketplace/group-lots/${encodeURIComponent(id)}` : '/marketplace/group-lots');
 }

@@ -37,7 +37,8 @@ interface Plan {
   note: string;
 }
 
-export default async function ScalePlanPage({ searchParams }: { searchParams: { ok?: string; error?: string } }) {
+export default async function ScalePlanPage(props: { searchParams: Promise<{ ok?: string; error?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

@@ -28,7 +28,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('bc.receipt.title'), robots: { index: false, follow: false } };
 }
 
-export default async function BroadcastReceiptPage({ params }: { params: { id: string } }) {
+export default async function BroadcastReceiptPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   await requireSession(broadcastHref(params.id));
   const t = getTranslator();
   const lang = getLang();

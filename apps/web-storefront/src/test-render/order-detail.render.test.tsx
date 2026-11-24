@@ -38,7 +38,7 @@ import { text } from './store1b-harness';
 import { C, reset, DETAIL, SLUG, SELLER_UUID, OID } from './store3a-fixtures';
 import { store3aRefusalKeys } from '../features/store3a/refusals';
 
-const page = async (id: string, sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantOrderPage({ params: { tenantSlug: SLUG, id }, searchParams: sp }));
+const page = async (id: string, sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantOrderPage({ params: Promise.resolve({ tenantSlug: SLUG, id }), searchParams: Promise.resolve(sp) }));
 const form = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 beforeEach(() => { reset(); });
 
@@ -167,7 +167,7 @@ describe('STORE-3a · W289 cancel, dispute, returns', () => {
 
 describe('STORE-3a · W289 states and the door', () => {
   it('a stranger\'s id → notFound; a load error → Retry (a reload) + Back to the list; the refusals by name; the trust mark', async () => {
-    await expect(TenantOrderPage({ params: { tenantSlug: SLUG, id: OID.late }, searchParams: {} })).rejects.toThrow('NEXT_NOT_FOUND');
+    await expect(TenantOrderPage({ params: Promise.resolve({ tenantSlug: SLUG, id: OID.late }), searchParams: Promise.resolve({}) })).rejects.toThrow('NEXT_NOT_FOUND');
     C.orders[OID.cod] = new Error('down');
     const e = await page(OID.cod);
     expect(e).toContain('data-kv-state="error"');
@@ -191,7 +191,7 @@ describe('STORE-3a · W289 states and the door', () => {
     expect(text(h)).toContain(en['store4b.entry.order']);
   });
   it('the platform /orders/[id] → /<slug>/orders/[id], carrying ok / error / status', async () => {
-    await expect(PlatformOrderDoor({ params: { id: OID.cod }, searchParams: { status: 'reviewed' } })).rejects.toThrow(`REDIRECT /${SLUG}/orders/${OID.cod}?status=reviewed`);
+    await expect(PlatformOrderDoor({ params: Promise.resolve({ id: OID.cod }), searchParams: Promise.resolve({ status: 'reviewed' }) })).rejects.toThrow(`REDIRECT /${SLUG}/orders/${OID.cod}?status=reviewed`);
   });
 });
 
@@ -201,12 +201,12 @@ describe('STORE-3b · C4 the order page of an OFFER order', () => {
   const OFFER_ID = '0211c000-0000-7000-8000-000000000004';
   it('"from your offer" links the thread under this store; the regime is printed; a direct order shows neither', async () => {
     C.orders[OID.cod] = DETAIL(OID.cod, { source: 'offer', offerId: OFFER_ID, deliveryFeeMinor: '0', platformFeeMinor: '0', totalMinor: '6150000' });
-    let h = renderToStaticMarkup(await TenantOrderPage({ params: { tenantSlug: SLUG, id: OID.cod }, searchParams: {} }));
+    let h = renderToStaticMarkup(await TenantOrderPage({ params: Promise.resolve({ tenantSlug: SLUG, id: OID.cod }), searchParams: Promise.resolve({}) }));
     expect(h).toContain(`data-kv-offer-link="${OFFER_ID}" href="/${SLUG}/offers/${OFFER_ID}"`);
     expect(h).toContain('data-kv-regime="offer"');
     expect(text(h)).toContain(en['store3b.regime']);
     C.orders[OID.cod] = DETAIL(OID.cod);
-    h = renderToStaticMarkup(await TenantOrderPage({ params: { tenantSlug: SLUG, id: OID.cod }, searchParams: {} }));
+    h = renderToStaticMarkup(await TenantOrderPage({ params: Promise.resolve({ tenantSlug: SLUG, id: OID.cod }), searchParams: Promise.resolve({}) }));
     expect(h).not.toContain('data-kv-regime="offer"');
   });
 });

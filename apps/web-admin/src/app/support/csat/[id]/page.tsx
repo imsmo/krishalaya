@@ -50,8 +50,10 @@ interface ResponseView {
 const scoreTone = (n: number): StatusTone => (n <= 2 ? 'danger' : n === 3 ? 'warning' : 'success');
 
 export default async function CsatReviewPage(
-  { params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string; why?: string } },
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string; why?: string }> }
 ) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
 

@@ -19,7 +19,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('studio.detailTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function StudioCoursePage({ params }: { params: { id: string } }) {
+export default async function StudioCoursePage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   await requireSession(`/studio/${params.id}`);
   const t = getTranslator();
   const lang = getLang();

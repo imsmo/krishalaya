@@ -19,7 +19,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('partner6.consents.title'), robots: { index: false, follow: false } };
 }
 
-export default async function LenderConsentsPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function LenderConsentsPage(
+  props: { searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requirePartner();
   const t = getTranslator();
   await lenderGate();

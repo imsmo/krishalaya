@@ -24,7 +24,11 @@ export function generateMetadata(): Metadata {
 const OK = new Set(['updated', 'activated', 'deactivated']);
 const ERR = new Set(['defaultName', 'meta', 'sortOrder', 'isActive', 'reason', 'elevation', 'conflict', 'invalid', 'notFound', 'generic']);
 
-export default async function LookupValueDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function LookupValueDetailPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
 

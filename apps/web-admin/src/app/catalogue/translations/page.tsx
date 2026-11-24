@@ -40,8 +40,9 @@ interface CoverageView {
 }
 
 export default async function TranslationsPage(
-  { searchParams }: { searchParams: { ok?: string; error?: string; why?: string; n?: string } },
+  props: { searchParams: Promise<{ ok?: string; error?: string; why?: string; n?: string }> }
 ) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

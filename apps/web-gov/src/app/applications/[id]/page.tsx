@@ -27,7 +27,11 @@ export function generateMetadata(): Metadata {
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 const errOf = (e: unknown): ReadError => (e instanceof SdkError ? { status: e.status, code: e.code } : { status: 500, code: 'UNKNOWN' });
 
-export default async function ApplicationPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | string[] | undefined> }) {
+export default async function ApplicationPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const id = params.id;
   const me = await requireGov(isApplicationId(id) ? `/applications/${id}` : '/applications');
   const t = getTranslator();

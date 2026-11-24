@@ -21,8 +21,8 @@ import { text } from './store1b-harness';
 import { S, SLUG, reset } from './sweep-fixtures';
 import { sweepRefusalKeys } from '../features/sweep/refusals';
 
-const platform = (sp: Record<string, string> = {}) => renderToStaticMarkup(<>{PlatformLanguage({ searchParams: sp })}</>);
-const store = (sp: Record<string, string> = {}) => renderToStaticMarkup(<>{TenantLanguage({ params: { tenantSlug: SLUG }, searchParams: sp })}</>);
+const platform = (sp: Record<string, string> = {}) => renderToStaticMarkup(<>{PlatformLanguage({ searchParams: Promise.resolve(sp) })}</>);
+const store = (sp: Record<string, string> = {}) => renderToStaticMarkup(<>{TenantLanguage({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve(sp) })}</>);
 const fromOf = (h: string) => h.match(/<input type="hidden" name="from" value="([^"]*)"/)?.[1];
 beforeEach(() => reset());
 

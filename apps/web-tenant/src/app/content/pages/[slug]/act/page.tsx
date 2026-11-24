@@ -33,7 +33,11 @@ export function generateMetadata(): Metadata {
 
 const FIELDS = ['act', 'reason', 'archiveReason', 'id'] as const;
 
-export default async function PageActPage({ params, searchParams }: { params: { slug: string }; searchParams: Record<string, string | string[] | undefined> }) {
+export default async function PageActPage(
+  props: { params: Promise<{ slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const slug = decodeURIComponent(params.slug);
   const PATH = `${pageHref(slug)}/act`;
   await requireSession(PATH);

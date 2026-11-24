@@ -22,7 +22,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('swd.import.title'), robots: { index: false, follow: false } };
 }
 
-export default async function ImportActPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | undefined> }) {
+export default async function ImportActPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   await requireSession(importHref(params.id));
   const t = getTranslator();
   const act = isImportAct(searchParams.act) ? searchParams.act : 'retry';

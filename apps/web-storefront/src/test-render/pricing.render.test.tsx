@@ -33,7 +33,7 @@ import { text } from './store1b-harness';
 
 const STARTER = { code: 'starter', name: 'Starter', monthlyMinor: '499900', annualMinor: '4999900', setupFeeMinor: '0', currency: 'INR', exponent: 2 };
 const GROWTH = { code: 'growth', name: 'Growth', monthlyMinor: '1499900', annualMinor: '14999900', setupFeeMinor: '2500000', currency: 'INR', exponent: 2 };
-const render = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await PricingPage({ searchParams: sp }));
+const render = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await PricingPage({ searchParams: Promise.resolve(sp) }));
 
 beforeEach(() => { mock.lang = 'en'; mock.asked = []; mock.plans = { country: 'IN', plans: [STARTER, GROWTH], trialDays: 14 }; });
 

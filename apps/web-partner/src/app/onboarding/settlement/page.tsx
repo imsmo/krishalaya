@@ -17,7 +17,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('partner1.onboarding.title'), robots: { index: false, follow: false } };
 }
 
-export default async function SettlementPage({ searchParams }: { searchParams?: SP }) {
+export default async function SettlementPage(props: { searchParams?: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   await requirePartner();
   const t = getTranslator();
   const form = chainState('onboarding_form', searchParams);

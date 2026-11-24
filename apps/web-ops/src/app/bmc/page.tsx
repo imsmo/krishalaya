@@ -26,7 +26,8 @@ export function generateMetadata(): Metadata { return { title: getTranslator().t
 type SP = Record<string, string | string[] | undefined>;
 const status = (e: unknown): number | 'failed' => (e instanceof SdkError ? e.status : 'failed');
 
-export default async function BmcPage({ searchParams }: { searchParams?: SP }) {
+export default async function BmcPage(props: { searchParams?: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   await requireSession(BMC);
   const t = getTranslator(); const lang = getLang();
   const unit = parseUnit(searchParams?.unit);
@@ -38,7 +39,7 @@ export default async function BmcPage({ searchParams }: { searchParams?: SP }) {
     return <Ops3Chain t={t} chain="bmc_form" state="failure" back={back} backKey="ops3.bmc.back"><ReadingFailure t={t} reason={parseReadingReason(searchParams?.reason)} /></Ops3Chain>;
   }
   if (form === 'success') {
-    const reading = decodeReading(cookies().get(READING_COOKIE)?.value);
+    const reading = decodeReading((await cookies()).get(READING_COOKIE)?.value);
     return <Ops3Chain t={t} chain="bmc_form" state="success" back={reading ? `${BMC}?unit=${reading.unitId}` : back} backKey="ops3.bmc.back"><ReadingRecorded t={t} reading={reading} /></Ops3Chain>;
   }
 

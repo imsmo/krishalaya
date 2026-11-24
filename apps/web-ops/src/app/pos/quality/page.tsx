@@ -17,7 +17,10 @@ import { recordPourAction } from '../actions';
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('ops3.chain.posAct.confirm.title'), robots: { index: false, follow: false } }; }
 
-export default async function PosQualityPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function PosQualityPage(
+  props: { searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(POS.quality);
   const t = getTranslator(); const lang = getLang();
   const mcc = parseId(searchParams?.mcc);

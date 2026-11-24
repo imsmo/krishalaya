@@ -6,7 +6,10 @@ import { VERIFICATION_HREF } from '../../features/kyc/desk';
 
 export const dynamic = 'force-dynamic';
 
-export default function KycDeskMoved({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function KycDeskMoved(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   const q = new URLSearchParams();
   for (const [k, v] of Object.entries(searchParams)) if (typeof v === 'string') q.set(k, v);
   const s = q.toString();

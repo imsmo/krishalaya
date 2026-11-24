@@ -20,7 +20,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('qc.title'), robots: { index: false, follow: false } };
 }
 
-export default async function QcQueuePage({ searchParams }: { searchParams: { ok?: string } }) {
+export default async function QcQueuePage(props: { searchParams: Promise<{ ok?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession('/listings/qc');
   const t = getTranslator();
   const lang = getLang();

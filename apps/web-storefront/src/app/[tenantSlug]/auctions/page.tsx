@@ -59,7 +59,11 @@ const fromMine = (b: MyBid): CardView => ({
   currencyCode: b.currencyCode, antiSnipe: null, emd: b.emdRule ?? null, mine: b,
 });
 
-export default async function TenantAuctionsPage({ params, searchParams }: { params: { tenantSlug: string }; searchParams: SP }) {
+export default async function TenantAuctionsPage(
+  props: { params: Promise<{ tenantSlug: string }>; searchParams: Promise<SP> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const t = getTranslator();
   const lang = getLang();
   const slug = params.tenantSlug;

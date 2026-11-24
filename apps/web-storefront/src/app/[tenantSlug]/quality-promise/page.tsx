@@ -16,7 +16,8 @@ export function generateMetadata(): Metadata {
   return { title: t.t('sweep.quality.title'), description: t.t('sweep.quality.lead') };
 }
 
-export default async function TenantQualityPromisePage({ params }: { params: { tenantSlug: string } }) {
+export default async function TenantQualityPromisePage(props: { params: Promise<{ tenantSlug: string }> }) {
+  const params = await props.params;
   let flags: StorefrontFlags | null = null;
   try { flags = await publicClient(params.tenantSlug).storefront.flags(); } catch { flags = null; }
   return <QualityPromiseScreen chrome={tenantChrome(params.tenantSlug)} disputes={disputesState(flags)} />;

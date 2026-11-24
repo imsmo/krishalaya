@@ -25,7 +25,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('gov1.dash.title'), robots: { index: false, follow: false } };
 }
 
-export default async function DashboardPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function DashboardPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   const me = await requireGov('/dashboard');
   const t = getTranslator();
   const chain = dashChain(searchParams);

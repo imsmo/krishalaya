@@ -23,7 +23,11 @@ export function generateMetadata(): Metadata {
 const OK = new Set(['placed', 'moved']);
 const ERR = new Set(['cellId', 'shardId', 'reason', 'elevation', 'conflict', 'invalid', 'notFound', 'generic']);
 
-export default async function PlacementDetailPage({ params, searchParams }: { params: { tenantId: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function PlacementDetailPage(
+  props: { params: Promise<{ tenantId: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
   const tenantId = params.tenantId;

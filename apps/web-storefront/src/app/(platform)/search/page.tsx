@@ -28,13 +28,15 @@ const PAGE = 24;
 type SP = Record<string, string | string[] | undefined>;
 const one = (v: string | string[] | undefined) => { const s = (Array.isArray(v) ? v[0] : v)?.trim(); return s ? s.slice(0, 80) : undefined; };
 
-export function generateMetadata({ searchParams }: { searchParams: SP }): Metadata {
+export async function generateMetadata(props: { searchParams: Promise<SP> }): Promise<Metadata> {
+  const searchParams = await props.searchParams;
   const t = getTranslator();
   const q = one(searchParams.q);
   return { title: q ? t.t('search.resultsFor', { q }) : t.t('search.title'), robots: { index: false } };
 }
 
-export default async function PlatformSearch({ searchParams }: { searchParams: SP }) {
+export default async function PlatformSearch(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   const t = getTranslator();
   const lang = getLang();
   const q = one(searchParams.q);

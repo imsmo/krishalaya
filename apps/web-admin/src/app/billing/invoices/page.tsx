@@ -28,12 +28,15 @@ const STATUS_TONE: Record<string, StatusTone> = { draft: 'neutral', issued: 'neu
 const BULK_ERR = new Set(['bulk_action', 'bulk_empty', 'bulk_tooMany', 'bulk_reason', 'bulk_noneApplicable',
   'elevation', 'notFound', 'generic']);
 
-export default async function InvoicesPage({ searchParams }: {
-  searchParams: {
-    cursor?: string; status?: string; tenantId?: string; ok?: string; error?: string;
-    moved?: string; skipped?: string; illegal?: string; notfound?: string; failed?: string;
-  };
-}) {
+export default async function InvoicesPage(
+  props: {
+    searchParams: Promise<{
+      cursor?: string; status?: string; tenantId?: string; ok?: string; error?: string;
+      moved?: string; skipped?: string; illegal?: string; notfound?: string; failed?: string;
+    }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const status = (INVOICE_STATUSES as readonly string[]).includes(searchParams.status ?? '') ? searchParams.status : undefined;

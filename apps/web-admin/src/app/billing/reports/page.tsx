@@ -51,9 +51,12 @@ interface RenewalView {
   due: RenewalDueRow[]; recentActivity: Array<{ day: string; invoicesIssued: number }>;
 }
 
-export default async function BillingReportsPage({ searchParams }: {
-  searchParams: { error?: string; receipt?: string; rows?: string; truncated?: string; report?: string };
-}) {
+export default async function BillingReportsPage(
+  props: {
+    searchParams: Promise<{ error?: string; receipt?: string; rows?: string; truncated?: string; report?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

@@ -24,7 +24,8 @@ export function generateMetadata(): Metadata {
 const OK = new Set(['claim', 'accept', 'reject', 'enqueue']);
 type SP = { ok?: string; error?: string; item?: string; box?: string; status?: string; kind?: string };
 
-export default async function AiReviewPage({ searchParams }: { searchParams: SP }) {
+export default async function AiReviewPage(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   if (!env.featureAiReview) notFound();
   await requireSession('/ai-review');
   const t = getTranslator();

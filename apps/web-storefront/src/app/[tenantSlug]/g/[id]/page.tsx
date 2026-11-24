@@ -32,7 +32,11 @@ export function generateMetadata(): Metadata {
   return { title: t.t('store3c.gl.badge'), robots: { index: false, follow: true } };
 }
 
-export default async function TenantGroupLotPage({ params, searchParams }: { params: { tenantSlug: string; id: string }; searchParams: SP }) {
+export default async function TenantGroupLotPage(
+  props: { params: Promise<{ tenantSlug: string; id: string }>; searchParams: Promise<SP> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const t = getTranslator();
   const lang = getLang();
   const slug = params.tenantSlug;

@@ -49,7 +49,8 @@ function Stat({ label, tile, note, t }: { label: string; tile: Tile; note?: stri
   );
 }
 
-export default async function TrustInsightsPage({ searchParams }: { searchParams: { days?: string } }) {
+export default async function TrustInsightsPage(props: { searchParams: Promise<{ days?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const days = /^[0-9]{1,3}$/.test(searchParams.days ?? '') ? searchParams.days : undefined;

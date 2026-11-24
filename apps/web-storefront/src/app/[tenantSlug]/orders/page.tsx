@@ -32,7 +32,11 @@ export function generateMetadata(): Metadata {
   return { title: t.t('order.listTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function TenantOrdersPage({ params, searchParams }: { params: { tenantSlug: string }; searchParams: SP }) {
+export default async function TenantOrdersPage(
+  props: { params: Promise<{ tenantSlug: string }>; searchParams: Promise<SP> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const slug = params.tenantSlug;
   const group = readGroup(searchParams.group);
   const cursor = typeof searchParams.cursor === 'string' ? searchParams.cursor.slice(0, 512) : undefined;

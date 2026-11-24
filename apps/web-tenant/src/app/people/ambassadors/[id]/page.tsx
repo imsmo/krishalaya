@@ -34,7 +34,11 @@ export function generateMetadata(): Metadata {
 
 const TARGET_ERRORS = new Set(['ambassador', 'metric', 'dates', 'dateOrder', 'value', 'TARGET_EXISTS', 'AMBASSADOR_NOT_FOUND']);
 
-export default async function AmbassadorDetailPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | undefined> }) {
+export default async function AmbassadorDetailPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const base = detailHref(params.id);
   await requireSession(base);
   const t = getTranslator();

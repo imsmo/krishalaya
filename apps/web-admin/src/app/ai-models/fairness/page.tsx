@@ -45,7 +45,8 @@ interface Board {
   platformDecisionsAwaitingFlag: number;
 }
 
-export default async function FairnessBoardPage({ searchParams }: { searchParams: { ok?: string; error?: string } }) {
+export default async function FairnessBoardPage(props: { searchParams: Promise<{ ok?: string; error?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

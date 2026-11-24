@@ -10,7 +10,8 @@ import { insightExportHref, isInsightFrom } from '../../../../../features/swf/co
 export const dynamic = 'force-dynamic';
 const FORWARDED = ['content-type', 'content-length', 'content-disposition', 'x-export-sha256'] as const;
 
-export async function GET(req: Request, { params }: { params: { id: string } }): Promise<Response> {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }): Promise<Response> {
+  const params = await props.params;
   const id = params.id;
   const url = new URL(req.url);
   const fromRaw = url.searchParams.get('from') ?? ''; const from = isInsightFrom(fromRaw) ? fromRaw : 'reports';

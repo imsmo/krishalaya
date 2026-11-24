@@ -82,10 +82,10 @@ async function page(who: Who, m: Mount): Promise<string> {
   const children = await m.run();
   return renderToStaticMarkup(await RootLayout({ children }));
 }
-const home: Mount = { run: () => DashboardPage({ searchParams: {} }) };
-const apps: Mount = { run: () => ApplicationsPage({ searchParams: {} }) };
-const mgnrega: Mount = { run: () => MgnregaPage({ searchParams: {} }) };
-const login: Mount = { who: { signedOut: true, phone: '+91 98765 43318' }, run: () => LoginPage({ searchParams: { step: 'verify' } }) };
+const home: Mount = { run: () => DashboardPage({ searchParams: Promise.resolve({}) }) };
+const apps: Mount = { run: () => ApplicationsPage({ searchParams: Promise.resolve({}) }) };
+const mgnrega: Mount = { run: () => MgnregaPage({ searchParams: Promise.resolve({}) }) };
+const login: Mount = { who: { signedOut: true, phone: '+91 98765 43318' }, run: () => LoginPage({ searchParams: Promise.resolve({ step: 'verify' }) }) };
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
 const htmlTag = (html: string) => html.match(/<html[^>]*>/)?.[0] ?? '';
 const main = (html: string) => html.match(/<main[^>]*>([\s\S]*)<\/main>/)?.[1] ?? '';

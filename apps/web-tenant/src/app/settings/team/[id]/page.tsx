@@ -27,7 +27,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('swc.staff.title'), robots: { index: false, follow: false } };
 }
 
-export default async function StaffDetailPage({ params }: { params: { id: string } }) {
+export default async function StaffDetailPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   await requireSession(staffHref(params.id));
   const t = getTranslator(); const lang = getLang();
   const n = (x: number) => formatNumber(x, lang);

@@ -47,8 +47,10 @@ const OK_KEYS = new Set(['suspended', 'alreadySuspended', 'reinstated']);
 const ERR_KEYS = new Set(['reason', 'forbidden', 'notFound', 'notSuspended', 'failed']);
 
 export default async function MemberPage(
-  { params, searchParams }: { params: { userId: string }; searchParams: { ok?: string; error?: string } },
+  props: { params: Promise<{ userId: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
 ) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   await requireSession(`/people/${params.userId}`);
   const t = getTranslator();
   const lang = getLang();

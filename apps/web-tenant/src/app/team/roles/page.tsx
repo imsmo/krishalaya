@@ -22,7 +22,8 @@ export function generateMetadata(): Metadata {
 
 const OK = new Set(['assigned', 'revoked', 'override']);
 
-export default async function RolesPage({ searchParams }: { searchParams: { ok?: string; error?: string } }) {
+export default async function RolesPage(props: { searchParams: Promise<{ ok?: string; error?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession('/team/roles');
   const t = getTranslator();
 

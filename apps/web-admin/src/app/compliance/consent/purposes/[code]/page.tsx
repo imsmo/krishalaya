@@ -49,7 +49,11 @@ interface PurposeDetail {
   ivrEvidence: { available: boolean };
 }
 
-export default async function ConsentPurposeDetailPage({ params, searchParams }: { params: { code: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function ConsentPurposeDetailPage(
+  props: { params: Promise<{ code: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
 

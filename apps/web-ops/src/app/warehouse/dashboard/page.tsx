@@ -18,7 +18,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('ops2.whDash.title'), robots: { index: false, follow: false } };
 }
 
-export default async function WarehouseDashboardPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function WarehouseDashboardPage(
+  props: { searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/warehouse/dashboard');
   const t = getTranslator(); const lang = getLang();
   const form = chain2State('wh_form', searchParams);

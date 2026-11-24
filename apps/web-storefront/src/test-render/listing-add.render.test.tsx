@@ -29,7 +29,7 @@ import { renderResolved, text } from './store1b-harness';
 import { S, reset as resetA, L1 } from './store2a-fixtures';
 import { W, reset as resetB } from './store2b-fixtures';
 
-const lot = async (sp: Record<string, string> = {}) => renderResolved(await ListingDetail({ params: { tenantSlug: 'anand-fpo', id: L1 }, searchParams: sp }), []);
+const lot = async (sp: Record<string, string> = {}) => renderResolved(await ListingDetail({ params: Promise.resolve({ tenantSlug: 'anand-fpo', id: L1 }), searchParams: Promise.resolve(sp) }), []);
 const form = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 const redirectOf = async (p: Promise<void>) => p.then(() => 'no redirect', (e: Error) => e.message.replace(/^REDIRECT /, ''));
 const q = (href: string) => Object.fromEntries(new URL(`https://x${href.replace(/#.*$/, '')}`).searchParams);

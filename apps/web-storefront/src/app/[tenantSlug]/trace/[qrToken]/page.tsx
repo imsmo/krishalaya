@@ -10,13 +10,18 @@ import { tenantChrome } from '../../../../features/store4a/account';
 export const dynamic = 'force-dynamic';
 type SP = Record<string, string | string[] | undefined>;
 
-export async function generateMetadata({ params }: { params: { tenantSlug: string; qrToken: string } }): Promise<Metadata> {
+export async function generateMetadata(props: { params: Promise<{ tenantSlug: string; qrToken: string }> }): Promise<Metadata> {
+  const params = await props.params;
   const t = getTranslator();
   const r = await loadTrace(tenantChrome(params.tenantSlug), params.qrToken);
   if (r.kind === 'ok') return { title: t.t('trace.title') };
   return { title: t.t(r.kind === 'no_longer' ? 'store5b.trace.noLongerTitle' : r.kind === 'not_published' ? 'trace.notPublishedTitle' : 'trace.notFoundTitle'), robots: { index: false } };
 }
 
-export default async function Page({ params, searchParams = {} }: { params: { tenantSlug: string; qrToken: string }; searchParams?: SP }) {
+export default async function Page(
+  props: { params: Promise<{ tenantSlug: string; qrToken: string }>; searchParams?: Promise<SP> }
+) {
+  const searchParams = (await props.searchParams) ?? {};
+  const params = await props.params;
   return TraceScreen({ chrome: tenantChrome(params.tenantSlug), qrToken: params.qrToken, searchParams });
 }

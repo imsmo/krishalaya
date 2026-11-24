@@ -29,7 +29,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('auditor.ledger.title'), robots: { index: false, follow: false } };
 }
 
-export default async function AuditorLedgerPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function AuditorLedgerPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   if (!env.featureAuditor) notFound();
   await requireSession(LEDGER_HREF);
   const t = getTranslator();

@@ -22,7 +22,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('swd.agm.title'), robots: { index: false, follow: false } };
 }
 
-export default async function AgmOverviewPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function AgmOverviewPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   await requireSession(AGM_HREF);
   const t = getTranslator();
   let view: AgmOverview | null = null; let state: string | null = null;

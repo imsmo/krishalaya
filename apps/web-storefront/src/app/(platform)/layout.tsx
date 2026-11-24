@@ -16,7 +16,7 @@
 // platform's public flags (no tenant: the four platform-scoped keys; unreadable → no ribbon, the switches fail open); and a `BoundaryProvider` (no
 // store, the request's language) so `(platform)/not-found.tsx` / `(platform)/error.tsx` render inside this chrome with "Back to the bazaar" → `/`.
 import type { Metadata } from 'next';
-import { headers } from 'next/headers';
+import { headers, type UnsafeUnwrappedHeaders } from 'next/headers';
 import type { StorefrontFlags } from '@krishalaya/sdk-js';
 import { publicClient } from '../../lib/api-client';
 import { getLang } from '../../lib/i18n';
@@ -36,7 +36,7 @@ import { PLATFORM_BRAND, PLATFORM_ICONS } from '../../features/branding/brand-th
 import { PLATFORM_CHROME } from '../../features/store4a/account';
 import { appHref } from '../../features/store6b/paths';
 
-const cacheable = () => headers().get(CACHEABLE_HEADER) === 'public';
+const cacheable = () => (headers() as unknown as UnsafeUnwrappedHeaders).get(CACHEABLE_HEADER) === 'public';
 
 export function generateMetadata(): Metadata {
   return cacheable() ? { other: { 'kv-cacheable': 'public' } } : {};

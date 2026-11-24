@@ -32,9 +32,9 @@ import { bareArrows, physical, resolveTree } from './store1b-harness';
 import { C, reset, DETAIL, ROW, SLUG, OID } from './store3a-fixtures';
 
 const rtl = async (node: React.ReactNode) => renderToStaticMarkup(<div dir="rtl">{await resolveTree(node, [])}</div>);
-const list = (sp: Record<string, string> = {}) => TenantOrdersPage({ params: { tenantSlug: SLUG }, searchParams: sp });
-const order = (id: string, sp: Record<string, string> = {}) => TenantOrderPage({ params: { tenantSlug: SLUG, id }, searchParams: sp });
-const cancel = (id: string, sp: Record<string, string> = {}) => TenantCancelPage({ params: { tenantSlug: SLUG, id }, searchParams: sp });
+const list = (sp: Record<string, string> = {}) => TenantOrdersPage({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve(sp) });
+const order = (id: string, sp: Record<string, string> = {}) => TenantOrderPage({ params: Promise.resolve({ tenantSlug: SLUG, id }), searchParams: Promise.resolve(sp) });
+const cancel = (id: string, sp: Record<string, string> = {}) => TenantCancelPage({ params: Promise.resolve({ tenantSlug: SLUG, id }), searchParams: Promise.resolve(sp) });
 beforeEach(() => {
   reset();
   C.orders[OID.paid] = DETAIL(OID.paid, { status: 'delivered', paymentState: 'paid', qualityWindowEnds: '2026-10-16T12:00:00.000Z' });

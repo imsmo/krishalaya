@@ -14,8 +14,12 @@ export function generateMetadata(): Metadata {
   return { title: t.t('trace.how.title'), description: t.t('home.trace.body') };
 }
 
-export default function TenantTraceEntryPage({ params, searchParams }: { params: { tenantSlug: string }; searchParams: Record<string, string | string[] | undefined> }) {
+export default async function TenantTraceEntryPage(
+  props: { params: Promise<{ tenantSlug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   // on the store's own host the middleware named this organisation — its paths have no `/<slug>` prefix there
-  const base = headers().get(TENANT_SLUG_HEADER) === params.tenantSlug ? '' : `/${encodeURIComponent(params.tenantSlug)}`;
+  const base = (await headers()).get(TENANT_SLUG_HEADER) === params.tenantSlug ? '' : `/${encodeURIComponent(params.tenantSlug)}`;
   return <TraceEntry base={base} searchParams={searchParams} />;
 }

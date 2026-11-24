@@ -52,7 +52,10 @@ interface CreditRow {
   farmer: { nameMasked: string | null; phoneMasked: string | null } | null; notified: null;
 }
 
-export default async function DbtMonitorPage({ searchParams }: { searchParams: { days?: string; schemeId?: string; cursor?: string } }) {
+export default async function DbtMonitorPage(
+  props: { searchParams: Promise<{ days?: string; schemeId?: string; cursor?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const days = /^[0-9]{1,3}$/.test(searchParams.days ?? '') ? searchParams.days : undefined;

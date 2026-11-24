@@ -30,7 +30,7 @@ import { store2aRefusalKeys } from '../features/store2/refusals';
 import { renderResolved, text } from './store1b-harness';
 import { S, reset } from './store2a-fixtures';
 
-const page = async (sp: Record<string, string> = {}) => renderResolved(await OrganisationSellerPage({ params: { tenantSlug: 'anand-fpo' }, searchParams: sp }), []);
+const page = async (sp: Record<string, string> = {}) => renderResolved(await OrganisationSellerPage({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve(sp) }), []);
 beforeEach(reset);
 
 describe('STORE-2a · W280 → the organisation\'s seller page', () => {

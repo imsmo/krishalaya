@@ -34,7 +34,8 @@ type SP = Record<string, string | string[] | undefined>;
 const one = (sp: SP, k: string): string => { const v = sp[k]; return (Array.isArray(v) ? v[0] : v) ?? ''; };
 const many = (sp: SP, k: string): string[] => { const v = sp[k]; return Array.isArray(v) ? v : v ? [v] : []; };
 
-export default async function NewListingPage({ searchParams }: { searchParams: SP }) {
+export default async function NewListingPage(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   await requireSession('/listings/new');
   const t = getTranslator();
   const lang = getLang();

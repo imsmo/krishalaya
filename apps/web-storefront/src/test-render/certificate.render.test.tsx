@@ -32,7 +32,7 @@ import { C, reset, CERT, CERT_ID, TOKEN, SLUG, UUIDS } from './store5b-fixtures'
 import { store5bRefusalKeys } from '../features/store5b/refusals';
 
 jest.mock('../lib/storefront-data', () => ({ loadTenantShell: async () => ({ kind: 'ok', tenant: { slug: 'anand-fpo', displayName: 'Anand FPO' }, branding: null }) }));
-const byId = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await CertPage({ params: { id: CERT_ID }, searchParams: sp }));
+const byId = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await CertPage({ params: Promise.resolve({ id: CERT_ID }), searchParams: Promise.resolve(sp) }));
 beforeEach(() => { reset(); });
 
 describe('STORE-5b · W305 the certificate', () => {
@@ -69,15 +69,15 @@ describe('STORE-5b · W305 the certificate', () => {
     expect(e).toContain('data-kv-cert="error"'); expect(e).toContain('data-kv-retry="reload"');
   });
   it('the lookup FORM: none yet; the platform asks for the organisation (need-org without it); the store looks within its organisation', async () => {
-    let html = renderToStaticMarkup(await LookupPage({ searchParams: {} }));
+    let html = renderToStaticMarkup(await LookupPage({ searchParams: Promise.resolve({}) }));
     expect(html).toContain('data-kv-cert="none-yet"'); expect(html).toContain('name="org"');
-    html = renderToStaticMarkup(await LookupPage({ searchParams: { no: 'NPOP-26-0419' } }));
+    html = renderToStaticMarkup(await LookupPage({ searchParams: Promise.resolve({ no: 'NPOP-26-0419' }) }));
     expect(html).toContain('data-kv-cert="need-org"');
-    html = renderToStaticMarkup(await LookupPage({ searchParams: { no: 'NPOP-26-0419', org: SLUG } }));
+    html = renderToStaticMarkup(await LookupPage({ searchParams: Promise.resolve({ no: 'NPOP-26-0419', org: SLUG }) }));
     expect(html).toContain('data-kv-status="verified"');
     expect(C.calls).toContainEqual(['certificates.publicByNo', { no: 'NPOP-26-0419' }, SLUG]);
     reset();
-    html = renderToStaticMarkup(await TenantLookupPage({ params: { tenantSlug: SLUG }, searchParams: {} }));
+    html = renderToStaticMarkup(await TenantLookupPage({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve({}) }));
     expect(html).not.toContain('name="org"'); expect(text(html)).toContain('Looked up among Anand FPO\'s certificates.');
   });
   it('the refusals by name: platform verification, the brand QR, findings, issuer contact, the phone line, "lost the badge the same day" reworded', async () => {

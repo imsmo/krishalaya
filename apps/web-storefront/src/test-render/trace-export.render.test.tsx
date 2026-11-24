@@ -31,7 +31,7 @@ import { text } from './store1b-harness';
 import { C, reset, TOKEN, JOB_ID, KEY, READY, SLUG, UUIDS } from './store5b-fixtures';
 import { store5bRefusalKeys } from '../features/store5b/refusals';
 
-const render = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await ExportPage({ params: { qrToken: TOKEN }, searchParams: sp }));
+const render = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await ExportPage({ params: Promise.resolve({ qrToken: TOKEN }), searchParams: Promise.resolve(sp) }));
 const form = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 const redirectOf = async (p: Promise<unknown>) => { try { await p; return null; } catch (e) { return String((e as Error).message).replace(/^REDIRECT /, ''); } };
 beforeEach(() => { reset(); });
@@ -80,7 +80,7 @@ describe('STORE-5b · W3154 / W3155 the record export', () => {
     expect(to).toMatch(new RegExp(`^/trace/${TOKEN}/export/${JOB_ID}/download\\?token=tok_`));
   });
   it('under the organisation\'s chrome: the same screen, the store\'s paths', async () => {
-    const html = renderToStaticMarkup(await TenantExportPage({ params: { tenantSlug: SLUG, qrToken: TOKEN }, searchParams: { job: JOB_ID } }));
+    const html = renderToStaticMarkup(await TenantExportPage({ params: Promise.resolve({ tenantSlug: SLUG, qrToken: TOKEN }), searchParams: Promise.resolve({ job: JOB_ID }) }));
     expect(html).toContain(`data-kv-chrome="${SLUG}"`);
     expect(html).toContain(`href="/${SLUG}/trace/${TOKEN}/verify"`);
   });

@@ -38,8 +38,9 @@ interface UnitsView {
 }
 
 export default async function UnitsPage(
-  { searchParams }: { searchParams: { unitClass?: string; ok?: string; error?: string; why?: string } },
+  props: { searchParams: Promise<{ unitClass?: string; ok?: string; error?: string; why?: string }> }
 ) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

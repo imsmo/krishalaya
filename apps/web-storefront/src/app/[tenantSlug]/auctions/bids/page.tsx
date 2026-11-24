@@ -39,7 +39,11 @@ export function generateMetadata(): Metadata {
   return { title: t.t('store3c.bids.title'), robots: { index: false, follow: false } };
 }
 
-export default async function TenantMyBidsPage({ params, searchParams }: { params: { tenantSlug: string }; searchParams: SP }) {
+export default async function TenantMyBidsPage(
+  props: { params: Promise<{ tenantSlug: string }>; searchParams: Promise<SP> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const slug = params.tenantSlug;
   const cursor = typeof searchParams.cursor === 'string' ? searchParams.cursor.slice(0, 512) : undefined;
   await requireSession(myBidsHref(slug, cursor));

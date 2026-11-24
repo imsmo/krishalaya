@@ -35,8 +35,8 @@ import { encodeReviewDraft, draftCookieName } from '../features/store5a/review';
 
 beforeEach(() => reset());
 const P = { tenantSlug: SLUG, id: OID };
-const review = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await ReviewPage({ params: P, searchParams: sp }));
-const edit = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await ReviewEditPage({ params: P, searchParams: sp }));
+const review = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await ReviewPage({ params: Promise.resolve(P), searchParams: Promise.resolve(sp) }));
+const edit = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await ReviewEditPage({ params: Promise.resolve(P), searchParams: Promise.resolve(sp) }));
 const formOf = (h: string, name: string) => (h.match(new RegExp(`<form[^>]*data-kv-form="${name}"[\\s\\S]*?</form>`)) ?? [''])[0];
 
 describe('STORE-6b · the review form (W290) keeps the person\'s words on this phone', () => {
@@ -62,8 +62,8 @@ describe('STORE-6b · the review form (W290) keeps the person\'s words on this p
     expect(await review({ ok: 'updated' })).toContain(`data-kv-draft-done="" data-kv-draft-kind="review" data-kv-draft-ref="${OID}"`);
   });
   it('the submit success is on the ORDER page (?status=reviewed, W3146): DraftDone for this order; the plain order page: none', async () => {
-    expect(renderToStaticMarkup(await TenantOrderPage({ params: P, searchParams: { status: 'reviewed' } }))).toContain(`data-kv-draft-done="" data-kv-draft-kind="review" data-kv-draft-ref="${OID}"`);
-    expect(renderToStaticMarkup(await TenantOrderPage({ params: P, searchParams: {} }))).not.toContain('data-kv-draft-done');
+    expect(renderToStaticMarkup(await TenantOrderPage({ params: Promise.resolve(P), searchParams: Promise.resolve({ status: 'reviewed' }) }))).toContain(`data-kv-draft-done="" data-kv-draft-kind="review" data-kv-draft-ref="${OID}"`);
+    expect(renderToStaticMarkup(await TenantOrderPage({ params: Promise.resolve(P), searchParams: Promise.resolve({}) }))).not.toContain('data-kv-draft-done');
   });
   it('the 5a offline refusal says the truth: kept on this phone; nothing sends by itself', async () => {
     expect(text(await review())).toContain(en['store5a.refusal.offline']);

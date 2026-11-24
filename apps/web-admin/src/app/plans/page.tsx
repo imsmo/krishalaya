@@ -22,7 +22,10 @@ export function generateMetadata(): Metadata {
 const STATUS_TONE: Record<string, StatusTone> = { draft: 'neutral', active: 'success', archived: 'neutral' };
 const ERR = new Set(['code', 'defaultName', 'countryCode', 'currencyCode', 'price', 'reason', 'elevation', 'conflict', 'notFound', 'generic']);
 
-export default async function PlansPage({ searchParams }: { searchParams: { cursor?: string; status?: string; error?: string } }) {
+export default async function PlansPage(
+  props: { searchParams: Promise<{ cursor?: string; status?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const status = (PLAN_STATUSES as readonly string[]).includes(searchParams.status ?? '') ? searchParams.status : undefined;

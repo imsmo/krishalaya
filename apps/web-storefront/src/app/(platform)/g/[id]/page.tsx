@@ -15,10 +15,11 @@ export function generateMetadata(): Metadata {
   return { title: t.t('store3c.gl.badge'), robots: { index: false, follow: true } };
 }
 
-export default async function PlatformGroupLotDoor({ params }: { params: { id: string } }) {
+export default async function PlatformGroupLotDoor(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const t = getTranslator();
   const id = /^[0-9a-fA-F-]{36}$/.test(params.id) ? params.id : null;
-  if (id && await resolveSessionToken()) {
+  if (id && (await resolveSessionToken())) {
     const slug = await sessionStoreSlug();
     if (slug) redirect(`/${encodeURIComponent(slug)}/g/${encodeURIComponent(id)}`);
   }

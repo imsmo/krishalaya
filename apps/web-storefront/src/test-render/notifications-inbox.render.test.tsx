@@ -37,7 +37,7 @@ import { C, N, reset } from './store4c-fixtures';
 import { STORE4C_REFUSALS } from '../features/store4c/refusals';
 
 const P = { tenantSlug: 'anand-fpo' };
-const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await InboxPage({ params: P, searchParams: sp }));
+const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await InboxPage({ params: Promise.resolve(P), searchParams: Promise.resolve(sp) }));
 const form = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 const redirectOf = async (p: Promise<unknown>) => { try { await p; } catch (e) { return String((e as Error).message); } return 'NO REDIRECT'; };
 beforeEach(() => { reset(); });
@@ -142,6 +142,6 @@ describe('STORE-4c · W299 states and refusals', () => {
     expect(await page()).toContain('data-kv-link="preferences" href="/anand-fpo/account/preferences"');
   });
   it('the platform /notifications is a DOOR to the session store\'s inbox, carrying the tab and the cursor', async () => {
-    expect(await redirectOf(PlatformDoor({ searchParams: { unread: '1', cursor: 'abc', x: 'y' } }))).toBe('REDIRECT /anand-fpo/notifications?unread=1&cursor=abc');
+    expect(await redirectOf(PlatformDoor({ searchParams: Promise.resolve({ unread: '1', cursor: 'abc', x: 'y' }) }))).toBe('REDIRECT /anand-fpo/notifications?unread=1&cursor=abc');
   });
 });

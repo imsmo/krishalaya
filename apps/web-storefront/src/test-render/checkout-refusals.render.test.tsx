@@ -31,7 +31,7 @@ import { en } from '../i18n/en';
 import { text } from './store1b-harness';
 import { C, reset, T_OTHER } from './store2c-fixtures';
 
-const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantCheckout({ params: { tenantSlug: 'anand-fpo' }, searchParams: sp }));
+const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantCheckout({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve(sp) }));
 beforeEach(() => reset());
 
 describe('STORE-2b/2c · the organisation\'s checkout maps the cart refusals by name', () => {

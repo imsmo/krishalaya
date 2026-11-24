@@ -17,7 +17,8 @@ export function generateMetadata(): Metadata {
   return { title: t.t('offers.title'), robots: { index: false, follow: false } };
 }
 
-export default async function PlatformOffersDoor({ searchParams }: { searchParams: SP }) {
+export default async function PlatformOffersDoor(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   await requireSession(`/offers${carryQuery(searchParams, ['status', 'cursor'])}`);
   const slug = await sessionStoreSlug();
   if (slug) redirect(`/${encodeURIComponent(slug)}/offers${carryQuery(searchParams, ['status', 'cursor'])}`);

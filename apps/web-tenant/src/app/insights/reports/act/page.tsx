@@ -24,7 +24,10 @@ import { DEF_FIELDS, SCHED_FIELDS } from './fields';
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swf.reports.title'), robots: { index: false, follow: false } }; }
 
-export default async function ReportActPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function ReportActPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   const base = `${REPORTS_HREF}/act`;
   await requireSession(base);
   const t = getTranslator(); const lang = getLang();

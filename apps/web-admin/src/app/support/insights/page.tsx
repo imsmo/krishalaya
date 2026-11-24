@@ -34,7 +34,8 @@ const DEFAULT_DAYS = 30;
 
 interface AgentsView { window: { from: string; to: string }; agents: AgentRow[] }
 
-export default async function AgentInsightsPage({ searchParams }: { searchParams: { days?: string } }) {
+export default async function AgentInsightsPage(props: { searchParams: Promise<{ days?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

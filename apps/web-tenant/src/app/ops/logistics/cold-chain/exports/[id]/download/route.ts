@@ -10,7 +10,8 @@ import { coldExportHref } from '../../../../../../../features/swe/console';
 export const dynamic = 'force-dynamic';
 const FORWARDED = ['content-type', 'content-length', 'content-disposition', 'x-export-sha256'] as const;
 
-export async function GET(req: Request, { params }: { params: { id: string } }): Promise<Response> {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }): Promise<Response> {
+  const params = await props.params;
   const id = params.id;
   await requireSession(coldExportHref(id));
   const url = new URL(req.url);

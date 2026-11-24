@@ -43,7 +43,10 @@ export function generateMetadata(): Metadata {
 const STATEMENT_PAGE = 25;
 const when = (iso: string, lang: string) => formatDate(iso, lang, { dateStyle: 'medium', timeStyle: 'short' });
 
-export default async function EarningsPage({ searchParams }: { searchParams: { instructor?: string; cursor?: string; exportError?: string } }) {
+export default async function EarningsPage(
+  props: { searchParams: Promise<{ instructor?: string; cursor?: string; exportError?: string }> }
+) {
+  const searchParams = await props.searchParams;
   const instructorParam = typeof searchParams.instructor === 'string' && searchParams.instructor.length ? searchParams.instructor : null;
   const cursor = typeof searchParams.cursor === 'string' && searchParams.cursor.length ? searchParams.cursor : null;
   await requireSession(earningsHref({ instructor: instructorParam }));

@@ -20,7 +20,10 @@ export function generateMetadata(): Metadata {
 
 const SEV_TONE: Record<string, StatusTone> = { P0: 'danger', P1: 'danger', P2: 'warning', P3: 'neutral' };
 
-export default async function SlaBreachesPage({ searchParams }: { searchParams: { cursor?: string; severity?: string; tenantId?: string } }) {
+export default async function SlaBreachesPage(
+  props: { searchParams: Promise<{ cursor?: string; severity?: string; tenantId?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const severity = (SEVERITIES as readonly string[]).includes(searchParams.severity ?? '') ? searchParams.severity : undefined;

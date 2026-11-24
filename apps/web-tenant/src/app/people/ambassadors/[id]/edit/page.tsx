@@ -33,7 +33,11 @@ function valuesFromProfile(p: AmbassadorRosterRow): Record<string, string> {
   return v;
 }
 
-export default async function EditAmbassadorPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | string[] | undefined> }) {
+export default async function EditAmbassadorPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const base = `${detailHref(params.id)}/edit`;
   await requireSession(base);
   const t = getTranslator();

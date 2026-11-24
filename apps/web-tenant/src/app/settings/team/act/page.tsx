@@ -23,7 +23,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('swc.teamAct.title'), robots: { index: false, follow: false } };
 }
 
-export default async function TeamActPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function TeamActPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   await requireSession(TEAM_HREF);
   const t = getTranslator(); const lang = getLang();
   const act = isTeamAct(searchParams.act) && searchParams.act !== 'invite' ? searchParams.act : 'add_directly';

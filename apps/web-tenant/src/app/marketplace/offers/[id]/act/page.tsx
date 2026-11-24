@@ -26,7 +26,11 @@ export function generateMetadata(): Metadata {
 }
 const AUDIT_ACTION = { pause: 'promotion.paused', resume: 'promotion.resumed' } as const;
 
-export default async function PromotionActPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | undefined> }) {
+export default async function PromotionActPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const base = `${OFFERS_HREF}/${encodeURIComponent(params.id)}/act`;
   await requireSession(base);
   const t = getTranslator();

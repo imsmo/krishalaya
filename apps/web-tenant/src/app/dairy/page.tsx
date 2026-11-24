@@ -57,7 +57,8 @@ const TONE: Record<'ok' | 'bad' | 'muted', string> = {
   ok: 'kv-badge', bad: 'kv-badge kv-badge--danger', muted: 'kv-badge kv-badge--muted',
 };
 
-export default async function DairyCounterPage({ searchParams }: { searchParams: { shift?: string; day?: string } }) {
+export default async function DairyCounterPage(props: { searchParams: Promise<{ shift?: string; day?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession('/dairy');
   const t = getTranslator();
   const lang = getLang();

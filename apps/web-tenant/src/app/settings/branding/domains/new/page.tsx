@@ -23,7 +23,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('dom.new.title'), robots: { index: false, follow: false } };
 }
 
-export default async function AddDomainPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function AddDomainPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   await requireSession(DOMAIN_NEW_HREF);
   const t = getTranslator();
   const step = chainStep(searchParams.step);

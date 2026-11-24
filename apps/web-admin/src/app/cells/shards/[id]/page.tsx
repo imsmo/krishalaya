@@ -29,7 +29,11 @@ const NODE_TONE: Record<string, StatusTone> = { ok: 'success', warn: 'warning', 
 const OK = new Set(['created', 'updated', 'status']);
 const ERR = new Set(['weight', 'notes', 'reason', 'status', 'illegal', 'noChange', 'elevation', 'conflict', 'invalid', 'notFound', 'generic']);
 
-export default async function ShardDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function ShardDetailPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
   const id = params.id;

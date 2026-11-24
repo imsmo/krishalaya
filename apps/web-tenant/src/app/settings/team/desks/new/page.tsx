@@ -27,7 +27,10 @@ export function generateMetadata(): Metadata {
 }
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v.find((x) => x.trim()) : v)?.trim() ?? '';
 
-export default async function DeskFormPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function DeskFormPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(NEW_DESK_HREF);
   const t = getTranslator();
   const lang = getLang();

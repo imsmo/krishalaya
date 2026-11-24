@@ -24,7 +24,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('aiModels.title'), robots: { index: false, follow: false } };
 }
 
-export default async function AiModelsPage({ searchParams }: { searchParams: { cursor?: string; status?: string } }) {
+export default async function AiModelsPage(props: { searchParams: Promise<{ cursor?: string; status?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

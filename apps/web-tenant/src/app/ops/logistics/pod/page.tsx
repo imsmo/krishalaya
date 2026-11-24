@@ -24,7 +24,10 @@ export function generateMetadata(): Metadata { return { title: getTranslator().t
 const STATUSES = ['awaiting', 'flagged', 'auto_cleared', 'approved', 'rejected'] as const;
 type Status = (typeof STATUSES)[number];
 
-export default async function PodQueuePage({ searchParams }: { searchParams: { status?: string; cursor?: string; none?: string; error?: string } }) {
+export default async function PodQueuePage(
+  props: { searchParams: Promise<{ status?: string; cursor?: string; none?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(POD_HREF);
   const t = getTranslator(); const lang = getLang();
   const status: Status | undefined = (STATUSES as readonly string[]).includes(searchParams.status ?? '') ? (searchParams.status as Status) : undefined;

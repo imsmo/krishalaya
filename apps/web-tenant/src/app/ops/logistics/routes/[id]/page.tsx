@@ -23,7 +23,11 @@ import { asOfLabels } from '../../../../../features/swf/console';
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.run.title'), robots: { index: false, follow: false } }; }
 
-export default async function VillageRunRoutePage({ params, searchParams }: { params: { id: string }; searchParams: { run?: string } }) {
+export default async function VillageRunRoutePage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ run?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const id = isUuid(params.id) ? params.id : '';
   await requireSession(routeHref(params.id));
   const t = getTranslator(); const lang = getLang();

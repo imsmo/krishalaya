@@ -23,7 +23,8 @@ import { staleLabels } from '../../../../../features/swf/console';
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swa.zone.actTitle'), robots: { index: false, follow: false } }; }
 
-export default async function ZoneActPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function ZoneActPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   const base = `${ZONES_HREF}/act`;
   await requireSession(base);
   const t = getTranslator(); const lang = getLang();

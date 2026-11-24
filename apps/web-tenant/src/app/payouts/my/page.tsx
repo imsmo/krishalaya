@@ -28,7 +28,10 @@ export function generateMetadata(): Metadata {
 const ERR = new Set(['amount', 'account', 'payout', 'bank_kind', 'bank_vaultRef', 'bank_upi', 'bank_bank', 'bank_failed']);
 const OK = new Set(['requested', 'bank_added']);
 
-export default async function PayoutsPage({ searchParams }: { searchParams: { cursor?: string; ok?: string; error?: string } }) {
+export default async function PayoutsPage(
+  props: { searchParams: Promise<{ cursor?: string; ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/payouts/my');
   const t = getTranslator();
   const lang = getLang();

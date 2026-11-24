@@ -22,7 +22,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('partner4.drawls.title'), robots: { index: false, follow: false } };
 }
 
-export default async function LenderKccDrawlsPage({ params, searchParams }: { params: { id: string }; searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function LenderKccDrawlsPage(
+  props: { params: Promise<{ id: string }>; searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   await requirePartner();
   const t = getTranslator();
   await lenderGate();

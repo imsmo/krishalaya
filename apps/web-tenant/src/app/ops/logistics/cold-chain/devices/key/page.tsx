@@ -14,7 +14,8 @@ export function generateMetadata(): Metadata { return { title: getTranslator().t
 const LABEL_KEYS = ['swe.key.issued', 'swe.key.once', 'swe.key.copy', 'swe.key.copied', 'swe.key.copyFailed', 'swe.key.hide', 'swe.key.replayed', 'swe.key.hint', 'swe.key.previousRevoked',
   'swe.key.rule', 'swe.key.working', 'swe.key.issue', 'swe.cold.col.kind', 'swe.cold.col.subject', 'swe.reason', 'mutate.failure.title', 'form.failure.untouched', 'form.backToScreen', 'mutate.cancel', 'swe.code.unknown'];
 
-export default async function IssueKeyPage({ searchParams }: { searchParams: { deviceId?: string } }) {
+export default async function IssueKeyPage(props: { searchParams: Promise<{ deviceId?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession(DEVICES_HREF);
   const t = getTranslator();
   const deviceId = isUuid(searchParams.deviceId) ? searchParams.deviceId : null;

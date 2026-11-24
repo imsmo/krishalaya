@@ -28,7 +28,11 @@ export function generateMetadata(): Metadata {
 const OK = new Set(['created', 'publish', 'archive', 'reactivate', 'pricing', 'versioned', 'feature', 'featureRemoved', 'limit', 'limitRemoved']);
 const ERR = new Set(['reason', 'price', 'limitCode', 'limitValue', 'featureCode', 'elevation', 'conflict', 'notFound', 'generic']);
 
-export default async function PlanDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function PlanDetailPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
   const arrow = rangeArrow(getAdminDir());

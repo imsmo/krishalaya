@@ -33,7 +33,10 @@ export function generateMetadata(): Metadata {
 
 interface Tiles { principals: number; totalEvents: number; assistedEvents: number; assistedEventPct: number | null; basis: string }
 
-export default async function ConsentRegistryPage({ searchParams }: { searchParams: { purposeCode?: string; channel?: string; withdrawn?: string; cursor?: string } }) {
+export default async function ConsentRegistryPage(
+  props: { searchParams: Promise<{ purposeCode?: string; channel?: string; withdrawn?: string; cursor?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const channel = channelFilter(searchParams.channel);

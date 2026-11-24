@@ -37,7 +37,11 @@ const ERR = new Set([
   'checkerNote', 'elevation', 'conflict', 'invalid', 'notFound', 'generic',
 ]);
 
-export default async function SchemeVersionsPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string; why?: string; dv?: string; pv?: string; g?: string; l?: string; uc?: string; xo?: string } }) {
+export default async function SchemeVersionsPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string; why?: string; dv?: string; pv?: string; g?: string; l?: string; uc?: string; xo?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const sp = searchParams;
   requireAdmin();
   const t = getTranslator();

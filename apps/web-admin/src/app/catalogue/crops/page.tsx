@@ -27,7 +27,8 @@ export function generateMetadata(): Metadata {
 
 interface CropsView { items: CropRow[]; seasons: string[]; basis: string }
 
-export default async function CropsPage({ searchParams }: { searchParams: { season?: string } }) {
+export default async function CropsPage(props: { searchParams: Promise<{ season?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

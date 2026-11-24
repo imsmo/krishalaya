@@ -26,7 +26,8 @@ interface Row {
   responders: number; latestStep: { code: string; status: string } | null;
 }
 
-export default async function EmergencyDeskPage({ searchParams }: { searchParams: { cursor?: string } }) {
+export default async function EmergencyDeskPage(props: { searchParams: Promise<{ cursor?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

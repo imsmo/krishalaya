@@ -24,7 +24,10 @@ export function generateMetadata(): Metadata {
 
 const DSR_TONE: Record<string, StatusTone> = { open: 'warning', in_progress: 'warning', completed: 'success', rejected: 'neutral' };
 
-export default async function ComplianceDsrPage({ searchParams }: { searchParams: { cursor?: string; status?: string; requestType?: string } }) {
+export default async function ComplianceDsrPage(
+  props: { searchParams: Promise<{ cursor?: string; status?: string; requestType?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

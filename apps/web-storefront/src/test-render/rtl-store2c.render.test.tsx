@@ -34,8 +34,8 @@ import { bareArrows, physical, resolveTree } from './store1b-harness';
 import { C, reset, O, ORDER, AUCTION } from './store2c-fixtures';
 
 const rtl = async (node: React.ReactNode) => renderToStaticMarkup(<div dir="rtl">{await resolveTree(node, [])}</div>);
-const co = (sp: Record<string, string>) => TenantCheckout({ params: { tenantSlug: 'anand-fpo' }, searchParams: sp });
-const pay = () => TenantPayPage({ params: { tenantSlug: 'anand-fpo' }, searchParams: { o: O.a } });
+const co = (sp: Record<string, string>) => TenantCheckout({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve(sp) });
+const pay = () => TenantPayPage({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve({ o: O.a }) });
 beforeEach(() => { reset(); C.orders[O.a] = ORDER(O.a, 'pending'); });
 void SdkError;
 
@@ -47,8 +47,8 @@ const STATES: Array<[string, () => Promise<React.ReactNode>]> = [
   ['W285 the stock that shrank', () => co({ step: 'review', status: 'stock', available: '4.000' })],
   ['W286 pay — no attempt', () => pay()],
   ['W286 pay — failed with a reason', async () => { C.attempts[O.a] = { latest: { id: 'p', status: 'failed', failureReason: 'declined', chargedNothing: true }, attempts: 1, nextAttempt: 2, liveAttempt: false, ttlSeconds: 900 }; return pay(); }],
-  ['the confirmation (a group)', async () => { C.group = { orders: [{ id: O.a }, { id: O.b }] }; C.orders[O.b] = ORDER(O.b, 'paid'); return TenantConfirmPage({ params: { tenantSlug: 'anand-fpo' }, searchParams: { g: 'g1' } }); }],
-  ['W278 the auction', () => TenantAuctionPage({ params: { tenantSlug: 'anand-fpo', id: AUCTION }, searchParams: {} })],
+  ['the confirmation (a group)', async () => { C.group = { orders: [{ id: O.a }, { id: O.b }] }; C.orders[O.b] = ORDER(O.b, 'paid'); return TenantConfirmPage({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve({ g: 'g1' }) }); }],
+  ['W278 the auction', () => TenantAuctionPage({ params: Promise.resolve({ tenantSlug: 'anand-fpo', id: AUCTION }), searchParams: Promise.resolve({}) })],
 ];
 
 describe('STORE-2c · rtl', () => {

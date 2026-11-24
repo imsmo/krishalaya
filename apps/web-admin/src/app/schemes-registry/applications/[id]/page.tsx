@@ -30,7 +30,11 @@ const ERR = new Set(['reasonTooShort', 'reasonTooLong', 'elevation', 'notFound',
 interface EventRow { fromStatus: string | null; toStatus: string; note: string | null; actorUserId: string | null; createdAt: string | null }
 interface AppDetail extends ApplicationRow { rejectionReason: string | null; events: EventRow[]; formDataWithheld: boolean }
 
-export default async function ApplicationDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function ApplicationDetailPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
 

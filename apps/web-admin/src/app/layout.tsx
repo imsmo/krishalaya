@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const t = getTranslator();
   const authed = isAdminAuthenticated();
   // DEV-19: minimal mechanism wiring, unchanged by this batch's shell swap — `dir` is derived from the real
@@ -42,7 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   // Component cannot call the client-only `usePathname()` hook, and this is the standard Next.js App Router
   // substitute. Drives `Sidebar`'s real `aria-current="page"` active-nav highlight (see middleware.ts's own
   // header comment for why this is a genuine ADDITION, not a preserved pre-existing behavior).
-  const pathname = headers().get('x-pathname') ?? '';
+  const pathname = (await headers()).get('x-pathname') ?? '';
   return (
     <html lang={lang.code} dir={lang.dir} data-theme={themeAttrs['data-theme']} className={themeAttrs.className} data-senior={senior ? 'true' : undefined}>
       <head>

@@ -29,7 +29,10 @@ export function generateMetadata(): Metadata {
 
 const FIELDS = ['id', 'direction', 'reason'] as const;
 
-export default async function BannerSlotPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function BannerSlotPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(BANNER_SLOT_HREF);
   const t = getTranslator();
   const step = mutateStep(typeof searchParams.step === 'string' ? searchParams.step : undefined);

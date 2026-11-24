@@ -39,7 +39,10 @@ interface Meta {
 const OK = new Set(['onBreak', 'available']);
 const ERR = new Set(['onBreak', 'status', 'elevation', 'conflict', 'invalid', 'notFound', 'generic']);
 
-export default async function CommHubPage({ searchParams }: { searchParams: { cursor?: string; ok?: string; error?: string; empty?: string } }) {
+export default async function CommHubPage(
+  props: { searchParams: Promise<{ cursor?: string; ok?: string; error?: string; empty?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

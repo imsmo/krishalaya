@@ -39,7 +39,8 @@ export function generateMetadata(): Metadata {
 
 type SP = { action?: string; entityType?: string; entityId?: string; actorUserId?: string; from?: string; to?: string; cursor?: string; entry?: string; reveal?: string; error?: string; ofrom?: string; oto?: string };
 
-export default async function AuditorPage({ searchParams }: { searchParams: SP }) {
+export default async function AuditorPage(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   if (!env.featureAuditor) notFound();
   await requireSession('/auditor');
   const t = getTranslator();

@@ -35,7 +35,10 @@ export function generateMetadata(): Metadata {
 
 const PAGE = 25;
 
-export default async function AmbassadorsRosterPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function AmbassadorsRosterPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(AMBASSADORS_HREF);
   const t = getTranslator();
   const lang = getLang();

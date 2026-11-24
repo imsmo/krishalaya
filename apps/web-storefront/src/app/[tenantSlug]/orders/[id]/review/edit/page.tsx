@@ -44,7 +44,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('store5a.edit.title'), robots: { index: false, follow: false } };
 }
 
-export default async function ReviewEditPage({ params, searchParams }: { params: { tenantSlug: string; id: string }; searchParams: SP }) {
+export default async function ReviewEditPage(
+  props: { params: Promise<{ tenantSlug: string; id: string }>; searchParams: Promise<SP> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const { tenantSlug: slug, id } = params;
   await requireSession(reviewEditHref(slug, id));
   const t = getTranslator();
@@ -79,7 +83,8 @@ export default async function ReviewEditPage({ params, searchParams }: { params:
   let dims: LookupValue[] | null = null;
   try { dims = (await publicClient(slug).lookups.values('review_dimension')).slice().sort((a, b) => a.sortOrder - b.sortOrder); } catch { dims = null; }
   const carried = readKey(searchParams.k, EDIT_KEY_RE);
-  const chunks = Array.from({ length: REVIEW_DRAFT_CHUNKS }, (_, i) => cookies().get(draftCookieName(i))?.value);
+  const jar = await cookies();
+  const chunks = Array.from({ length: REVIEW_DRAFT_CHUNKS }, (_, i) => jar.get(draftCookieName(i))?.value);
   const draft: ReviewDraft | null = carried ? decodeReviewDraft(chunks, carried, id) : null;
   const key = carried ?? editKey(randomUUID());
   const lockLine = <p className="kv-detail__muted" data-kv-edit-until="server">{t.t('store5a.state.editUntil', { date: date(mine.editLocksAt) })}</p>;

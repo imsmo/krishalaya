@@ -50,7 +50,8 @@ interface Me {
   fido2: { keyListAvailable: boolean; tableExists: boolean; gap: string; knownFromToken: boolean };
 }
 
-export default async function MySecurityPage({ searchParams }: { searchParams: { ok?: string; error?: string } }) {
+export default async function MySecurityPage(props: { searchParams: Promise<{ ok?: string; error?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

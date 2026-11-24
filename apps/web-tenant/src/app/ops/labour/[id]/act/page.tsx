@@ -28,7 +28,11 @@ export function generateMetadata(): Metadata {
 }
 const MONEY_ACTS = new Set(['confirmRoster', 'pay', 'assign', 'confirmDay']);
 
-export default async function JobActPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | undefined> }) {
+export default async function JobActPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const base = `${LABOUR_HREF}/${encodeURIComponent(params.id)}/act`;
   await requireSession(base);
   const t = getTranslator();

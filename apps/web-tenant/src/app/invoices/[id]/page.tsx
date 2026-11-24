@@ -29,7 +29,11 @@ export function generateMetadata(): Metadata {
 
 const ERR = new Set(['reason', 'reasonShort', 'approval', 'noApproval', 'notApproved', 'exceeds', 'noBreakdown', 'alreadyIssued', 'forbidden', 'generic']);
 
-export default async function InvoiceDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function InvoiceDetailPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   await requireSession(`/invoices/${params.id}`);
   const t = getTranslator();
   const lang = getLang();

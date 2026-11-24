@@ -31,7 +31,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('auc.live.title'), robots: { index: false, follow: false } };
 }
 
-export default async function AuctionLivePage({ params }: { params: { id: string } }) {
+export default async function AuctionLivePage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const base = `${AUCTIONS_HREF}/${encodeURIComponent(params.id)}/live`;
   await requireSession(base);
   const t = getTranslator();

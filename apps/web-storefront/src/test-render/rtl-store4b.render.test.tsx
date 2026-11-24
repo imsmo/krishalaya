@@ -34,15 +34,15 @@ const rtl = async (node: React.ReactNode) => renderToStaticMarkup(<div dir="rtl"
 beforeEach(() => { reset(); });
 
 const STATES: Array<[string, () => Promise<React.ReactNode>]> = [
-  ['W297 the rows', () => MessagesPage({ params: S, searchParams: {} })],
-  ['W297 empty', async () => { C.threads = []; return MessagesPage({ params: S, searchParams: {} }); }],
-  ['W297 error', async () => { C.fail.list = new SdkError('UNAVAILABLE', 503, 'x'); return MessagesPage({ params: S, searchParams: {} }); }],
-  ['W297 off', async () => { C.flags = { ...C.flags, communication: false }; return MessagesPage({ params: S, searchParams: {} }); }],
-  ['W298 the thread', () => ThreadPage({ params: T, searchParams: {} })],
-  ['W298 locked', async () => { C.convo = { ...C.convo, isLocked: true, lockKind: 'dispute' }; return ThreadPage({ params: T, searchParams: {} }); }],
-  ['W3110 reported', () => ThreadPage({ params: T, searchParams: { status: 'reported' } })],
-  ['W3109 the confirm', () => ReportPage({ params: R, searchParams: {} })],
-  ['W3111 a named failure', () => ReportPage({ params: R, searchParams: { failure: 'own', key: 'report:0216abcd-0000-4000-8000-000000000001', reason: 'spam' } })],
+  ['W297 the rows', () => MessagesPage({ params: Promise.resolve(S), searchParams: Promise.resolve({}) })],
+  ['W297 empty', async () => { C.threads = []; return MessagesPage({ params: Promise.resolve(S), searchParams: Promise.resolve({}) }); }],
+  ['W297 error', async () => { C.fail.list = new SdkError('UNAVAILABLE', 503, 'x'); return MessagesPage({ params: Promise.resolve(S), searchParams: Promise.resolve({}) }); }],
+  ['W297 off', async () => { C.flags = { ...C.flags, communication: false }; return MessagesPage({ params: Promise.resolve(S), searchParams: Promise.resolve({}) }); }],
+  ['W298 the thread', () => ThreadPage({ params: Promise.resolve(T), searchParams: Promise.resolve({}) })],
+  ['W298 locked', async () => { C.convo = { ...C.convo, isLocked: true, lockKind: 'dispute' }; return ThreadPage({ params: Promise.resolve(T), searchParams: Promise.resolve({}) }); }],
+  ['W3110 reported', () => ThreadPage({ params: Promise.resolve(T), searchParams: Promise.resolve({ status: 'reported' }) })],
+  ['W3109 the confirm', () => ReportPage({ params: Promise.resolve(R), searchParams: Promise.resolve({}) })],
+  ['W3111 a named failure', () => ReportPage({ params: Promise.resolve(R), searchParams: Promise.resolve({ failure: 'own', key: 'report:0216abcd-0000-4000-8000-000000000001', reason: 'spam' }) })],
 ];
 
 describe('STORE-4b · rtl', () => {

@@ -21,7 +21,10 @@ import { asOfLabels } from '../../../../features/swf/console';
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.carriers.title'), robots: { index: false, follow: false } }; }
 
-export default async function CarriersPage({ searchParams }: { searchParams: { kind?: string; cursor?: string; inactive?: string } }) {
+export default async function CarriersPage(
+  props: { searchParams: Promise<{ kind?: string; cursor?: string; inactive?: string }> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(CARRIERS_HREF);
   const t = getTranslator();
   const canManage = tenantHasPerm('logistics.manage');

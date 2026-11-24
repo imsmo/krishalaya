@@ -22,7 +22,11 @@ export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.run.title'), robots: { index: false, follow: false } }; }
 const AUDIT: Record<string, string> = { confirm: 'logistics.run_confirmed', start_loading: 'logistics.run_loading', depart: 'logistics.run_in_transit', complete: 'logistics.run_completed', cancel: 'logistics.run_cancelled', deactivate_drop_point: 'logistics.drop_point_deactivated' };
 
-export default async function RouteActPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | undefined> }) {
+export default async function RouteActPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const routeId = isUuid(params.id) ? params.id : '';
   const back = routeHref(params.id); const base = `${back}/act`;
   await requireSession(base);

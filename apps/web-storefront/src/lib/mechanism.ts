@@ -6,7 +6,7 @@
 // PC-56 STORE-5a · D4 (founder Q17): + High contrast (`kvs_contrast` on/off) and Calm motion (`kvs_motion` calm/off), PER DEVICE, the
 // `kvs_senior` shape — parsed by @krishalaya/ui (`isContrastOn`, `isCalmMotionOn`, fail-closed); the modes stack (one attribute each).
 import 'server-only';
-import { cookies } from 'next/headers';
+import { cookies, type UnsafeUnwrappedCookies } from 'next/headers';
 import { parseThemePreference, isSeniorOn, isContrastOn, isCalmMotionOn, resolveThemeHtmlAttrs, type ThemePreference, type ThemeHtmlAttrs } from '@krishalaya/ui';
 
 export const THEME_COOKIE = 'kvs_theme';
@@ -15,17 +15,17 @@ export const CONTRAST_COOKIE = 'kvs_contrast';
 export const MOTION_COOKIE = 'kvs_motion';
 
 export function getThemePreference(): ThemePreference {
-  return parseThemePreference(cookies().get(THEME_COOKIE)?.value);
+  return parseThemePreference((cookies() as unknown as UnsafeUnwrappedCookies).get(THEME_COOKIE)?.value);
 }
 export function getThemeHtmlAttrs(): ThemeHtmlAttrs {
   return resolveThemeHtmlAttrs(getThemePreference());
 }
 export function getSeniorMode(): boolean {
-  return isSeniorOn(cookies().get(SENIOR_COOKIE)?.value);
+  return isSeniorOn((cookies() as unknown as UnsafeUnwrappedCookies).get(SENIOR_COOKIE)?.value);
 }
 export function getContrastMode(): boolean {
-  return isContrastOn(cookies().get(CONTRAST_COOKIE)?.value);
+  return isContrastOn((cookies() as unknown as UnsafeUnwrappedCookies).get(CONTRAST_COOKIE)?.value);
 }
 export function getCalmMotion(): boolean {
-  return isCalmMotionOn(cookies().get(MOTION_COOKIE)?.value);
+  return isCalmMotionOn((cookies() as unknown as UnsafeUnwrappedCookies).get(MOTION_COOKIE)?.value);
 }

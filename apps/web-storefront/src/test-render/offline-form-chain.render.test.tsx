@@ -25,8 +25,8 @@ beforeEach(() => reset());
 describe('STORE-6a · W3127–W3130 · the offline form chain (DECOR)', () => {
   it.each(OFFLINE_FORM_STATES.map((s) => [s]))('%s: the refusal, its true sentence, the live act and the way back — both chromes', async (state) => {
     for (const [chrome, html, live, back] of [
-      ['platform', renderToStaticMarkup(ShellOffline({ searchParams: { form: state } })), '/search', '/offline'],
-      ['tenant', renderToStaticMarkup(await TenantOffline({ params: { tenantSlug: SLUG }, searchParams: { form: state } })), `/${SLUG}/search`, `/${SLUG}/offline`],
+      ['platform', renderToStaticMarkup(ShellOffline({ searchParams: Promise.resolve({ form: state }) })), '/search', '/offline'],
+      ['tenant', renderToStaticMarkup(await TenantOffline({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve({ form: state }) })), `/${SLUG}/search`, `/${SLUG}/offline`],
     ] as const) {
       const words = text(html);
       expect([chrome, html.includes(`data-kv-offline-form="${state}"`)]).toEqual([chrome, true]);
@@ -39,8 +39,8 @@ describe('STORE-6a · W3127–W3130 · the offline form chain (DECOR)', () => {
     }
   });
   it('no chain state without ?form (the policy page itself); an unknown state is the policy page', () => {
-    expect(renderToStaticMarkup(ShellOffline({ searchParams: {} }))).not.toContain('data-kv-offline-form');
-    expect(renderToStaticMarkup(ShellOffline({ searchParams: { form: 'confirm' } }))).not.toContain('data-kv-offline-form');
+    expect(renderToStaticMarkup(ShellOffline({ searchParams: Promise.resolve({}) }))).not.toContain('data-kv-offline-form');
+    expect(renderToStaticMarkup(ShellOffline({ searchParams: Promise.resolve({ form: 'confirm' }) }))).not.toContain('data-kv-offline-form');
   });
   it('the canon\'s link defects are recorded as DELTAs, not copied', () => {
     expect(STORE6A_DELTAS.map((d) => d.id)).toEqual(expect.arrayContaining(['chain_links', 'chain_shape', 'policy_routes', 'w314_moved', 'monogram_route', 'aging_tier']));

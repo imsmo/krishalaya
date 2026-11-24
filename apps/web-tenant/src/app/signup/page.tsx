@@ -170,7 +170,8 @@ async function profileConfirm(formData: FormData) {
 type Search = { step?: string; stage?: string; phone?: string; code?: string; fullName?: string; lang?: string; orgName?: string; error?: string; org?: string;
   resumed?: string; trial?: string; created?: string; advisory?: string; fields?: string; profile?: string; n?: string } & Record<string, string | undefined>;
 
-export default async function SignupPage({ searchParams }: { searchParams: Search }) {
+export default async function SignupPage(props: { searchParams: Promise<Search> }) {
+  const searchParams = await props.searchParams;
   const t = getTranslator();
   const lang = getLang();
   const session = hasSessionCookie() && !(searchParams.phone && searchParams.code);

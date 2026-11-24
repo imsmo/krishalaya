@@ -17,7 +17,8 @@ export function generateMetadata(): Metadata {
   return { title: t.t('checkout.title'), robots: { index: false, follow: false } };
 }
 
-export default async function PlatformCheckoutDoor({ searchParams }: { searchParams: SP }) {
+export default async function PlatformCheckoutDoor(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   await requireSession('/checkout');
   const slug = await sessionStoreSlug();
   if (slug) redirect(`/${encodeURIComponent(slug)}/checkout${carryQuery(searchParams, ['step', 'status', 'region'])}`);

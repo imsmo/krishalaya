@@ -24,7 +24,10 @@ export function generateMetadata(): Metadata {
 const OK = new Set(['bill', 'preview']);
 const ERR = new Set(['bill', 'bill_member', 'bill_period', 'bill_dup', 'action', 'illegal']);
 
-export default async function DairyPosPage({ searchParams }: { searchParams: { ok?: string; error?: string; slipMember?: string; slipFrom?: string; slipTo?: string; billStatus?: string } }) {
+export default async function DairyPosPage(
+  props: { searchParams: Promise<{ ok?: string; error?: string; slipMember?: string; slipFrom?: string; slipTo?: string; billStatus?: string }> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/dairy');
   const t = getTranslator();
   const lang = getLang();

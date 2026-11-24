@@ -23,7 +23,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('twin.results.title'), robots: { index: false, follow: false } };
 }
 
-export default async function TwinResultsPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function TwinResultsPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   await requireSession(RESULTS_HREF);
   const t = getTranslator();
   const lang = getLang();

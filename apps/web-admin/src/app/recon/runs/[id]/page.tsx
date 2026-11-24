@@ -22,7 +22,11 @@ export function generateMetadata(): Metadata {
 
 const ERR = new Set(['summary', 'elevation', 'illegal', 'notFound', 'generic']);
 
-export default async function ReconRunDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { error?: string } }) {
+export default async function ReconRunDetailPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
   const arrow = rangeArrow(getAdminDir());

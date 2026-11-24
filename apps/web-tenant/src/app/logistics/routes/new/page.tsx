@@ -32,9 +32,12 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('route.form.title'), robots: { index: false, follow: false } };
 }
 
-export default async function NewRoutePage({ searchParams }: {
-  searchParams: { step?: string; defaultName?: string; runWeekday?: string; villageRegionIds?: string | string[]; invalid?: string; error?: string };
-}) {
+export default async function NewRoutePage(
+  props: {
+    searchParams: Promise<{ step?: string; defaultName?: string; runWeekday?: string; villageRegionIds?: string | string[]; invalid?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/logistics/routes/new');
   const t = getTranslator();
   const lang = getLang();

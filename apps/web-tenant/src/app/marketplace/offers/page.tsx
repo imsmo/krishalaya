@@ -30,7 +30,10 @@ export function generateMetadata(): Metadata {
 }
 const PAGE = 25;
 
-export default async function OffersPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function OffersPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(OFFERS_HREF);
   const t = getTranslator();
   const lang = getLang();

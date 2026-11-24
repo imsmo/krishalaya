@@ -24,7 +24,8 @@ export function generateMetadata(): Metadata {
   return { title: t.t('orgs.title'), description: t.t('orgs.lead') };
 }
 
-export default async function OrganisationsPage({ searchParams }: { searchParams: SP }) {
+export default async function OrganisationsPage(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   const t = getTranslator();
   const lang = getLang();
   const after = one(searchParams.after);

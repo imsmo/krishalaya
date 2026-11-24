@@ -14,7 +14,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('ops1.withdrawal.title'), robots: { index: false, follow: false } };
 }
 
-export default async function WithdrawalPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function WithdrawalPage(
+  props: { searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/warehouse/withdrawal');
   const t = getTranslator();
   const act = chain1State('withdrawal_act', searchParams);

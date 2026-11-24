@@ -52,7 +52,7 @@ describe('STORE-6b · the chip in both headers, beside the cart', () => {
   it('NEVER in the offline shell: TenantShellHeader, and the organisation\'s layout in shell mode', async () => {
     expect(renderToStaticMarkup(<TenantShellHeader slug={SLUG} name={ORG} logoSrc={null} showPoweredBy />)).not.toContain('data-kv-chip');
     C.headers = { 'x-kv-shell': 'offline' };
-    expect(renderToStaticMarkup(await TenantLayout({ children: <p>offline</p>, params: { tenantSlug: SLUG } }))).not.toContain('data-kv-chip');
+    expect(renderToStaticMarkup(await TenantLayout({ children: <p>offline</p>, params: Promise.resolve({ tenantSlug: SLUG }) }))).not.toContain('data-kv-chip');
   });
 });
 

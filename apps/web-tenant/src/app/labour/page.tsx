@@ -4,7 +4,8 @@ import { redirect } from 'next/navigation';
 
 const UUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
-export default function LabourRedirect({ searchParams }: { searchParams: { booking?: string } }) {
+export default async function LabourRedirect(props: { searchParams: Promise<{ booking?: string }> }) {
+  const searchParams = await props.searchParams;
   const id = typeof searchParams.booking === 'string' && UUID.test(searchParams.booking) ? searchParams.booking : null;
   redirect(id ? `/ops/labour/${encodeURIComponent(id)}` : '/ops/labour');
 }

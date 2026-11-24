@@ -20,7 +20,11 @@ import { asOfLabels } from '../../../../../../features/swf/console';
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.run.planTitle'), robots: { index: false, follow: false } }; }
 
-export default async function PlanRunPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | undefined> }) {
+export default async function PlanRunPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const routeId = isUuid(params.id) ? params.id : '';
   const back = routeHref(params.id); const base = `${back}/plan`;
   await requireSession(base);

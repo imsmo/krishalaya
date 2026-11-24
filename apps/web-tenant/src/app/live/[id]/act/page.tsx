@@ -33,7 +33,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('mutate.live.title'), robots: { index: false, follow: false } };
 }
 
-export default async function LiveActPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | string[] | undefined> }) {
+export default async function LiveActPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const PATH = liveActPath(params.id);
   await requireSession(PATH);
   const t = getTranslator();

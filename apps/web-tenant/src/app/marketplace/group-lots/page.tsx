@@ -33,7 +33,10 @@ export function generateMetadata(): Metadata {
 }
 const PAGE = 25;
 
-export default async function GroupLotsPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function GroupLotsPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(GROUP_LOTS_HREF);
   const t = getTranslator();
   const lang = getLang();

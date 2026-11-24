@@ -15,7 +15,10 @@ import { loadCounter } from '../../../features/ops3/counter-load';
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('ops3.pos.shiftPage.title'), robots: { index: false, follow: false } }; }
 
-export default async function PosShiftPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function PosShiftPage(
+  props: { searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(POS.shift);
   const t = getTranslator(); const lang = getLang();
   const ctx = await loadCounter(parseId(searchParams?.mcc));

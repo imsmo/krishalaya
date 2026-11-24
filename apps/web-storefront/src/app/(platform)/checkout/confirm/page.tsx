@@ -15,7 +15,8 @@ export function generateMetadata(): Metadata {
   return { title: t.t('checkout.confirmTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function PlatformConfirmDoor({ searchParams }: { searchParams: SP }) {
+export default async function PlatformConfirmDoor(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   await requireSession(`/checkout/confirm${carryQuery(searchParams, ['o', 'g'])}`);
   const slug = await sessionStoreSlug();
   if (slug) redirect(`/${encodeURIComponent(slug)}/checkout/confirm${carryQuery(searchParams, ['o', 'g', 'cn'])}`);

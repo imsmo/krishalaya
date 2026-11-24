@@ -26,7 +26,7 @@ import { hi } from '../i18n/hi';
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 const V2 = { qrToken: 'HF7QRTOKEN000', organisation: { displayName: 'Anand FPO' }, createdAt: '2026-10-16T18:30:00.000Z', anchored: false,
   events: [{ eventCode: 'harvested', at: '2026-10-16T18:30:00.000Z', meta: { variety: 'GG-20' } }, { eventCode: 'in_transit', at: '2026-10-17T04:00:00.000Z', meta: { mode: 'road' } }] };
-const render = async () => renderToStaticMarkup(await TraceScanPage({ params: { qrToken: 'HF7QRTOKEN000' }, searchParams: {} }));
+const render = async () => renderToStaticMarkup(await TraceScanPage({ params: Promise.resolve({ qrToken: 'HF7QRTOKEN000' }), searchParams: Promise.resolve({}) }));
 beforeEach(() => { S.lang = 'en'; S.scan = async () => V2; });
 
 describe('HOTFIX-7 · the public trace page (v2)', () => {
@@ -44,7 +44,7 @@ describe('HOTFIX-7 · the public trace page (v2)', () => {
     const h = await render();
     expect(h).toContain('data-kv-trace="not-published"');
     expect(h).toContain(en['trace.notPublishedTitle']); expect(h).toContain(en['trace.notPublishedBody']);
-    expect(await generateMetadata({ params: { qrToken: 'HF7QRTOKEN000' } })).toMatchObject({ title: en['trace.notPublishedTitle'], robots: { index: false } });
+    expect(await generateMetadata({ params: Promise.resolve({ qrToken: 'HF7QRTOKEN000' }) })).toMatchObject({ title: en['trace.notPublishedTitle'], robots: { index: false } });
     S.scan = async () => { throw new SdkError('TRACE_SCAN_NOT_FOUND', 404, 'no'); };
     await expect(render()).rejects.toThrow('NEXT_NOT_FOUND');
   });

@@ -35,7 +35,10 @@ export function generateMetadata(): Metadata {
 const one = (v: string | string[] | undefined) => (typeof v === 'string' && v.trim().length > 0 ? v.trim() : null);
 const CHANNELS = ['push', 'sms', 'whatsapp', 'email', 'ivr'] as const;
 
-export default async function CenterPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function CenterPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(CENTER_HREF);
   const t = getTranslator();
   const lang = getLang();

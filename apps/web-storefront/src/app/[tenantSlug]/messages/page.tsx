@@ -28,7 +28,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('messages.title'), robots: { index: false, follow: false } };
 }
 
-export default async function TenantMessagesPage({ params, searchParams }: { params: { tenantSlug: string }; searchParams: SP }) {
+export default async function TenantMessagesPage(
+  props: { params: Promise<{ tenantSlug: string }>; searchParams: Promise<SP> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const slug = params.tenantSlug;
   const { cursor, openFailure } = readMessagesQuery(searchParams);
   await requireSession(messagesHref(slug, { cursor }));

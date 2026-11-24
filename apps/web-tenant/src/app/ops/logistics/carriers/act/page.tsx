@@ -20,7 +20,8 @@ import { staleLabels } from '../../../../../features/swf/console';
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.carriers.title'), robots: { index: false, follow: false } }; }
 
-export default async function CarrierActPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function CarrierActPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   const base = `${CARRIERS_HREF}/act`;
   await requireSession(base);
   const t = getTranslator(); const lang = getLang();

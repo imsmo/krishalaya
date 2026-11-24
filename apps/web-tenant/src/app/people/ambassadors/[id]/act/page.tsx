@@ -36,7 +36,11 @@ export function generateMetadata(): Metadata {
 const AUDIT_ACTION = { suspend: 'ambassador.suspended', reinstate: 'ambassador.reinstated', payout: 'ambassador.payout_run.prepared', message: 'ambassador.messaged' } as const;
 const MIN_MESSAGE = 3; const MAX_MESSAGE = 500;
 
-export default async function AmbassadorActPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | undefined> }) {
+export default async function AmbassadorActPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const base = `${detailHref(params.id)}/act`;
   await requireSession(base);
   const t = getTranslator();

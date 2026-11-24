@@ -18,7 +18,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('int.form.title'), robots: { index: false, follow: false }, referrer: 'no-referrer' };
 }
 
-export default async function ConnectProviderPage({ searchParams }: { searchParams: { provider?: string; kind?: string } }) {
+export default async function ConnectProviderPage(props: { searchParams: Promise<{ provider?: string; kind?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession(CONNECT_HREF);
   const t = getTranslator();
   let providers: IntegrationProvider[] | null = null; let state: string | null = null;

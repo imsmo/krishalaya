@@ -32,7 +32,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('stl.title'), robots: { index: false, follow: false } };
 }
 
-export default async function SettlementsPage({ searchParams }: { searchParams: { ok?: string; error?: string } }) {
+export default async function SettlementsPage(props: { searchParams: Promise<{ ok?: string; error?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession('/settlements');
   const t = getTranslator();
   const lang = getLang();

@@ -21,7 +21,8 @@ export function generateMetadata(): Metadata {
 }
 const PROBLEMS = ['missing', 'not_future', 'too_far', 'not_after_start', 'too_long'] as const;
 
-export default async function GoPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function GoPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   await requireSession(GO_HREF);
   const t = getTranslator();
   const step = searchParams.step ?? 'form';

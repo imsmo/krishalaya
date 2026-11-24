@@ -32,7 +32,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('wa.hub.title'), robots: { index: false, follow: false } };
 }
 
-export default async function WhatsAppHubPage({ searchParams }: { searchParams: { error?: string } }) {
+export default async function WhatsAppHubPage(props: { searchParams: Promise<{ error?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession(WA_HUB_HREF);
   const t = getTranslator();
   const lang = getLang();

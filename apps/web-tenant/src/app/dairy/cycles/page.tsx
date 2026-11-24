@@ -56,9 +56,12 @@ const TONE: Record<'ok' | 'bad' | 'warn' | 'muted', string> = {
   ok: 'kv-badge', bad: 'kv-badge kv-badge--danger', warn: 'kv-badge kv-badge--warn', muted: 'kv-badge kv-badge--muted',
 };
 
-export default async function DairyCyclesPage({ searchParams }: {
-  searchParams: { cycle?: string; cursor?: string; direction?: string; ok?: string; error?: string; n?: string; left?: string; skipped?: string; failed?: string };
-}) {
+export default async function DairyCyclesPage(
+  props: {
+    searchParams: Promise<{ cycle?: string; cursor?: string; direction?: string; ok?: string; error?: string; n?: string; left?: string; skipped?: string; failed?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/dairy/cycles');
   const t = getTranslator();
   const lang = getLang();

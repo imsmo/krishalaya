@@ -27,7 +27,8 @@ import { canStartOverride, lifecycleKey, newOverrideHref, slotHref, slotStatus, 
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('wa.templates.title'), robots: { index: false, follow: false } }; }
 
-export default async function WhatsAppTemplatesPage({ searchParams }: { searchParams: { cursor?: string } }) {
+export default async function WhatsAppTemplatesPage(props: { searchParams: Promise<{ cursor?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession(WA_TEMPLATES_HREF);
   const t = getTranslator();
   const lang = getLang();

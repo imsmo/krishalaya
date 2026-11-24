@@ -18,7 +18,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('messages.title'), robots: { index: false, follow: false } };
 }
 
-export default async function PlatformMessagesDoor({ searchParams }: { searchParams: SP }) {
+export default async function PlatformMessagesDoor(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   await requireSession(`/messages${carryQuery(searchParams, KEEP)}`);
   const slug = await sessionStoreSlug();
   if (slug) redirect(`/${encodeURIComponent(slug)}/messages${carryQuery(searchParams, KEEP)}`);

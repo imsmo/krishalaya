@@ -14,6 +14,9 @@ export function generateMetadata(): Metadata {
   return { title: t.t('trace.how.title'), description: t.t('home.trace.body') };
 }
 
-export default function TraceHowPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function TraceHowPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   return <TraceEntry base="" searchParams={searchParams} />;
 }

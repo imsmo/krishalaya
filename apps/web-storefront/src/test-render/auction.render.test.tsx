@@ -36,7 +36,7 @@ import { text } from './store1b-harness';
 import { C, reset, AUCTION, AUCTION_VIEW, T_OTHER } from './store2c-fixtures';
 import { store2cRefusalKeys } from '../features/store2/refusals';
 
-const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantAuctionPage({ params: { tenantSlug: 'anand-fpo', id: AUCTION }, searchParams: sp }));
+const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantAuctionPage({ params: Promise.resolve({ tenantSlug: 'anand-fpo', id: AUCTION }), searchParams: Promise.resolve(sp) }));
 const form = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 beforeEach(() => reset());
 

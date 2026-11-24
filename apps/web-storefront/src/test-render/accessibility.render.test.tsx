@@ -33,8 +33,8 @@ import { text } from './store1b-harness';
 import { C, reset, SLUG } from './store5a-fixtures';
 import { store5aRefusalKeys } from '../features/store5a/refusals';
 
-const platform = (sp: Record<string, string> = {}) => renderToStaticMarkup(PlatformA11yPage({ searchParams: sp }));
-const tenant = (sp: Record<string, string> = {}) => renderToStaticMarkup(TenantA11yPage({ params: { tenantSlug: SLUG }, searchParams: sp }));
+const platform = (sp: Record<string, string> = {}) => renderToStaticMarkup(PlatformA11yPage({ searchParams: Promise.resolve(sp) }));
+const tenant = (sp: Record<string, string> = {}) => renderToStaticMarkup(TenantA11yPage({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve(sp) }));
 type Req = Parameters<typeof POST>[0];
 const req = (body: Record<string, string> | null, referer = 'http://store.test/account/accessibility') => ({
   formData: async () => { if (!body) throw new Error('not a form'); const f = new FormData(); for (const [k, v] of Object.entries(body)) f.set(k, v); return f; },

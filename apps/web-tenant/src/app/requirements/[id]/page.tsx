@@ -3,4 +3,7 @@
 import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
-export default function OldRequirementDetail({ params }: { params: { id: string } }) { redirect(`/marketplace/requirements/${encodeURIComponent(params.id)}`); }
+export default async function OldRequirementDetail(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
+  redirect(`/marketplace/requirements/${encodeURIComponent(params.id)}`);
+}

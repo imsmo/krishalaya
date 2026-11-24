@@ -38,7 +38,7 @@ import { C, reset, ROW, SLUG, SELLER_UUID, OID } from './store3a-fixtures';
 import { ORDER_STATUS_LIST } from '../features/store3a/order-status';
 import { store3aRefusalKeys } from '../features/store3a/refusals';
 
-const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantOrdersPage({ params: { tenantSlug: SLUG }, searchParams: sp }));
+const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantOrdersPage({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve(sp) }));
 beforeEach(() => { reset(); });
 const CATS: Record<string, Record<string, string>> = { en, hi, gu };
 
@@ -118,11 +118,11 @@ describe('STORE-3a · W288 the states', () => {
 
 describe('STORE-3a · the platform /orders is a door (founder D3)', () => {
   it('→ /<slug>/orders, carrying the tab and the cursor', async () => {
-    await expect(PlatformOrdersDoor({ searchParams: { group: 'attention', cursor: 'c1' } })).rejects.toThrow(`REDIRECT /${SLUG}/orders?group=attention&cursor=c1`);
+    await expect(PlatformOrdersDoor({ searchParams: Promise.resolve({ group: 'attention', cursor: 'c1' }) })).rejects.toThrow(`REDIRECT /${SLUG}/orders?group=attention&cursor=c1`);
   });
   it('the session\'s store unreadable → said, with a Retry (a reload of the door)', async () => {
     C.doorFails = true;
-    const h = renderToStaticMarkup(await PlatformOrdersDoor({ searchParams: {} }));
+    const h = renderToStaticMarkup(await PlatformOrdersDoor({ searchParams: Promise.resolve({}) }));
     expect(h).toContain('data-kv-state="error"');
     expect(h).toContain('href="/orders" class="kv-btn" data-kv-retry="reload"');
   });

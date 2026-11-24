@@ -27,7 +27,10 @@ export function generateMetadata(): Metadata {
 
 const when = (iso: string | null, lang: string) => (iso ? formatDate(iso, lang, { dateStyle: 'medium', timeStyle: 'short' }) : null);
 
-export default async function RulePage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function RulePage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   const PATH = RULE_PATH;
   await requireSession(PATH);
   const t = getTranslator();

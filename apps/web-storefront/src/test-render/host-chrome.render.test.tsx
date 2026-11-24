@@ -31,7 +31,7 @@ beforeEach(() => { reset(); });
 
 describe('STORE-5b · the host chrome', () => {
   it('the slug route renders the store chrome with the store\'s paths', async () => {
-    const html = renderToStaticMarkup(await TenantTracePage({ params: { tenantSlug: SLUG, qrToken: TOKEN }, searchParams: {} }));
+    const html = renderToStaticMarkup(await TenantTracePage({ params: Promise.resolve({ tenantSlug: SLUG, qrToken: TOKEN }), searchParams: Promise.resolve({}) }));
     expect(html).toContain(`data-kv-chrome="${SLUG}"`);
     expect(html).toContain(`href="/${SLUG}/trace/${TOKEN}/verify"`);
     expect(html).toContain(`href="/${SLUG}/certificates/${CERT_ID}?lot=${TOKEN}"`);
@@ -39,10 +39,10 @@ describe('STORE-5b · the host chrome', () => {
   });
   it('another organisation\'s lot / verification / certificate → the platform\'s page (never this store\'s mark)', async () => {
     C.scan = SCAN({ organisation: { displayName: 'Other Coop', slug: 'other-coop' } });
-    await expect(TenantTracePage({ params: { tenantSlug: SLUG, qrToken: TOKEN }, searchParams: {} })).rejects.toThrow(`REDIRECT /trace/${TOKEN}`);
+    await expect(TenantTracePage({ params: Promise.resolve({ tenantSlug: SLUG, qrToken: TOKEN }), searchParams: Promise.resolve({}) })).rejects.toThrow(`REDIRECT /trace/${TOKEN}`);
     C.verify = VERIFY({ organisation: { displayName: 'Other Coop', slug: 'other-coop' } });
-    await expect(TenantVerifyPage({ params: { tenantSlug: SLUG, qrToken: TOKEN }, searchParams: {} })).rejects.toThrow(`REDIRECT /trace/${TOKEN}/verify`);
+    await expect(TenantVerifyPage({ params: Promise.resolve({ tenantSlug: SLUG, qrToken: TOKEN }), searchParams: Promise.resolve({}) })).rejects.toThrow(`REDIRECT /trace/${TOKEN}/verify`);
     C.cert = CERT({ organisation: { displayName: 'Other Coop', slug: 'other-coop' } });
-    await expect(TenantCertPage({ params: { tenantSlug: SLUG, id: CERT_ID }, searchParams: {} })).rejects.toThrow(`REDIRECT /certificates/${CERT_ID}`);
+    await expect(TenantCertPage({ params: Promise.resolve({ tenantSlug: SLUG, id: CERT_ID }), searchParams: Promise.resolve({}) })).rejects.toThrow(`REDIRECT /certificates/${CERT_ID}`);
   });
 });

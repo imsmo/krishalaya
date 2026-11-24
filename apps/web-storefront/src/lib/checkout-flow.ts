@@ -6,7 +6,7 @@
 // values and per-field refusals — W3048 keeps the values). The codec is pure (features/store2c/checkout.ts: every field re-validated on the way
 // in, a state for ANOTHER store ignored). Nothing here is money: the bill is always re-asked from the API.
 import 'server-only';
-import { cookies } from 'next/headers';
+import { cookies, type UnsafeUnwrappedCookies } from 'next/headers';
 import { decodeState, encodeState, EMPTY_STATE, type CheckoutState } from '../features/store2c/checkout';
 
 export const CHECKOUT_COOKIE = 'kv_checkout';
@@ -15,11 +15,11 @@ const CHECKOUT_MAX_AGE_SEC = 30 * 60;
 
 /** The state for THIS store (a fresh empty one when there is none, or when the cookie belongs to another store / is malformed). */
 export function readCheckout(slug: string): CheckoutState {
-  return decodeState(cookies().get(CHECKOUT_COOKIE)?.value, slug) ?? EMPTY_STATE(slug);
+  return decodeState((cookies() as unknown as UnsafeUnwrappedCookies).get(CHECKOUT_COOKIE)?.value, slug) ?? EMPTY_STATE(slug);
 }
 export function writeCheckout(s: CheckoutState): void {
-  cookies().set(CHECKOUT_COOKIE, encodeState(s), { ...OPTS, maxAge: CHECKOUT_MAX_AGE_SEC });
+  (cookies() as unknown as UnsafeUnwrappedCookies).set(CHECKOUT_COOKIE, encodeState(s), { ...OPTS, maxAge: CHECKOUT_MAX_AGE_SEC });
 }
 export function clearCheckout(): void {
-  cookies().delete(CHECKOUT_COOKIE);
+  (cookies() as unknown as UnsafeUnwrappedCookies).delete(CHECKOUT_COOKIE);
 }

@@ -20,7 +20,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('ops4.iot.dash.title'), robots: { index: false, follow: false } };
 }
 
-export default async function IotDashboardPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function IotDashboardPage(
+  props: { searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(IOT.dashboard);
   const t = getTranslator(); const lang = getLang();
   const act = chain4State('iot_act', searchParams);

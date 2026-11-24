@@ -31,7 +31,10 @@ export function generateMetadata(): Metadata {
 }
 const PAGE = 25;
 
-export default async function CouponsPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function CouponsPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(COUPONS_HREF);
   const t = getTranslator();
   const lang = getLang();

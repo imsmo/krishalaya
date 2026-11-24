@@ -53,11 +53,11 @@ const BRANDING = { displayName: 'Anand FPO', logoUrl: null, brand: null };
 const PROFILE = { displayName: 'Anand FPO', legalName: 'Anand Farmer Producer Company Ltd', verified: true, sinceYear: 2019, district: 'Anand', memberFarmers: 1240, logoUrl: null, logoPath: null, currencyCode: 'INR' };
 const L = (i: number) => ({ id: `0190a8b2-0000-7000-8000-00000000020${i}`, title: `Lokwan wheat ${i}`, priceMinor: '256000', currencyCode: 'INR', unitCode: 'quintal',
   quantityAvailable: 40, organicClaim: false, saleType: 'direct', regionId: null, sellerUserId: '0190a8b2-0000-7000-8000-0000000000ff', boosted: false });
-const page = (sp: Record<string, string> = {}) => ({ params: { tenantSlug: 'anand-fpo' }, searchParams: sp });
+const page = (sp: Record<string, string> = {}) => ({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve(sp) });
 
 async function store(sp: Record<string, string> = {}): Promise<string> {
   const children = await TenantStorefront(page(sp));
-  return renderResolved(await TenantLayout({ children, params: { tenantSlug: 'anand-fpo' } }), [TenantHeader]);
+  return renderResolved(await TenantLayout({ children, params: Promise.resolve({ tenantSlug: 'anand-fpo' }) }), [TenantHeader]);
 }
 
 beforeEach(() => {
@@ -94,8 +94,8 @@ describe('STORE-1b · W274 the tenant home — chrome', () => {
 
   it('unknown slug → notFound(); a TRIAL organisation (the API 404s an anonymous caller) → notFound(); an outage → DEGRADED, not 404', async () => {
     mock.shell = { kind: 'not_found' };
-    await expect(TenantLayout({ children: null, params: { tenantSlug: 'search' } })).rejects.toThrow('NEXT_NOT_FOUND');
-    await expect(TenantLayout({ children: null, params: { tenantSlug: 'trial-fpo' } })).rejects.toThrow('NEXT_NOT_FOUND');
+    await expect(TenantLayout({ children: null, params: Promise.resolve({ tenantSlug: 'search' }) })).rejects.toThrow('NEXT_NOT_FOUND');
+    await expect(TenantLayout({ children: null, params: Promise.resolve({ tenantSlug: 'trial-fpo' }) })).rejects.toThrow('NEXT_NOT_FOUND');
     mock.shell = { kind: 'unavailable' };
     const html = await store();
     expect(html).toContain('data-kv-state="degraded"');

@@ -75,8 +75,8 @@ async function page(who: Who, mount: () => Promise<React.ReactNode>): Promise<st
   return renderToStaticMarkup(<RootLayout>{children}</RootLayout>);
 }
 const home = () => DashboardPage();
-const payout = () => PayoutPage({ searchParams: {} });
-const exceptions = () => AepsExceptionsPage({ searchParams: {} });
+const payout = () => PayoutPage({ searchParams: Promise.resolve({}) });
+const exceptions = () => AepsExceptionsPage({ searchParams: Promise.resolve({}) });
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
 const htmlTag = (html: string) => html.match(/<html[^>]*>/)?.[0] ?? '';
 const main = (html: string) => html.match(/<main[^>]*>([\s\S]*)<\/main>/)?.[1] ?? '';

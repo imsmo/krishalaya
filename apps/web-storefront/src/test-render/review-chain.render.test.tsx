@@ -42,8 +42,8 @@ import { C, reset, SLUG, OID, RID, KEY, EKEY, MINE } from './store5a-fixtures';
 import { draftCookieName } from '../features/store5a/review';
 
 const P = { tenantSlug: SLUG, id: OID };
-const review = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await ReviewPage({ params: P, searchParams: sp }));
-const edit = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await ReviewEditPage({ params: P, searchParams: sp }));
+const review = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await ReviewPage({ params: Promise.resolve(P), searchParams: Promise.resolve(sp) }));
+const edit = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await ReviewEditPage({ params: Promise.resolve(P), searchParams: Promise.resolve(sp) }));
 const form = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 const BASE = `/${SLUG}/orders/${OID}/review`;
 const hrefs = (h: string) => [...h.matchAll(/href="([^"]*)"/g)].map((m) => m[1]);
@@ -91,7 +91,7 @@ describe('STORE-5a · the SUBMIT chain (W290 → W3145 → W3146 / W3147)', () =
     await expect(submitReviewAction(form({ slug: SLUG, id: OID, key: KEY }))).rejects.toThrow(`REDIRECT /${SLUG}/orders/${OID}?status=reviewed`);
     expect(C.calls).toContainEqual(['reviews.create', { orderId: OID, stars: 4, subRatings: {} }, KEY]);
     expect(C.cookies.has(draftCookieName(0))).toBe(false);
-    const o = renderToStaticMarkup(await TenantOrderPage({ params: P, searchParams: { status: 'reviewed' } }));
+    const o = renderToStaticMarkup(await TenantOrderPage({ params: Promise.resolve(P), searchParams: Promise.resolve({ status: 'reviewed' }) }));
     expect(o).toContain('data-kv-ok="reviewed"');
     expect(text(o)).toContain('Your review is published on Anand FPO\'s page. The rating there updates within a couple of minutes.');
   });

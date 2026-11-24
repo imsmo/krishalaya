@@ -14,7 +14,9 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('store4a.form.editTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function Page({ params, searchParams }: { params: { id: string }; searchParams: SP }) {
+export default async function Page(props: { params: Promise<{ id: string }>; searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   if (!UUID.test(params.id)) notFound();
   return AddressFormScreen({ chrome: PLATFORM_CHROME, id: params.id, searchParams });
 }

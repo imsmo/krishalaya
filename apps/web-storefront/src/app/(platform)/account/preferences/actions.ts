@@ -15,7 +15,7 @@
 //     is answered from memory, never applied twice). Success → `?ok=saved` (W3135: "applied to your account; senior mode on this device").
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
+import { cookies, type UnsafeUnwrappedCookies } from 'next/headers';
 import { SdkError } from '@krishalaya/sdk-js';
 import type { NotificationMatrix } from '@krishalaya/sdk-js';
 import { isSupported } from '@krishalaya/i18n';
@@ -32,8 +32,8 @@ const ONE_YEAR = 60 * 60 * 24 * 365;
 const api = (c: AccountChrome) => serverClient(c.kind === 'tenant' ? c.slug : undefined);
 const page = (c: AccountChrome, q: Record<string, string> = {}) => accountHref(c, 'preferences', q);
 const cookieOpts = (c: AccountChrome, maxAge: number) => ({ httpOnly: true, sameSite: 'lax' as const, secure: true, path: accountHref(c, 'preferences'), maxAge });
-const keep = (c: AccountChrome, d: PrefsDraft) => cookies().set(PREFS_DRAFT_COOKIE, encodePrefsDraft(d), cookieOpts(c, 900));
-const spend = (c: AccountChrome) => cookies().set(PREFS_DRAFT_COOKIE, '', cookieOpts(c, 0));
+const keep = (c: AccountChrome, d: PrefsDraft) => (cookies() as unknown as UnsafeUnwrappedCookies).set(PREFS_DRAFT_COOKIE, encodePrefsDraft(d), cookieOpts(c, 900));
+const spend = (c: AccountChrome) => (cookies() as unknown as UnsafeUnwrappedCookies).set(PREFS_DRAFT_COOKIE, '', cookieOpts(c, 0));
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export async function reviewPreferencesAction(fd: FormData): Promise<void> {
@@ -62,7 +62,7 @@ export async function submitPreferencesAction(fd: FormData): Promise<void> {
   const c = chromeOf(fd.get('chrome'));
   await requireSession(page(c));
   const key = readPrefsKey(fd.get('key'));
-  const draft = decodePrefsDraft(cookies().get(PREFS_DRAFT_COOKIE)?.value, key);
+  const draft = decodePrefsDraft((await cookies()).get(PREFS_DRAFT_COOKIE)?.value, key);
   if (!key || !draft) redirect(page(c, key ? { k: key } : {}));
   const sdk = api(c);
   const st: { failure: PrefsFailure | null; event: string | null } = { failure: null, event: null };
@@ -81,7 +81,7 @@ export async function submitPreferencesAction(fd: FormData): Promise<void> {
   // (4) ONE language: the account's (what notices use) and this site's
   if (!st.failure && draft.language) {
     try { await sdk.users.updateMe({ languageCode: draft.language }); } catch (e) { fail(e, 'language'); }
-    if (!st.failure) cookies().set(LANG_COOKIE, draft.language, { httpOnly: false, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: ONE_YEAR });
+    if (!st.failure) (await cookies()).set(LANG_COOKIE, draft.language, { httpOnly: false, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: ONE_YEAR });
   }
   if (st.failure) {
     keep(c, draft);

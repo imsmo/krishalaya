@@ -28,7 +28,11 @@ export function generateMetadata(): Metadata {
   return { title: t.t('inputs.title') };
 }
 
-export default async function FarmInputs({ params, searchParams }: { params: { tenantSlug: string }; searchParams: SP }) {
+export default async function FarmInputs(
+  props: { params: Promise<{ tenantSlug: string }>; searchParams: Promise<SP> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const t = getTranslator();
   const lang = getLang();
   const slug = params.tenantSlug;

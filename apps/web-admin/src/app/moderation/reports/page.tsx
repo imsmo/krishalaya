@@ -40,7 +40,10 @@ const OK = new Set(['actioned', 'dismissed']);
 const ERR = new Set(['status', 'outcome', 'note', 'language', 'elevation', 'conflict', 'invalid', 'notFound', 'generic']);
 const LANGS = ['en', 'hi', 'gu'];
 
-export default async function ReportQueuePage({ searchParams }: { searchParams: { subjectType?: string; cursor?: string; ok?: string; error?: string } }) {
+export default async function ReportQueuePage(
+  props: { searchParams: Promise<{ subjectType?: string; cursor?: string; ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const subjectType = searchParams.subjectType && (SUBJECT_TYPES as readonly string[]).includes(searchParams.subjectType) ? searchParams.subjectType : undefined;

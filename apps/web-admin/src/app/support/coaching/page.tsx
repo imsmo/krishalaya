@@ -39,8 +39,9 @@ const STATE_TONE: Record<string, StatusTone> = {
 };
 
 export default async function CoachingPage(
-  { searchParams }: { searchParams: { ok?: string; error?: string; why?: string; agentUserId?: string; tenantId?: string } },
+  props: { searchParams: Promise<{ ok?: string; error?: string; why?: string; agentUserId?: string; tenantId?: string }> }
 ) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

@@ -16,7 +16,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('recon.runsTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function ReconRunsPage({ searchParams }: { searchParams: { cursor?: string } }) {
+export default async function ReconRunsPage(props: { searchParams: Promise<{ cursor?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

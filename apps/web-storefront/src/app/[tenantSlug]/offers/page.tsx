@@ -36,7 +36,11 @@ export function generateMetadata(): Metadata {
   return { title: t.t('offers.title'), robots: { index: false, follow: false } };
 }
 
-export default async function TenantOffersPage({ params, searchParams }: { params: { tenantSlug: string }; searchParams: SP }) {
+export default async function TenantOffersPage(
+  props: { params: Promise<{ tenantSlug: string }>; searchParams: Promise<SP> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const slug = params.tenantSlug;
   const tab = readOfferTab(searchParams.status);
   const cursor = typeof searchParams.cursor === 'string' ? searchParams.cursor.slice(0, 512) : undefined;

@@ -17,7 +17,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('login.title'), robots: { index: false, follow: false } };
 }
 
-export default function AdminLoginPage({ searchParams }: { searchParams: { error?: string } }) {
+export default async function AdminLoginPage(props: { searchParams: Promise<{ error?: string }> }) {
+  const searchParams = await props.searchParams;
   const t = getTranslator();
   return (
     <section className="kv-login">

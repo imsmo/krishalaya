@@ -153,12 +153,12 @@ describe('the regex guards themselves (so a pass below means something)', () => 
 
 describe('sweep pages render under dir="rtl" with logical direction only', () => {
   const cases: Array<[string, () => Promise<React.ReactNode>, string[]]> = [
-    ['SW-a commission table', () => CommissionPage({ searchParams: {} }), [t.t('swa.com.title'), t.t('swa.com.col.effective'), '2.50%']],
-    ['SW-b attendance tiles', () => AttendanceReviewPage({ searchParams: {} }), [t.t('swb.att.tile.clean'), t.t('swb.att.tile.needsReview'), 'Ramesh P.', 'LB-1042']],
-    ['SW-c team table', () => TeamPage({ searchParams: {} }), [t.t('swc.team.title'), 'Asha Patel', '+91 ••••• •7788']],
-    ['SW-d AGM section table', () => AgmPackPage({ params: { id: U(9) } }), [t.t('swd.agm.sections'), 'NO_AUDITOR_UPLOAD', 'sum(order_lines.goods_minor)']],
-    ['SW-e cold-chain trail', () => ColdSubjectPage({ params: { id: U(10) }, searchParams: { type: 'shipment' } }), ['SHP-2201', '4.2 °C', '#881']],
-    ['SW-f reports catalogue', () => ReportsPage({ searchParams: {} }), [t.t('swf.reports.title'), t.t('swf.reports.runs'), '2026-09-01']],
+    ['SW-a commission table', () => CommissionPage({ searchParams: Promise.resolve({}) }), [t.t('swa.com.title'), t.t('swa.com.col.effective'), '2.50%']],
+    ['SW-b attendance tiles', () => AttendanceReviewPage({ searchParams: Promise.resolve({}) }), [t.t('swb.att.tile.clean'), t.t('swb.att.tile.needsReview'), 'Ramesh P.', 'LB-1042']],
+    ['SW-c team table', () => TeamPage({ searchParams: Promise.resolve({}) }), [t.t('swc.team.title'), 'Asha Patel', '+91 ••••• •7788']],
+    ['SW-d AGM section table', () => AgmPackPage({ params: Promise.resolve({ id: U(9) }) }), [t.t('swd.agm.sections'), 'NO_AUDITOR_UPLOAD', 'sum(order_lines.goods_minor)']],
+    ['SW-e cold-chain trail', () => ColdSubjectPage({ params: Promise.resolve({ id: U(10) }), searchParams: Promise.resolve({ type: 'shipment' }) }), ['SHP-2201', '4.2 °C', '#881']],
+    ['SW-f reports catalogue', () => ReportsPage({ searchParams: Promise.resolve({}) }), [t.t('swf.reports.title'), t.t('swf.reports.runs'), '2026-09-01']],
   ];
   it.each(cases)('%s', async (_name, mount, expected) => {
     const html = rtl(await mount());
@@ -169,8 +169,8 @@ describe('sweep pages render under dir="rtl" with logical direction only', () =>
     expect(bareArrows(html)).toBe(0);
   });
   it('the range arrows that were bare are now the flipping span (commission effective dates, report run range)', async () => {
-    expect(rtl(await CommissionPage({ searchParams: {} }))).toMatch(/<span class="kv-dir-flip">→<\/span>/);
-    expect(rtl(await ReportsPage({ searchParams: {} }))).toContain('2026-09-01 <span class="kv-dir-flip">→</span> 2026-09-30');
+    expect(rtl(await CommissionPage({ searchParams: Promise.resolve({}) }))).toMatch(/<span class="kv-dir-flip">→<\/span>/);
+    expect(rtl(await ReportsPage({ searchParams: Promise.resolve({}) }))).toContain('2026-09-01 <span class="kv-dir-flip">→</span> 2026-09-30');
   });
 });
 

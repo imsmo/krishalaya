@@ -17,7 +17,8 @@ import { DirArrow } from '../../../../../components/DirArrow'; // PC-56 TENANT-C
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swf.reports.runTitle'), robots: { index: false, follow: false } }; }
 
-export default async function ReportRunPage({ params }: { params: { id: string } }) {
+export default async function ReportRunPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   await requireSession(`${REPORTS_HREF}/runs/${params.id}`);
   const t = getTranslator(); const lang = getLang();
   let r: ReportRun | null = null; let state: string | null = isUuid(params.id) ? null : 'notFound';

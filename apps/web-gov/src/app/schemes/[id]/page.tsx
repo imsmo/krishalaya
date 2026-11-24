@@ -22,7 +22,11 @@ export function generateMetadata(): Metadata {
 
 const errOf = (e: unknown): ReadError => (e instanceof SdkError ? { status: e.status, code: e.code } : { status: 500, code: 'UNKNOWN' });
 
-export default async function SchemePage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | string[] | undefined> }) {
+export default async function SchemePage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const id = params.id;
   await requireGov(isSchemeId(id) ? `/schemes/${id}` : '/schemes');
   const t = getTranslator();

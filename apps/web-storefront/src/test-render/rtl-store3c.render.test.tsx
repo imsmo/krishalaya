@@ -31,9 +31,9 @@ import { bareArrows, physical, resolveTree } from './store1b-harness';
 import { C, reset, MINE, SETTLEMENT, GROUP_LOT, A, SLUG, LOT, LISTING } from './store3c-fixtures';
 
 const rtl = async (node: React.ReactNode) => renderToStaticMarkup(<div dir="rtl">{await resolveTree(node, [])}</div>);
-const list = (sp: Record<string, string> = {}) => TenantAuctionsPage({ params: { tenantSlug: SLUG }, searchParams: sp });
-const bids = () => TenantMyBidsPage({ params: { tenantSlug: SLUG }, searchParams: {} });
-const lot = () => TenantGroupLotPage({ params: { tenantSlug: SLUG, id: LOT }, searchParams: {} });
+const list = (sp: Record<string, string> = {}) => TenantAuctionsPage({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve(sp) });
+const bids = () => TenantMyBidsPage({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve({}) });
+const lot = () => TenantGroupLotPage({ params: Promise.resolve({ tenantSlug: SLUG, id: LOT }), searchParams: Promise.resolve({}) });
 const WON = () => MINE(A.won, { status: 'settled', isOpen: false, won: true, emd: { state: 'applied', amountMinor: '1000000', at: '2026-10-16T12:31:00.000Z' }, settlement: SETTLEMENT() });
 
 const STATES: Array<[string, () => Promise<React.ReactNode>]> = [

@@ -23,7 +23,10 @@ const ST_TONE: Record<string, StatusTone> = { draft: 'neutral', scheduled: 'warn
 const SEV_TONE: Record<string, StatusTone> = { info: 'neutral', warning: 'warning', critical: 'danger' };
 const ERR = new Set(['title', 'body', 'severity', 'placement', 'plans', 'countries', 'reason', 'elevation', 'conflict', 'invalid', 'generic']);
 
-export default async function AnnouncementsPage({ searchParams }: { searchParams: { cursor?: string; status?: string; severity?: string; ok?: string; error?: string } }) {
+export default async function AnnouncementsPage(
+  props: { searchParams: Promise<{ cursor?: string; status?: string; severity?: string; ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const status = (ANNOUNCEMENT_STATUSES as readonly string[]).includes(searchParams.status ?? '') ? searchParams.status : undefined;

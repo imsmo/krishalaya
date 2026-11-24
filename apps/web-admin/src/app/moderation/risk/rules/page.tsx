@@ -42,7 +42,8 @@ interface Board {
 const OK = new Set(['proposed', 'approved', 'withdrawn']);
 const ERR = new Set(['weight', 'sameWeight', 'reason', 'dryRun', 'dryRunArithmetic', 'elevation', 'conflict', 'invalid', 'notFound', 'generic']);
 
-export default async function RiskRulesPage({ searchParams }: { searchParams: { ok?: string; error?: string } }) {
+export default async function RiskRulesPage(props: { searchParams: Promise<{ ok?: string; error?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const viewer = adminUserId();

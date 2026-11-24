@@ -38,7 +38,11 @@ const OK = new Set(['issue', 'mark_overdue', 'void', 'dunning', 'payment', 'reve
 const ERR = new Set(['reason', 'channel', 'outcome', 'note', 'elevation', 'illegal', 'notFound', 'generic',
   'pay_amount', 'pay_reference', 'pay_method', 'pay_receivedAt', 'pay_future', 'pay_currency']);
 
-export default async function InvoiceDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function InvoiceDetailPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
 

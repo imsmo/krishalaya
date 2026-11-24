@@ -52,9 +52,12 @@ interface Meta {
   loggingSince: string | null;
 }
 
-export default async function ResidencyLogPage({ searchParams }: {
-  searchParams: { days?: string; country?: string; cursor?: string };
-}) {
+export default async function ResidencyLogPage(
+  props: {
+    searchParams: Promise<{ days?: string; country?: string; cursor?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const arrow = rangeArrow(getAdminDir());

@@ -30,7 +30,10 @@ export function generateMetadata(): Metadata {
 
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
-export default async function AccessPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function AccessPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   const me = await requireGov('/access');
   const t = getTranslator();
   // PC-56 GOV-4b · W3262–W3266: the sign-ins chains (`?do=signins-file|signins-reread&act=`) read nothing; they are answered first.

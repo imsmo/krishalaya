@@ -22,7 +22,8 @@ import { DirArrow } from '../../../../../../components/DirArrow'; // PC-56 TENAN
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.cold.breaches'), robots: { index: false, follow: false } }; }
 
-export default async function BreachActPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function BreachActPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   const base = `${BREACHES_HREF}/act`;
   await requireSession(base);
   const t = getTranslator(); const lang = getLang();

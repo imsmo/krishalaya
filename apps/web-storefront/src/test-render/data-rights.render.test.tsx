@@ -33,7 +33,7 @@ import { en } from '../i18n/en';
 import { text } from './store1b-harness';
 import { C, reset, exportRequest, JOB, SHA } from './store4a-fixtures';
 
-const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await DataPage({ searchParams: sp }));
+const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await DataPage({ searchParams: Promise.resolve(sp) }));
 const form = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 const redirectOf = async (p: Promise<unknown>) => { try { await p; return null; } catch (e) { return String((e as Error).message); } };
 beforeEach(() => { reset(); });
@@ -94,7 +94,7 @@ describe('STORE-4a · W3030 the receipt and the download', () => {
   });
   it('under the organisation\'s chrome the same screen, its own hrefs; the helpline refused', async () => {
     C.requests = [exportRequest('ready')];
-    const h = renderToStaticMarkup(await TenantDataPage({ params: { tenantSlug: 'anand-fpo' }, searchParams: {} }));
+    const h = renderToStaticMarkup(await TenantDataPage({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve({}) }));
     expect(h).toContain('data-kv-chrome="anand-fpo"'); expect(h).toContain('name="chrome" value="anand-fpo"'); expect(h).toContain('data-kv-refusal="helpline"');
   });
 });

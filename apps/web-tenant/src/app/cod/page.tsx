@@ -39,7 +39,10 @@ type RemittanceRow = Record<string, unknown> & {
   depositRef?: string | null; depositedBy?: string | null; createdAt?: string;
 };
 
-export default async function CodPage({ searchParams }: { searchParams: { status?: string; ok?: string; error?: string } }) {
+export default async function CodPage(
+  props: { searchParams: Promise<{ status?: string; ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/cod');
   const t = getTranslator();
   const lang = getLang();

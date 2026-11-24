@@ -18,7 +18,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('wh.payload.title'), robots: { index: false, follow: false }, referrer: 'no-referrer' };
 }
 
-export default async function DeliveryPage({ params }: { params: { id: string } }) {
+export default async function DeliveryPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   await requireSession(deliveryHref(params.id));
   const t = getTranslator();
   const lang = getLang();

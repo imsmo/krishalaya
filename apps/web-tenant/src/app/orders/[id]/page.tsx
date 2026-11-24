@@ -31,7 +31,11 @@ export function generateMetadata(): Metadata {
 
 const ERR = new Set(['action', 'illegal', 'otp', 'deliver']);
 
-export default async function OrderDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function OrderDetailPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   await requireSession(`/orders/${params.id}`);
   const t = getTranslator();
   const lang = getLang();

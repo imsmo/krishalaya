@@ -35,10 +35,14 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('po.reviewTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function PayoutBatchPage({ params, searchParams }: {
-  params: { id: string };
-  searchParams: { error?: string; ok?: string };
-}) {
+export default async function PayoutBatchPage(
+  props: {
+    params: Promise<{ id: string }>;
+    searchParams: Promise<{ error?: string; ok?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   await requireSession(`/payouts/batches/${params.id}`);
   const t = getTranslator();
   const lang = getLang();

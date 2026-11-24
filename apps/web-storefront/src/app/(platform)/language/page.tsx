@@ -16,8 +16,11 @@ export function generateMetadata(): Metadata {
   return { title: t.t('sweep.language.title'), robots: { index: false, follow: true } };
 }
 
-export default function PlatformLanguagePage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
-  const h = headers();
+export default async function PlatformLanguagePage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const h = await headers();
   const from = languageFrom(searchParams.from, h.get('referer'), h.get('host'), '/');
   return <LanguageScreen chrome={PLATFORM_CHROME} from={from} active={getLang()} />;
 }

@@ -5,6 +5,10 @@ import { tenantChrome } from '../../../../../../features/store4a/account';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: Request, { params }: { params: { tenantSlug: string; id: string } }): Promise<Response> {
+export async function GET(
+  req: Request,
+  props: { params: Promise<{ tenantSlug: string; id: string }> }
+): Promise<Response> {
+  const params = await props.params;
   return personalDownload(req, tenantChrome(params.tenantSlug), params.id);
 }

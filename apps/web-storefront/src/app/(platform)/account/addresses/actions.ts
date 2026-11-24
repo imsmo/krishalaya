@@ -12,7 +12,7 @@
 //   named, with the same key (Retry).
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
+import { cookies, type UnsafeUnwrappedCookies } from 'next/headers';
 import { SdkError } from '@krishalaya/sdk-js';
 import { serverClient } from '../../../../lib/api-client';
 import { requireSession } from '../../../../lib/session';
@@ -27,8 +27,8 @@ const UUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a
 const api = (c: AccountChrome) => serverClient(c.kind === 'tenant' ? c.slug : undefined);
 const cookieOpts = (c: AccountChrome, maxAge: number) => ({ httpOnly: true, sameSite: 'lax' as const, secure: true, path: accountHref(c, 'addresses'), maxAge });
 const formHref = (c: AccountChrome, id: string | null, q: Record<string, string>) => (id ? accountHref(c, { edit: id }, q) : accountHref(c, 'addresses/new', q));
-const keep = (c: AccountChrome, d: AccountAddressDraft) => cookies().set(ADDRESS_DRAFT_COOKIE, encodeAddressDraft(d), cookieOpts(c, 600));
-const spend = (c: AccountChrome) => cookies().set(ADDRESS_DRAFT_COOKIE, '', cookieOpts(c, 0));
+const keep = (c: AccountChrome, d: AccountAddressDraft) => (cookies() as unknown as UnsafeUnwrappedCookies).set(ADDRESS_DRAFT_COOKIE, encodeAddressDraft(d), cookieOpts(c, 600));
+const spend = (c: AccountChrome) => (cookies() as unknown as UnsafeUnwrappedCookies).set(ADDRESS_DRAFT_COOKIE, '', cookieOpts(c, 0));
 
 async function labelIds(c: AccountChrome): Promise<Set<string>> {
   try { return new Set((await api(c).lookups.values('address_label')).map((v) => v.id)); } catch { return new Set(); }
@@ -54,7 +54,7 @@ export async function submitAddressAction(fd: FormData): Promise<void> {
   const key = readKey(fd.get('key'));
   await requireSession(formHref(c, id, {}));
   const mode = id ? 'edit' : 'create';
-  const draft = decodeAddressDraft(cookies().get(ADDRESS_DRAFT_COOKIE)?.value, mode, id);
+  const draft = decodeAddressDraft((await cookies()).get(ADDRESS_DRAFT_COOKIE)?.value, mode, id);
   if (!key || !draft) redirect(formHref(c, id, key ? { k: key } : {}));
   const errors = checkAccountAddress(draft.values, await labelIds(c));
   if (Object.keys(errors).length > 0) { keep(c, { ...draft, errors }); redirect(formHref(c, id, { k: key, error: 'form' })); }

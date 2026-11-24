@@ -16,7 +16,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('br.history.title'), robots: { index: false, follow: false } };
 }
 
-export default async function BrandHistoryPage({ searchParams }: { searchParams: { cursor?: string } }) {
+export default async function BrandHistoryPage(props: { searchParams: Promise<{ cursor?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession(BRAND_HISTORY_HREF);
   const t = getTranslator();
   const lang = getLang();

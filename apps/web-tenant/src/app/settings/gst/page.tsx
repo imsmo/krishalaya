@@ -37,7 +37,8 @@ export function generateMetadata(): Metadata {
 /** The submitted values travel in the query string so W2424 can preserve them without a client component. */
 const SUBMITTED_KEYS = ['gstin', 'pan', 'cinOrRegNo', 'fssaiLicense', 'legalName', 'ownerName', 'ownerPhone', 'ownerEmail'] as const;
 
-export default async function GstPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function GstPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   await requireSession('/settings/gst');
   const t = getTranslator();
   const step = stepOf(searchParams.step);

@@ -13,6 +13,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('store5b.export.title'), robots: { index: false, follow: false } };
 }
 
-export default async function Page({ params, searchParams }: { params: { tenantSlug: string; qrToken: string }; searchParams: SP }) {
+export default async function Page(
+  props: { params: Promise<{ tenantSlug: string; qrToken: string }>; searchParams: Promise<SP> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   return TraceExportScreen({ chrome: tenantChrome(params.tenantSlug), qrToken: params.qrToken, searchParams });
 }

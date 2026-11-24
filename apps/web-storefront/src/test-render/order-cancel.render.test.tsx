@@ -38,7 +38,7 @@ import { C, reset, DETAIL, SLUG, OID, REASONS, reasonId } from './store3a-fixtur
 import { store3aRefusalKeys } from '../features/store3a/refusals';
 import { CANCEL_DRAFT_COOKIE } from '../features/store3a/cancel-draft';
 
-const page = async (id: string, sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantCancelPage({ params: { tenantSlug: SLUG, id }, searchParams: sp }));
+const page = async (id: string, sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantCancelPage({ params: Promise.resolve({ tenantSlug: SLUG, id }), searchParams: Promise.resolve(sp) }));
 const form = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 const KEY = `cancel:${OID.cod}:0210aaaa-0000-7000-8000-000000000002`;
 beforeEach(() => { reset(); C.orders[OID.cod] = DETAIL(OID.cod, { status: 'confirmed', paymentState: 'none' }); });

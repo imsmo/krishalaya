@@ -13,7 +13,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('store5b.cert.title'), robots: { index: false } };
 }
 
-export default async function Page({ params, searchParams }: { params: { tenantSlug: string }; searchParams: SP }) {
+export default async function Page(
+  props: { params: Promise<{ tenantSlug: string }>; searchParams: Promise<SP> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const shell = await loadTenantShell(params.tenantSlug);
   return CertificateScreen({ chrome: tenantChrome(params.tenantSlug), searchParams, orgName: shell.kind === 'ok' ? shell.tenant.displayName : null });
 }

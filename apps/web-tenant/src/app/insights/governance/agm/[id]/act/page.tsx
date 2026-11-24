@@ -25,7 +25,11 @@ export function generateMetadata(): Metadata {
 }
 const NEEDS_REASON = new Set(['send_back', 'withdraw', 'addendum']);
 
-export default async function AgmActPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | undefined> }) {
+export default async function AgmActPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   await requireSession(agmPackHref(params.id));
   const t = getTranslator();
   const act = isAgmAct(searchParams.act) ? searchParams.act : 'retry';

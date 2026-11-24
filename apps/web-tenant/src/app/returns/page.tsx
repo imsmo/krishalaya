@@ -31,7 +31,10 @@ const OK = new Set(['approve', 'reject', 'receive', 'refund', 'inspect', 'propos
 const ERR = new Set(['generic', 'forbidden', 'notFound', 'illegal', 'step', 'noteTooShort', 'noAmount',
   'needsChecker', 'awaitingChecker', 'rejectedByChecker', 'amountChanged', 'alreadyApplied', 'returnInvalid']);
 
-export default async function ReturnsPage({ searchParams }: { searchParams: { status?: string; cursor?: string; ok?: string; error?: string } }) {
+export default async function ReturnsPage(
+  props: { searchParams: Promise<{ status?: string; cursor?: string; ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/returns');
   const t = getTranslator();
   const lang = getLang();

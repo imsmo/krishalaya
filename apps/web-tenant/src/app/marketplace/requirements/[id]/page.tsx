@@ -34,7 +34,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('rq.detailTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function RequirementDetailPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | undefined> }) {
+export default async function RequirementDetailPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const self = reqHref(params.id);
   await requireSession(self);
   const t = getTranslator();

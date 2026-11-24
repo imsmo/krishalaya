@@ -41,7 +41,8 @@ const durationText = (secs: number | null | undefined): string | null => {
   return `${m}:${String(s).padStart(2, '0')}`;
 };
 
-export default async function CourseDetailPage({ params }: { params: { id: string } }) {
+export default async function CourseDetailPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const href = `/courses/${encodeURIComponent(params.id)}`;
   await requireSession(href);
   const t = getTranslator();

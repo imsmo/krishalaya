@@ -34,7 +34,11 @@ interface CaseView {
 const OK = new Set(['joined', 'alreadyJoined', 'stepRecorded', 'stepPending']);
 const ERR = new Set(['step', 'detail', 'elevation', 'illegal', 'invalid', 'notFound', 'generic']);
 
-export default async function SafetyCasePage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function SafetyCasePage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
 

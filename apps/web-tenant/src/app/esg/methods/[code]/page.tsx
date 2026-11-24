@@ -22,7 +22,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('esg.methodPage.title'), robots: { index: false, follow: false } };
 }
 
-export default async function EsgMethodPage({ params }: { params: { code: string } }) {
+export default async function EsgMethodPage(props: { params: Promise<{ code: string }> }) {
+  const params = await props.params;
   if (!env.featureEsg) notFound();
   await requireSession(methodHref(params.code));
   const t = getTranslator();

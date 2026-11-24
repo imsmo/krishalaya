@@ -26,7 +26,10 @@ const NODE_TONE: Record<string, StatusTone> = { ok: 'success', warn: 'warning', 
 
 const ERR = new Set(['cellId', 'shardIndex', 'weight', 'notes', 'reason', 'elevation', 'conflict', 'invalid', 'notFound', 'generic']);
 
-export default async function ShardsPage({ searchParams }: { searchParams: { cursor?: string; cellId?: string; status?: string; ok?: string; error?: string } }) {
+export default async function ShardsPage(
+  props: { searchParams: Promise<{ cursor?: string; cellId?: string; status?: string; ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const status = isNodeStatus(searchParams.status ?? '') ? searchParams.status : undefined;

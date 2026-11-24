@@ -31,7 +31,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('auc.new.title'), robots: { index: false, follow: false } };
 }
 
-export default async function NewAuctionPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function NewAuctionPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(NEW_AUCTION_HREF);
   const t = getTranslator();
   const lang = getLang();

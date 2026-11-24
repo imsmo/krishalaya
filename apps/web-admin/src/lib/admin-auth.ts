@@ -4,16 +4,16 @@
 // token). admin-api independently re-enforces owner-RBAC + hardware-key + step-up on every call, so this cookie
 // is convenience, never the authority. requireAdmin() gates server components.
 import 'server-only';
-import { cookies } from 'next/headers';
+import { cookies, type UnsafeUnwrappedCookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { env } from './env';
 
 export const ADMIN_COOKIE = 'kva_session';
 const OPTS = { httpOnly: true, secure: env.isProduction, sameSite: 'strict' as const, path: '/' };
 
-export function getAdminToken(): string | undefined { return cookies().get(ADMIN_COOKIE)?.value; }
-export function setAdminSession(token: string, maxAgeSec: number): void { cookies().set(ADMIN_COOKIE, token, { ...OPTS, maxAge: maxAgeSec }); }
-export function clearAdminSession(): void { cookies().delete(ADMIN_COOKIE); }
+export function getAdminToken(): string | undefined { return (cookies() as unknown as UnsafeUnwrappedCookies).get(ADMIN_COOKIE)?.value; }
+export function setAdminSession(token: string, maxAgeSec: number): void { (cookies() as unknown as UnsafeUnwrappedCookies).set(ADMIN_COOKIE, token, { ...OPTS, maxAge: maxAgeSec }); }
+export function clearAdminSession(): void { (cookies() as unknown as UnsafeUnwrappedCookies).delete(ADMIN_COOKIE); }
 export function isAdminAuthenticated(): boolean { return !!getAdminToken(); }
 export function requireAdmin(): void { if (!isAdminAuthenticated()) redirect('/login'); }
 

@@ -7,7 +7,7 @@
 // itself — checking it earlier would spend it), the Idempotency-Key of the last submit (Retry replays it), and — after creation — the
 // outcome the done step prints. The codec is pure (features/signup/flow.ts: every field re-validated on the way in).
 import 'server-only';
-import { cookies } from 'next/headers';
+import { cookies, type UnsafeUnwrappedCookies } from 'next/headers';
 import { decodePending, encodePending, type PendingSignup } from '../features/signup/flow';
 
 export const SIGNUP_COOKIE = 'kv_signup';
@@ -15,11 +15,11 @@ const OPTS = { httpOnly: true, secure: process.env.NODE_ENV === 'production', sa
 const SIGNUP_MAX_AGE_SEC = 15 * 60;
 
 export function readPendingSignup(): PendingSignup | null {
-  return decodePending(cookies().get(SIGNUP_COOKIE)?.value);
+  return decodePending((cookies() as unknown as UnsafeUnwrappedCookies).get(SIGNUP_COOKIE)?.value);
 }
 export function writePendingSignup(p: PendingSignup): void {
-  cookies().set(SIGNUP_COOKIE, encodePending(p), { ...OPTS, maxAge: SIGNUP_MAX_AGE_SEC });
+  (cookies() as unknown as UnsafeUnwrappedCookies).set(SIGNUP_COOKIE, encodePending(p), { ...OPTS, maxAge: SIGNUP_MAX_AGE_SEC });
 }
 export function clearSignupFlow(): void {
-  cookies().delete(SIGNUP_COOKIE);
+  (cookies() as unknown as UnsafeUnwrappedCookies).delete(SIGNUP_COOKIE);
 }

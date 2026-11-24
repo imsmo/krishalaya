@@ -38,7 +38,7 @@ import { C, reset, OFFER, OFF, SLUG, FARMER, SELLER_UUID, ORDER_ID } from './sto
 import { OFFER_DECLINE_REASON_LIST, OFFER_FAILURES } from '../features/store3b/offers';
 import { store3bRefusalKeys } from '../features/store3b/refusals';
 
-const thread = async (id: string, sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantOfferThread({ params: { tenantSlug: SLUG, id }, searchParams: sp }));
+const thread = async (id: string, sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantOfferThread({ params: Promise.resolve({ tenantSlug: SLUG, id }), searchParams: Promise.resolve(sp) }));
 const KEY = 'accept:0211c000-0000-7000-8000-000000000002:k1';
 const form = (o: Record<string, string>) => { const fd = new FormData(); for (const [k, v] of Object.entries(o)) fd.set(k, v); return fd; };
 const redirectOf = async (p: Promise<unknown>) => { try { await p; return 'no redirect'; } catch (e) { return String((e as Error).message); } };
@@ -195,7 +195,7 @@ describe('STORE-3b · W294 the thread, the numbers, the clock, the refusals', ()
     expect(await thread(OFF.expired)).toContain('data-kv-retry="reload"');
   });
   it('the platform /offers/[id] is a door carrying the chain\'s query', async () => {
-    await expect(PlatformOfferDoor({ params: { id: OFF.countered }, searchParams: { act: 'accept' } })).rejects.toThrow(`REDIRECT /${SLUG}/offers/${OFF.countered}?act=accept`);
+    await expect(PlatformOfferDoor({ params: Promise.resolve({ id: OFF.countered }), searchParams: Promise.resolve({ act: 'accept' }) })).rejects.toThrow(`REDIRECT /${SLUG}/offers/${OFF.countered}?act=accept`);
   });
 });
 

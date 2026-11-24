@@ -26,7 +26,7 @@ import { text } from './store1b-harness';
 import { C, reset, TOKEN, HASHES, VERIFY, UUIDS } from './store5b-fixtures';
 import { store5bRefusalKeys } from '../features/store5b/refusals';
 
-const render = async () => renderToStaticMarkup(await VerifyPage({ params: { qrToken: TOKEN }, searchParams: {} }));
+const render = async () => renderToStaticMarkup(await VerifyPage({ params: Promise.resolve({ qrToken: TOKEN }), searchParams: Promise.resolve({}) }));
 beforeEach(() => { reset(); });
 
 describe('STORE-5b · W304 verify', () => {

@@ -35,7 +35,10 @@ function decodeElig(raw?: string): { e: boolean; r: string[] } | null {
   try { const o = JSON.parse(Buffer.from(decodeURIComponent(raw), 'base64').toString()); return { e: !!o.e, r: Array.isArray(o.r) ? o.r.map(String) : [] }; } catch { return null; }
 }
 
-export default async function SchemesPage({ searchParams }: { searchParams: { ok?: string; error?: string; application?: string; status?: string; elig?: string } }) {
+export default async function SchemesPage(
+  props: { searchParams: Promise<{ ok?: string; error?: string; application?: string; status?: string; elig?: string }> }
+) {
+  const searchParams = await props.searchParams;
   if (!env.featureSchemes) notFound();
   await requireSession('/schemes');
   const t = getTranslator();

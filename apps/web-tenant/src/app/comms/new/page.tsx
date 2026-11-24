@@ -34,7 +34,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('bc.form.title'), robots: { index: false, follow: false } };
 }
 
-export default async function BroadcastFormPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function BroadcastFormPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(BROADCAST_FORM_HREF);
   const t = getTranslator();
   const lang = getLang();

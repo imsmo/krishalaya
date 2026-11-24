@@ -22,7 +22,10 @@ export function generateMetadata(): Metadata {
 
 const ERR = new Set(['tenantId', 'cellId', 'shardId', 'reason', 'elevation', 'conflict', 'invalid', 'notFound', 'generic']);
 
-export default async function PlacementsPage({ searchParams }: { searchParams: { cursor?: string; cellId?: string; shardId?: string; ok?: string; error?: string } }) {
+export default async function PlacementsPage(
+  props: { searchParams: Promise<{ cursor?: string; cellId?: string; shardId?: string; ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const cellId = (searchParams.cellId ?? '').trim() || undefined;

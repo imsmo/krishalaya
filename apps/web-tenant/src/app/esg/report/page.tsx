@@ -27,7 +27,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('esg.report.title'), robots: { index: false, follow: false } };
 }
 
-export default async function EsgReportPage({ searchParams }: { searchParams: { error?: string } }) {
+export default async function EsgReportPage(props: { searchParams: Promise<{ error?: string }> }) {
+  const searchParams = await props.searchParams;
   if (!env.featureEsg) notFound();
   await requireSession(REPORT_HREF);
   const t = getTranslator();

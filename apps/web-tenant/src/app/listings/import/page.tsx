@@ -36,7 +36,8 @@ export function generateMetadata(): Metadata {
 const OK = new Set(['validated', 'confirmed', 'cancelled']);
 const ERR = new Set(['validate', 'confirm', 'cancel', 'notValidatable', 'changed', 'failed']);
 
-export default async function ListingImportPage({ searchParams }: { searchParams: { ok?: string; error?: string } }) {
+export default async function ListingImportPage(props: { searchParams: Promise<{ ok?: string; error?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession('/listings/import');
   const t = getTranslator();
   const lang = getLang();

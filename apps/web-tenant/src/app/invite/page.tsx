@@ -41,14 +41,15 @@ async function accept(formData: FormData) {
     if (typeof c === 'string') challenge = c;
   }
   if (challenge) {
-    cookies().set('kvt_2fa', challenge, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/login', maxAge: 300 });
+    (await cookies()).set('kvt_2fa', challenge, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/login', maxAge: 300 });
     redirect('/login?step=2fa&next=%2Fdashboard');
   }
   if (err) redirect(back({ t: token, step: 'otp', phone, error: err }));
   redirect('/dashboard');
 }
 
-export default async function InviteAcceptPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function InviteAcceptPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   const t = getTranslator();
   const token = TOKEN.test(searchParams.t ?? '') ? (searchParams.t as string) : '';
   let info: { organisation: string; roleCode: string; phoneMasked: string; status: string; expiresAt: string } | null = null; let lookupErr: string | null = null;

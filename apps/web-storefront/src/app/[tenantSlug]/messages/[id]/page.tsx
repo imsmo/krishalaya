@@ -41,7 +41,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('messages.threadTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function TenantThreadPage({ params, searchParams }: { params: { tenantSlug: string; id: string }; searchParams: SP }) {
+export default async function TenantThreadPage(
+  props: { params: Promise<{ tenantSlug: string; id: string }>; searchParams: Promise<SP> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const slug = params.tenantSlug;
   await requireSession(threadHref(slug, params.id));
   const t = getTranslator();

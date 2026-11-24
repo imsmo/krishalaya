@@ -21,7 +21,11 @@ export function generateMetadata(): Metadata {
 }
 const actsFor = (s: string): ImportAct[] => (s === 'validated' ? ['propose', 'reject'] : s === 'proposed' ? ['confirm', 'reject'] : s === 'failed' || s === 'confirmed' ? ['retry'] : []);
 
-export default async function RegisterImportPreviewPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | undefined> }) {
+export default async function RegisterImportPreviewPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   await requireSession(importHref(params.id));
   const t = getTranslator(); const lang = getLang();
   const status = (LINE_STATUSES as readonly string[]).includes(searchParams.status ?? '') ? (searchParams.status as RegisterImportLine['status']) : undefined;

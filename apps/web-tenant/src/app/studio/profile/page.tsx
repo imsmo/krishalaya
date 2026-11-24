@@ -33,7 +33,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('profile.title'), robots: { index: false, follow: false } };
 }
 
-export default async function ProfilePage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function ProfilePage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   const instructorId = typeof searchParams.instructor === 'string' && searchParams.instructor.length > 0 ? searchParams.instructor : null;
   await requireSession(profileHref(instructorId));
   const t = getTranslator();

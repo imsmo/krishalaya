@@ -18,18 +18,19 @@ export function generateMetadata(): Metadata {
 
 const STEPS: readonly LoginStep[] = ['phone', 'verify', 'choose', '2fa'];
 
-export default async function LoginPage({ searchParams }: { searchParams: { step?: string; error?: string } }) {
+export default async function LoginPage(props: { searchParams: Promise<{ step?: string; error?: string }> }) {
+  const searchParams = await props.searchParams;
   const t = getTranslator();
   const off = (await partnerConsoleSwitch()) === 'off';
   const asked = (STEPS as readonly string[]).includes(searchParams.step ?? '') ? (searchParams.step as LoginStep) : 'phone';
   let choices: Array<{ id: string; name: string }> = [];
-  try { choices = (JSON.parse(cookies().get('kvp_choice')?.value ?? '{}') as { partners?: Array<{ id: string; name: string }> }).partners ?? []; } catch { choices = []; }
+  try { choices = (JSON.parse((await cookies()).get('kvp_choice')?.value ?? '{}') as { partners?: Array<{ id: string; name: string }> }).partners ?? []; } catch { choices = []; }
   return (
     <LoginSteps
       t={t}
       lang={getLang()}
       step={off ? 'off' : asked}
-      phoneMasked={maskPhone(cookies().get('kvp_pending_phone')?.value)}
+      phoneMasked={maskPhone((await cookies()).get('kvp_pending_phone')?.value)}
       choices={choices}
       error={searchParams.error ?? null}
       actions={{ requestOtp: requestOtpAction, verifyOtp: verifyOtpAction, choose: chooseAction, twoFactor: twoFactorAction, startOver: startOverAction }}

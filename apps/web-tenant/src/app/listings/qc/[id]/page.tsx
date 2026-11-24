@@ -27,7 +27,11 @@ export function generateMetadata(): Metadata {
 
 const ERR = new Set(['selfreview', 'reason', 'raced', 'grant', 'failed']);
 
-export default async function QcReviewPage({ params, searchParams }: { params: { id: string }; searchParams: { error?: string } }) {
+export default async function QcReviewPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   await requireSession(`/listings/qc/${params.id}`);
   const t = getTranslator();
   const lang = getLang();

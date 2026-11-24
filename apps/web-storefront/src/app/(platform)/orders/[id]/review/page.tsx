@@ -16,7 +16,9 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('review.title'), robots: { index: false, follow: false } };
 }
 
-export default async function PlatformReviewDoor({ params, searchParams }: { params: { id: string }; searchParams: SP }) {
+export default async function PlatformReviewDoor(props: { params: Promise<{ id: string }>; searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const path = `/orders/${encodeURIComponent(params.id)}/review`;
   await requireSession(path);
   const slug = await sessionStoreSlug();

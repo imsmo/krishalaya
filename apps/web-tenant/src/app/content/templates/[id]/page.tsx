@@ -34,7 +34,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('templates.editor.title'), robots: { index: false, follow: false } };
 }
 
-export default async function TemplateEditorPage({ params }: { params: { id: string } }) {
+export default async function TemplateEditorPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   await requireSession(templateHref(params.id));
   const t = getTranslator();
   const lang = getLang();

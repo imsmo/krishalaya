@@ -27,7 +27,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('amb.recruit.title'), robots: { index: false, follow: false } };
 }
 
-export default async function RecruitPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function RecruitPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(NEW_AMBASSADOR_HREF);
   const t = getTranslator();
   const step = chainStep(typeof searchParams.step === 'string' ? searchParams.step : undefined);

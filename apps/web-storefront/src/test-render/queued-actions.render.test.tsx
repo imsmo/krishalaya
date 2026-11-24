@@ -25,7 +25,7 @@ const FOUNDER_16 = ['placeOrder', 'pay', 'payFromWallet', 'chooseDelivery', 'cho
   'declineOffer', 'acceptPrice', 'cancelRefund', 'received', 'raiseDispute', 'requestDeletion'];
 
 describe('STORE-6a · W314 · money never queues', () => {
-  it.each([['the platform', () => PlatformQueued()], ['the organisation', () => TenantQueued({ params: { tenantSlug: SLUG } })]])('%s: the full list from the registry, in order, each with its reason', (_n, make) => {
+  it.each([['the platform', () => PlatformQueued()], ['the organisation', () => TenantQueued({ params: Promise.resolve({ tenantSlug: SLUG }) })]])('%s: the full list from the registry, in order, each with its reason', (_n, make) => {
     const h = renderToStaticMarkup(make()); const words = text(h);
     const printed = [...h.matchAll(/data-kv-act="([^"]+)" data-kv-act-class="(money|countdown)"/g)].map((m) => [m[1], m[2]]);
     expect(printed).toEqual(neverQueued().map((a) => [a.id, a.cls]));          // derived from acts.ts — never a copy
@@ -44,7 +44,7 @@ describe('STORE-6a · W314 · money never queues', () => {
     expect(words).not.toMatch(/\b\d+ waiting/);
   });
   it('the organisation\'s page links back to ITS offline page; the platform\'s to /offline', () => {
-    expect(renderToStaticMarkup(TenantQueued({ params: { tenantSlug: SLUG } }))).toContain(`href="/${SLUG}/offline"`);
+    expect(renderToStaticMarkup(TenantQueued({ params: Promise.resolve({ tenantSlug: SLUG }) }))).toContain(`href="/${SLUG}/offline"`);
     expect(renderToStaticMarkup(PlatformQueued())).toContain('href="/offline"');
   });
 });

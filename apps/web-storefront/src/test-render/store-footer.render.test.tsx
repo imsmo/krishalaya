@@ -31,7 +31,7 @@ import { C, SLUG, brandWith, reset } from './store6a-fixtures';
 
 beforeEach(() => { reset(); SITE.url = ''; });
 const footerOf = (h: string) => h.slice(h.indexOf('<footer'), h.indexOf('</footer>') + 9);
-const storeFooter = async () => footerOf(await renderResolved(await TenantLayout({ children: <p>page</p>, params: { tenantSlug: SLUG } }), [TenantHeader]));
+const storeFooter = async () => footerOf(await renderResolved(await TenantLayout({ children: <p>page</p>, params: Promise.resolve({ tenantSlug: SLUG }) }), [TenantHeader]));
 
 describe('STORE-SWEEP-a · the store\'s footer (the real layout)', () => {
   it('a PATH store: Help, the quality promise, Contact under /<slug>; Grievances and "Powered by" on the same origin', async () => {

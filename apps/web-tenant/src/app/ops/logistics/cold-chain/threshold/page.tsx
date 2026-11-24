@@ -14,7 +14,8 @@ import { setThresholdAction } from './actions';
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.cold.setBand'), robots: { index: false, follow: false } }; }
 
-export default async function ThresholdPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function ThresholdPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   const base = `${COLD_HREF}/threshold`;
   await requireSession(base);
   const t = getTranslator(); const lang = getLang();

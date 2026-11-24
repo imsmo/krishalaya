@@ -17,7 +17,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('partner6.notifications.title'), robots: { index: false, follow: false } };
 }
 
-export default async function AccountNotificationsPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function AccountNotificationsPage(
+  props: { searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requirePartner();
   const t = getTranslator();
   const act = chain6State('notifications_act', searchParams);

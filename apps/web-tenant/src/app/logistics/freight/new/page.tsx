@@ -37,12 +37,15 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('freight.form.title'), robots: { index: false, follow: false } };
 }
 
-export default async function NewFreightInvoicePage({ searchParams }: {
-  searchParams: {
-    step?: string; carrierId?: string; invoiceNo?: string; sourceKind?: string; periodStart?: string;
-    periodEnd?: string; billedMinor?: string; currencyCode?: string; linesRaw?: string; invalid?: string; error?: string;
-  };
-}) {
+export default async function NewFreightInvoicePage(
+  props: {
+    searchParams: Promise<{
+      step?: string; carrierId?: string; invoiceNo?: string; sourceKind?: string; periodStart?: string;
+      periodEnd?: string; billedMinor?: string; currencyCode?: string; linesRaw?: string; invalid?: string; error?: string;
+    }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/logistics/freight/new');
   const t = getTranslator();
   const lang = getLang();

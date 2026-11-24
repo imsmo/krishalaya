@@ -37,7 +37,7 @@ import { C, reset, IDS, FARMER_UUID } from './store4b-fixtures';
 import { store4bRefusalKeys } from '../features/store4b/refusals';
 import { store4RefusalKeys } from '../features/store4/refusals';
 
-const page = async (sp: Record<string, string> = {}, id: string = IDS.order) => renderToStaticMarkup(await ThreadPage({ params: { tenantSlug: 'anand-fpo', id }, searchParams: sp }));
+const page = async (sp: Record<string, string> = {}, id: string = IDS.order) => renderToStaticMarkup(await ThreadPage({ params: Promise.resolve({ tenantSlug: 'anand-fpo', id }), searchParams: Promise.resolve(sp) }));
 const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 const form = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 const redirectOf = async (p: Promise<unknown>) => { try { await p; return 'no redirect'; } catch (e) { return String((e as Error).message); } };
@@ -168,6 +168,6 @@ describe('STORE-4b · W298 the refusals, the flag, the door', () => {
     expect(e).toContain('data-kv-state="error"'); expect(e).toContain('data-kv-retry="reload"');
   });
   it('the platform /messages/[id] → /<slug>/messages/[id] (the id carried)', async () => {
-    await expect(PlatformThreadDoor({ params: { id: IDS.order }, searchParams: {} })).rejects.toThrow(`REDIRECT /anand-fpo/messages/${IDS.order}`);
+    await expect(PlatformThreadDoor({ params: Promise.resolve({ id: IDS.order }), searchParams: Promise.resolve({}) })).rejects.toThrow(`REDIRECT /anand-fpo/messages/${IDS.order}`);
   });
 });

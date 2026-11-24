@@ -34,7 +34,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('kyc.doc.title'), robots: { index: false, follow: false } };
 }
 
-export default async function KycDocumentPage({ params, searchParams = {} }: { params: { id: string }; searchParams?: Record<string, string | undefined> }) {
+export default async function KycDocumentPage(
+  props: { params: Promise<{ id: string }>; searchParams?: Promise<Record<string, string | undefined>> }
+) {
+  const searchParams = (await props.searchParams) ?? {};
+  const params = await props.params;
   await requireSession(docHref(params.id));
   const t = getTranslator();
   const lang = getLang();

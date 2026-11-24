@@ -12,6 +12,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('store5b.verify.title'), robots: { index: false } };
 }
 
-export default async function Page({ params, searchParams = {} }: { params: { qrToken: string }; searchParams?: SP }) {
+export default async function Page(
+  props: { params: Promise<{ qrToken: string }>; searchParams?: Promise<SP> }
+) {
+  const searchParams = (await props.searchParams) ?? {};
+  const params = await props.params;
   return TraceVerifyScreen({ chrome: PLATFORM_CHROME, qrToken: params.qrToken, searchParams });
 }

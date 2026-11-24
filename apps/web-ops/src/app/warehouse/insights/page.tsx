@@ -13,7 +13,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('ops2.insights.title'), robots: { index: false, follow: false } };
 }
 
-export default async function WarehouseInsightsPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function WarehouseInsightsPage(
+  props: { searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/warehouse/insights');
   const t = getTranslator();
   const exp = chain2State('wh_export', searchParams);

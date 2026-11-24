@@ -32,7 +32,8 @@ export function generateMetadata(): Metadata {
 
 const OK = new Set(['mcc', 'mcc.on', 'mcc.off', 'member', 'ratecard', 'ratecard.approved', 'collection', 'bill', 'bill.previewed', 'bill.approved', 'bill.paid']);
 
-export default async function DairyOperatorConsolePage({ searchParams }: { searchParams: { ok?: string; error?: string } }) {
+export default async function DairyOperatorConsolePage(props: { searchParams: Promise<{ ok?: string; error?: string }> }) {
+  const searchParams = await props.searchParams;
   if (!env.featureDairy) notFound();
   await requireSession('/dairy');
   const t = getTranslator();

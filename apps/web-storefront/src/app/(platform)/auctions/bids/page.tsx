@@ -17,7 +17,8 @@ export function generateMetadata(): Metadata {
   return { title: t.t('store3c.bids.title'), robots: { index: false, follow: false } };
 }
 
-export default async function PlatformMyBidsDoor({ searchParams }: { searchParams: SP }) {
+export default async function PlatformMyBidsDoor(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   await requireSession(`/auctions/bids${carryQuery(searchParams, ['cursor'])}`);
   const slug = await sessionStoreSlug();
   if (slug) redirect(`/${encodeURIComponent(slug)}/auctions/bids${carryQuery(searchParams, ['cursor'])}`);

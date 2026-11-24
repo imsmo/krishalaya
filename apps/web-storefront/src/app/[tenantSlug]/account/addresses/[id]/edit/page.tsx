@@ -14,7 +14,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('store4a.form.editTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function Page({ params, searchParams }: { params: { tenantSlug: string; id: string }; searchParams: SP }) {
+export default async function Page(
+  props: { params: Promise<{ tenantSlug: string; id: string }>; searchParams: Promise<SP> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   if (!UUID.test(params.id)) notFound();
   return AddressFormScreen({ chrome: tenantChrome(params.tenantSlug), id: params.id, searchParams });
 }

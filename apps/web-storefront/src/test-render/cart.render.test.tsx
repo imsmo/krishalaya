@@ -27,7 +27,7 @@ import { store2bRefusalKeys } from '../features/store2/refusals';
 import { renderResolved, text } from './store1b-harness';
 import { W, reset, LINE, DRIFT, REASON, ID, T_OTHER } from './store2b-fixtures';
 
-const cart = async (searchParams: Record<string, string> = {}) => renderResolved(await TenantCart({ params: { tenantSlug: 'anand-fpo' }, searchParams }), []);
+const cart = async (searchParams: Record<string, string> = {}) => renderResolved(await TenantCart({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve(searchParams) }), []);
 const fill = (s: string, v: Record<string, string>) => s.replace(/\{(\w+)\}/g, (_m, k) => v[k] ?? `{${k}}`);
 beforeEach(reset);
 

@@ -18,7 +18,9 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('messages.threadTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function PlatformThreadDoor({ params, searchParams }: { params: { id: string }; searchParams: SP }) {
+export default async function PlatformThreadDoor(props: { params: Promise<{ id: string }>; searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const id = UUID.test(params.id) ? params.id : null;
   const here = id ? `/messages/${encodeURIComponent(id)}` : '/messages';
   await requireSession(`${here}${carryQuery(searchParams, KEEP)}`);

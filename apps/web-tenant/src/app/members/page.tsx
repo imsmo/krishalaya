@@ -23,7 +23,10 @@ export function generateMetadata(): Metadata {
 const OK = new Set(['tier', 'activated', 'deactivated', 'cancelled']);
 const ERR = new Set(['code', 'name', 'fee', 'tier', 'dup', 'cancel', 'illegal']);
 
-export default async function MembersPage({ searchParams }: { searchParams: { status?: string; cursor?: string; ok?: string; error?: string } }) {
+export default async function MembersPage(
+  props: { searchParams: Promise<{ status?: string; cursor?: string; ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/members');
   const t = getTranslator();
   const lang = getLang();

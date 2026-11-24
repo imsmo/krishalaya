@@ -34,7 +34,8 @@ interface Board {
 }
 interface Account { userId: string; tenantId: string | null; score: number | null; band: string | null; reading: BandReading; computedAt: string | null; name: string | null; phone: string | null }
 
-export default async function RiskOpsPage({ searchParams }: { searchParams: { band?: string; cursor?: string } }) {
+export default async function RiskOpsPage(props: { searchParams: Promise<{ band?: string; cursor?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const band = searchParams.band && (RISK_BANDS as readonly string[]).includes(searchParams.band) ? searchParams.band : undefined;

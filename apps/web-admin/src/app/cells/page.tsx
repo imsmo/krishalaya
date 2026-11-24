@@ -25,7 +25,10 @@ const ERR = new Set(['code', 'country', 'name', 'notes', 'reason', 'capacity', '
 // scope for this page-only sweep, so the remap lives here at the call site instead.
 const NODE_TONE: Record<string, StatusTone> = { ok: 'success', warn: 'warning', danger: 'danger', muted: 'neutral' };
 
-export default async function CellsPage({ searchParams }: { searchParams: { cursor?: string; countryCode?: string; status?: string; ok?: string; error?: string } }) {
+export default async function CellsPage(
+  props: { searchParams: Promise<{ cursor?: string; countryCode?: string; status?: string; ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const status = isNodeStatus(searchParams.status ?? '') ? searchParams.status : undefined;

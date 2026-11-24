@@ -29,9 +29,12 @@ interface Meta {
   txnTypes: { code: string; name: string }[];
 }
 
-export default async function LedgerExplorerPage({ searchParams }: {
-  searchParams: { from?: string; to?: string; txnType?: string; tenantId?: string; accountCode?: string; cursor?: string };
-}) {
+export default async function LedgerExplorerPage(
+  props: {
+    searchParams: Promise<{ from?: string; to?: string; txnType?: string; tenantId?: string; accountCode?: string; cursor?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const f = {

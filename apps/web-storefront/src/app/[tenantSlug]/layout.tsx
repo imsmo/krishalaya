@@ -42,7 +42,7 @@
 // monogram) and THIS organisation's `storefront_install_prompt` (the public flags read — fail closed: unreadable → OFF). Not in the offline
 // shell (no flags are read there).
 import type { Metadata, Viewport } from 'next';
-import { headers } from 'next/headers';
+import { headers, type UnsafeUnwrappedHeaders } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { PLATFORM_BRAND_COLOURS } from '@krishalaya/tokens';
 import { env } from '../../lib/env';
@@ -71,11 +71,12 @@ import { KillSwitchRibbon } from '../../components/sweep/KillSwitchRibbon';   //
 import { BoundaryProvider } from '../../components/sweep/BoundaryContext';   // PC-56 STORE-SWEEP-b · D4
 
 /** Is this request host-routed to THIS organisation (its own domain — the middleware named it)? */
-const hostRouted = (slug: string) => headers().get(TENANT_SLUG_HEADER) === slug;
-const cacheable = () => headers().get(CACHEABLE_HEADER) === 'public';
-const shellMode = () => headers().get(SHELL_HEADER) === 'offline';
+const hostRouted = (slug: string) => (headers() as unknown as UnsafeUnwrappedHeaders).get(TENANT_SLUG_HEADER) === slug;
+const cacheable = () => (headers() as unknown as UnsafeUnwrappedHeaders).get(CACHEABLE_HEADER) === 'public';
+const shellMode = () => (headers() as unknown as UnsafeUnwrappedHeaders).get(SHELL_HEADER) === 'offline';
 
-export async function generateMetadata({ params }: { params: { tenantSlug: string } }): Promise<Metadata> {
+export async function generateMetadata(props: { params: Promise<{ tenantSlug: string }> }): Promise<Metadata> {
+  const params = await props.params;
   const shell = await loadTenantShell(params.tenantSlug);
   const b = shell.kind === 'ok' ? shell.branding : null;
   const name = (b?.brand?.displayName || b?.displayName || (shell.kind === 'ok' ? shell.tenant.displayName : '') || params.tenantSlug).trim();
@@ -93,13 +94,22 @@ export async function generateMetadata({ params }: { params: { tenantSlug: strin
   };
 }
 
-export async function generateViewport({ params }: { params: { tenantSlug: string } }): Promise<Viewport> {
+export async function generateViewport(props: { params: Promise<{ tenantSlug: string }> }): Promise<Viewport> {
+  const params = await props.params;
   const shell = await loadTenantShell(params.tenantSlug);
   const b = shell.kind === 'ok' ? shell.branding : null;
   return { themeColor: brandColours(b?.brand)?.primary ?? PLATFORM_BRAND_COLOURS.primary };   // STORE-6a (survey F-16): the token, not a literal
 }
 
-export default async function TenantLayout({ children, params }: { children: React.ReactNode; params: { tenantSlug: string } }) {
+export default async function TenantLayout(
+  props: { children: React.ReactNode; params: Promise<{ tenantSlug: string }> }
+) {
+  const params = await props.params;
+
+  const {
+    children
+  } = props;
+
   const shell = await loadTenantShell(params.tenantSlug);
   if (shell.kind === 'not_found') notFound();
   const t = getTranslator();

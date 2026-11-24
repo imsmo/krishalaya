@@ -22,7 +22,8 @@ export function generateMetadata(): Metadata { return { title: getTranslator().t
 type SP = Record<string, string | string[] | undefined>;
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
-export default async function AlertRulesPage({ searchParams }: { searchParams?: SP }) {
+export default async function AlertRulesPage(props: { searchParams?: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   await requireSession(ALERTS.rules);
   const t = getTranslator();
   const act = chain5State('alert_act', searchParams);

@@ -29,9 +29,12 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('stl.statementsTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function StatementsPage({ searchParams }: {
-  searchParams: { cursor?: string; cycleId?: string; ok?: string; error?: string; rows?: string; period?: string };
-}) {
+export default async function StatementsPage(
+  props: {
+    searchParams: Promise<{ cursor?: string; cycleId?: string; ok?: string; error?: string; rows?: string; period?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/settlements/statements');
   const t = getTranslator();
   const lang = getLang();

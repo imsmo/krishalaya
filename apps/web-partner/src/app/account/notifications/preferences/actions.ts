@@ -16,7 +16,7 @@ export async function chooseLanguageAction(formData: FormData): Promise<void> {
   const lang = pickLanguage(raw);
   if (!lang) redirect(languageHref('error'));
   let ok = true;
-  try { cookies().set(LANG_COOKIE, lang.code, languageCookie()); } catch { ok = false; }
+  try { (await cookies()).set(LANG_COOKIE, lang.code, languageCookie()); } catch { ok = false; }
   redirect(languageHref(ok ? 'success' : 'failure'));
 }
 
@@ -29,6 +29,6 @@ export async function choosePreviewLanguageAction(formData: FormData): Promise<v
   const preview = pickPreviewLanguage(raw);
   if (!preview) redirect(languageHref('error'));
   let ok = true;
-  try { cookies().set(LANG_COOKIE, preview.code, languageCookie()); } catch { ok = false; }
+  try { (await cookies()).set(LANG_COOKIE, preview.code, languageCookie()); } catch { ok = false; }
   redirect(languageHref(ok ? 'success' : 'failure'));
 }

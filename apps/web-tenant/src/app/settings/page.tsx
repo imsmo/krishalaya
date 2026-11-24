@@ -23,7 +23,8 @@ export function generateMetadata(): Metadata {
 
 const OK = new Set(['commission', 'commission.off', 'zone', 'zone.on', 'zone.off', 'branding', 'languages']);
 
-export default async function SettingsPage({ searchParams }: { searchParams: { ok?: string; error?: string } }) {
+export default async function SettingsPage(props: { searchParams: Promise<{ ok?: string; error?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession('/settings');
   const t = getTranslator();
   const lang = getLang();

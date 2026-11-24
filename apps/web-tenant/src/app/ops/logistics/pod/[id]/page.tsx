@@ -20,7 +20,8 @@ import { asOfLabels } from '../../../../../features/swf/console';
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swa.pod.detailTitle'), robots: { index: false, follow: false } }; }
 
-export default async function PodDetailPage({ params }: { params: { id: string } }) {
+export default async function PodDetailPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const href = `${POD_HREF}/${params.id}`;
   await requireSession(href);
   const t = getTranslator(); const lang = getLang();

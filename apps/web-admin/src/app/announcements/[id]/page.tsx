@@ -26,7 +26,11 @@ const SEV_TONE: Record<string, StatusTone> = { info: 'neutral', warning: 'warnin
 const OK = new Set(['created', 'updated', 'scheduled', 'published', 'expired', 'archived']);
 const ERR = new Set(['title', 'body', 'severity', 'placement', 'plans', 'countries', 'startsAt', 'endsAt', 'window', 'reason', 'elevation', 'conflict', 'invalid', 'notFound', 'generic']);
 
-export default async function AnnouncementDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function AnnouncementDetailPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
 

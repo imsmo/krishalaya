@@ -27,7 +27,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('swc.team.title'), robots: { index: false, follow: false } };
 }
 
-export default async function TeamPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function TeamPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   await requireSession(TEAM_HREF);
   const t = getTranslator(); const lang = getLang();
   const n = (x: number) => formatNumber(x, lang);

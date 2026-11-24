@@ -29,9 +29,12 @@ export function generateMetadata(): Metadata {
 const OK = new Set(['upgraded', 'scheduled', 'replayed', 'cancelled']);
 const ERR = new Set(['generic', 'forbidden', 'notFound', 'conflict', 'invalid', 'unavailable', 'taxUnavailable']);
 
-export default async function UpgradePage({ searchParams }: {
-  searchParams: { planId?: string; ok?: string; error?: string };
-}) {
+export default async function UpgradePage(
+  props: {
+    searchParams: Promise<{ planId?: string; ok?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/billing/upgrade');
   const t = getTranslator();
   const lang = getLang();

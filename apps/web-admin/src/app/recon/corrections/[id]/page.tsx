@@ -45,7 +45,11 @@ interface Draft {
 const OK = new Set(['submitted', 'posted', 'rejected', 'withdrawn', 'legsSaved']);
 const ERR = new Set(['unbalanced', 'tooFewLegs', 'noReason', 'notDrafting', 'yourOwn', 'founder', 'postFailed', 'elevation', 'conflict', 'invalid', 'notFound', 'generic']);
 
-export default async function CorrectionPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function CorrectionPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
   const viewer = adminUserId();

@@ -22,7 +22,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('texp.title'), robots: { index: false, follow: false } };
 }
 
-export default async function TaxonomyExportsPage({ searchParams }: { searchParams: { error?: string } }) {
+export default async function TaxonomyExportsPage(props: { searchParams: Promise<{ error?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

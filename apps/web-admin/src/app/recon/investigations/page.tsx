@@ -18,7 +18,10 @@ export function generateMetadata(): Metadata {
 
 const SEV_TONE: Record<string, StatusTone> = { low: 'neutral', medium: 'neutral', high: 'warning', critical: 'danger' };
 
-export default async function InvestigationsPage({ searchParams }: { searchParams: { cursor?: string; status?: string; ok?: string } }) {
+export default async function InvestigationsPage(
+  props: { searchParams: Promise<{ cursor?: string; status?: string; ok?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const status = (INVESTIGATION_STATUSES as readonly string[]).includes(searchParams.status ?? '') ? searchParams.status : undefined;

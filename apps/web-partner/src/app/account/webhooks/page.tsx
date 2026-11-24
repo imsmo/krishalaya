@@ -25,7 +25,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('partner1.hooks.title'), robots: { index: false, follow: false } };
 }
 
-export default async function WebhooksPage({ searchParams }: { searchParams?: SP }) {
+export default async function WebhooksPage(props: { searchParams?: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   await requirePartner();
   const t = getTranslator(); const lang = getLang();
   const form = chainState('hooks_form', searchParams);

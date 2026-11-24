@@ -35,7 +35,8 @@ const OK = new Set(['proposed', 'approved', 'rejected', 'applied']);
 const ERR = new Set(['note', 'noteShort', 'effective', 'effectivePast', 'effectiveBefore', 'config', 'method',
   'duplicate', 'decided', 'checkerIsMaker', 'noOverride', 'forbidden', 'notFound', 'generic']);
 
-export default async function ChargesPage({ searchParams }: { searchParams: { ok?: string; error?: string } }) {
+export default async function ChargesPage(props: { searchParams: Promise<{ ok?: string; error?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession('/charges');
   const t = getTranslator();
   const lang = getLang();

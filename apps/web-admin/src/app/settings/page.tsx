@@ -33,9 +33,12 @@ const show = (v: unknown) => (typeof v === 'object' && v !== null ? JSON.stringi
 
 const GROUPS = ['order.', 'listing.', 'payments.', 'security.', 'notification.'] as const;
 
-export default async function SettingsPage({ searchParams }: {
-  searchParams: { prefix?: string; riskClass?: string; cursor?: string; ok?: string; error?: string };
-}) {
+export default async function SettingsPage(
+  props: {
+    searchParams: Promise<{ prefix?: string; riskClass?: string; cursor?: string; ok?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const prefix = (searchParams.prefix ?? '').trim() || undefined;

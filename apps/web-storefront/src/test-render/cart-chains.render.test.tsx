@@ -28,7 +28,7 @@ import { en } from '../i18n/en';
 import { renderResolved, text } from './store1b-harness';
 import { W, reset, LINE, DRIFT, REASON, ID } from './store2b-fixtures';
 
-const cart = async (searchParams: Record<string, string> = {}) => renderResolved(await TenantCart({ params: { tenantSlug: 'anand-fpo' }, searchParams }), []);
+const cart = async (searchParams: Record<string, string> = {}) => renderResolved(await TenantCart({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve(searchParams) }), []);
 const form = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 const redirectOf = async (p: Promise<void>) => p.then(() => 'no redirect', (e: Error) => e.message.replace(/^REDIRECT /, ''));
 const q = (href: string) => Object.fromEntries(new URL(`https://x${href}`).searchParams);

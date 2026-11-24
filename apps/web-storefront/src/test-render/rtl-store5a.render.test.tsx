@@ -37,17 +37,17 @@ const hold = (mode: 'submit' | 'edit', key: string) => encodeReviewDraft({ v: 1,
 beforeEach(() => { reset(); });
 
 const STATES: Array<[string, () => Promise<React.ReactNode>]> = [
-  ['W290 the form', () => ReviewPage({ params: P, searchParams: {} })],
-  ['W290 a form error', async () => { hold('submit', KEY); return ReviewPage({ params: P, searchParams: { error: 'stars', k: KEY } }); }],
-  ['W290 off', async () => { C.flags = { ...C.flags, reviews: false }; return ReviewPage({ params: P, searchParams: {} }); }],
-  ['W290 window closed', async () => { C.elig = { ...C.elig, windowOpen: false }; return ReviewPage({ params: P, searchParams: {} }); }],
-  ['W290 already reviewed', async () => { C.elig = { ...C.elig, reviewed: true }; C.mine = MINE(); return ReviewPage({ params: P, searchParams: {} }); }],
-  ['W3145 the confirm', async () => { hold('submit', KEY); return ReviewPage({ params: P, searchParams: { step: 'confirm', k: KEY } }); }],
-  ['W3147 a named failure', async () => { hold('submit', KEY); return ReviewPage({ params: P, searchParams: { step: 'confirm', k: KEY, failure: 'window_closed' } }); }],
-  ['W3141 the edit form', async () => { C.mine = MINE(); return ReviewEditPage({ params: P, searchParams: {} }); }],
-  ['W3142 the edit review', async () => { C.mine = MINE(); hold('edit', EKEY); return ReviewEditPage({ params: P, searchParams: { step: 'review', k: EKEY } }); }],
-  ['W324 the modes', async () => TenantA11yPage({ params: { tenantSlug: SLUG }, searchParams: {} })],
-  ['W3076 the failure', async () => TenantA11yPage({ params: { tenantSlug: SLUG }, searchParams: { a11y: 'err', want: 'contrast:on' } })],
+  ['W290 the form', () => ReviewPage({ params: Promise.resolve(P), searchParams: Promise.resolve({}) })],
+  ['W290 a form error', async () => { hold('submit', KEY); return ReviewPage({ params: Promise.resolve(P), searchParams: Promise.resolve({ error: 'stars', k: KEY }) }); }],
+  ['W290 off', async () => { C.flags = { ...C.flags, reviews: false }; return ReviewPage({ params: Promise.resolve(P), searchParams: Promise.resolve({}) }); }],
+  ['W290 window closed', async () => { C.elig = { ...C.elig, windowOpen: false }; return ReviewPage({ params: Promise.resolve(P), searchParams: Promise.resolve({}) }); }],
+  ['W290 already reviewed', async () => { C.elig = { ...C.elig, reviewed: true }; C.mine = MINE(); return ReviewPage({ params: Promise.resolve(P), searchParams: Promise.resolve({}) }); }],
+  ['W3145 the confirm', async () => { hold('submit', KEY); return ReviewPage({ params: Promise.resolve(P), searchParams: Promise.resolve({ step: 'confirm', k: KEY }) }); }],
+  ['W3147 a named failure', async () => { hold('submit', KEY); return ReviewPage({ params: Promise.resolve(P), searchParams: Promise.resolve({ step: 'confirm', k: KEY, failure: 'window_closed' }) }); }],
+  ['W3141 the edit form', async () => { C.mine = MINE(); return ReviewEditPage({ params: Promise.resolve(P), searchParams: Promise.resolve({}) }); }],
+  ['W3142 the edit review', async () => { C.mine = MINE(); hold('edit', EKEY); return ReviewEditPage({ params: Promise.resolve(P), searchParams: Promise.resolve({ step: 'review', k: EKEY }) }); }],
+  ['W324 the modes', async () => TenantA11yPage({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve({}) })],
+  ['W3076 the failure', async () => TenantA11yPage({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve({ a11y: 'err', want: 'contrast:on' }) })],
 ];
 
 describe('STORE-5a · rtl', () => {

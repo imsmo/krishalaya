@@ -21,7 +21,8 @@ export function generateMetadata(): Metadata {
   return { title: t.t('auctions.title'), robots: { index: false, follow: true } };
 }
 
-export default async function PlatformAuctionsDoor({ searchParams }: { searchParams: SP }) {
+export default async function PlatformAuctionsDoor(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   const t = getTranslator();
   if (await resolveSessionToken()) {
     const slug = await sessionStoreSlug();

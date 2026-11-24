@@ -29,7 +29,8 @@ interface Thread {
   userId: string; name: string | null; phone: string | null; languageCode: string | null; tickets: Ticket[];
 }
 
-export default async function HubPrincipalPage({ params }: { params: { userId: string } }) {
+export default async function HubPrincipalPage(props: { params: Promise<{ userId: string }> }) {
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
 

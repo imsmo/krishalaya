@@ -21,7 +21,10 @@ export function generateMetadata(): Metadata {
 
 const ERR = new Set(['code', 'defaultName', 'reason', 'elevation', 'conflict', 'invalid', 'generic']);
 
-export default async function CatalogueTypesPage({ searchParams }: { searchParams: { cursor?: string; ok?: string; error?: string } }) {
+export default async function CatalogueTypesPage(
+  props: { searchParams: Promise<{ cursor?: string; ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

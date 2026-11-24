@@ -13,7 +13,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('ops2.weighbridge.title'), robots: { index: false, follow: false } };
 }
 
-export default async function WeighbridgePage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function WeighbridgePage(
+  props: { searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/warehouse/weighbridge');
   const t = getTranslator();
   const exp = chain2State('weighbridge_export', searchParams);

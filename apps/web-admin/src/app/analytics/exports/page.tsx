@@ -36,7 +36,8 @@ interface Receipt {
 }
 interface Meta { digestMismatches: number; fetchLogging: string }
 
-export default async function ExportsPage({ searchParams }: { searchParams: { ok?: string; error?: string } }) {
+export default async function ExportsPage(props: { searchParams: Promise<{ ok?: string; error?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

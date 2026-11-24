@@ -40,21 +40,21 @@ const quiet = async (p: Promise<unknown>) => { try { await p; } catch { /* the a
 beforeEach(() => { reset(); });
 
 const STATES: Array<[string, () => Promise<React.ReactNode>]> = [
-  ['W300 the account', () => AccountPage({ params: P, searchParams: {} })],
-  ['W301 the book', () => BookPage({ params: P, searchParams: {} })],
-  ['W3038 a remove confirm', () => BookPage({ params: P, searchParams: { confirm: 'remove', id: ADDR.farm } })],
-  ['W3040 a named failure', () => BookPage({ params: P, searchParams: { confirm: 'default', id: ADDR.shop, k: KEY, failure: 'server' } })],
-  ['W301 empty', async () => { C.addresses = []; return BookPage({ params: P, searchParams: {} }); }],
-  ['W3034 the form with refusals', async () => { await quiet(reviewAddressAction(form({ chrome: 'anand-fpo', key: KEY, line1: 'a', pincode: '1' }))); return NewAddress({ params: P, searchParams: { k: KEY, error: 'form' } }); }],
+  ['W300 the account', () => AccountPage({ params: Promise.resolve(P), searchParams: Promise.resolve({}) })],
+  ['W301 the book', () => BookPage({ params: Promise.resolve(P), searchParams: Promise.resolve({}) })],
+  ['W3038 a remove confirm', () => BookPage({ params: Promise.resolve(P), searchParams: Promise.resolve({ confirm: 'remove', id: ADDR.farm }) })],
+  ['W3040 a named failure', () => BookPage({ params: Promise.resolve(P), searchParams: Promise.resolve({ confirm: 'default', id: ADDR.shop, k: KEY, failure: 'server' }) })],
+  ['W301 empty', async () => { C.addresses = []; return BookPage({ params: Promise.resolve(P), searchParams: Promise.resolve({}) }); }],
+  ['W3034 the form with refusals', async () => { await quiet(reviewAddressAction(form({ chrome: 'anand-fpo', key: KEY, line1: 'a', pincode: '1' }))); return NewAddress({ params: Promise.resolve(P), searchParams: Promise.resolve({ k: KEY, error: 'form' }) }); }],
   ['W3035 the edit review diff', async () => {
     await quiet(reviewAddressAction(form({ chrome: 'anand-fpo', id: ADDR.farm, key: KEY, line1: 'Plot 14, GIDC Vadal', village: 'Vadal', pincode: '362001', countryCode: 'IN', contactName: 'Nilesh', labelId: LABEL.home, deliveryNote: 'x' })));
-    return EditAddress({ params: { ...P, id: ADDR.farm }, searchParams: { k: KEY, step: 'review' } });
+    return EditAddress({ params: Promise.resolve({ ...P, id: ADDR.farm }), searchParams: Promise.resolve({ k: KEY, step: 'review' }) });
   }],
-  ['W3029 queued', async () => { C.requests = [exportRequest('queued')]; return DataPage({ params: P, searchParams: {} }); }],
-  ['W3030 ready', async () => { C.requests = [exportRequest('ready')]; return DataPage({ params: P, searchParams: {} }); }],
-  ['W3030 failed', async () => { C.requests = [exportRequest('failed')]; return DataPage({ params: P, searchParams: {} }); }],
-  ['deletion blocked', () => DeletePage({ params: P, searchParams: {} })],
-  ['deletion allowed', async () => { C.commitments = { ...C.commitments, walletMinor: '0', blocked: false }; return DeletePage({ params: P, searchParams: {} }); }],
+  ['W3029 queued', async () => { C.requests = [exportRequest('queued')]; return DataPage({ params: Promise.resolve(P), searchParams: Promise.resolve({}) }); }],
+  ['W3030 ready', async () => { C.requests = [exportRequest('ready')]; return DataPage({ params: Promise.resolve(P), searchParams: Promise.resolve({}) }); }],
+  ['W3030 failed', async () => { C.requests = [exportRequest('failed')]; return DataPage({ params: Promise.resolve(P), searchParams: Promise.resolve({}) }); }],
+  ['deletion blocked', () => DeletePage({ params: Promise.resolve(P), searchParams: Promise.resolve({}) })],
+  ['deletion allowed', async () => { C.commitments = { ...C.commitments, walletMinor: '0', blocked: false }; return DeletePage({ params: Promise.resolve(P), searchParams: Promise.resolve({}) }); }],
 ];
 
 describe('STORE-4a · rtl', () => {

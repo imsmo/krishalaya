@@ -38,10 +38,14 @@ interface CaseDetail {
   crossChecks: { available: boolean; reason: string };
 }
 
-export default async function ReviewCasePage({ params, searchParams }: {
-  params: { id: string };
-  searchParams: { ok?: string; error?: string };
-}) {
+export default async function ReviewCasePage(
+  props: {
+    params: Promise<{ id: string }>;
+    searchParams: Promise<{ ok?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
 

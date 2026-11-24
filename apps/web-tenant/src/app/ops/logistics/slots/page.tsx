@@ -21,7 +21,8 @@ import { asOfLabels } from '../../../../features/swf/console';
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.slots.title'), robots: { index: false, follow: false } }; }
 
-export default async function SlotsPage({ searchParams }: { searchParams: { cursor?: string; seller?: string } }) {
+export default async function SlotsPage(props: { searchParams: Promise<{ cursor?: string; seller?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession(SLOTS_HREF);
   const t = getTranslator(); const lang = getLang();
   const canManage = tenantHasPerm('logistics.manage');

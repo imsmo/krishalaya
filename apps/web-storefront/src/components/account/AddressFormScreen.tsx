@@ -51,7 +51,7 @@ export async function AddressFormScreen({ chrome, id, searchParams }: { chrome: 
     }
     if (!/^[A-Z]{2}$/.test(defaultCountry)) defaultCountry = '';
   }
-  const draft = decodeAddressDraft(cookies().get(ADDRESS_DRAFT_COOKIE)?.value, mode, id);
+  const draft = decodeAddressDraft((await cookies()).get(ADDRESS_DRAFT_COOKIE)?.value, mode, id);
   const current = currentRow ? valuesOfAddress(currentRow) : null;
   // an edit never pre-fills the receiver's phone (PII — printed masked as a hint; blank keeps it)
   const values: AccountAddressValues = draft?.values ?? (current ? { ...current, contactPhone: '' } : null) ?? { labelId: '', line1: '', line2: '', village: '', pincode: '', countryCode: defaultCountry, contactName: '', contactPhone: '', deliveryNote: '' };

@@ -45,9 +45,12 @@ interface Meta {
 const STATUSES = ['pending', 'in_review', 'accepted', 'rejected'] as const;
 const KINDS = ['fraud_flag', 'low_confidence_grade', 'price_anomaly', 'dispute_triage', 'drift'] as const;
 
-export default async function ReviewQueuePage({ searchParams }: {
-  searchParams: { status?: string; queueKind?: string; cursor?: string; ok?: string; error?: string };
-}) {
+export default async function ReviewQueuePage(
+  props: {
+    searchParams: Promise<{ status?: string; queueKind?: string; cursor?: string; ok?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const status = (STATUSES as readonly string[]).includes(searchParams.status ?? '') ? searchParams.status : undefined;

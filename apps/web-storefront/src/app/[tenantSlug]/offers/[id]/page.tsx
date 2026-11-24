@@ -52,7 +52,11 @@ export function generateMetadata(): Metadata {
   return { title: t.t('offers.detailTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function TenantOfferThread({ params, searchParams }: { params: { tenantSlug: string; id: string }; searchParams: SP }) {
+export default async function TenantOfferThread(
+  props: { params: Promise<{ tenantSlug: string; id: string }>; searchParams: Promise<SP> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const slug = params.tenantSlug;
   const self = offerHref(slug, params.id);
   await requireSession(self);

@@ -63,7 +63,10 @@ const ARROW: Record<'up' | 'down' | 'flat' | 'none', string> = {
   up: 'dairy.insights.change.up', down: 'dairy.insights.change.down', flat: 'dairy.insights.change.flat', none: '',
 };
 
-export default async function DairyInsightsPage({ searchParams }: { searchParams: { window?: string; exportError?: string } }) {
+export default async function DairyInsightsPage(
+  props: { searchParams: Promise<{ window?: string; exportError?: string }> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/dairy/insights');
   const t = getTranslator();
   const lang = getLang();

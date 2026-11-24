@@ -17,7 +17,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('os.history.title'), robots: { index: false, follow: false } };
 }
 
-export default async function SettingHistoryPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function SettingHistoryPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   await requireSession(HISTORY_HREF);
   const t = getTranslator();
   const lang = getLang();

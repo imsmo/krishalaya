@@ -40,7 +40,8 @@ interface Trail {
   retention: { immutable: boolean; immutableBasis: string; yearsEnforced: boolean; yearsBasis: string };
 }
 
-export default async function AuditEntityPage({ searchParams }: { searchParams: { ref?: string } }) {
+export default async function AuditEntityPage(props: { searchParams: Promise<{ ref?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const ref = searchParams.ref?.trim();

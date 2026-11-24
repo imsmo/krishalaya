@@ -40,12 +40,12 @@ const rtl = async (node: React.ReactNode) => renderToStaticMarkup(<div dir="rtl"
 
 describe('STORE-1c pages under dir="rtl"', () => {
   const cases: Array<[string, () => Promise<React.ReactNode>]> = [
-    ['W307 form-error (W2466)', async () => ForOrganisationsPage({ searchParams: { step: 'form', e: 'org_short.phone_digits', need: '10', have: '9', dial: '91' } })],
-    ['W307 code', async () => ForOrganisationsPage({ searchParams: { step: 'code', err: 'code_wrong', left: '2' } })],
-    ['W307 review (W2467)', async () => ForOrganisationsPage({ searchParams: { step: 'review' } })],
-    ['W307 done (W2468)', async () => ForOrganisationsPage({ searchParams: { step: 'done' } })],
-    ['W307 failure (W2469) + Retry', async () => ForOrganisationsPage({ searchParams: { step: 'failure', err: 'unavailable' } })],
-    ['/pricing', async () => PricingPage({ searchParams: {} })],
+    ['W307 form-error (W2466)', async () => ForOrganisationsPage({ searchParams: Promise.resolve({ step: 'form', e: 'org_short.phone_digits', need: '10', have: '9', dial: '91' }) })],
+    ['W307 code', async () => ForOrganisationsPage({ searchParams: Promise.resolve({ step: 'code', err: 'code_wrong', left: '2' }) })],
+    ['W307 review (W2467)', async () => ForOrganisationsPage({ searchParams: Promise.resolve({ step: 'review' }) })],
+    ['W307 done (W2468)', async () => ForOrganisationsPage({ searchParams: Promise.resolve({ step: 'done' }) })],
+    ['W307 failure (W2469) + Retry', async () => ForOrganisationsPage({ searchParams: Promise.resolve({ step: 'failure', err: 'unavailable' }) })],
+    ['/pricing', async () => PricingPage({ searchParams: Promise.resolve({}) })],
   ];
   it.each(cases)('%s', async (_n, build) => {
     mock.pending = P;
@@ -60,7 +60,7 @@ describe('STORE-1c pages under dir="rtl"', () => {
 
   it('W307 flagged off under dir="rtl"', async () => {
     mock.flags = { org_self_signup: false };
-    const html = await rtl(await ForOrganisationsPage({ searchParams: {} }));
+    const html = await rtl(await ForOrganisationsPage({ searchParams: Promise.resolve({}) }));
     expect(html).toContain('data-kv-state="flagged-off"');
     expect(physical(html)).toEqual([]);
     expect(bareArrows(html)).toBe(0);

@@ -32,7 +32,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('auc.settle.title'), robots: { index: false, follow: false } };
 }
 
-export default async function AuctionSettlePage({ params }: { params: { id: string } }) {
+export default async function AuctionSettlePage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const base = `${AUCTIONS_HREF}/${encodeURIComponent(params.id)}/settle`;
   await requireSession(base);
   const t = getTranslator();

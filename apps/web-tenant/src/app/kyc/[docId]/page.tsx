@@ -5,6 +5,7 @@ import { docHref } from '../../../features/kyc/desk';
 
 export const dynamic = 'force-dynamic';
 
-export default function KycDocumentMoved({ params }: { params: { docId: string } }) {
+export default async function KycDocumentMoved(props: { params: Promise<{ docId: string }> }) {
+  const params = await props.params;
   redirect(docHref(params.docId));
 }

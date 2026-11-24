@@ -66,7 +66,11 @@ export function generateMetadata(): Metadata {
   return { title: t.t('order.detailTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function TenantOrderPage({ params, searchParams }: { params: { tenantSlug: string; id: string }; searchParams: SP }) {
+export default async function TenantOrderPage(
+  props: { params: Promise<{ tenantSlug: string; id: string }>; searchParams: Promise<SP> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const slug = params.tenantSlug;
   await requireSession(orderHref(slug, params.id));
   const t = getTranslator();

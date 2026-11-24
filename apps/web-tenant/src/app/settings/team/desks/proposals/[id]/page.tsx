@@ -20,7 +20,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('dk.proposal.title'), robots: { index: false, follow: false } };
 }
 
-export default async function DeskProposalPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | undefined> }) {
+export default async function DeskProposalPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   await requireSession(DESKS_HREF);
   const t = getTranslator();
   const lang = getLang();

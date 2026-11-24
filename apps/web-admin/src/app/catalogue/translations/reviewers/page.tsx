@@ -26,8 +26,9 @@ export function generateMetadata(): Metadata {
 interface ReviewersView { items: ReviewerRow[]; languages: LanguageRow[]; note: string }
 
 export default async function ReviewersPage(
-  { searchParams }: { searchParams: { ok?: string; error?: string; why?: string } },
+  props: { searchParams: Promise<{ ok?: string; error?: string; why?: string }> }
 ) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

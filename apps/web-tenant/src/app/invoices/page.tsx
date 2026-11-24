@@ -29,7 +29,10 @@ export function generateMetadata(): Metadata {
 
 const ERR = new Set(['period', 'periodOpen', 'tooLarge', 'forbidden', 'generic']);
 
-export default async function InvoicesPage({ searchParams }: { searchParams: { period?: string; cursor?: string; ok?: string; error?: string } }) {
+export default async function InvoicesPage(
+  props: { searchParams: Promise<{ period?: string; cursor?: string; ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/invoices');
   const t = getTranslator();
   const lang = getLang();

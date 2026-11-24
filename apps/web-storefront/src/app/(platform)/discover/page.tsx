@@ -23,7 +23,8 @@ export function generateMetadata(): Metadata {
   return { title: t.t('discover.title'), description: t.t('discover.lead') };
 }
 
-export default async function DiscoverPage({ searchParams }: { searchParams: SP }) {
+export default async function DiscoverPage(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   const t = getTranslator();
   const lang = getLang();
   const q = one(searchParams.q); const category = one(searchParams.category); const after = one(searchParams.after);

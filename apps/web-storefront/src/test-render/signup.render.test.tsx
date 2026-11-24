@@ -65,7 +65,7 @@ const TYPES = [{ id: TYPE, code: 'fpo', name: 'FPO (Farmer Producer Organisation
 const now = () => Math.floor(Date.now() / 1000);
 
 async function render(sp: Record<string, string> = {}): Promise<string> {
-  return renderToStaticMarkup(await ForOrganisationsPage({ searchParams: sp }));
+  return renderToStaticMarkup(await ForOrganisationsPage({ searchParams: Promise.resolve(sp) }));
 }
 function noPhoneInAnyHref(html: string) {
   expect(html).not.toContain('9812345742');

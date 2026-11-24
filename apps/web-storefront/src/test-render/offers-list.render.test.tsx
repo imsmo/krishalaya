@@ -40,7 +40,7 @@ import { C, reset, OFFER, OFF, SLUG, SELLER_UUID, FARMER, LISTING_ID, ORDER_ID }
 import { OFFER_STATUS_LIST } from '../features/store3b/offers';
 import { store3bRefusalKeys } from '../features/store3b/refusals';
 
-const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantOffersPage({ params: { tenantSlug: SLUG }, searchParams: sp }));
+const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantOffersPage({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve(sp) }));
 const CATS: Record<string, Record<string, string>> = { en, hi, gu };
 beforeEach(() => { reset(); });
 
@@ -159,11 +159,11 @@ describe('STORE-3b · the header link is flag-aware (survey F-11)', () => {
 
 describe('STORE-3b · the platform /offers is a door', () => {
   it('→ /<slug>/offers, carrying the status and the cursor', async () => {
-    await expect(PlatformOffersDoor({ searchParams: { status: 'expired', cursor: 'c1' } })).rejects.toThrow(`REDIRECT /${SLUG}/offers?status=expired&cursor=c1`);
+    await expect(PlatformOffersDoor({ searchParams: Promise.resolve({ status: 'expired', cursor: 'c1' }) })).rejects.toThrow(`REDIRECT /${SLUG}/offers?status=expired&cursor=c1`);
   });
   it('the session\'s store unreadable → said, with a Retry (a reload of the door)', async () => {
     C.doorFails = true;
-    const h = renderToStaticMarkup(await PlatformOffersDoor({ searchParams: {} }));
+    const h = renderToStaticMarkup(await PlatformOffersDoor({ searchParams: Promise.resolve({}) }));
     expect(h).toContain('data-kv-state="error"');
     expect(h).toContain('href="/offers" class="kv-btn" data-kv-retry="reload"');
   });

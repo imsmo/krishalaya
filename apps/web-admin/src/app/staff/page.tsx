@@ -55,9 +55,12 @@ interface Meta {
 
 const STATUSES = ['active', 'suspended'] as const;
 
-export default async function StaffRosterPage({ searchParams }: {
-  searchParams: { status?: string; cursor?: string; ok?: string; error?: string };
-}) {
+export default async function StaffRosterPage(
+  props: {
+    searchParams: Promise<{ status?: string; cursor?: string; ok?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const status = (STATUSES as readonly string[]).includes(searchParams.status ?? '') ? searchParams.status : undefined;

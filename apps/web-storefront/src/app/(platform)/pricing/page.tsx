@@ -25,7 +25,10 @@ export function generateMetadata(): Metadata {
   return { title: t.t('pricing.title'), description: t.t('pricing.buyersFree') };
 }
 
-export default async function PricingPage({ searchParams = {} }: { searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function PricingPage(
+  props: { searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = (await props.searchParams) ?? {};
   const t = getTranslator();
   const lang = getLang();
   const intl = resolveServable(lang, 'explicit').intlLocale;   // PC-56 RTL-1c: `lang` is already served (an `ar` here was chosen) — its own pinned tag

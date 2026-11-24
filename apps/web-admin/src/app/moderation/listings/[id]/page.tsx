@@ -51,7 +51,11 @@ const OK = new Set(['held', 'released', 'removed']);
 const ERR = new Set(['source', 'reason', 'language', 'notHeld', 'needsChecker', 'yourOwnHold', 'elevation', 'conflict', 'invalid', 'notFound', 'generic']);
 const LANGS = ['en', 'hi', 'gu'];
 
-export default async function ModerationCasePage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function ModerationCasePage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
   const viewer = adminUserId();

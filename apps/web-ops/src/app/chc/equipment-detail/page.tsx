@@ -20,7 +20,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('ops4.detail.title'), robots: { index: false, follow: false } };
 }
 
-export default async function ChcEquipmentPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function ChcEquipmentPage(
+  props: { searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   const id = idParam(searchParams?.id);
   const self = id ? `${CHC.detail}?id=${encodeURIComponent(id)}` : CHC.detail;
   await requireSession(self);

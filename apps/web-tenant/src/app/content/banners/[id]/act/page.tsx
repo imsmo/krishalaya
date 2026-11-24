@@ -33,7 +33,11 @@ export function generateMetadata(): Metadata {
 
 const FIELDS = ['act', 'reason'] as const;
 
-export default async function BannerActPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | string[] | undefined> }) {
+export default async function BannerActPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const id = decodeURIComponent(params.id);
   const PATH = `${bannerHref(id)}/act`;
   await requireSession(PATH);

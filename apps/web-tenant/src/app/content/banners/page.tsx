@@ -35,7 +35,10 @@ export function generateMetadata(): Metadata {
 
 const str = (v: string | string[] | undefined) => (typeof v === 'string' && v.trim().length > 0 ? v.trim() : null);
 
-export default async function BannersPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function BannersPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(BANNERS_HREF);
   const t = getTranslator();
   const lang = getLang();

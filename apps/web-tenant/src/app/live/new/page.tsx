@@ -31,7 +31,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('form.live.title'), robots: { index: false, follow: false } };
 }
 
-export default async function LiveFormPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function LiveFormPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   const PATH = LIVE_FORM_PATH;
   await requireSession(PATH);
   const t = getTranslator();

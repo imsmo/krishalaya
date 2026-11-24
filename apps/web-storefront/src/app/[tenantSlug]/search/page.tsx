@@ -21,13 +21,18 @@ import { currencyExponent } from '../../../features/discovery/money';
 export const dynamic = 'force-dynamic';
 type SP = Record<string, string | string[] | undefined>;
 
-export function generateMetadata({ searchParams }: { searchParams: SP }): Metadata {
+export async function generateMetadata(props: { searchParams: Promise<SP> }): Promise<Metadata> {
+  const searchParams = await props.searchParams;
   const t = getTranslator();
   const q = readBrowse(searchParams).q;
   return { title: q ? t.t('search.resultsFor', { q }) : t.t('search.title'), robots: { index: false } };
 }
 
-export default async function TenantSearch({ params, searchParams }: { params: { tenantSlug: string }; searchParams: SP }) {
+export default async function TenantSearch(
+  props: { params: Promise<{ tenantSlug: string }>; searchParams: Promise<SP> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const t = getTranslator();
   const lang = getLang();
   const slug = params.tenantSlug;

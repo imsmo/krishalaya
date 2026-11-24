@@ -31,7 +31,11 @@ export function generateMetadata(): Metadata {
 const ERROR_KEYS = new Set(['publish', 'price', 'conflict', 'failed', 'boost', 'boostfunds', 'boostfrozen', 'boosttier', 'inqc', 'archivereason', 'raced']);
 const OK_KEYS = new Set(['published', 'price', 'boosted', 'created', 'submitted', 'paused', 'redrafted', 'archived']);
 
-export default async function ListingDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { error?: string; ok?: string } }) {
+export default async function ListingDetailPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; ok?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   await requireSession(`/listings/${params.id}`);
   const t = getTranslator();
   const lang = getLang();

@@ -30,9 +30,12 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('wal.ledgerTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function WalletTransactionsPage({ searchParams }: {
-  searchParams: { cursor?: string; account?: string; type?: string; from?: string; to?: string; ok?: string; error?: string };
-}) {
+export default async function WalletTransactionsPage(
+  props: {
+    searchParams: Promise<{ cursor?: string; account?: string; type?: string; from?: string; to?: string; ok?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/wallet/transactions');
   const t = getTranslator();
   const lang = getLang();

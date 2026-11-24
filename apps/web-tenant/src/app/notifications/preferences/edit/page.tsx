@@ -40,7 +40,10 @@ const WINDOW_FIELDS = ['starts', 'ends', 'timezone'] as const;
 const LANGUAGE_FIELDS = ['languageCode'] as const;
 const all = (v: string | string[] | undefined): string[] => (Array.isArray(v) ? v : typeof v === 'string' ? [v] : []);
 
-export default async function NotificationFormPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function NotificationFormPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(PREFS_EDIT_HREF);
   const t = getTranslator();
   const lang = getLang();

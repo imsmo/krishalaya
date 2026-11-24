@@ -30,8 +30,8 @@ import { bareArrows, physical, resolveTree } from './store1b-harness';
 import { C, reset, OFFER, OFF, SLUG, ORDER_ID } from './store3b-fixtures';
 
 const rtl = async (node: React.ReactNode) => renderToStaticMarkup(<div dir="rtl">{await resolveTree(node, [])}</div>);
-const list = (sp: Record<string, string> = {}) => TenantOffersPage({ params: { tenantSlug: SLUG }, searchParams: sp });
-const thread = (id: string, sp: Record<string, string> = {}) => TenantOfferThread({ params: { tenantSlug: SLUG, id }, searchParams: sp });
+const list = (sp: Record<string, string> = {}) => TenantOffersPage({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve(sp) });
+const thread = (id: string, sp: Record<string, string> = {}) => TenantOfferThread({ params: Promise.resolve({ tenantSlug: SLUG, id }), searchParams: Promise.resolve(sp) });
 beforeEach(() => {
   reset();
   C.offers[OFF.countered] = OFFER(OFF.countered);

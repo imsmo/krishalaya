@@ -28,7 +28,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('sov.appsTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function ApplicationsPage({ searchParams }: { searchParams: { status?: string; schemeId?: string; tenantId?: string; assisted?: string; cursor?: string } }) {
+export default async function ApplicationsPage(
+  props: { searchParams: Promise<{ status?: string; schemeId?: string; tenantId?: string; assisted?: string; cursor?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const status = isApplicationState(searchParams.status) ? searchParams.status : undefined;

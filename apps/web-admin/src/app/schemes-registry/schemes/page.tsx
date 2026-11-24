@@ -23,7 +23,10 @@ export function generateMetadata(): Metadata {
 
 const ERR = new Set(['code', 'defaultName', 'authorityId', 'categoryId', 'benefitSummary', 'eligibilityRules', 'requiredDocTypeIds', 'applicableRegionIds', 'window', 'processingFeeMinor', 'sourceUrl', 'reason', 'elevation', 'conflict', 'invalid', 'generic']);
 
-export default async function SchemesPage({ searchParams }: { searchParams: { cursor?: string; authorityId?: string; categoryId?: string; active?: string; ok?: string; error?: string } }) {
+export default async function SchemesPage(
+  props: { searchParams: Promise<{ cursor?: string; authorityId?: string; categoryId?: string; active?: string; ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const authorityId = searchParams.authorityId?.trim() || undefined;

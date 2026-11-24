@@ -32,7 +32,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('ship.events.title'), robots: { index: false, follow: false } };
 }
 
-export default async function ShipmentEventsPage({ searchParams }: { searchParams: { filter?: string; from?: string; to?: string; cursor?: string } }) {
+export default async function ShipmentEventsPage(
+  props: { searchParams: Promise<{ filter?: string; from?: string; to?: string; cursor?: string }> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/logistics/events');
   const t = getTranslator();
   const lang = getLang();

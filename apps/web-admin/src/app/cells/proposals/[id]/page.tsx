@@ -46,10 +46,14 @@ interface Detail {
   approval: { kind: string; status?: string; detail?: unknown };
 }
 
-export default async function ProposalPage({ params, searchParams }: {
-  params: { id: string };
-  searchParams: { ok?: string; error?: string };
-}) {
+export default async function ProposalPage(
+  props: {
+    params: Promise<{ id: string }>;
+    searchParams: Promise<{ ok?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
 

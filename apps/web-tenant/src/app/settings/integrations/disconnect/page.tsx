@@ -22,7 +22,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('int.disconnect.title'), robots: { index: false, follow: false }, referrer: 'no-referrer' };
 }
 
-export default async function DisconnectPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function DisconnectPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   await requireSession(INTEGRATIONS_HREF);
   const t = getTranslator();
   const lang = getLang();

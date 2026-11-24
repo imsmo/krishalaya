@@ -51,9 +51,12 @@ const TONE: Record<'ok' | 'bad' | 'warn' | 'muted', string> = {
   ok: 'kv-badge', bad: 'kv-badge kv-badge--danger', warn: 'kv-badge kv-badge--warn', muted: 'kv-badge kv-badge--muted',
 };
 
-export default async function DairyCentresPage({ searchParams }: {
-  searchParams: { includeInactive?: string; ok?: string; error?: string };
-}) {
+export default async function DairyCentresPage(
+  props: {
+    searchParams: Promise<{ includeInactive?: string; ok?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(CENTRES_HREF);
   const t = getTranslator();
   const lang = getLang();

@@ -43,7 +43,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('mutate.bmc.title'), robots: { index: false, follow: false } };
 }
 
-export default async function CallOperatorPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function CallOperatorPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(PATH);
   const t = getTranslator();
   const lang = getLang();

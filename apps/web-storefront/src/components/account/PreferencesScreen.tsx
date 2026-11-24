@@ -79,7 +79,7 @@ export async function PreferencesScreen({ chrome, searchParams }: { chrome: Acco
   /* ------------------------------------------------------------------------------------------------------------------------------ */
   /* W3134 / W3136 — THE REVIEW (the server's three reviews are the confirm)                                                         */
   /* ------------------------------------------------------------------------------------------------------------------------------ */
-  const draft = one(searchParams.step) === 'review' ? decodePrefsDraft(cookies().get(PREFS_DRAFT_COOKIE)?.value, readPrefsKey(searchParams.k)) : null;
+  const draft = one(searchParams.step) === 'review' ? decodePrefsDraft((await cookies()).get(PREFS_DRAFT_COOKIE)?.value, readPrefsKey(searchParams.k)) : null;
   if (draft) {
     const [pr, qr, lr] = await Promise.all([
       draft.changes.length > 0 ? api.notifications.previewPreferences(draft.changes).catch(() => null) : Promise.resolve(null as PreferenceReview | null),

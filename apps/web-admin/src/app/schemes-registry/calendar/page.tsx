@@ -24,7 +24,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('sr.calendarTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function CalendarPage({ searchParams }: { searchParams: { onDate?: string; cursor?: string } }) {
+export default async function CalendarPage(props: { searchParams: Promise<{ onDate?: string; cursor?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const arrow = rangeArrow(getAdminDir());

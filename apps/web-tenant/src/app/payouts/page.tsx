@@ -35,9 +35,12 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('po.title'), robots: { index: false, follow: false } };
 }
 
-export default async function PayoutsPage({ searchParams }: {
-  searchParams: { tab?: string; cursor?: string; ok?: string; error?: string };
-}) {
+export default async function PayoutsPage(
+  props: {
+    searchParams: Promise<{ tab?: string; cursor?: string; ok?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/payouts');
   const t = getTranslator();
   const lang = getLang();

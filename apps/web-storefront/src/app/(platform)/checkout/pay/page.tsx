@@ -16,7 +16,8 @@ export function generateMetadata(): Metadata {
   return { title: t.t('checkout.payTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function PlatformPayDoor({ searchParams }: { searchParams: SP }) {
+export default async function PlatformPayDoor(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   await requireSession(`/checkout/pay${carryQuery(searchParams, ['o', 'g'])}`);
   const slug = await sessionStoreSlug();
   if (slug) redirect(`/${encodeURIComponent(slug)}/checkout/pay${carryQuery(searchParams, ['o', 'g', 'cn', 'via'])}`);

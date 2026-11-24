@@ -9,7 +9,8 @@ import { monogramSvg } from '../../../features/store6/manifest';
 
 export const revalidate = 60;
 
-export async function GET(_req: Request, { params }: { params: { tenantSlug: string } }): Promise<Response> {
+export async function GET(_req: Request, props: { params: Promise<{ tenantSlug: string }> }): Promise<Response> {
+  const params = await props.params;
   const slug = params.tenantSlug;
   if (!/^[a-z0-9][a-z0-9-]{0,49}$/i.test(slug)) return new Response(null, { status: 404 });
   let b: TenantBranding | null = null;

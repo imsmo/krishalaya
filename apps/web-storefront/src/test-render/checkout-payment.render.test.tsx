@@ -35,7 +35,7 @@ import { text } from './store1b-harness';
 import { C, reset } from './store2c-fixtures';
 import { store2cRefusalKeys } from '../features/store2/refusals';
 
-const page = async () => renderToStaticMarkup(await TenantCheckout({ params: { tenantSlug: 'anand-fpo' }, searchParams: { step: 'payment' } }));
+const page = async () => renderToStaticMarkup(await TenantCheckout({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve({ step: 'payment' }) }));
 const form = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 beforeEach(() => reset());
 void SdkError;

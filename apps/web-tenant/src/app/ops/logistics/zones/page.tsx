@@ -21,7 +21,8 @@ import { asOfLabels } from '../../../../features/swf/console';
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swa.zone.title'), robots: { index: false, follow: false } }; }
 
-export default async function ZonesPage({ searchParams }: { searchParams: { pincode?: string; cursor?: string } }) {
+export default async function ZonesPage(props: { searchParams: Promise<{ pincode?: string; cursor?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession(ZONES_HREF);
   const t = getTranslator(); const lang = getLang();
   const canPropose = tenantHasPerm('logistics.zones.manage');

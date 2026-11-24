@@ -46,9 +46,12 @@ interface ProposalSummary {
 const ENTITIES = ['cell', 'shard', 'placement'] as const;
 const ACTIONS = ['created', 'updated', 'status_changed', 'placed', 'moved', 'removed'] as const;
 
-export default async function CellChangesPage({ searchParams }: {
-  searchParams: { days?: string; entityType?: string; action?: string; cursor?: string };
-}) {
+export default async function CellChangesPage(
+  props: {
+    searchParams: Promise<{ days?: string; entityType?: string; action?: string; cursor?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const arrow = rangeArrow(getAdminDir());

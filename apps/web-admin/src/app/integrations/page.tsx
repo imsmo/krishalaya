@@ -31,9 +31,12 @@ interface KeyMeta {
   tenantRegistryHasNoIssuer: boolean; keyIssuanceOwner: string; usageCounterOwner: string; nextCursor: string | null;
 }
 
-export default async function IntegrationsPage({ searchParams }: {
-  searchParams: { registry?: string; ok?: string; error?: string };
-}) {
+export default async function IntegrationsPage(
+  props: {
+    searchParams: Promise<{ registry?: string; ok?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const registry = searchParams.registry === 'tenant' || searchParams.registry === 'partner' ? searchParams.registry : undefined;

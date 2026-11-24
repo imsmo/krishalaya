@@ -19,7 +19,8 @@ export function generateMetadata(): Metadata {
   return { title: t.t('cart.title'), robots: { index: false, follow: false } };
 }
 
-export default async function PlatformCartDoor({ searchParams }: { searchParams: SP }) {
+export default async function PlatformCartDoor(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   await requireSession('/cart');
   let slug: string | null = null;
   try { slug = (await sessionTenantClient().storefront.tenant()).slug ?? null; } catch { slug = null; }

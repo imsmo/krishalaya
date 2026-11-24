@@ -21,7 +21,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('swd.import.title'), robots: { index: false, follow: false } };
 }
 
-export default async function RegisterImportPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function RegisterImportPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   await requireSession(REGISTER_IMPORT_HREF);
   const t = getTranslator();
   let items: RegisterImport[] = []; let nextCursor: string | null = null; let state: string | null = null;

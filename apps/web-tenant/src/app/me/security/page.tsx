@@ -25,7 +25,8 @@ const PANEL_KEYS = ['swc.tfa.panel.off', 'swc.tfa.panel.disabled', 'swc.tfa.pane
   'swc.tfa.panel.confirm', 'swc.tfa.panel.on', 'swc.tfa.panel.recoveryOnce', 'swc.tfa.panel.saved', 'swc.tfa.panel.recoveryLeft', 'swc.tfa.panel.disableTitle',
   'swc.tfa.panel.recovery', 'swc.tfa.panel.disable'] as const;
 
-export default async function MySecurityPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function MySecurityPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   await requireSession(ME_SECURITY_HREF);
   const t = getTranslator(); const lang = getLang();
   let tfa: TwoFactorState | null = null; let conflicts: ConflictDeclaration[] = []; let failed = false;

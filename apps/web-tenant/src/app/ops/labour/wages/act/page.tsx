@@ -37,7 +37,8 @@ export function generateMetadata(): Metadata {
 }
 const AUDIT_ACTION = { request: 'labour.advance.requested', approve: 'labour.advance.approved', reject: 'labour.advance.rejected' } as const;
 
-export default async function AdvanceActPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function AdvanceActPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   await requireSession(WAGES_ACT_HREF);
   const t = getTranslator();
   const lang = getLang();

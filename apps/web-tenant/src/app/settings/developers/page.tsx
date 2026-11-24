@@ -29,7 +29,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('ak.list.title'), robots: { index: false, follow: false }, referrer: 'no-referrer' };
 }
 
-export default async function ApiKeysPage({ searchParams }: { searchParams: { cursor?: string } }) {
+export default async function ApiKeysPage(props: { searchParams: Promise<{ cursor?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession(DEVELOPERS_HREF);
   const t = getTranslator();
   const lang = getLang();

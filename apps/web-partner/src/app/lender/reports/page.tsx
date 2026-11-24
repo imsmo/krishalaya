@@ -24,7 +24,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('partner5.sla.title'), robots: { index: false, follow: false } };
 }
 
-export default async function LenderReportsPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function LenderReportsPage(
+  props: { searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requirePartner();
   const t = getTranslator(); const lang = getLang();
   const me = await lenderGate();

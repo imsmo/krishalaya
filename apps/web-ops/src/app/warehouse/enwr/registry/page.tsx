@@ -18,7 +18,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('ops2.enwrRegistry.title'), robots: { index: false, follow: false } };
 }
 
-export default async function EnwrRegistryPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function EnwrRegistryPage(
+  props: { searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/warehouse/enwr/registry');
   const t = getTranslator(); const lang = getLang();
   const exp = chain2State('enwr_export', searchParams);

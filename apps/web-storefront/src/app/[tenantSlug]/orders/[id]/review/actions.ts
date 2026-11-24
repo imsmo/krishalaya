@@ -15,7 +15,7 @@
 //                          the review again with the failure BY NAME and the same key (W3144).
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
+import { cookies, type UnsafeUnwrappedCookies } from 'next/headers';
 import { SdkError } from '@krishalaya/sdk-js';
 import { serverClient, publicClient } from '../../../../../lib/api-client';
 import { requireSession } from '../../../../../lib/session';
@@ -35,14 +35,14 @@ const cookieOpts = (slug: string, id: string, maxAge: number) => ({ httpOnly: tr
 function keep(slug: string, id: string, d: ReviewDraft): boolean {
   const parts = encodeReviewDraft(d);
   if (!parts) return false;
-  for (let i = 0; i < REVIEW_DRAFT_CHUNKS; i++) cookies().set(draftCookieName(i), parts[i] ?? '', cookieOpts(slug, id, parts[i] ? 900 : 0));
+  for (let i = 0; i < REVIEW_DRAFT_CHUNKS; i++) (cookies() as unknown as UnsafeUnwrappedCookies).set(draftCookieName(i), parts[i] ?? '', cookieOpts(slug, id, parts[i] ? 900 : 0));
   return true;
 }
 function spend(slug: string, id: string): void {
-  for (let i = 0; i < REVIEW_DRAFT_CHUNKS; i++) cookies().set(draftCookieName(i), '', cookieOpts(slug, id, 0));
+  for (let i = 0; i < REVIEW_DRAFT_CHUNKS; i++) (cookies() as unknown as UnsafeUnwrappedCookies).set(draftCookieName(i), '', cookieOpts(slug, id, 0));
 }
 function draftOf(id: string, key: string | null): ReviewDraft | null {
-  const chunks = Array.from({ length: REVIEW_DRAFT_CHUNKS }, (_, i) => cookies().get(draftCookieName(i))?.value);
+  const chunks = Array.from({ length: REVIEW_DRAFT_CHUNKS }, (_, i) => (cookies() as unknown as UnsafeUnwrappedCookies).get(draftCookieName(i))?.value);
   return decodeReviewDraft(chunks, key, id);
 }
 async function vocabulary(slug: string): Promise<string[] | null> {

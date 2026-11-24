@@ -29,8 +29,8 @@ import { C, SESSION, reset, withCookies } from './store6a-fixtures';
 import { phone, SYNC_LABELS as L, NOW, SLUG, CONVO, ORDER, ORDER2 } from './store6b-fixtures';
 
 beforeEach(() => reset());
-const plat = (sp: Record<string, string> = {}) => renderToStaticMarkup(PlatformSync({ searchParams: sp }));
-const ten = (sp: Record<string, string> = {}) => renderToStaticMarkup(TenantSync({ params: { tenantSlug: SLUG }, searchParams: sp }));
+const plat = (sp: Record<string, string> = {}) => renderToStaticMarkup(PlatformSync({ searchParams: Promise.resolve(sp) }));
+const ten = (sp: Record<string, string> = {}) => renderToStaticMarkup(TenantSync({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve(sp) }));
 const ID = 'd_msg0000000000000000000';
 
 describe('STORE-6b · W315 rebuilt — "On this phone" under both chromes, no session read', () => {

@@ -42,23 +42,23 @@ void SdkError;
 
 describe('STORE-2c · the platform money routes are doors to the organisation', () => {
   it('/checkout → /<slug>/checkout, carrying a refusal status and its region', async () => {
-    await expect(PlatformCheckoutDoor({ searchParams: { status: 'banned', region: 'Maharashtra' } })).rejects.toThrow('REDIRECT /anand-fpo/checkout?status=banned&region=Maharashtra');
+    await expect(PlatformCheckoutDoor({ searchParams: Promise.resolve({ status: 'banned', region: 'Maharashtra' }) })).rejects.toThrow('REDIRECT /anand-fpo/checkout?status=banned&region=Maharashtra');
   });
   it('/checkout/pay and /checkout/confirm → the store\'s own, the order, the group and the coupon notice carried', async () => {
-    await expect(PlatformPayDoor({ searchParams: { o: 'o1', g: 'g1', cn: 'user_limit' } })).rejects.toThrow('REDIRECT /anand-fpo/checkout/pay?o=o1&g=g1&cn=user_limit');
-    await expect(PlatformConfirmDoor({ searchParams: { g: 'g1' } })).rejects.toThrow('REDIRECT /anand-fpo/checkout/confirm?g=g1');
+    await expect(PlatformPayDoor({ searchParams: Promise.resolve({ o: 'o1', g: 'g1', cn: 'user_limit' }) })).rejects.toThrow('REDIRECT /anand-fpo/checkout/pay?o=o1&g=g1&cn=user_limit');
+    await expect(PlatformConfirmDoor({ searchParams: Promise.resolve({ g: 'g1' }) })).rejects.toThrow('REDIRECT /anand-fpo/checkout/confirm?g=g1');
   });
   it('the session\'s store cannot be read → said, with a Retry (a reload of the door) — never a guessed store', async () => {
     fails(true);
-    const h = renderToStaticMarkup(await PlatformPayDoor({ searchParams: { o: 'o1' } }));
+    const h = renderToStaticMarkup(await PlatformPayDoor({ searchParams: Promise.resolve({ o: 'o1' }) }));
     expect(h).toContain('data-kv-state="error"');
     expect(h).toContain('href="/checkout/pay?o=o1" class="kv-btn" data-kv-retry="reload"');
     expect(text(h)).toContain(en['store2c.doorError']);
   });
   it('/auctions/[id]: a signed-in buyer → the auction under their store; anonymous → "open it from its organisation\'s store"', async () => {
-    await expect(PlatformAuctionDoor({ params: { id: AUCTION } })).rejects.toThrow(`REDIRECT /anand-fpo/auctions/${AUCTION}`);
+    await expect(PlatformAuctionDoor({ params: Promise.resolve({ id: AUCTION }) })).rejects.toThrow(`REDIRECT /anand-fpo/auctions/${AUCTION}`);
     C.token = null;
-    const h = renderToStaticMarkup(await PlatformAuctionDoor({ params: { id: AUCTION } }));
+    const h = renderToStaticMarkup(await PlatformAuctionDoor({ params: Promise.resolve({ id: AUCTION }) }));
     expect(h).toContain('data-kv-state="which-store"');
     expect(text(h)).toContain(en['store2c.auction.whichStore']);
   });

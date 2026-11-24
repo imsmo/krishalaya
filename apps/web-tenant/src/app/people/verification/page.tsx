@@ -33,7 +33,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('kyc.desk.title'), robots: { index: false, follow: false } };
 }
 
-export default async function KycDeskPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function KycDeskPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(KYC_DESK_HREF);
   const t = getTranslator();
   const lang = getLang();

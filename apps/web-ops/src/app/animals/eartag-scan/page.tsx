@@ -11,7 +11,10 @@ import { ANIMALS } from '../../../features/ops4/upkeep';
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('ops4.animals.eartag.title'), robots: { index: false, follow: false } }; }
 
-export default async function AnimalEartagPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function AnimalEartagPage(
+  props: { searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(ANIMALS.eartag);
   const t = getTranslator();
   const act = chain4State('eartag_act', searchParams);

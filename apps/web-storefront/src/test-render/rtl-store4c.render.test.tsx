@@ -41,14 +41,14 @@ const review = async () => {
 beforeEach(() => { reset(); });
 
 const STATES: Array<[string, () => Promise<React.ReactNode>]> = [
-  ['W299 the inbox with ladders', () => InboxPage({ params: P, searchParams: {} })],
-  ['W299 empty', async () => { C.inbox = []; return InboxPage({ params: P, searchParams: {} }); }],
-  ['W299 error', async () => { C.fail.inbox = new SdkError('UNAVAILABLE', 503, 'x'); return InboxPage({ params: P, searchParams: {} }); }],
-  ['W302 the page', () => PrefsPage({ params: P, searchParams: {} })],
-  ['W3134 the review', async () => { await review(); return PrefsPage({ params: P, searchParams: { step: 'review', k: KEY } }); }],
-  ['W3136 a named failure', async () => { await review(); return PrefsPage({ params: P, searchParams: { step: 'review', k: KEY, failure: 'zone' } }); }],
-  ['W3135 saved', () => PrefsPage({ params: P, searchParams: { ok: 'saved' } })],
-  ['W302 load error', async () => { C.fail.matrix = new SdkError('UNAVAILABLE', 503, 'x'); return PrefsPage({ params: P, searchParams: {} }); }],
+  ['W299 the inbox with ladders', () => InboxPage({ params: Promise.resolve(P), searchParams: Promise.resolve({}) })],
+  ['W299 empty', async () => { C.inbox = []; return InboxPage({ params: Promise.resolve(P), searchParams: Promise.resolve({}) }); }],
+  ['W299 error', async () => { C.fail.inbox = new SdkError('UNAVAILABLE', 503, 'x'); return InboxPage({ params: Promise.resolve(P), searchParams: Promise.resolve({}) }); }],
+  ['W302 the page', () => PrefsPage({ params: Promise.resolve(P), searchParams: Promise.resolve({}) })],
+  ['W3134 the review', async () => { await review(); return PrefsPage({ params: Promise.resolve(P), searchParams: Promise.resolve({ step: 'review', k: KEY }) }); }],
+  ['W3136 a named failure', async () => { await review(); return PrefsPage({ params: Promise.resolve(P), searchParams: Promise.resolve({ step: 'review', k: KEY, failure: 'zone' }) }); }],
+  ['W3135 saved', () => PrefsPage({ params: Promise.resolve(P), searchParams: Promise.resolve({ ok: 'saved' }) })],
+  ['W302 load error', async () => { C.fail.matrix = new SdkError('UNAVAILABLE', 503, 'x'); return PrefsPage({ params: Promise.resolve(P), searchParams: Promise.resolve({}) }); }],
 ];
 
 describe('STORE-4c · rtl', () => {

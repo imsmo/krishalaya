@@ -27,7 +27,10 @@ import { DirArrow } from '../../../components/DirArrow'; // PC-56 TENANT-CLOSE Â
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swf.reports.title'), robots: { index: false, follow: false } }; }
 
-export default async function ReportsPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function ReportsPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(REPORTS_HREF);
   const t = getTranslator(); const lang = getLang();
   const sp = (k: string) => (Array.isArray(searchParams[k]) ? (searchParams[k] as string[])[0] : (searchParams[k] as string | undefined));

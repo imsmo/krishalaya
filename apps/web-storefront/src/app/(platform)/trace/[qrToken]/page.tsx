@@ -11,7 +11,8 @@ import { PLATFORM_CHROME } from '../../../../features/store4a/account';
 export const dynamic = 'force-dynamic';
 type SP = Record<string, string | string[] | undefined>;
 
-export async function generateMetadata({ params }: { params: { qrToken: string } }): Promise<Metadata> {
+export async function generateMetadata(props: { params: Promise<{ qrToken: string }> }): Promise<Metadata> {
+  const params = await props.params;
   const t = getTranslator();
   const r = await loadTrace(PLATFORM_CHROME, params.qrToken);
   if (r.kind === 'ok') return { title: t.t('trace.title'), description: t.t('trace.metaDescription', { platform: t.t('brand.platform') }) };
@@ -19,6 +20,10 @@ export async function generateMetadata({ params }: { params: { qrToken: string }
   return { title: t.t(title), robots: { index: false } };
 }
 
-export default async function TraceScanPage({ params, searchParams = {} }: { params: { qrToken: string }; searchParams?: SP }) {
+export default async function TraceScanPage(
+  props: { params: Promise<{ qrToken: string }>; searchParams?: Promise<SP> }
+) {
+  const searchParams = (await props.searchParams) ?? {};
+  const params = await props.params;
   return TraceScreen({ chrome: PLATFORM_CHROME, qrToken: params.qrToken, searchParams });
 }

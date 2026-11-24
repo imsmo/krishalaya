@@ -36,7 +36,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('courses.publish.title'), robots: { index: false, follow: false } };
 }
 
-export default async function CoursePublishPage({ params }: { params: { id: string } }) {
+export default async function CoursePublishPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const href = `/courses/${encodeURIComponent(params.id)}/publish`;
   await requireSession(href);
   const t = getTranslator();

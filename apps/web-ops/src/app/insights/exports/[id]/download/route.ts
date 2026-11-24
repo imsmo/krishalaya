@@ -14,7 +14,8 @@ import { crossSite, downloadErrorOf, exportHref, jobParam, windowParam } from '.
 export const dynamic = 'force-dynamic';
 const FORWARDED = ['content-type', 'content-length', 'content-disposition', 'x-export-sha256'] as const;
 
-export async function POST(req: Request, { params }: { params: { id: string } }): Promise<Response> {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }): Promise<Response> {
+  const params = await props.params;
   const url = new URL(req.url);
   const id = jobParam(params.id);
   const form = await req.formData().catch(() => null);

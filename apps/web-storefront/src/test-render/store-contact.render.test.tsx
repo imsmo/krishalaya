@@ -19,7 +19,7 @@ import { text } from './store1b-harness';
 import { ORG, S, SLUG, reset } from './sweep-fixtures';
 
 beforeEach(() => reset());
-const page = async () => renderToStaticMarkup(await StoreContact({ params: { tenantSlug: SLUG } }));
+const page = async () => renderToStaticMarkup(await StoreContact({ params: Promise.resolve({ tenantSlug: SLUG }) }));
 
 describe('STORE-SWEEP-a · D6 · a store\'s contact page', () => {
   it('messages ON: the order door and the lot door, inside THIS store; the organisation\'s name in the title', async () => {

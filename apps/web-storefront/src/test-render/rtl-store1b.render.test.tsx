@@ -68,10 +68,10 @@ describe('the guards bite (so a pass below means something)', () => {
 describe('STORE-1b pages under dir="rtl"', () => {
   const cases: Array<[string, () => Promise<React.ReactNode>, Array<(p: any) => unknown>]> = [   // eslint-disable-line @typescript-eslint/no-explicit-any
     ['W273 platform home (stale as-of, refusals, cards)', async () => PlatformLayout({ children: await HomePage() }), [SiteHeader]],
-    ['/discover with "Show more"', async () => PlatformLayout({ children: await DiscoverPage({ searchParams: { q: 'gro' } }) }), [SiteHeader]],
-    ['/organisations with "Show more"', async () => PlatformLayout({ children: await OrganisationsPage({ searchParams: {} }) }), [SiteHeader]],
-    ['/trace with a malformed code', async () => PlatformLayout({ children: TraceHowPage({ searchParams: { code: '../x' } }) }), [SiteHeader]],
-    ['W274 tenant home (members-only, group lots off, Show more)', async () => TenantLayout({ children: await TenantStorefront({ params: { tenantSlug: 'anand-fpo' }, searchParams: {} }), params: { tenantSlug: 'anand-fpo' } }), [TenantHeader]],
+    ['/discover with "Show more"', async () => PlatformLayout({ children: await DiscoverPage({ searchParams: Promise.resolve({ q: 'gro' }) }) }), [SiteHeader]],
+    ['/organisations with "Show more"', async () => PlatformLayout({ children: await OrganisationsPage({ searchParams: Promise.resolve({}) }) }), [SiteHeader]],
+    ['/trace with a malformed code', async () => PlatformLayout({ children: TraceHowPage({ searchParams: Promise.resolve({ code: '../x' }) }) }), [SiteHeader]],
+    ['W274 tenant home (members-only, group lots off, Show more)', async () => TenantLayout({ children: await TenantStorefront({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve({}) }), params: Promise.resolve({ tenantSlug: 'anand-fpo' }) }), [TenantHeader]],
   ];
   it.each(cases)('%s', async (_n, build, asyncTypes) => {
     for (const lang of ['en', 'hi', 'gu']) {
@@ -84,7 +84,7 @@ describe('STORE-1b pages under dir="rtl"', () => {
   });
   it('every "Show more" on these pages carries the flipping arrow', async () => {
     mock.lang = 'en';
-    const html = await rtl(await TenantLayout({ children: await TenantStorefront({ params: { tenantSlug: 'anand-fpo' }, searchParams: {} }), params: { tenantSlug: 'anand-fpo' } }), [TenantHeader]);
+    const html = await rtl(await TenantLayout({ children: await TenantStorefront({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve({}) }), params: Promise.resolve({ tenantSlug: 'anand-fpo' }) }), [TenantHeader]);
     expect(html).toMatch(/Show more <span class="kv-dir-flip">→<\/span>/);
   });
 });

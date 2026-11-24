@@ -39,7 +39,7 @@ import { text } from './store1b-harness';
 import { C, reset, MINE, SETTLEMENT, A, SLUG, ORDER_ID, FARMER, BIDDER_UUID } from './store3c-fixtures';
 import { STORE3C_REFUSALS } from '../features/store3c/refusals';
 
-const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantMyBidsPage({ params: { tenantSlug: SLUG }, searchParams: sp }));
+const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantMyBidsPage({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve(sp) }));
 const row = (h: string, id: string) => { const s = h.slice(h.indexOf(`data-kv-auction="${id}"`)); return s.slice(0, s.indexOf('</li>')); };
 beforeEach(() => { reset(); });
 
@@ -159,6 +159,6 @@ describe('STORE-3c · W296 states: empty ≠ error ≠ off; sign-in only; the do
   it('every W296 refusal is printed by name; the platform /auctions/bids is a door to the session\'s store', async () => {
     const h = await page();
     for (const r of STORE3C_REFUSALS.filter((x) => x.surfaces.includes('bids'))) expect(h).toContain(`data-kv-refusal="${r.id}"`);
-    await expect(PlatformMyBidsDoor({ searchParams: { cursor: 'n2' } })).rejects.toThrow(`REDIRECT /${SLUG}/auctions/bids?cursor=n2`);
+    await expect(PlatformMyBidsDoor({ searchParams: Promise.resolve({ cursor: 'n2' }) })).rejects.toThrow(`REDIRECT /${SLUG}/auctions/bids?cursor=n2`);
   });
 });

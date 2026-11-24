@@ -27,7 +27,7 @@ export async function recordBmcReadingAction(formData: FormData): Promise<void> 
   }
   if (valueRefused) redirect(`${BMC}?form=error&reason=temp&unit=${unit}&value=${encodeURIComponent(typed)}`);
   if (!rec) redirect(`${BMC}?form=failure&reason=${reason ?? 'record'}&unit=${unit}`);
-  cookies().set(READING_COOKIE, encodeReading({ unitId: rec.unitId, tempC: rec.tempC, verdict: rec.verdict, recordedAt: String(rec.recordedAt), band: rec.band }),
+  (await cookies()).set(READING_COOKIE, encodeReading({ unitId: rec.unitId, tempC: rec.tempC, verdict: rec.verdict, recordedAt: String(rec.recordedAt), band: rec.band }),
     { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: BMC, maxAge: READING_COOKIE_MAX_AGE_SEC });
   redirect(`${BMC}?form=success&unit=${rec.unitId}`);
 }

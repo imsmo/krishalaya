@@ -45,7 +45,8 @@ interface Provisioning {
   infra: { appliedByConsole: boolean; note: string };
 }
 
-export default async function ProvisioningPage({ searchParams }: { searchParams: { ok?: string; error?: string } }) {
+export default async function ProvisioningPage(props: { searchParams: Promise<{ ok?: string; error?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

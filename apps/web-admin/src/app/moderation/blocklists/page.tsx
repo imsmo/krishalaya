@@ -32,7 +32,10 @@ interface Meta { counts: Record<string, number>; userBlockCount: number | null; 
 const OK = new Set(['added', 'alreadyBlocked', 'countersigned', 'lifted']);
 const ERR = new Set(['identifierType', 'identifier', 'looksHashed', 'reason', 'auditNote', 'expiry', 'elevation', 'conflict', 'invalid', 'notFound', 'generic']);
 
-export default async function BlocklistsPage({ searchParams }: { searchParams: { type?: string; cursor?: string; ok?: string; error?: string } }) {
+export default async function BlocklistsPage(
+  props: { searchParams: Promise<{ type?: string; cursor?: string; ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const viewer = adminUserId();

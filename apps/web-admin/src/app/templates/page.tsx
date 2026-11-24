@@ -36,9 +36,12 @@ interface Meta {
 
 const CHANNELS = ['push', 'sms', 'whatsapp', 'email', 'inapp', 'ivr'] as const;
 
-export default async function TemplatesPage({ searchParams }: {
-  searchParams: { channel?: string; languageCode?: string; eventCode?: string; cursor?: string; ok?: string; error?: string };
-}) {
+export default async function TemplatesPage(
+  props: {
+    searchParams: Promise<{ channel?: string; languageCode?: string; eventCode?: string; cursor?: string; ok?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const channel = (CHANNELS as readonly string[]).includes(searchParams.channel ?? '') ? searchParams.channel : undefined;

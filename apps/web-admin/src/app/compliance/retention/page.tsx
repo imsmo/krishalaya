@@ -21,7 +21,8 @@ export function generateMetadata(): Metadata {
 
 const ERR = new Set(['tableName', 'activeMonths', 'archiveMonths', 'action', 'reason', 'elevation', 'invalid', 'generic']);
 
-export default async function RetentionPage({ searchParams }: { searchParams: { ok?: string; error?: string } }) {
+export default async function RetentionPage(props: { searchParams: Promise<{ ok?: string; error?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

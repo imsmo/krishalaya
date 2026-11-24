@@ -34,7 +34,7 @@ import { text } from './store1b-harness';
 import { C, reset, ORDER, O } from './store2c-fixtures';
 
 const AUCTION_ORDER = () => ORDER(O.a, 'pending', { source: 'auction', totalMinor: '13100000', amountDueMinor: '12100000', depositAppliedMinor: '1000000', auctionId: 'a1' });
-const html = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantPayPage({ params: { tenantSlug: 'anand-fpo' }, searchParams: { o: O.a, ...sp } }));
+const html = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantPayPage({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve({ o: O.a, ...sp }) }));
 beforeEach(() => { reset(); C.orders[O.a] = AUCTION_ORDER(); });
 
 describe('STORE-3c · the pay step charges the DUE (founder D2)', () => {

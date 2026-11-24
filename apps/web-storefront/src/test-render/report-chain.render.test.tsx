@@ -32,7 +32,7 @@ import { C, reset, IDS } from './store4b-fixtures';
 import { store4bRefusalKeys } from '../features/store4b/refusals';
 
 const P = { tenantSlug: 'anand-fpo', id: IDS.order, messageId: IDS.m2 };
-const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await ReportPage({ params: P, searchParams: sp }));
+const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await ReportPage({ params: Promise.resolve(P), searchParams: Promise.resolve(sp) }));
 const form = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 const redirectOf = async (p: Promise<unknown>) => { try { await p; return 'no redirect'; } catch (e) { return String((e as Error).message); } };
 const keyIn = (h: string) => (h.match(/name="key" value="(report:[0-9a-f-]{36})"/) ?? [])[1];
@@ -106,6 +106,6 @@ describe('STORE-4b · the report page\'s states', () => {
     expect(off).not.toContain('data-kv-form="report"');
   });
   it('a thread that is not the buyer\'s → notFound', async () => {
-    await expect(ReportPage({ params: { ...P, id: '0216c000-0000-7000-8000-0000000000ff' }, searchParams: {} })).rejects.toThrow('NEXT_NOT_FOUND');
+    await expect(ReportPage({ params: Promise.resolve({ ...P, id: '0216c000-0000-7000-8000-0000000000ff' }), searchParams: Promise.resolve({}) })).rejects.toThrow('NEXT_NOT_FOUND');
   });
 });

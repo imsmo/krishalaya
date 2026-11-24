@@ -60,9 +60,13 @@ interface Operator {
   revocationTakesEffect: string;
 }
 
-export default async function OperatorPage({ params, searchParams }: {
-  params: { id: string }; searchParams: { ok?: string; error?: string };
-}) {
+export default async function OperatorPage(
+  props: {
+    params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
   const me = adminUserId();

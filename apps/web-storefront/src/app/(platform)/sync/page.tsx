@@ -13,6 +13,9 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('store6b.sync.metaTitle'), robots: { index: false, follow: false } };
 }
 
-export default function Page({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function Page(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   return <SyncScreen chrome={PLATFORM_CHROME} state={readSyncState(searchParams ?? {})} renderedAt={new Date().toISOString()} />;
 }

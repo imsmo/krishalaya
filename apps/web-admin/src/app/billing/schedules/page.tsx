@@ -38,9 +38,12 @@ interface ScheduleRow {
   recipients: string[]; isActive: boolean; nextRunAt: string | null; lastRunAt: string | null; notes: string | null;
 }
 
-export default async function SchedulesPage({ searchParams }: {
-  searchParams: { ok?: string; error?: string; open?: string };
-}) {
+export default async function SchedulesPage(
+  props: {
+    searchParams: Promise<{ ok?: string; error?: string; open?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

@@ -13,7 +13,11 @@ import { decideSlotLinkAction, sendSlotCodeAction } from './actions';
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.link.title'), robots: { index: false, follow: false } }; }
 
-export default async function SlotLinkPage({ params, searchParams }: { params: { id: string }; searchParams: { sent?: string; error?: string; done?: string } }) {
+export default async function SlotLinkPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ sent?: string; error?: string; done?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const t = getTranslator(); const lang = getLang();
   const id = isUuid(params.id) ? params.id : null;
   let v: SlotLinkView | null = null; let failed: 'notFound' | 'error' | null = id ? null : 'notFound';

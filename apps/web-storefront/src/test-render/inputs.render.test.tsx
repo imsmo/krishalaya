@@ -30,7 +30,7 @@ import { store2aRefusalKeys } from '../features/store2/refusals';
 import { renderResolved, text } from './store1b-harness';
 import { S, reset, PAGE, CARD, CATS, ID } from './store2a-fixtures';
 
-const page = async () => renderResolved(await FarmInputs({ params: { tenantSlug: 'anand-fpo' }, searchParams: {} }), []);
+const page = async () => renderResolved(await FarmInputs({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve({}) }), []);
 beforeEach(reset);
 
 describe('STORE-2a · W282 farm inputs', () => {

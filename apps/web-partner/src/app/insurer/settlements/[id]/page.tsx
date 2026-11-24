@@ -19,7 +19,11 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('partner6.settlement.title'), robots: { index: false, follow: false } };
 }
 
-export default async function InsurerSettlementPage({ params, searchParams }: { params: { id: string }; searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function InsurerSettlementPage(
+  props: { params: Promise<{ id: string }>; searchParams?: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   await requirePartner();
   const t = getTranslator();
   await insurerGate();

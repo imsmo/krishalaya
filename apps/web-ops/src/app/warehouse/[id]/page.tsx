@@ -24,7 +24,11 @@ export function generateMetadata(): Metadata {
 const OK = new Set(['confirm', 'store', 'cancel']);
 const ERR = new Set<string>(BOOKING_ERRORS);
 
-export default async function BookingDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function BookingDetailPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   await requireSession(`/warehouse/${params.id}`);
   const t = getTranslator();
   const lang = getLang();

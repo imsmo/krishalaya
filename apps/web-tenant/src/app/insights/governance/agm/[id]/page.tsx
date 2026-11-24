@@ -23,7 +23,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('swd.agm.title'), robots: { index: false, follow: false } };
 }
 
-export default async function AgmPackPage({ params }: { params: { id: string } }) {
+export default async function AgmPackPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   await requireSession(agmPackHref(params.id));
   const t = getTranslator(); const lang = getLang();
   let pack: AgmPack | null = null; let state: string | null = null; let meId: string | null = null;

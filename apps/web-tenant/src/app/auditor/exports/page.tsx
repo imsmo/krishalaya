@@ -26,7 +26,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('auditor.exports.title'), robots: { index: false, follow: false } };
 }
 
-export default async function AuditorExportsPageView({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function AuditorExportsPageView(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   if (!env.featureAuditor) notFound();
   await requireSession(EXPORTS_HREF);
   const t = getTranslator();

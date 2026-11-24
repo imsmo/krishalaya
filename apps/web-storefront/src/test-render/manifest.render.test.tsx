@@ -30,7 +30,7 @@ const SVG = { logoPath: `/v1/storefront/branding/logo/${T}/3`, logoMime: 'image/
 const LOGO = `https://api.test/v1/storefront/branding/logo/${T}/3`;
 const manifestOf = async (hostRouted: boolean) => {
   const req = new Request(`https://store.test/${SLUG}/manifest.webmanifest`, { headers: hostRouted ? { 'x-kv-tenant-slug': SLUG } : {} });
-  const r = await tenantManifestRoute(req, { params: { tenantSlug: SLUG } });
+  const r = await tenantManifestRoute(req, { params: Promise.resolve({ tenantSlug: SLUG }) });
   return { r, m: JSON.parse(await r.text()) };
 };
 const PLATFORM_SRCS = PLATFORM_ICONS.map((i) => i.src);
@@ -83,30 +83,30 @@ describe('STORE-6a · D6 · a tenant manifest is the organisation\'s only', () =
   });
   it('the layout: the host-root manifest on the store\'s own host, its own path otherwise; the monogram icon; the apple icon for a PNG logo only', async () => {
     C.branding = brandWith({ logoPath: null, logoMime: null });
-    let md = await tenantMeta({ params: { tenantSlug: SLUG } });
+    let md = await tenantMeta({ params: Promise.resolve({ tenantSlug: SLUG }) });
     expect(md.manifest).toBe(`/${SLUG}/manifest.webmanifest`);
     expect(md.icons).toEqual({ icon: [{ url: `/${SLUG}/app-icon.svg`, type: 'image/svg+xml' }] });   // no apple at all — never the platform's PNG
     C.headers = { 'x-kv-tenant-slug': SLUG };
-    md = await tenantMeta({ params: { tenantSlug: SLUG } });
+    md = await tenantMeta({ params: Promise.resolve({ tenantSlug: SLUG }) });
     expect(md.manifest).toBe('/manifest.webmanifest');
     C.branding = brandWith(PNG);
-    md = await tenantMeta({ params: { tenantSlug: SLUG } });
+    md = await tenantMeta({ params: Promise.resolve({ tenantSlug: SLUG }) });
     expect(md.icons).toEqual({ icon: [{ url: LOGO, type: 'image/png' }], apple: LOGO });
     C.branding = brandWith(SVG);
-    md = await tenantMeta({ params: { tenantSlug: SLUG } });
+    md = await tenantMeta({ params: Promise.resolve({ tenantSlug: SLUG }) });
     expect(JSON.stringify(md.icons)).not.toMatch(/apple|\/apple-touch-icon\.png|\/icon-/);
   });
 });
 
 describe('STORE-6a · D6 · the generated monogram', () => {
   it('the route: the organisation\'s initials on ITS colour, 512 × 512 SVG; an unknown organisation → 404', async () => {
-    const r = await monogramRoute(new Request(`https://store.test/${SLUG}/app-icon.svg`), { params: { tenantSlug: SLUG } });
+    const r = await monogramRoute(new Request(`https://store.test/${SLUG}/app-icon.svg`), { params: Promise.resolve({ tenantSlug: SLUG }) });
     expect(r.headers.get('content-type')).toBe('image/svg+xml; charset=utf-8');
     const svg = await r.text();
     expect(svg).toContain('width="512" height="512"'); expect(svg).toContain('fill="#7a3e00"'); expect(svg).toContain('>AF</text>');
     expect(svg).toContain(`aria-label="${ORG}"`);
     C.branding = null;
-    expect((await monogramRoute(new Request('https://store.test/x/app-icon.svg'), { params: { tenantSlug: 'x' } })).status).toBe(404);
+    expect((await monogramRoute(new Request('https://store.test/x/app-icon.svg'), { params: Promise.resolve({ tenantSlug: 'x' }) })).status).toBe(404);
   });
   it('initials in any script; markup-safe; ink that reads on the colour; the token colour only when the organisation published none', () => {
     expect(monogramInitials('Anand FPO Mandi')).toBe('AF');

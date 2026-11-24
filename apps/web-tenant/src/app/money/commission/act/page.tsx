@@ -24,7 +24,8 @@ export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swa.com.actTitle'), robots: { index: false, follow: false } }; }
 const AUDIT: Record<string, string> = { confirm: 'payments.commission_rule_confirmed', refuse: 'payments.commission_rule_refused', deactivate: 'payments.commission_rule_deactivation_proposed' };
 
-export default async function CommissionActPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function CommissionActPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   const base = `${COMMISSION_HREF}/act`;
   await requireSession(base);
   const t = getTranslator(); const lang = getLang();

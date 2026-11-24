@@ -44,7 +44,11 @@ interface Profile {
 const OK = new Set(['bandChanged']);
 const ERR = new Set(['band', 'sameBand', 'reason', 'elevation', 'conflict', 'invalid', 'notFound', 'generic']);
 
-export default async function RiskProfilePage({ params, searchParams }: { params: { userId: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function RiskProfilePage(
+  props: { params: Promise<{ userId: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
 

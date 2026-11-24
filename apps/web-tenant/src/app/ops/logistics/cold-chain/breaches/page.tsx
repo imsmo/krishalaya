@@ -24,7 +24,10 @@ import { asOfLabels } from '../../../../../features/swf/console';
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.cold.breaches'), robots: { index: false, follow: false } }; }
 
-export default async function BreachesPage({ searchParams }: { searchParams: { cursor?: string; hours?: string; error?: string } }) {
+export default async function BreachesPage(
+  props: { searchParams: Promise<{ cursor?: string; hours?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(BREACHES_HREF);
   const t = getTranslator(); const lang = getLang();
   const canManage = tenantHasPerm('logistics.manage');

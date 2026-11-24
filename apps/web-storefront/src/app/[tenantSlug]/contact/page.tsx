@@ -20,13 +20,14 @@ export function generateMetadata(): Metadata {
   return { title: t.t('sweep.contact.title'), description: t.t('sweep.storeContact.lead') };
 }
 
-export default async function TenantContactPage({ params }: { params: { tenantSlug: string } }) {
+export default async function TenantContactPage(props: { params: Promise<{ tenantSlug: string }> }) {
+  const params = await props.params;
   const slug = params.tenantSlug;
   const shell = await loadTenantShell(slug);
   const b = shell.kind === 'ok' ? shell.branding : null;
   const name = (b?.brand?.displayName || b?.displayName || (shell.kind === 'ok' ? shell.tenant.displayName : '') || slug).trim();
   let flags: StorefrontFlags | null = null;
   try { flags = await publicClient(slug).storefront.flags(); } catch { flags = null; }
-  const platformOrigin = headers().get(TENANT_SLUG_HEADER) === slug ? env.siteUrl : '';
+  const platformOrigin = (await headers()).get(TENANT_SLUG_HEADER) === slug ? env.siteUrl : '';
   return <StoreContactScreen chrome={tenantChrome(slug)} name={name} messages={messagesState(flags)} platformOrigin={platformOrigin} />;
 }

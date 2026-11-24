@@ -18,7 +18,7 @@ export type TenantResolution =
 
 export async function resolveStorefrontTenant(routeSlug?: string | null): Promise<TenantResolution> {
   let hostSlug: string | null = null;
-  try { hostSlug = headers().get(TENANT_SLUG_HEADER); } catch { hostSlug = null; }
+  try { hostSlug = (await headers()).get(TENANT_SLUG_HEADER); } catch { hostSlug = null; }
   const slug = pickTenantSlug(routeSlug, hostSlug, env.platformTenantSlug);
   if (!slug) return { ok: false, kind: 'not_configured', slug: null };
   try {

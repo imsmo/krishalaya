@@ -50,7 +50,10 @@ interface PageModel {
 const HEAT_OPACITY = [0.12, 0.3, 0.5, 0.75, 1];
 const ERR = new Set(['reason', 'exportGrant', 'assembly', 'generic']);
 
-export default async function DemandMapPage({ searchParams }: { searchParams: { week?: string; ok?: string; error?: string; receipt?: string; suppressed?: string } }) {
+export default async function DemandMapPage(
+  props: { searchParams: Promise<{ week?: string; ok?: string; error?: string; receipt?: string; suppressed?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const sp = searchParams;

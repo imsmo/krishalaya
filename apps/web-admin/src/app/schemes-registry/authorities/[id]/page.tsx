@@ -31,7 +31,11 @@ type AuthorityDetail = AuthorityRow & {
   portal?: { providerCode?: string | null; externalId?: string | null; endpointLabel?: string | null } | null;
 };
 
-export default async function AuthorityDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function AuthorityDetailPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
 

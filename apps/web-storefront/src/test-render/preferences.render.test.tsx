@@ -37,8 +37,8 @@ import { text } from './store1b-harness';
 import { C, ORG_ZONE, reset, refusal } from './store4c-fixtures';
 import { STORE4C_REFUSALS } from '../features/store4c/refusals';
 
-const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await PlatformPrefs({ searchParams: sp }));
-const tenantPage = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantPrefs({ params: { tenantSlug: 'anand-fpo' }, searchParams: sp }));
+const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await PlatformPrefs({ searchParams: Promise.resolve(sp) }));
+const tenantPage = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantPrefs({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve(sp) }));
 const form = (o: Record<string, string | string[]>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) for (const x of Array.isArray(v) ? v : [v]) f.append(k, x); return f; };
 const redirectOf = async (p: Promise<unknown>) => { try { await p; } catch (e) { return String((e as Error).message); } return 'NO REDIRECT'; };
 const KEY = 'prefs:0215cafe-0000-4000-8000-000000000001';

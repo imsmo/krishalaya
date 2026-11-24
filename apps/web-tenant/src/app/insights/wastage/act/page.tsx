@@ -14,7 +14,8 @@ import { rerunWastageAction } from './actions';
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swf.wastage.rerun'), robots: { index: false, follow: false } }; }
 
-export default async function WastageActPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function WastageActPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   const base = `${WASTAGE_HREF}/act`;
   await requireSession(base);
   const t = getTranslator(); const lang = getLang();

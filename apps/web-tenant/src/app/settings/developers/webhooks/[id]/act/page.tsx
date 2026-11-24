@@ -35,7 +35,11 @@ const AUDIT_ACTION: Record<WebhookEndpointAct, string> = {
   pause: 'webhook.paused', resume: 'webhook.resumed', rotate: 'webhook.secret_rotated', delete: 'webhook.deleted', 'replay-failed': 'webhook.replay_failed',
 };
 
-export default async function EndpointActPage({ params, searchParams }: { params: { id: string }; searchParams: Record<string, string | undefined> }) {
+export default async function EndpointActPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const base = actBase(params.id);
   await requireSession(base);
   const t = getTranslator();

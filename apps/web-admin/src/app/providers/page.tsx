@@ -20,7 +20,10 @@ export function generateMetadata(): Metadata {
 
 const HEALTH_TONE: Record<string, StatusTone> = { active: 'success', degraded: 'danger', disabled: 'neutral' };
 
-export default async function ProvidersPage({ searchParams }: { searchParams: { cursor?: string; category?: string; active?: string } }) {
+export default async function ProvidersPage(
+  props: { searchParams: Promise<{ cursor?: string; category?: string; active?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const category = isValidCategory(searchParams.category) ? searchParams.category : undefined;

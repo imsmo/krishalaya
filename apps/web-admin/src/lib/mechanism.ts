@@ -6,18 +6,18 @@
 // gives the app a real, working mechanism (attributes + cookies), it just has no packages/ui shell component to
 // visually respond to `[data-theme="dark"]` yet beyond this app's own `globals.css` remap (see that file).
 import 'server-only';
-import { cookies } from 'next/headers';
+import { cookies, type UnsafeUnwrappedCookies } from 'next/headers';
 import { parseThemePreference, isSeniorOn, resolveThemeHtmlAttrs, type ThemePreference, type ThemeHtmlAttrs } from '@krishalaya/ui';
 
 export const THEME_COOKIE = 'kva_theme';
 export const SENIOR_COOKIE = 'kva_senior';
 
 export function getThemePreference(): ThemePreference {
-  return parseThemePreference(cookies().get(THEME_COOKIE)?.value);
+  return parseThemePreference((cookies() as unknown as UnsafeUnwrappedCookies).get(THEME_COOKIE)?.value);
 }
 export function getThemeHtmlAttrs(): ThemeHtmlAttrs {
   return resolveThemeHtmlAttrs(getThemePreference());
 }
 export function getSeniorMode(): boolean {
-  return isSeniorOn(cookies().get(SENIOR_COOKIE)?.value);
+  return isSeniorOn((cookies() as unknown as UnsafeUnwrappedCookies).get(SENIOR_COOKIE)?.value);
 }

@@ -27,7 +27,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('partner1.settings.title'), robots: { index: false, follow: false } };
 }
 
-export default async function SettingsPage({ searchParams }: { searchParams?: SP }) {
+export default async function SettingsPage(props: { searchParams?: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   const persona = await requirePartner();
   const t = getTranslator(); const lang = getLang();
   const form = chainState('settings_form', searchParams);

@@ -32,7 +32,7 @@ import { en } from '../i18n/en';
 import { text } from './store1b-harness';
 import { C, reset } from './store4a-fixtures';
 
-const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await DeletePage({ searchParams: sp }));
+const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await DeletePage({ searchParams: Promise.resolve(sp) }));
 const form = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 const redirectOf = async (p: Promise<unknown>) => { try { await p; return null; } catch (e) { return String((e as Error).message); } };
 const CLEAN = { openOrders: 0, escrowMinor: '0', walletMinor: '0', currencyCode: null, multiCurrency: false, invoiceCount: 17, blocked: false, retentionYears: 8, coolingDays: 90 };

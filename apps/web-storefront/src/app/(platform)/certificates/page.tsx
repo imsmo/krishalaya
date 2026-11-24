@@ -12,6 +12,7 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('store5b.cert.title'), robots: { index: false } };
 }
 
-export default async function Page({ searchParams }: { searchParams: SP }) {
+export default async function Page(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   return CertificateScreen({ chrome: PLATFORM_CHROME, searchParams });
 }

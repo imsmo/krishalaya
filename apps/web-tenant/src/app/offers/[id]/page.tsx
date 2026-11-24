@@ -25,7 +25,11 @@ export function generateMetadata(): Metadata {
 const ERR = new Set(['accept', 'counter', 'reject', 'price', 'illegal']);
 const OK = new Set(['accepted', 'countered', 'rejected']);
 
-export default async function OfferDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function OfferDetailPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   await requireSession(`/offers/${params.id}`);
   const t = getTranslator();
   const lang = getLang();

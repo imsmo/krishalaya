@@ -13,6 +13,7 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('store4c.prefs.title'), robots: { index: false, follow: false } };
 }
 
-export default async function Page({ searchParams }: { searchParams: SP }) {
+export default async function Page(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
   return PreferencesScreen({ chrome: PLATFORM_CHROME, searchParams });
 }

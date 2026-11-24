@@ -201,7 +201,8 @@ describe('PC-56 PARTNER-6c · the ban set finds NOTHING on W270, W271 and the la
   });
   it('the language act: a cookie and a redirect — no client, no SDK, no session read, no API', () => {
     const code = readCode(LANGUAGE_ACTION);
-    expect(code).toMatch(/cookies\(\)\.set\(LANG_COOKIE, lang\.code, languageCookie\(\)\)/);
+    // PC-56 SEC-2 (Next 15): cookies() is awaited — `(await cookies()).set(…)`; same cookie, same value, same options.
+    expect(code).toMatch(/(?:\(await )?cookies\(\)\)?\.set\(LANG_COOKIE, lang\.code, languageCookie\(\)\)/);
     const from = [...code.matchAll(/from '([^']+)'/g)].map((m) => m[1].replace(/^(\.\.\/)+/, ''));
     expect(from.sort()).toEqual(['features/partner6/language', 'next/headers', 'next/navigation']);
     expect(/api-client|sdk-js|partnerClient|anonClient|requirePartner|audit/.test(code)).toBe(false);

@@ -16,7 +16,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('inbox.title'), robots: { index: false, follow: false } };
 }
 
-export default async function InboxPage({ searchParams }: { searchParams: { cursor?: string } }) {
+export default async function InboxPage(props: { searchParams: Promise<{ cursor?: string }> }) {
+  const searchParams = await props.searchParams;
   await requireSession('/inbox');
   const t = getTranslator();
   const lang = getLang();

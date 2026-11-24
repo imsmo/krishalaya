@@ -36,7 +36,7 @@ export async function recordMaintenanceAction(formData: FormData): Promise<void>
   if (fieldRefused) redirect(`${MAINT}?form=error&reason=api&${back}`);
   const kept = asRecorded(rec);
   if (!kept) redirect(`${MAINT}?form=failure&reason=${reason ?? 'record'}`);
-  cookies().set(ENTRY_COOKIE, encodeRecorded(kept as NonNullable<typeof kept>),
+  (await cookies()).set(ENTRY_COOKIE, encodeRecorded(kept as NonNullable<typeof kept>),
     { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: MAINT, maxAge: ENTRY_COOKIE_MAX_AGE_SEC });
   redirect(`${MAINT}?form=success`);
 }

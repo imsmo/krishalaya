@@ -24,7 +24,8 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('dom.actPage.title'), robots: { index: false, follow: false } };
 }
 
-export default async function DomainActPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function DomainActPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   await requireSession(DOMAIN_ACT_HREF);
   const t = getTranslator();
   const step = mutateStep(searchParams.step);

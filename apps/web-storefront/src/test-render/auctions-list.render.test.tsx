@@ -44,7 +44,7 @@ import { C, reset, CARD, MINE, A, SLUG, FARMER, BIDDER_UUID } from './store3c-fi
 import { AUCTION_STATUS_LIST } from '../features/store3c/auctions';
 import { store3cRefusalKeys, STORE3C_REFUSALS } from '../features/store3c/refusals';
 
-const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantAuctionsPage({ params: { tenantSlug: SLUG }, searchParams: sp }));
+const page = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await TenantAuctionsPage({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve(sp) }));
 const CATS: Record<string, Record<string, string>> = { en, hi, gu };
 beforeEach(() => { reset(); });
 
@@ -174,9 +174,9 @@ describe('STORE-3c · the headers and the platform door (founder D4)', () => {
     expect(renderToStaticMarkup(await SiteHeader())).not.toContain('href="/auctions"');
   });
   it('the platform /auctions is a door: a session → its store\'s list (the tab carried); anonymous → "which store" — never a guessed store, never an INR card', async () => {
-    await expect(PlatformAuctionsDoor({ searchParams: { tab: 'ended' } })).rejects.toThrow(`REDIRECT /${SLUG}/auctions?tab=ended`);
+    await expect(PlatformAuctionsDoor({ searchParams: Promise.resolve({ tab: 'ended' }) })).rejects.toThrow(`REDIRECT /${SLUG}/auctions?tab=ended`);
     C.token = null;
-    const h = renderToStaticMarkup(await PlatformAuctionsDoor({ searchParams: {} }));
+    const h = renderToStaticMarkup(await PlatformAuctionsDoor({ searchParams: Promise.resolve({}) }));
     expect(h).toContain('data-kv-state="which-store"');
     expect(text(h)).toContain(en['store3c.door.whichStore']);
   });

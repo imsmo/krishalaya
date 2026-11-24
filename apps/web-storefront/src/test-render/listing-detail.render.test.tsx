@@ -33,7 +33,7 @@ import { store2aRefusalKeys } from '../features/store2/refusals';
 import { renderResolved, text } from './store1b-harness';
 import { S, reset, DETAIL, L1, OFF } from './store2a-fixtures';
 
-const lot = async (sp: Record<string, string> = {}) => renderResolved(await ListingDetail({ params: { tenantSlug: 'anand-fpo', id: L1 }, searchParams: sp }), []);
+const lot = async (sp: Record<string, string> = {}) => renderResolved(await ListingDetail({ params: Promise.resolve({ tenantSlug: 'anand-fpo', id: L1 }), searchParams: Promise.resolve(sp) }), []);
 const tomb = (status: string) => ({ id: L1, tombstone: true, status, title: 'GG-20 Groundnut — 40 qtl lot', organisation: { slug: 'anand-fpo', name: 'Anand FPO' }, category: { id: '0207c000-0000-7000-8000-000000000003', name: 'Groundnut' } });
 beforeEach(reset);
 

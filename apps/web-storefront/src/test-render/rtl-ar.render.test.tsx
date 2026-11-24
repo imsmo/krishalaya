@@ -72,12 +72,12 @@ const SLUG = 'anand-fpo';
 async function page(who: Who, mount: () => Promise<React.ReactNode>): Promise<string> {
   as(who);
   const children = await mount();
-  const store = await TenantLayout({ children, params: { tenantSlug: SLUG } });
+  const store = await TenantLayout({ children, params: Promise.resolve({ tenantSlug: SLUG }) });
   return renderResolved(RootLayout({ children: store as React.ReactElement }), [TenantHeader]);
 }
-const home = () => TenantStorefront({ params: { tenantSlug: SLUG }, searchParams: {} });
-const lot = () => ListingDetail({ params: { tenantSlug: SLUG, id: L1 }, searchParams: {} });
-const cart = () => TenantCart({ params: { tenantSlug: SLUG }, searchParams: {} });
+const home = () => TenantStorefront({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve({}) });
+const lot = () => ListingDetail({ params: Promise.resolve({ tenantSlug: SLUG, id: L1 }), searchParams: Promise.resolve({}) });
+const cart = () => TenantCart({ params: Promise.resolve({ tenantSlug: SLUG }), searchParams: Promise.resolve({}) });
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
 const htmlTag = (html: string) => html.match(/<html[^>]*>/)?.[0] ?? '';
 const main = (html: string) => html.match(/<main[^>]*>([\s\S]*)<\/main>/)?.[1] ?? '';

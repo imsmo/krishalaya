@@ -28,7 +28,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('rq.newTitle'), robots: { index: false, follow: false } };
 }
 
-export default async function NewRequirementPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function NewRequirementPage(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(NEW_REQ_HREF);
   const t = getTranslator();
   const lang = getLang();

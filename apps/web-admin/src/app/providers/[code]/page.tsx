@@ -26,7 +26,11 @@ const HEALTH_TONE: Record<string, StatusTone> = { active: 'success', degraded: '
 const OK = new Set(['enable', 'disable']);
 const ERR = new Set(['action', 'reason', 'elevation', 'conflict', 'notFound', 'generic']);
 
-export default async function ProviderDetailPage({ params, searchParams }: { params: { code: string }; searchParams: { ok?: string; error?: string } }) {
+export default async function ProviderDetailPage(
+  props: { params: Promise<{ code: string }>; searchParams: Promise<{ ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
 

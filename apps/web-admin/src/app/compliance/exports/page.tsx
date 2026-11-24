@@ -23,7 +23,10 @@ const AP_TONE: Record<string, StatusTone> = { pending: 'warning', approved: 'suc
 const OK = new Set(['approve', 'reject']);
 const ERR = new Set(['decision', 'reason', 'elevation', 'conflict', 'invalid', 'notFound', 'generic']);
 
-export default async function ExportApprovalsPage({ searchParams }: { searchParams: { cursor?: string; approvalStatus?: string; ok?: string; error?: string } }) {
+export default async function ExportApprovalsPage(
+  props: { searchParams: Promise<{ cursor?: string; approvalStatus?: string; ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
   const approvalStatus = (EXPORT_APPROVAL_STATUSES as readonly string[]).includes(searchParams.approvalStatus ?? '') ? searchParams.approvalStatus : undefined;

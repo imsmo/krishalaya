@@ -50,7 +50,7 @@ describe('STORE-6a · D1 · OnlineGuard mounted ONCE in BOTH chromes, with the r
     expect(count(h, /data-kv-update-mounted=/g)).toBe(1);
   });
   it('the organisation\'s chrome: one guard ("Why?" → /<slug>/offline), the reasons, the update notice', async () => {
-    const h = await renderResolved(await TenantLayout({ children: <p>page</p>, params: { tenantSlug: SLUG } }), [TenantHeader]);
+    const h = await renderResolved(await TenantLayout({ children: <p>page</p>, params: Promise.resolve({ tenantSlug: SLUG }) }), [TenantHeader]);
     expect(count(h, /data-kv-guard="/g)).toBe(1);
     expect(h).toContain(`data-kv-guard="/${SLUG}/offline"`);
     expect(h).toContain(`data-kv-reasons="${REASON_KEYS.length}"`);
@@ -58,7 +58,7 @@ describe('STORE-6a · D1 · OnlineGuard mounted ONCE in BOTH chromes, with the r
   });
   it('the organisation\'s OFFLINE page (shell mode) mounts none of them — the session-free shell rule', async () => {
     C.headers = { 'x-kv-shell': 'offline' };
-    const h = await renderResolved(await TenantLayout({ children: <p>page</p>, params: { tenantSlug: SLUG } }), [TenantHeader]);
+    const h = await renderResolved(await TenantLayout({ children: <p>page</p>, params: Promise.resolve({ tenantSlug: SLUG }) }), [TenantHeader]);
     expect(h).not.toMatch(/data-kv-guard=|data-kv-reasons=|data-kv-update-mounted=/);
   });
   it('the sign-in screen no longer mounts its own guard (the chrome\'s one serves it; its code forms carry their reason)', () => {

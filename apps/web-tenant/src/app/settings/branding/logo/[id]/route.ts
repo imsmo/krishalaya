@@ -9,7 +9,8 @@ import { isUuid } from '../../../../../features/branding/branding';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_req: Request, { params }: { params: { id: string } }): Promise<Response> {
+export async function GET(_req: Request, props: { params: Promise<{ id: string }> }): Promise<Response> {
+  const params = await props.params;
   // the cookie-held access token (a page load just refreshed it); no token → no logo
   if (!getAccessToken()) return new NextResponse(null, { status: 401 });
   if (!isUuid(params.id)) return new NextResponse(null, { status: 404 });

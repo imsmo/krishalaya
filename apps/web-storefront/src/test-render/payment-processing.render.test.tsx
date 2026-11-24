@@ -50,9 +50,9 @@ function payButtonOf(node: React.ReactNode): El | null {
   walk(node);
   return found;
 }
-const pay = async (sp: Record<string, string> = {}) => TenantPayPage({ params: { tenantSlug: 'anand-fpo' }, searchParams: { o: O.a, ...sp } });
+const pay = async (sp: Record<string, string> = {}) => TenantPayPage({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve({ o: O.a, ...sp }) });
 const html = async (sp: Record<string, string> = {}) => renderToStaticMarkup(await pay(sp));
-const confirm = async (sp: Record<string, string>) => renderToStaticMarkup(await TenantConfirmPage({ params: { tenantSlug: 'anand-fpo' }, searchParams: sp }));
+const confirm = async (sp: Record<string, string>) => renderToStaticMarkup(await TenantConfirmPage({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve(sp) }));
 const form = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 const attempt = (latest: Record<string, unknown> | null, n = latest ? 1 : 0) => ({ latest, attempts: n, nextAttempt: n + 1, liveAttempt: latest?.status === 'initiated', ttlSeconds: 900 });
 beforeEach(() => { reset(); C.orders[O.a] = ORDER(O.a, 'pending'); });

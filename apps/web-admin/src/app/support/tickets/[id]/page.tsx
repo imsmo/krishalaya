@@ -30,7 +30,11 @@ const ERR = new Set(['severity', 'reassign', 'reason', 'outcome', 'invalid', 'il
 // PC-56 ADMIN-2d: the reply form's own error namespace (prep_*), plus the server's verbatim 422
 const REPLY_ERR = new Set(['body', 'bodyLong', 'language', 'rejected']);
 
-export default async function TicketDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string; why?: string } }) {
+export default async function TicketDetailPage(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string; why?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
 

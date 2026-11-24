@@ -28,7 +28,8 @@ export function generateMetadata(): Metadata {
 }
 const num = (v: string | undefined) => (/^\d{1,9}$/.test(v ?? '') ? Number(v) : 0);
 
-export default async function WeeklyRunPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+export default async function WeeklyRunPage(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const searchParams = await props.searchParams;
   await requireSession(RUN_HREF);
   const t = getTranslator();
   const lang = getLang();

@@ -34,7 +34,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('dsp.title'), robots: { index: false, follow: false } };
 }
 
-export default async function DisputesPage({ searchParams }: { searchParams: { view?: string; cursor?: string; ok?: string; error?: string } }) {
+export default async function DisputesPage(
+  props: { searchParams: Promise<{ view?: string; cursor?: string; ok?: string; error?: string }> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession('/disputes');
   const t = getTranslator();
   const lang = getLang();

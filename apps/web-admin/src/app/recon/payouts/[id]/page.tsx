@@ -52,10 +52,14 @@ interface Detail {
   nextCursor: string | null;
 }
 
-export default async function PayoutBatchPage({ params, searchParams }: {
-  params: { id: string };
-  searchParams: { cursor?: string; ok?: string; error?: string };
-}) {
+export default async function PayoutBatchPage(
+  props: {
+    params: Promise<{ id: string }>;
+    searchParams: Promise<{ cursor?: string; ok?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
 

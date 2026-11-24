@@ -28,9 +28,8 @@ interface QueueView { items: CsatRow[]; maxScore: number; nextCursor: string | n
 
 const scoreTone = (n: number): StatusTone => (n <= 2 ? 'danger' : n === 3 ? 'warning' : 'success');
 
-export default async function CsatQueuePage(
-  { searchParams }: { searchParams: { cursor?: string; maxScore?: string } },
-) {
+export default async function CsatQueuePage(props: { searchParams: Promise<{ cursor?: string; maxScore?: string }> }) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

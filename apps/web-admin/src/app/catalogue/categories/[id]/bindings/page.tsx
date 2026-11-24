@@ -32,8 +32,10 @@ export function generateMetadata(): Metadata {
 interface BindingsView { items: BindingRow[]; localCount: number; inheritedCount: number; note: string | null }
 
 export default async function BindingsPage(
-  { params, searchParams }: { params: { id: string }; searchParams: { ok?: string; error?: string; why?: string } },
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string; why?: string }> }
 ) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   requireAdmin();
   const t = getTranslator();
 

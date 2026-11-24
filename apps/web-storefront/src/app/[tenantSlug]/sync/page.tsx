@@ -13,6 +13,10 @@ export function generateMetadata(): Metadata {
   return { title: getTranslator().t('store6b.sync.metaTitle'), robots: { index: false, follow: false } };
 }
 
-export default function Page({ params, searchParams }: { params: { tenantSlug: string }; searchParams: Record<string, string | string[] | undefined> }) {
+export default async function Page(
+  props: { params: Promise<{ tenantSlug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   return <SyncScreen chrome={tenantChrome(params.tenantSlug)} state={readSyncState(searchParams ?? {})} renderedAt={new Date().toISOString()} />;
 }

@@ -45,9 +45,12 @@ const SPARE_ROWS = 4;
 interface PolicyView { policy: { id: string; version: number; name: string; effectiveFrom: string; suspendAfterDays: number | null; notes: string | null }; steps: LadderStep[] }
 interface VersionRow { id: string; version: number; name: string; isActive: boolean; effectiveFrom: string; suspendAfterDays: number | null }
 
-export default async function DunningPolicyPage({ searchParams }: {
-  searchParams: { ok?: string; error?: string; row?: string };
-}) {
+export default async function DunningPolicyPage(
+  props: {
+    searchParams: Promise<{ ok?: string; error?: string; row?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   requireAdmin();
   const t = getTranslator();
 

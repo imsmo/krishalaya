@@ -19,7 +19,10 @@ import { asOfLabels } from '../../../../../features/swf/console';
 export const dynamic = 'force-dynamic';
 export function generateMetadata(): Metadata { return { title: getTranslator().t('swe.cold.devices'), robots: { index: false, follow: false } }; }
 
-export default async function DevicesPage({ searchParams }: { searchParams: { error?: string; registered?: string; revoked?: string } }) {
+export default async function DevicesPage(
+  props: { searchParams: Promise<{ error?: string; registered?: string; revoked?: string }> }
+) {
+  const searchParams = await props.searchParams;
   await requireSession(DEVICES_HREF);
   const t = getTranslator(); const lang = getLang();
   const canDevices = tenantHasPerm('logistics.devices.manage');

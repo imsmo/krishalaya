@@ -30,7 +30,7 @@ import { text } from './store1b-harness';
 import { C, reset, O, ORDER } from './store2c-fixtures';
 import { store3aRefusalKeys } from '../features/store3a/refusals';
 
-const confirm = async (sp: Record<string, string>) => renderToStaticMarkup(await TenantConfirmPage({ params: { tenantSlug: 'anand-fpo' }, searchParams: sp }));
+const confirm = async (sp: Record<string, string>) => renderToStaticMarkup(await TenantConfirmPage({ params: Promise.resolve({ tenantSlug: 'anand-fpo' }), searchParams: Promise.resolve(sp) }));
 beforeEach(() => { reset(); });
 
 describe('STORE-3a · W287 the order confirmed', () => {
