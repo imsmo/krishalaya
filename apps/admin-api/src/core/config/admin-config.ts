@@ -3,6 +3,7 @@
 // (§4): in production it refuses to boot with a weak/dev admin JWT secret, with the IP allowlist disabled, or
 // with hardware-key/step-up enforcement turned off. Injected everywhere — never read env elsewhere.
 import { Injectable } from '@nestjs/common';
+import { publicSecretProblems } from './known-public-secrets.generated';
 
 export interface AdminEnv {
   NODE_ENV: string;
@@ -47,6 +48,13 @@ export interface AdminEnv {
 }
 
 function num(v: unknown, d: number): number { const n = Number(v); return Number.isFinite(n) ? n : d; }
+/** The raw environment as strings (process.env, or a test's object) — for the published-secret check. */
+function stringEnv(raw: Record<string, unknown>): Record<string, string | undefined> {
+  const out: Record<string, string | undefined> = {};
+  for (const [k, v] of Object.entries(raw)) out[k] = typeof v === 'string' ? v : undefined;
+  return out;
+}
+
 function bool(v: unknown, d: boolean): boolean { return v === undefined ? d : v === 'true' || v === true; }
 function list(v: unknown): string[] { return typeof v === 'string' && v.length ? v.split(',').map((s) => s.trim()).filter(Boolean) : []; }
 
@@ -83,11 +91,11 @@ export class AdminConfig {
       IMPERSONATION_TOKEN_AUDIENCE: String(raw.IMPERSONATION_TOKEN_AUDIENCE ?? 'krishalaya-api'),
       IMPERSONATION_MAX_TTL_SEC: num(raw.IMPERSONATION_MAX_TTL_SEC, 1800),   // 30 min hard cap
     };
-    this.assertProductionSecurity();
+    this.assertProductionSecurity(raw);
   }
 
   /** Fail-closed: a weak/misconfigured god-mode realm crashes boot, never ships. */
-  private assertProductionSecurity(): void {
+  private assertProductionSecurity(raw: Record<string, unknown>): void {
     if (this.env.NODE_ENV !== 'production') return;
     const weak = (v: string) => !v || v.length < 32 || /change-?me|dev-|test|secret-secret|placeholder/i.test(v);
     const problems: string[] = [];
@@ -103,6 +111,8 @@ export class AdminConfig {
     // DEV-56 Part 3: the dev-only login bypass must be IMPOSSIBLE to run in production, not merely off by default —
     // the process refuses to boot if this is ever true here, exactly like AUTH_EXPOSE_OTP in apps/api.
     if (this.env.ADMIN_DEV_LOGIN_ENABLED) problems.push('ADMIN_DEV_LOGIN_ENABLED must be false in production (dev-only auth bypass)');
+    // PC-56 SEC-7: any secret whose value was ever committed to this PUBLIC repository (dev passwords, examples).
+    problems.push(...publicSecretProblems(stringEnv(raw)));
     if (problems.length) throw new Error(`FATAL: insecure admin-api config -> ${problems.join('; ')}`);
   }
 

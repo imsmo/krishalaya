@@ -1,6 +1,7 @@
 // core/config/__tests__/app-config.security.spec.ts
 // Proves assertProductionSecurity FAILS CLOSED: a secure prod env boots; any weak/dev/misconfigured value
 // is reported (and crashes the constructor in production). These are the regression tests for P0-2.
+import { randomBytes } from 'crypto';
 import { AppConfig } from '../app-config';
 import { validateEnv, Env } from '../env.validation';
 
@@ -37,6 +38,17 @@ const SECURE_RAW: Record<string, string> = {
   WEB_ORIGINS: 'https://sell.krishalaya.com,https://admin.krishalaya.com,https://krishalaya.com,https://partners.krishalaya.com',
 };
 
+// The same env with every secret (and every connection-URL password) replaced by a value generated NOW — never
+// committed anywhere, so the published-secret check (SEC-7) has nothing to match.
+const freshSecrets = (raw: Record<string, string>): Record<string, string> => {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(raw)) {
+    if (/SECRET|PEPPER|_KEY$/.test(k)) out[k] = `${v.slice(0, 6)}${randomBytes(24).toString('hex')}`;
+    else out[k] = v.replace(/^([a-z]+:\/\/[^:/@]*:)[^@]+@/, (_m, head: string) => `${head}${randomBytes(18).toString('hex')}@`);
+  }
+  return out;
+};
+
 const envWith = (overrides: Record<string, string | undefined>): Env => {
   const raw = { ...SECURE_RAW };
   for (const [k, v] of Object.entries(overrides)) {
@@ -52,8 +64,20 @@ describe('AppConfig.collectProductionProblems (fail-closed)', () => {
   });
 
   it('constructor boots on a secure prod env, throws on an insecure one', () => {
-    expect(() => new AppConfig(envWith({}) as unknown as Record<string, unknown>)).not.toThrow();
-    expect(() => new AppConfig({ ...SECURE_RAW, JWT_ACCESS_SECRET: 'dev-secret-change-me' })).toThrow(/insecure production config/i);
+    expect(() => new AppConfig(freshSecrets(SECURE_RAW))).not.toThrow();
+    expect(() => new AppConfig({ ...freshSecrets(SECURE_RAW), JWT_ACCESS_SECRET: 'dev-secret-change-me' })).toThrow(/insecure production config/i);
+  });
+
+  // PC-56 SEC-7: SECURE_RAW's values are strong-LOOKING but committed to a public repository, so they are known to
+  // everyone. The constructor refuses each of them by name — and nothing else about the env is wrong.
+  it('constructor refuses secrets that were committed to the public repository (SEC-7)', () => {
+    let msg = '';
+    try { new AppConfig(SECURE_RAW); } catch (e) { msg = (e as Error).message; }
+    for (const name of ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET', 'AUTH_HASH_PEPPER', 'STOREFRONT_CALLER_SECRET', 'DATABASE_URL', 'RELAY_DATABASE_URL']) {
+      expect(msg).toContain(`${name} uses a value that was committed to the public repository`);
+    }
+    // One published value is enough to refuse boot.
+    expect(() => new AppConfig({ ...freshSecrets(SECURE_RAW), AUTH_HASH_PEPPER: SECURE_RAW.AUTH_HASH_PEPPER })).toThrow(/AUTH_HASH_PEPPER uses a value that was committed/);
   });
 
   it.each([

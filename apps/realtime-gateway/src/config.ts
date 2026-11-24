@@ -2,6 +2,8 @@
 // The gateway verifies the SAME access JWT the api mints, so it reuses JWT_ACCESS_SECRET/ISSUER/AUDIENCE.
 // REDIS_URL is required (that's where the publisher fans out); without it there is nothing to relay.
 
+import { publicSecretProblems } from './known-public-secrets.generated';
+
 export interface GatewayConfig {
   port: number;
   redisUrl: string;
@@ -36,6 +38,8 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
   const problems: string[] = [];
   if (prod && isWeak(cfg.jwt.accessSecret)) problems.push('JWT_ACCESS_SECRET (unique random >=32 chars)');
   if (prod && !cfg.redisUrl) problems.push('REDIS_URL (required for cross-pod fan-out)');
+  // PC-56 SEC-7: any secret whose value was ever committed to this PUBLIC repository (dev passwords, examples).
+  if (prod) problems.push(...publicSecretProblems(env));
   if (problems.length) throw new Error(`realtime-gateway refusing to start — insecure config: ${problems.join(', ')}`);
   return cfg;
 }

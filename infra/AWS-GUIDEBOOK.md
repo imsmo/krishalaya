@@ -636,7 +636,10 @@ SMS_PROVIDER=twilio
 ```
 Rules: `wallet-service` uses the **kv_wallet** user in its URL; `worker` and `ai-services` use **kv_relay**;
 `realtime-gateway` must have the **same** `JWT_ACCESS_SECRET` as `api`; in `admin-api` set `ADMIN_IP_ALLOWLIST` to
-your office/home IP (<https://checkip.amazonaws.com>) and `ADMIN_REQUIRE_HARDWARE_KEY=true`. Leave a value **empty**
+your office/home IP (<https://checkip.amazonaws.com>) and `ADMIN_REQUIRE_HARDWARE_KEY=true`. **Every secret must be
+newly generated** (`openssl rand -base64 32`) — never keep a value from an example file, a test, or your laptop's
+`.env`: the repository is public, and a production service refuses to start if any of its secrets matches a value
+ever committed to it (the error names the setting to replace). Leave a value **empty**
 to mean "not set" (e.g. all `OPENSEARCH_*` in staging). **Never** set `AUTH_EXPOSE_OTP=true`, `S3_ACCESS_KEY_ID` or
 `S3_SECRET_ACCESS_KEY`.
 
@@ -1026,8 +1029,13 @@ GuardDuty (prod account) → Protection plans → also turn on **Runtime Monitor
 **Malware Protection for EC2/EBS**. 💰 ~₹1,500–3,000/month more; worth it for a payments platform.
 
 ### 12.2 Admin access — [ ]
-- `admin-api` allows only `ADMIN_IP_ALLOWLIST` and requires a **hardware key** for every admin login — register both
-  YubiKeys for each admin.
+- `admin-api` rejects every IP not on `ADMIN_IP_ALLOWLIST` (production refuses to start with it empty) — set it to
+  your office/VPN egress IPs.
+- ⚠️ **Not built yet — a launch blocker on the development side:** the production admin sign-in (`/auth/sso/start`,
+  identity provider + hardware-key/WebAuthn ceremony) does not exist in the code today. The hardware-key *check*
+  (`hardware-key.guard.ts`) is there, but nothing issues the token it checks, and the dev login is correctly blocked
+  in production. Until the sign-in is built, **nobody can log in to the production admin console**. When it ships,
+  this step becomes: register both YubiKeys for each admin.
 - IAM Identity Center: only people who truly need production get the prod account. Review every quarter
   ([`security/access-review-quarterly.md`](../security/access-review-quarterly.md)).
 - Turn on **MFA required** for GitHub organization members (<https://github.com/settings/security>).

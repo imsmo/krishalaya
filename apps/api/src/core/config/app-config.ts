@@ -5,13 +5,21 @@
 //   business values (commission %, languages…) → DATABASE tables — NEVER env vars.
 import { Injectable } from '@nestjs/common';
 import { validateEnv, Env } from './env.validation';
+import { publicSecretProblems } from './known-public-secrets.generated';
+
+/** The raw environment as strings (process.env, or a test's object) — for the published-secret check. */
+function stringEnv(raw: Record<string, unknown>): Record<string, string | undefined> {
+  const out: Record<string, string | undefined> = {};
+  for (const [k, v] of Object.entries(raw)) out[k] = typeof v === 'string' ? v : undefined;
+  return out;
+}
 
 @Injectable()
 export class AppConfig {
   private readonly env: Env;
   constructor(raw: Record<string, unknown> = process.env) {
     this.env = validateEnv(raw);
-    this.assertProductionSecurity(); // fail-closed: a weak prod secret crashes boot, never ships
+    this.assertProductionSecurity(raw); // fail-closed: a weak prod secret crashes boot, never ships
   }
 
   /**
@@ -20,9 +28,10 @@ export class AppConfig {
    * S3 (IRSA only — no static keys), OpenSearch TLS+auth, and every external-provider webhook secret that is
    * meaningless if weak. Exported as a pure helper (collectProductionProblems) so it is unit-testable.
    */
-  private assertProductionSecurity(): void {
+  private assertProductionSecurity(raw: Record<string, unknown>): void {
     if (this.env.NODE_ENV !== 'production') return;
-    const problems = AppConfig.collectProductionProblems(this.env);
+    // PC-56 SEC-7: plus any secret whose value was ever committed to this PUBLIC repository (dev passwords, examples).
+    const problems = [...AppConfig.collectProductionProblems(this.env), ...publicSecretProblems(stringEnv(raw))];
     if (problems.length) throw new Error(`FATAL: insecure production config -> ${problems.join('; ')}`);
   }
 

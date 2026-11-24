@@ -27,6 +27,11 @@ jobs:
           bad=$(git ls-files | grep -E '(^|/)\.env($|\.)' | grep -v '\.env\.example$' || true)
           if [ -n "$bad" ]; then echo "FATAL: tracked .env files:"; echo "$bad"; exit 1; fi
           echo "OK: no tracked .env files."
+      # PC-56 SEC-7: every backend refuses, in production, any secret ever committed to this PUBLIC repository. That
+      # only works if each service's fingerprint list covers the whole history — fail when a commit added a
+      # secret-like value without regenerating (node scripts/security/known-public-secrets.mjs).
+      - name: published-secret fingerprints cover the whole history
+        run: node scripts/security/known-public-secrets.mjs --check
 
   dep-audit:
     runs-on: ubuntu-latest

@@ -5,6 +5,14 @@
 // set a "delivery disabled" gauge and returned, so a worker that could not sign looked healthy). Outside production the documented
 // development key (core/secrets envelope, identical in the API) stands in.
 import { resolveKek } from './jobs/webhook/secret-envelope';
+import { publicSecretProblems } from './known-public-secrets.generated';
+
+/** The raw environment as strings (process.env, or a test's object) — for the published-secret check. */
+function stringEnv(raw: Record<string, unknown>): Record<string, string | undefined> {
+  const out: Record<string, string | undefined> = {};
+  for (const [k, v] of Object.entries(raw)) out[k] = typeof v === 'string' ? v : undefined;
+  return out;
+}
 export interface WorkerEnv {
   NODE_ENV: 'development' | 'test' | 'staging' | 'production';
   DATABASE_URL: string;        // kv_relay
@@ -27,12 +35,12 @@ export class WorkerConfig {
       TICK_INTERVAL_MS: Number(raw.WORKER_TICK_INTERVAL_MS ?? 15000),
       STATEMENT_TIMEOUT_MS: Number(raw.WORKER_STATEMENT_TIMEOUT_MS ?? 120000),
     };
-    this.assertProductionSecurity();
+    this.assertProductionSecurity(raw);
     try { this.webhookKek = resolveKek(raw.WEBHOOK_SIGNING_KEK as string | undefined, this.isProd); }
     catch (e) { throw new Error(`FATAL: insecure worker config -> ${(e as Error).message}`); }
   }
   get isProd() { return this.env.NODE_ENV === 'production'; }
-  private assertProductionSecurity(): void {
+  private assertProductionSecurity(raw: Record<string, unknown>): void {
     if (this.env.NODE_ENV !== 'production') return;
     const problems: string[] = [];
     const url = this.env.DATABASE_URL;
@@ -43,6 +51,8 @@ export class WorkerConfig {
       if (/sslmode=disable/i.test(url)) problems.push('DATABASE_URL must require TLS (sslmode=require)');
       if (!/kv_relay/.test(url)) problems.push('worker must connect as kv_relay (the BYPASSRLS relay role), not kv_app');
     }
+    // PC-56 SEC-7: any secret whose value was ever committed to this PUBLIC repository (dev passwords, examples).
+    problems.push(...publicSecretProblems(stringEnv(raw)));
     if (problems.length) throw new Error(`FATAL: insecure worker config -> ${problems.join('; ')}`);
   }
 }
