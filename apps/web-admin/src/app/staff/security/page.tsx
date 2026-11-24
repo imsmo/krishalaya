@@ -8,6 +8,8 @@
 // minted and carried since the realm was built and read by nothing: `clearAdminSession()` deleted a cookie, and a copied
 // bearer kept working until it expired. A revoked session is now refused by `AdminAuthGuard` on its next request.
 //
+// PC-56 ADMIN-AUTH-1: SUPERSEDED — the key list is built at /staff/keys over the admin realm's own table (0244); the
+// paragraph below is kept as the history of why it could not be built on 0074's.
 // **THE FIDO2 KEY LIST IS NOT BUILT, AND W439'S OWN BANNER IS WRONG ABOUT WHY.** It says no credentials table exists in
 // schema. One does — `fido2_credentials`, migration 0074 — and it references `users(id)`, the TENANT realm's table. So a
 // platform operator has no row in it and cannot be given one without the cross-tenant identity the two-realm split
@@ -21,7 +23,7 @@ import { getTranslator } from '../../../lib/i18n';
 import { revokeOwnSessionAction } from '../actions';
 import { Button, Callout, StatusPill } from '@krishalaya/ui';
 import {
-  canRevokeSession, dormancyTone, dormancyKey, gateKey, keyListKey, keyListState, revokeLabelKey, sessionTone,
+  canRevokeSession, dormancyTone, dormancyKey, gateKey, revokeLabelKey, sessionTone,
   sessionKey, sessionState, stepUpClass, stepUpOutcomeTone, stepUpStateKey, type Dormancy,
 } from '../../../features/staff/operators';
 
@@ -63,7 +65,6 @@ export default async function MySecurityPage(props: { searchParams: Promise<{ ok
     notice = e instanceof AdminApiError ? 'st.error.me' : 'st.error.me';
   }
 
-  const keys = m ? keyListState(m.fido2.keyListAvailable, 0) : 'unavailable';
 
   return (
     <main className="kv-page">
@@ -86,7 +87,8 @@ export default async function MySecurityPage(props: { searchParams: Promise<{ ok
           {/* THE KEYS — an honest absence rather than an empty list. */}
           <section className="kv-panel" aria-labelledby="st-keys">
             <h2 id="st-keys" className="kv-panel__title">{t.t('st.keys.title')}</h2>
-            <Callout tone="warning">{t.t(keyListKey(keys), { owner: m.fido2.gap })}</Callout>
+            {/* PC-56 ADMIN-AUTH-1: the admin realm now holds its operators' keys (0244) — the list lives on its own page. */}
+            <p><Link href="/staff/keys">{t.t('keys.manageLink')}</Link></p>
             <Callout tone="info">
               {m.fido2.knownFromToken ? t.t('st.keys.factorPresent') : t.t('st.keys.factorAbsent')}
             </Callout>

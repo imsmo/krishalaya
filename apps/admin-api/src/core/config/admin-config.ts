@@ -4,6 +4,7 @@
 // with hardware-key/step-up enforcement turned off. Injected everywhere — never read env elsewhere.
 import { Injectable } from '@nestjs/common';
 import { publicSecretProblems } from './known-public-secrets.generated';
+import { OperatorBinding, parseOperatorBindings } from '../auth/operator-bindings';
 
 export interface AdminEnv {
   NODE_ENV: string;
@@ -45,6 +46,20 @@ export interface AdminEnv {
   MEDIA_FORCE_PATH_STYLE: boolean;
   // Short by design: a download link for a tax document should not survive being pasted into a chat thread.
   MEDIA_PRESIGN_EXPIRY_SEC: number;
+  // ---- PC-56 ADMIN-AUTH-1 · operator sign-in (OpenID Connect + WebAuthn hardware key) ----
+  ADMIN_OIDC_ISSUER: string;           // default https://accounts.google.com (Google Workspace)
+  ADMIN_OIDC_CLIENT_ID: string;
+  ADMIN_OIDC_CLIENT_SECRET: string;
+  ADMIN_OIDC_REDIRECT_URI: string;     // THIS process's /v1/auth/sso/callback (https in production)
+  ADMIN_OIDC_ALLOWED_DOMAINS: string[];// lower-cased; enforced on `hd` (when present) AND the verified email's domain
+  ADMIN_OIDC_HTTP_TIMEOUT_MS: number;  // every outbound IdP call (discovery, JWKS, token) is bounded by this
+  ADMIN_CONSOLE_URL: string;           // web-admin origin the callback redirects back to
+  ADMIN_OPERATOR_BINDINGS: OperatorBinding[];   // parsed + validated (core/auth/operator-bindings.ts)
+  ADMIN_BOOTSTRAP_ENROLLMENT_CODE_SHA256: string;   // hex sha256 of the founder's one-time first-key code ('' = none)
+  ADMIN_WEBAUTHN_RP_ID: string;        // registrable domain of the console (e.g. krishalaya.com)
+  ADMIN_WEBAUTHN_RP_NAME: string;
+  ADMIN_WEBAUTHN_ORIGIN: string;       // web-admin origin (where the browser ceremony runs)
+  ADMIN_SESSION_TTL_SEC: number;       // lifetime of a minted admin session token (step-up never extends it)
 }
 
 function num(v: unknown, d: number): number { const n = Number(v); return Number.isFinite(n) ? n : d; }
@@ -90,9 +105,37 @@ export class AdminConfig {
       IMPERSONATION_TOKEN_ISSUER: String(raw.IMPERSONATION_TOKEN_ISSUER ?? 'krishalaya-impersonation'),
       IMPERSONATION_TOKEN_AUDIENCE: String(raw.IMPERSONATION_TOKEN_AUDIENCE ?? 'krishalaya-api'),
       IMPERSONATION_MAX_TTL_SEC: num(raw.IMPERSONATION_MAX_TTL_SEC, 1800),   // 30 min hard cap
+      ADMIN_OIDC_ISSUER: String(raw.ADMIN_OIDC_ISSUER ?? 'https://accounts.google.com').replace(/\/+$/, ''),
+      ADMIN_OIDC_CLIENT_ID: String(raw.ADMIN_OIDC_CLIENT_ID ?? ''),
+      ADMIN_OIDC_CLIENT_SECRET: String(raw.ADMIN_OIDC_CLIENT_SECRET ?? ''),
+      ADMIN_OIDC_REDIRECT_URI: String(raw.ADMIN_OIDC_REDIRECT_URI ?? ''),
+      ADMIN_OIDC_ALLOWED_DOMAINS: list(raw.ADMIN_OIDC_ALLOWED_DOMAINS).map((d) => d.toLowerCase()),
+      ADMIN_OIDC_HTTP_TIMEOUT_MS: Math.min(Math.max(num(raw.ADMIN_OIDC_HTTP_TIMEOUT_MS, 5000), 500), 15000),
+      ADMIN_CONSOLE_URL: String(raw.ADMIN_CONSOLE_URL ?? '').replace(/\/+$/, ''),
+      ADMIN_OPERATOR_BINDINGS: [],
+      ADMIN_BOOTSTRAP_ENROLLMENT_CODE_SHA256: String(raw.ADMIN_BOOTSTRAP_ENROLLMENT_CODE_SHA256 ?? '').trim().toLowerCase(),
+      ADMIN_WEBAUTHN_RP_ID: String(raw.ADMIN_WEBAUTHN_RP_ID ?? '').trim().toLowerCase(),
+      ADMIN_WEBAUTHN_RP_NAME: String(raw.ADMIN_WEBAUTHN_RP_NAME ?? 'Krishalaya Admin'),
+      ADMIN_WEBAUTHN_ORIGIN: String(raw.ADMIN_WEBAUTHN_ORIGIN ?? '').replace(/\/+$/, ''),
+      // 8 h default (a working day), clamped to [5 min, 12 h]. Sensitive actions still need a step-up within
+      // ADMIN_STEP_UP_MAX_AGE_SEC, so a long session never means a long-lived elevation.
+      ADMIN_SESSION_TTL_SEC: Math.min(Math.max(num(raw.ADMIN_SESSION_TTL_SEC, 28_800), 300), 43_200),
     };
+    // Bindings are parsed here (the only env reader) and validated against owner-roles.ts. Malformed JSON and duplicate
+    // emails are refused in EVERY environment — a half-read binding list is worse than none. Unknown roles and zero
+    // bindings are boot refusals in production (assertProductionSecurity) and loud warnings elsewhere.
+    const isProdEnv = this.env.NODE_ENV === 'production';
+    const parsedBindings = parseOperatorBindings(raw.ADMIN_OPERATOR_BINDINGS, isProdEnv);
+    this.bindingProblems = parsedBindings.errors;
+    if (!isProdEnv && parsedBindings.errors.length) throw new Error(`FATAL: admin-api ADMIN_OPERATOR_BINDINGS -> ${parsedBindings.errors.join('; ')}`);
+    // eslint-disable-next-line no-console
+    for (const w of parsedBindings.warnings) console.warn(`[admin-api] WARNING: ${w}`);
+    this.env.ADMIN_OPERATOR_BINDINGS = parsedBindings.bindings;
     this.assertProductionSecurity(raw);
   }
+
+  /** Binding errors, kept for assertProductionSecurity (in production they are reported with every other problem). */
+  private bindingProblems: string[] = [];
 
   /** Fail-closed: a weak/misconfigured god-mode realm crashes boot, never ships. */
   private assertProductionSecurity(raw: Record<string, unknown>): void {
@@ -111,14 +154,44 @@ export class AdminConfig {
     // DEV-56 Part 3: the dev-only login bypass must be IMPOSSIBLE to run in production, not merely off by default —
     // the process refuses to boot if this is ever true here, exactly like AUTH_EXPOSE_OTP in apps/api.
     if (this.env.ADMIN_DEV_LOGIN_ENABLED) problems.push('ADMIN_DEV_LOGIN_ENABLED must be false in production (dev-only auth bypass)');
+    // PC-56 ADMIN-AUTH-1: the real sign-in must be fully configured — without it nobody can reach the console, and a
+    // half-configured one (http redirect, no domain restriction, a WebAuthn origin the RP id does not cover) is worse.
+    problems.push(...this.signInProblems());
     // PC-56 SEC-7: any secret whose value was ever committed to this PUBLIC repository (dev passwords, examples).
     problems.push(...publicSecretProblems(stringEnv(raw)));
     if (problems.length) throw new Error(`FATAL: insecure admin-api config -> ${problems.join('; ')}`);
   }
 
+  /** Production-only checks for the operator sign-in (OIDC + WebAuthn + bindings + bootstrap code). */
+  private signInProblems(): string[] {
+    const p: string[] = [...this.bindingProblems];
+    const e = this.env;
+    const https = (v: string) => { try { return new URL(v).protocol === 'https:'; } catch { return false; } };
+    if (!https(e.ADMIN_OIDC_ISSUER)) p.push('ADMIN_OIDC_ISSUER must be an https URL');
+    if (!e.ADMIN_OIDC_CLIENT_ID) p.push('ADMIN_OIDC_CLIENT_ID must be set');
+    // Google's client secrets are ~35 chars; the length floor is lower than ADMIN_JWT_SECRET's, the placeholder check is the same.
+    if (!e.ADMIN_OIDC_CLIENT_SECRET || e.ADMIN_OIDC_CLIENT_SECRET.length < 16 || /change-?me|placeholder/i.test(e.ADMIN_OIDC_CLIENT_SECRET)) p.push('ADMIN_OIDC_CLIENT_SECRET must be set (the IdP client secret)');
+    if (!https(e.ADMIN_OIDC_REDIRECT_URI) || !/\/v1\/auth\/sso\/callback$/.test(e.ADMIN_OIDC_REDIRECT_URI)) p.push('ADMIN_OIDC_REDIRECT_URI must be the https …/v1/auth/sso/callback URL of this admin-api');
+    if (e.ADMIN_OIDC_ALLOWED_DOMAINS.length === 0) p.push('ADMIN_OIDC_ALLOWED_DOMAINS must list the Workspace domain(s) operators sign in from');
+    if (!https(e.ADMIN_CONSOLE_URL)) p.push('ADMIN_CONSOLE_URL must be the https origin of web-admin');
+    if (!e.ADMIN_WEBAUTHN_RP_ID) p.push('ADMIN_WEBAUTHN_RP_ID must be set (the console\'s registrable domain)');
+    if (!https(e.ADMIN_WEBAUTHN_ORIGIN)) p.push('ADMIN_WEBAUTHN_ORIGIN must be the https origin of web-admin');
+    else if (e.ADMIN_WEBAUTHN_RP_ID) {
+      const host = new URL(e.ADMIN_WEBAUTHN_ORIGIN).hostname.toLowerCase();
+      if (host !== e.ADMIN_WEBAUTHN_RP_ID && !host.endsWith(`.${e.ADMIN_WEBAUTHN_RP_ID}`)) p.push('ADMIN_WEBAUTHN_ORIGIN\'s host must equal ADMIN_WEBAUTHN_RP_ID or be a subdomain of it');
+    }
+    if (e.ADMIN_BOOTSTRAP_ENROLLMENT_CODE_SHA256 && !/^[0-9a-f]{64}$/.test(e.ADMIN_BOOTSTRAP_ENROLLMENT_CODE_SHA256)) p.push('ADMIN_BOOTSTRAP_ENROLLMENT_CODE_SHA256 must be 64 hex characters (sha256 of the code), or empty');
+    return p;
+  }
+
   get isProd() { return this.env.NODE_ENV === 'production'; }
   get jwt() { return { secret: this.env.ADMIN_JWT_SECRET, issuer: this.env.ADMIN_JWT_ISSUER, audience: this.env.ADMIN_JWT_AUDIENCE }; }
   get wallet() { return { addr: this.env.WALLET_GRPC_ADDR, token: this.env.WALLET_S2S_TOKEN, timeoutMs: this.env.WALLET_GRPC_TIMEOUT_MS }; }
+  get oidc() {
+    const e = this.env;
+    return { issuer: e.ADMIN_OIDC_ISSUER, clientId: e.ADMIN_OIDC_CLIENT_ID, clientSecret: e.ADMIN_OIDC_CLIENT_SECRET, redirectUri: e.ADMIN_OIDC_REDIRECT_URI, allowedDomains: e.ADMIN_OIDC_ALLOWED_DOMAINS, timeoutMs: e.ADMIN_OIDC_HTTP_TIMEOUT_MS };
+  }
+  get webauthn() { return { rpId: this.env.ADMIN_WEBAUTHN_RP_ID, rpName: this.env.ADMIN_WEBAUTHN_RP_NAME, origin: this.env.ADMIN_WEBAUTHN_ORIGIN }; }
   get impersonation() { return { enabled: this.env.IMPERSONATION_ENABLED, secret: this.env.IMPERSONATION_TOKEN_SECRET, issuer: this.env.IMPERSONATION_TOKEN_ISSUER, audience: this.env.IMPERSONATION_TOKEN_AUDIENCE, maxTtlSec: this.env.IMPERSONATION_MAX_TTL_SEC }; }
 }
 export const ADMIN_CONFIG = Symbol('ADMIN_CONFIG');

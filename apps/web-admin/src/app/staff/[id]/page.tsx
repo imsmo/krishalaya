@@ -23,6 +23,8 @@ import {
   restrictionState, revokeLabelKey, sessionTone, sessionKey, sessionState, statusTone, statusKey, stepUpOutcomeTone,
   suspendKindKey, type Dormancy,
 } from '../../../features/staff/operators';
+import { revokeKeyAction } from '../keys/actions';
+import { enrolledViaKey, type KeyView } from '../../../features/admin-auth/admin-auth';
 import {
   liftRestrictionAction, requestReinstateAction, reinstateOperatorAction, restrictOperatorAction,
   revokeOperatorSessionAction, suspendOperatorAction,
@@ -81,6 +83,12 @@ export default async function OperatorPage(
     notice = e instanceof AdminApiError && e.status === 403 ? 'st.restricted.roster' : 'st.error.operator';
   }
   if (!o && !notice) notFound();
+
+  // PC-56 ADMIN-AUTH-1: this operator's hardware keys (staff.read). Revoking one needs staff.manage + key + step-up —
+  // admin-api decides; a failed read simply hides the panel (the rest of the page does not depend on it).
+  let opKeys: { email: string | null; keys: KeyView[] } | null = null;
+  try { opKeys = (await adminGet<{ email: string | null; keys: KeyView[] }>(`auth/operators/${encodeURIComponent(params.id)}/keys`)).data ?? null; }
+  catch { opKeys = null; }
 
   const isSelf = !!o && o.adminUserId === me;
   const suspension = o?.suspension ?? null;
@@ -362,6 +370,47 @@ export default async function OperatorPage(
             )}
           </section>
         </>
+      ) : null}
+
+      {opKeys ? (
+        <section className="kv-panel" aria-labelledby="st-keys-op">
+          <h2 id="st-keys-op" className="kv-panel__title">{t.t('keys.operator.title')}</h2>
+          {opKeys.email ? <p className="kv-muted">{t.t('keys.operator.email', { email: opKeys.email })}</p> : null}
+          {opKeys.keys.length === 0 ? <Callout tone="info">{t.t('keys.operator.none')}</Callout> : (
+            <table className="kv-table">
+              <caption className="kv-table__caption">{t.t('keys.operator.caption')}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">{t.t('keys.col.label')}</th>
+                  <th scope="col">{t.t('keys.col.via')}</th>
+                  <th scope="col">{t.t('keys.col.lastUsed')}</th>
+                  <th scope="col">{t.t('keys.col.state')}</th>
+                  <th scope="col">{t.t('keys.col.action')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {opKeys.keys.map((k) => (
+                  <tr key={k.id}>
+                    <td>{k.label}</td>
+                    <td>{t.t(enrolledViaKey(k.enrolledVia))}</td>
+                    <td>{k.lastUsedAt ? k.lastUsedAt.slice(0, 16).replace('T', ' ') : t.t('keys.never')}</td>
+                    <td><StatusPill tone={k.revokedAt ? 'neutral' : 'success'} label={t.t(k.revokedAt ? 'keys.state.revoked' : 'keys.state.active')} /></td>
+                    <td>
+                      {!k.revokedAt && !isSelf ? (
+                        <form action={revokeKeyAction}>
+                          <input type="hidden" name="keyId" value={k.id} />
+                          <input type="hidden" name="returnTo" value={`/staff/${params.id}`} />
+                          <input className="kv-input kv-input--sm" name="reason" required minLength={10} maxLength={500} aria-label={t.t('keys.revoke.reason')} placeholder={t.t('keys.revoke.reason')} />
+                          <Button type="submit" variant="danger" size="sm">{t.t('keys.revoke.cta')}</Button>
+                        </form>
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
       ) : null}
     </main>
   );

@@ -23,6 +23,8 @@ import { resolveLanguage } from '@krishalaya/i18n';
 import { AppShell, KvUiGlobalStyles } from '@krishalaya/ui';
 import { Sidebar } from '../components/Sidebar';
 import { AdminTopbar } from '../components/AdminTopbar';
+import { Callout } from '@krishalaya/ui';
+import { stepUpHref } from '../features/admin-auth/admin-auth';
 
 export const metadata: Metadata = {
   title: { default: env.appName, template: `%s · ${env.appName}` },
@@ -42,7 +44,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Component cannot call the client-only `usePathname()` hook, and this is the standard Next.js App Router
   // substitute. Drives `Sidebar`'s real `aria-current="page"` active-nav highlight (see middleware.ts's own
   // header comment for why this is a genuine ADDITION, not a preserved pre-existing behavior).
-  const pathname = (await headers()).get('x-pathname') ?? '';
+  const h = await headers();
+  const pathname = h.get('x-pathname') ?? '';
+  // PC-56 ADMIN-AUTH-1: every console action maps an admin-api 403 to `?error=elevation`. Wherever that lands, offer the
+  // step-up screen (one hardware-key assertion → a fresh auth_time on the same session → back here to retry). If the 403
+  // was a missing permission rather than a stale step-up, the retry is refused again and the page's own notice says so.
+  const search = h.get('x-search') ?? '';
+  const needsStepUp = authed && new URLSearchParams(search).get('error') === 'elevation';
   return (
     <html lang={lang.code} dir={lang.dir} data-theme={themeAttrs['data-theme']} className={themeAttrs.className} data-senior={senior ? 'true' : undefined}>
       <head>
@@ -52,7 +60,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <a href="#main" className="kv-skip">{t.t('nav.skipToContent')}</a>
         {authed ? (
           <AppShell sidebar={<Sidebar pathname={pathname} />} topbar={<AdminTopbar />} realm="admin">
-            <div id="main">{children}</div>
+            <div id="main">
+              {needsStepUp ? (
+                <Callout tone="info" live="polite">
+                  {t.t('stepUp.banner')} <a href={stepUpHref(pathname, search)}>{t.t('stepUp.cta')}</a>
+                </Callout>
+              ) : null}
+              {children}
+            </div>
           </AppShell>
         ) : (
           <main className="kv-content kv-content--bare" id="main">{children}</main>

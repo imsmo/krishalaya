@@ -255,3 +255,6 @@ a { color: inherit; text-decoration: none; }
    side the text starts from. Two lines, and they were the only physical-direction rules left in this app's stylesheet. */
 .kv-list { margin: 0.5rem 0 1rem; padding-inline-start: 1.1rem; }
 .kv-list > li { margin: 0 0 0.35rem; }
+
+/* PC-56 ADMIN-AUTH-1 · a one-time enrollment code, shown once: monospaced, selectable, never wrapped mid-group. */
+.kv-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1.1em; letter-spacing: 0.04em; padding-inline: 6px; user-select: all; white-space: nowrap; }

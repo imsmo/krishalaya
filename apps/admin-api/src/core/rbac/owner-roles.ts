@@ -211,6 +211,11 @@ export const OwnerPermissions = {
   // second person holding the SAME permission as the first is a second pair of hands rather than a second pair of eyes.
   // Whoever can suspend cannot, by permission alone, readmit.
   StaffReinstate: 'staff.reinstate',
+  // PC-56 ADMIN-AUTH-1: issue a one-time hardware-key ENROLLMENT CODE for a named operator email (never one's own) and
+  // revoke an unused one. A separate grant from staff.manage because it is the PERMISSIVE direction — it lets a person
+  // put a first key on an account — where staff.manage is the desk that takes access away. The email must already have
+  // a binding in ADMIN_OPERATOR_BINDINGS (config), so a code can never make anybody an operator by itself.
+  StaffEnroll: 'staff.enroll',
   // The role matrix is a READ of the compiled catalogue (owner-roles.ts is this file). There is no `rbac.manage`
   // counterpart and there must not be: granting a platform permission is a code review and a deploy, and a database
   // path that could do it would make this catalogue advisory (Law 5, Law 11).
@@ -298,9 +303,12 @@ const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.fr
   // The desk that runs the realm's own access: suspend, restrict, revoke a session, request a reinstatement. It
   // deliberately does NOT hold StaffReinstate — the desk that removes access is not the desk that restores it.
   platform_staff_ops:      [OwnerPermissions.StaffManage, OwnerPermissions.StaffRead, OwnerPermissions.RbacRead],
+  // PC-56 ADMIN-AUTH-1: the onboarding desk — issues enrollment codes for operators whose binding is already deployed.
+  platform_staff_onboarding: [OwnerPermissions.StaffEnroll, OwnerPermissions.StaffRead],
   // The checker. Holds reinstatement and the reads, and cannot suspend — so the two halves of the two-person rule sit
   // in two different roles rather than relying on two people who could each do both.
-  platform_staff_checker:  [OwnerPermissions.StaffReinstate, OwnerPermissions.StaffRead, OwnerPermissions.RbacRead],
+  // ADMIN-AUTH-1: + StaffEnroll — putting a first key on an account is the permissive direction, like reinstatement.
+  platform_staff_checker:  [OwnerPermissions.StaffReinstate, OwnerPermissions.StaffEnroll, OwnerPermissions.StaffRead, OwnerPermissions.RbacRead],
   // Read-only: the roster, the matrix, the step-up history. What an auditor asking "who could have done this" needs.
   platform_staff_auditor:  [OwnerPermissions.StaffRead, OwnerPermissions.RbacRead],
   /* ---- PC-56 ADMIN-10 ---- */

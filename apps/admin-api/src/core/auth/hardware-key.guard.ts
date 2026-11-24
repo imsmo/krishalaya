@@ -13,6 +13,12 @@
 // cannot be one — `fido2_credentials` (0074) keys on `users(id)`, the TENANT realm's table, so a platform operator has
 // no row in it and could not have one without the cross-tenant identity the two-realm split exists to prevent
 // (ADMIN-9-Q3). This guard is exactly as strong as the IdP that mints the claim, and no stronger.
+//
+// PC-56 ADMIN-AUTH-1: **AND THE MINTER IS NOW THIS REALM.** The only production path that puts 'hwk' into a token is
+// modules/operator-auth: a WebAuthn assertion (user verification required) verified against a key held in
+// `platform_operator_credentials` (0244, an ADMIN-realm table — not 0074's) for that very operator, in the same flow as a
+// verified OpenID Connect id_token. So the string this guard reads is now backed by a credential lookup — at sign-in and
+// at every step-up — rather than by an external IdP's say-so. The dev-login bypass never carries 'hwk'.
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { AdminConfig } from '../config/admin-config';
 import { AdminRequestContext } from './admin-auth.guard';

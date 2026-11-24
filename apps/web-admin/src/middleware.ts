@@ -16,6 +16,9 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const headers = new Headers(request.headers);
   headers.set('x-pathname', request.nextUrl.pathname);
+  // PC-56 ADMIN-AUTH-1: the query string too, so the layout can turn any action's `?error=elevation` (a 403 from a
+  // step-up-gated admin-api route) into a "confirm with your key" link that returns the operator to this exact page.
+  headers.set('x-search', request.nextUrl.search.slice(0, 1000));
   return NextResponse.next({ request: { headers } });
 }
 

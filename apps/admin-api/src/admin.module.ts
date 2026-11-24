@@ -48,6 +48,7 @@ import { TranslationsModule } from './modules/translations/translations.module';
 import { CatalogueDepthModule } from './modules/catalogue-depth/catalogue-depth.module';
 import { CellsOpsModule } from './modules/cells-ops/cells-ops.module';
 import { PartnerOpsModule } from './modules/partner-ops/partner-ops.module';   // PC-56 PARTNER-1a
+import { OperatorAuthModule } from './modules/operator-auth/operator-auth.module';   // PC-56 ADMIN-AUTH-1
 
 @Module({
   imports: [AdminCoreModule, AiModelsOpsModule, TenantOpsModule, ReconMonitorModule, ComplianceOpsModule, BillingOpsModule, FlagsOpsModule, PlansOpsModule, ImpersonationModule, SupportOversightModule, PlatformReportsModule, ProvidersOpsModule, AnnouncementsModule, GlobalCatalogueOpsModule, SchemesRegistryOpsModule, SchemesOversightModule, ConsentOpsModule, CellsOpsModule, CatalogueDepthModule,
@@ -85,7 +86,10 @@ import { PartnerOpsModule } from './modules/partner-ops/partner-ops.module';   /
   // failed with `payout-ops` named explicitly, then this mount was restored and the suite went green again.
   PayoutOpsModule,
   // PC-56 PARTNER-1a: the partner registry, the decision SLA, and a partner's first administrator (0226).
-  PartnerOpsModule],
+  PartnerOpsModule,
+  // PC-56 ADMIN-AUTH-1: the realm's own sign-in — OIDC + a mandatory hardware key. Until this module nothing minted an
+  // admin token except the dev-only bypass, so the production console could not be entered at all.
+  OperatorAuthModule],
 })
 export class AdminModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

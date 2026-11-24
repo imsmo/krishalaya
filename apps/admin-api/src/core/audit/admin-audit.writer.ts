@@ -7,7 +7,8 @@ import { PoolClient } from 'pg';
 import { AdminPool } from '../database/admin-pool';
 
 export interface AdminAuditEntry {
-  actorUserId: string;
+  /** Null only for a refused sign-in attempt that never resolved to an operator (PC-56 ADMIN-AUTH-1); audit_log.actor_user_id is nullable. */
+  actorUserId: string | null;
   actorRole?: string | null;
   action: string;                 // e.g. 'ai.model.registered','ai.model.promoted','ai.model.threshold_tuned'
   entityType?: string | null;

@@ -1029,13 +1029,70 @@ GuardDuty (prod account) → Protection plans → also turn on **Runtime Monitor
 **Malware Protection for EC2/EBS**. 💰 ~₹1,500–3,000/month more; worth it for a payments platform.
 
 ### 12.2 Admin access — [ ]
-- `admin-api` rejects every IP not on `ADMIN_IP_ALLOWLIST` (production refuses to start with it empty) — set it to
-  your office/VPN egress IPs.
-- ⚠️ **Not built yet — a launch blocker on the development side:** the production admin sign-in (`/auth/sso/start`,
-  identity provider + hardware-key/WebAuthn ceremony) does not exist in the code today. The hardware-key *check*
-  (`hardware-key.guard.ts`) is there, but nothing issues the token it checks, and the dev login is correctly blocked
-  in production. Until the sign-in is built, **nobody can log in to the production admin console**. When it ships,
-  this step becomes: register both YubiKeys for each admin.
+Signing in to the admin console takes **two things**: your Google Workspace account (OpenID Connect) **and** a hardware
+security key (WebAuthn, with its PIN). Who may be an admin, and with which roles, is a **setting** (a secret), never
+something the console can change — so changing who is an admin always needs Secrets Manager + a redeploy.
+
+**a) The IP allowlist.** `admin-api` rejects every IP not on `ADMIN_IP_ALLOWLIST` (production refuses to start with it
+empty). Put in **both** your office/VPN egress IPs (your browser talks to `admin-api` for the Google step) **and** the
+address `admin-api` sees for the `web-admin` server (it talks to `admin-api` for the key step): if `web-admin` has
+`ADMIN_API_URL_INTERNAL` set (in-cluster), that is the VPC's private prefix written with a trailing dot (e.g. `10.20.`);
+otherwise the NAT gateways' public IPs (AWS console → **VPC → NAT gateways** → **Primary public IPv4 address**).
+
+**b) Create the Google sign-in client** (once per environment) — Google Cloud console → **APIs & Services → OAuth
+consent screen**: User type **Internal** (only your Workspace can use it), app name "Krishalaya Admin", scopes `openid`
+and `email`. Then **Credentials → Create credentials → OAuth client ID** → Web application:
+- Authorised redirect URI: `https://admin-api.krishalaya.com/v1/auth/sso/callback`
+  (staging: `https://admin-api.staging.krishalaya.com/v1/auth/sso/callback`) — exact, no trailing slash.
+- Copy the **Client ID** and **Client secret**.
+
+**c) Make the bootstrap code** (it lets the very first admin — you — register the first key; it stops working the
+moment any key exists). On your Mac:
+```bash
+CODE=$(openssl rand -hex 12 | tr a-f A-F); echo "Bootstrap code (write it on paper, do not save it): $CODE"
+printf %s "$CODE" | shasum -a 256 | cut -d' ' -f1      # this hash goes into Secrets Manager, NOT the code
+```
+
+**d) Add these to the `admin-api` secret** (`krishalaya-prod/admin-api/env`; same names for staging), then
+`rollout restart` admin-api. Every one is listed in `apps/admin-api/.env.example`:
+```
+ADMIN_OIDC_ISSUER=https://accounts.google.com
+ADMIN_OIDC_CLIENT_ID=<Client ID from b>
+ADMIN_OIDC_CLIENT_SECRET=<Client secret from b>
+ADMIN_OIDC_REDIRECT_URI=https://admin-api.krishalaya.com/v1/auth/sso/callback
+ADMIN_OIDC_ALLOWED_DOMAINS=krishalaya.com                 # your Workspace domain(s), comma-separated
+ADMIN_CONSOLE_URL=https://admin.krishalaya.com
+ADMIN_WEBAUTHN_RP_ID=admin.krishalaya.com                 # the console's host: keys work only there
+ADMIN_WEBAUTHN_ORIGIN=https://admin.krishalaya.com
+ADMIN_OPERATOR_BINDINGS=[{"email":"you@krishalaya.com","roles":["super_admin"]}]
+ADMIN_BOOTSTRAP_ENROLLMENT_CODE_SHA256=<the hash from c>
+ADMIN_REQUIRE_HARDWARE_KEY=true
+```
+⚠️ `ADMIN_WEBAUTHN_RP_ID` is baked into every key you register — changing it later means everybody registers their
+keys again. Decide the console's address first. If `admin-api` will not start, its log's `FATAL:` line names the
+missing or wrong setting (an unknown role in the bindings is named too).
+
+**e) Register your two keys** (you need both YubiKeys from §2.7):
+1. Open `https://admin.krishalaya.com/login` → **Sign in with your organisation account** → pick your Workspace account.
+2. On "Confirm with your security key" you will see the enrollment form: type the **bootstrap code** from (c), name the
+   key ("YubiKey 1"), press **Register this key**, insert/touch the key and **set a PIN** when the browser asks
+   (the PIN is required — a key without one is refused). Then press **Use my security key** to finish signing in.
+3. Go to **Security keys** (sidebar) → **Add a key** → confirm with key 1 when asked → register key 2 the same way.
+   Put key 2 somewhere safe. The bootstrap code is now dead forever; destroy the paper.
+
+**f) Add the other admins** — for each person:
+1. Add their binding to `ADMIN_OPERATOR_BINDINGS` with the **smallest** roles they need (the role list is in
+   `apps/admin-api/src/core/rbac/owner-roles.ts`; e.g. `platform_recon_viewer`), update the secret, restart admin-api.
+2. In **Security keys → Enrollment codes**, issue a code for their email (you need `staff.enroll`: `super_admin`,
+   `platform_staff_onboarding` or `platform_staff_checker`). Give it to them **in person or by phone** — never in the
+   same message as the sign-in link. It works once, for their email only, for 24 hours. You cannot issue one for yourself.
+3. They sign in, enter the code, register a key, and then add their second key from **Security keys**.
+
+**Removing an admin:** delete their binding + restart (they can no longer sign in), and on **Operators → their page**
+suspend them (ends their live sessions at once) and revoke their keys. **Lost key:** revoke it on Security keys (you
+need your other key); if it was someone's only key, a colleague revokes it and issues them a new enrollment code.
+**Lost every key:** put a NEW bootstrap hash in the secret and restart — it works only while no active key exists at all.
+
 - IAM Identity Center: only people who truly need production get the prod account. Review every quarter
   ([`security/access-review-quarterly.md`](../security/access-review-quarterly.md)).
 - Turn on **MFA required** for GitHub organization members (<https://github.com/settings/security>).
