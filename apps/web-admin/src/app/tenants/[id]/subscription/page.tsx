@@ -228,7 +228,7 @@ export default async function SubscriptionPage(
                   {/* the current plan id travels so a no-op change is refused before a reason is typed */}
                   <input type="hidden" name="currentPlanId" value={String(sub.planId ?? '')} />
                   <label htmlFor="planId" className="kv-field__label">{t.t('sub.newPlanId')}</label>
-                  <input id="planId" name="planId" className="kv-input" required placeholder="plan UUID" />
+                  <input id="planId" name="planId" className="kv-input" required placeholder={t.t('sub.newPlanIdHint')} />
                   <label htmlFor="priceMajor" className="kv-field__label">{t.t('sub.newPrice', { currency: cur })}</label>
                   <input id="priceMajor" name="priceMajor" className="kv-input" required inputMode="decimal" placeholder="4990.00" />
                   <p className="kv-field__hint">{t.t('sub.priceRequiredHint')}</p>
@@ -255,6 +255,7 @@ export default async function SubscriptionPage(
                 <form action={addAddonAction} className="kv-form">
                   <input type="hidden" name="tenantId" value={tenantId} />
                   <label htmlFor="addonCode" className="kv-field__label">{t.t('sub.addonCode')}</label>
+                  {/* i18n-allow: example add-on code, technical identifier */}
                   <input id="addonCode" name="addonCode" className="kv-input" required minLength={2} maxLength={60} placeholder="extra_language" />
                   <label htmlFor="quantity" className="kv-field__label">{t.t('sub.addonQuantity')}</label>
                   <input id="quantity" name="quantity" className="kv-input" inputMode="numeric" defaultValue="1" />

@@ -170,7 +170,7 @@ export default async function AdjustmentsPage(
         <p className="kv-field__hint">{t.t('adj.requestHint')}</p>
         <form action={applyAdjustmentAction} className="kv-form">
           <label htmlFor="tenantId" className="kv-field__label">{t.t('billing.adjTenantId')}</label>
-          <input id="tenantId" name="tenantId" className="kv-input" required placeholder="tenant UUID" />
+          <input id="tenantId" name="tenantId" className="kv-input" required placeholder={t.t('billing.adjTenantIdHint')} />
           <label htmlFor="direction" className="kv-field__label">{t.t('billing.adjDirection')}</label>
           <select id="direction" name="direction" className="kv-input" defaultValue="credit">
             <option value="credit">{t.t('billing.direction.credit')}</option>

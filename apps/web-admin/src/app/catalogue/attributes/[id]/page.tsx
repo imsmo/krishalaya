@@ -211,6 +211,7 @@ export default async function AttributeEditorPage(
             <form action={createOptionAction} className="kv-form">
               <input type="hidden" name="attributeId" value={params.id} />
               <label htmlFor="o-code" className="kv-field__label">{t.t('opt.code')}</label>
+              {/* i18n-allow: example option code value (a wheat variety id), data not copy */}
               <input id="o-code" name="code" className="kv-input" required placeholder="lokwan" />
               <label htmlFor="o-name" className="kv-field__label">{t.t('opt.name')}</label>
               <input id="o-name" name="defaultName" className="kv-input" required maxLength={150} />

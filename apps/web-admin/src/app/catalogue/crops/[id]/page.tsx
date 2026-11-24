@@ -126,6 +126,7 @@ export default async function CropMappingPage(
                 ))}
               </select>
               <label htmlFor="m-code" className="kv-field__label">{t.t('crop.commodityCode')}</label>
+              {/* i18n-allow: example external commodity code format, technical identifier */}
               <input id="m-code" name="externalId" className="kv-input" required placeholder="AGM-1101" maxLength={40} />
               <label htmlFor="m-reason" className="kv-field__label">{t.t('eav.reason')}</label>
               <input id="m-reason" name="reason" className="kv-input" required minLength={MIN_REASON} maxLength={1000} />

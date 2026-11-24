@@ -121,10 +121,10 @@ export default async function ScalePlanPage(props: { searchParams: Promise<{ ok?
               <div className="kv-field">
                 <label className="kv-field__label" htmlFor="rz-action">{t.t('rz.col.action')}</label>
                 <select className="kv-input" id="rz-action" name="action" defaultValue="add_shards">
-                  <option value="add_shards">add_shards</option>
-                  <option value="provision_cell">provision_cell</option>
-                  <option value="raise_capacity">raise_capacity</option>
-                  <option value="retire_cell">retire_cell</option>
+                  <option value="add_shards">{t.t('rz.action.add_shards')}</option>
+                  <option value="provision_cell">{t.t('rz.action.provision_cell')}</option>
+                  <option value="raise_capacity">{t.t('rz.action.raise_capacity')}</option>
+                  <option value="retire_cell">{t.t('rz.action.retire_cell')}</option>
                 </select>
               </div>
               <div className="kv-field">
@@ -139,9 +139,9 @@ export default async function ScalePlanPage(props: { searchParams: Promise<{ ok?
               <div className="kv-field">
                 <label className="kv-field__label" htmlFor="rz-trigkind">{t.t('rz.col.trigger')}</label>
                 <select className="kv-input" id="rz-trigkind" name="triggerKind" defaultValue="utilisation">
-                  <option value="utilisation">utilisation</option>
-                  <option value="market_entry">market_entry</option>
-                  <option value="manual">manual</option>
+                  <option value="utilisation">{t.t('rz.plan.triggerKind.utilisation')}</option>
+                  <option value="market_entry">{t.t('rz.plan.triggerKind.market_entry')}</option>
+                  <option value="manual">{t.t('rz.plan.triggerKind.manual')}</option>
                 </select>
                 <input className="kv-input" name="triggerValue" placeholder="70" maxLength={40} />
                 <p className="kv-field__help">{t.t('rz.plan.triggerHelp')}</p>
@@ -153,9 +153,9 @@ export default async function ScalePlanPage(props: { searchParams: Promise<{ ok?
               <div className="kv-field">
                 <label className="kv-field__label" htmlFor="rz-pstatus">{t.t('rz.col.status')}</label>
                 <select className="kv-input" id="rz-pstatus" name="status" defaultValue="draft">
-                  <option value="draft">draft</option>
-                  <option value="planned">planned</option>
-                  <option value="gated">gated</option>
+                  <option value="draft">{t.t('rz.plan.draft')}</option>
+                  <option value="planned">{t.t('rz.plan.planned')}</option>
+                  <option value="gated">{t.t('rz.plan.gated')}</option>
                 </select>
               </div>
               <div className="kv-field">

@@ -99,6 +99,7 @@ export default async function LookupTypeDetailPage(
         <form action={createValueAction} className="kv-form">
           <input type="hidden" name="typeCode" value={type.code} />
           <label className="kv-field__label">{t.t('cat.valueCode')}</label>
+          {/* i18n-allow: example lookup value code, technical identifier */}
           <input name="code" className="kv-input" required maxLength={80} placeholder="sowing" />
           <label className="kv-field__label">{t.t('cat.name')}</label>
           <input name="defaultName" className="kv-input" required maxLength={150} />

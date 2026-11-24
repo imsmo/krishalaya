@@ -149,6 +149,7 @@ export default async function SafetyCasePage(
                   <td>{v.fullName ?? t.t('common.dash')}{v.sameRegion && <StatusPill tone="success" label={t.t('em.vet.sameRegion')} />}</td>
                   <td>{v.phone}</td>
                   <td>{v.region ?? t.t('common.dash')}</td>
+                  {/* i18n-allow: kilometre unit symbol, identical in every locale */}
                   <td>{v.serviceRadiusKm} km</td>
                   <td>{v.registrationNo}</td>
                 </tr>

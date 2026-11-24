@@ -252,12 +252,12 @@ export default async function MigrationDetailPage(
                 <div className="kv-field">
                   <label className="kv-field__label" htmlFor="adv-to">{t.t('rz.job.advanceTo')}</label>
                   <select className="kv-input" id="adv-to" name="to" required>
-                    <option value="copying">copying</option>
-                    <option value="verifying">verifying</option>
-                    <option value="cutover">cutover</option>
-                    <option value="done">done</option>
-                    <option value="rolled_back">rolled_back</option>
-                    <option value="failed">failed</option>
+                    <option value="copying">{t.t('rz.job.copying')}</option>
+                    <option value="verifying">{t.t('rz.job.verifying')}</option>
+                    <option value="cutover">{t.t('rz.job.cutover')}</option>
+                    <option value="done">{t.t('rz.job.done')}</option>
+                    <option value="rolled_back">{t.t('rz.job.rolled_back')}</option>
+                    <option value="failed">{t.t('rz.job.failed')}</option>
                   </select>
                 </div>
                 <div className="kv-field">

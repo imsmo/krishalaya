@@ -116,10 +116,13 @@ export default async function FlagDetailPage(
           <form action={setTargetingAction} className="kv-form">
             <input type="hidden" name="key" value={key} />
             <label htmlFor="tenantIds" className="kv-field__label">{t.t('flags.fieldTenants')}</label>
+            {/* i18n-allow: UUID list format example, not words */}
             <input id="tenantIds" name="tenantIds" className="kv-input" placeholder="uuid, uuid" />
             <label htmlFor="plans" className="kv-field__label">{t.t('flags.fieldPlans')}</label>
+            {/* i18n-allow: example plan code values, technical identifiers */}
             <input id="plans" name="plans" className="kv-input" placeholder="pro, basic" />
             <label htmlFor="countries" className="kv-field__label">{t.t('flags.fieldCountries')}</label>
+            {/* i18n-allow: ISO 3166 country code list example */}
             <input id="countries" name="countries" className="kv-input" placeholder="IN, US" />
             <label htmlFor="targetReason" className="kv-field__label">{t.t('flags.reason')}</label>
             <input id="targetReason" name="reason" className="kv-input" required minLength={3} maxLength={1000} />

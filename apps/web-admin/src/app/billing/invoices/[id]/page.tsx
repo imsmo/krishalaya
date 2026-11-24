@@ -190,7 +190,7 @@ export default async function InvoiceDetailPage(
               {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{t.t(`pay.method.${m}`)}</option>)}
             </select>
             <label htmlFor="pay-ref" className="kv-field__label">{t.t('pay.reference')}</label>
-            <input id="pay-ref" name="reference" className="kv-input" required minLength={3} maxLength={120} placeholder="UTR / cheque no" />
+            <input id="pay-ref" name="reference" className="kv-input" required minLength={3} maxLength={120} placeholder={t.t('pay.referencePlaceholder')} />
             <p className="kv-field__hint">{t.t('pay.referenceHint')}</p>
             <label htmlFor="pay-at" className="kv-field__label">{t.t('pay.receivedAt')}</label>
             <input id="pay-at" name="receivedAt" className="kv-input" required type="datetime-local" />

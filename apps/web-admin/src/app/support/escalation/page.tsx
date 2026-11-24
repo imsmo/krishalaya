@@ -347,6 +347,7 @@ export default async function SupportPolicyPage(
                     </td>
                     <td>
                       <input aria-label={t.t('spol.target')} name={`step_${i}_targetRole`} className="kv-input"
+                        /* i18n-allow: example role code, technical identifier */
                         maxLength={60} defaultValue={step?.targetRole ?? ''} placeholder="support_head" />
                     </td>
                   </tr>

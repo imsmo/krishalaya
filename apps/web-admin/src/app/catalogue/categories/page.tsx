@@ -99,6 +99,7 @@ export default async function CategoriesPage(
           <label className="kv-field__label">{t.t('cat.parentId')}</label>
           <input name="parentId" className="kv-input" placeholder={t.t('cat.parentHint')} />
           <label className="kv-field__label">{t.t('cat.slug')}</label>
+          {/* i18n-allow: example category slug value, technical identifier */}
           <input name="slug" className="kv-input" required maxLength={40} placeholder="wheat" />
           <label className="kv-field__label">{t.t('cat.name')}</label>
           <input name="defaultName" className="kv-input" required maxLength={150} />

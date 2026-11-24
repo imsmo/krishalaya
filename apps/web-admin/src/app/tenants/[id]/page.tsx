@@ -108,6 +108,7 @@ export default async function TenantDetailPage(
         <form action={overrideLimitAction} className="kv-form">
           <input type="hidden" name="id" value={params.id} />
           <label htmlFor="limitCode" className="kv-field__label">{t.t('tenants.limitCode')}</label>
+          {/* i18n-allow: example limit code, technical identifier */}
           <input id="limitCode" name="limitCode" className="kv-input" required placeholder="max_listings" />
           <label htmlFor="limitValue" className="kv-field__label">{t.t('tenants.limitValue')}</label>
           <input id="limitValue" name="limitValue" className="kv-input" required inputMode="numeric" placeholder="500 / -1" />

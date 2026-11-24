@@ -95,6 +95,7 @@ export default async function SchemesPage(
         <p className="kv-field__hint">{t.t('sr.createSchemeHint')}</p>
         <form action={createSchemeAction} className="kv-form">
           <label className="kv-field__label">{t.t('sr.schemeCode')}</label>
+          {/* i18n-allow: example scheme code, technical identifier */}
           <input name="code" className="kv-input" required placeholder="pm_kisan" />
           <label className="kv-field__label">{t.t('sr.schemeName')}</label>
           <input name="defaultName" className="kv-input" required maxLength={250} />
@@ -119,6 +120,7 @@ export default async function SchemesPage(
           <label className="kv-field__label">{t.t('sr.feeMinor')}</label>
           <input name="processingFeeMinor" className="kv-input" inputMode="numeric" defaultValue="0" />
           <label className="kv-field__label">{t.t('sr.sourceUrl')}</label>
+          {/* i18n-allow: URL scheme format example, not words */}
           <input name="sourceUrl" className="kv-input" placeholder="https://…" />
           <label className="kv-field__label">{t.t('sr.reason')}</label>
           <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />

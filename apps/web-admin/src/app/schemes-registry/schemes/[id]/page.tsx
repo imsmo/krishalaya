@@ -124,6 +124,7 @@ export default async function SchemeDetailPage(
           <label className="kv-field__label">{t.t('sr.categoryId')}</label>
           <input name="categoryId" className="kv-input" required defaultValue={s.categoryId} />
           <label className="kv-field__label">{t.t('sr.sourceUrl')}</label>
+          {/* i18n-allow: URL scheme format example, not words */}
           <input name="sourceUrl" className="kv-input" defaultValue={s.sourceUrl ?? ''} placeholder="https://…" />
           <label className="kv-field__label">{t.t('sr.reason')}</label>
           <input name="reason" className="kv-input" required minLength={3} maxLength={1000} />

@@ -111,7 +111,7 @@ export default async function LedgerTxnPage(
                 <td><code>{l.id}</code></td>
                 <td>
                   {l.accountCode ?? t.t('common.dash')}
-                  {l.shardNo !== null && l.ownerKind === 'platform' && <span className="kv-detail__muted"> · stripe {l.shardNo}</span>}
+                  {l.shardNo !== null && l.ownerKind === 'platform' && <span className="kv-detail__muted"> · {t.t('lg.stripe', { n: String(l.shardNo) })}</span>}
                   <div className="kv-detail__muted">{l.ownerKind ?? t.t('common.unknown')} · {l.tenantId ?? t.t('lg.platform')}</div>
                 </td>
                 {/* The raw minor units beside the formatted figure. On the money screens the unrounded integer is the
@@ -145,7 +145,7 @@ export default async function LedgerTxnPage(
             <option value="" disabled>{t.t('common.choose')}</option>
             {x.legs.map((l) => (
               <option key={l.accountId} value={l.accountId}>
-                {l.accountCode ?? l.accountId}{l.ownerKind === 'platform' && l.shardNo !== null ? ` · stripe ${l.shardNo}` : ''}
+                {l.accountCode ?? l.accountId}{l.ownerKind === 'platform' && l.shardNo !== null ? ` · ${t.t('lg.stripe', { n: String(l.shardNo) })}` : ''}
               </option>
             ))}
           </select>

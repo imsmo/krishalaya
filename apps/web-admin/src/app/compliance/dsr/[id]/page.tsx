@@ -221,6 +221,7 @@ export default async function DsrDetailPage(
             <input type="hidden" name="id" value={dsr.id} />
             <p className="kv-field__hint">{t.t('era.recordHint')}</p>
             <label className="kv-field__label" htmlFor="dataClass">{t.t('era.dataClass')}</label>
+            {/* i18n-allow: example database table name, technical identifier */}
             <input id="dataClass" name="dataClass" className="kv-input" required maxLength={100} placeholder="ledger_entries" />
             <label className="kv-field__label" htmlFor="recAction">{t.t('era.recorded')}</label>
             <select id="recAction" name="action" className="kv-input" defaultValue="deleted">

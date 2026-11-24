@@ -157,6 +157,7 @@ export default async function PlanDetailPage(
         <form action={setLimitAction} className="kv-form">
           <input type="hidden" name="id" value={plan.id} />
           <label htmlFor="limitCode" className="kv-field__label">{t.t('plans.limitCode')}</label>
+          {/* i18n-allow: example limit code, technical identifier */}
           <input id="limitCode" name="limitCode" className="kv-input" required placeholder="max_listings" />
           <label htmlFor="limitValue" className="kv-field__label">{t.t('plans.limitValue')}</label>
           <input id="limitValue" name="limitValue" className="kv-input" required inputMode="numeric" placeholder="500 / -1" />

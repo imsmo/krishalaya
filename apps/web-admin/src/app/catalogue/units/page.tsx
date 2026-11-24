@@ -159,6 +159,7 @@ export default async function UnitsPage(
         <summary className="kv-card__title">{t.t('unit.newTitle')}</summary>
         <form action={createUnitAction} className="kv-form">
           <label htmlFor="u-code" className="kv-field__label">{t.t('unit.code')}</label>
+          {/* i18n-allow: example unit code value, technical identifier */}
           <input id="u-code" name="code" className="kv-input" required maxLength={20} placeholder="quintal" />
           <label htmlFor="u-name" className="kv-field__label">{t.t('unit.name')}</label>
           <input id="u-name" name="defaultName" className="kv-input" required maxLength={60} />

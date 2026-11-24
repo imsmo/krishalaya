@@ -135,7 +135,9 @@ export default async function SettingDetailPage(
                 <label className="kv-field__label" htmlFor="st11-newval">{t.t('st11.newValue')}</label>
                 {s.valueType === 'bool' ? (
                   <select className="kv-input" id="st11-newval" name="value" defaultValue="true">
+                    {/* i18n-allow: boolean literal the setting stores and the API parses, not words */}
                     <option value="true">true</option>
+                    {/* i18n-allow: boolean literal the setting stores and the API parses, not words */}
                     <option value="false">false</option>
                   </select>
                 ) : (

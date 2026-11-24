@@ -57,6 +57,7 @@ export default async function RetentionPage(props: { searchParams: Promise<{ ok?
         <p className="kv-field__hint">{t.t('compliance.upsertRetentionHint')}</p>
         <form action={upsertRetentionAction} className="kv-form">
           <label htmlFor="tableName" className="kv-field__label">{t.t('compliance.table')}</label>
+          {/* i18n-allow: example database table name, technical identifier */}
           <input id="tableName" name="tableName" className="kv-input" required placeholder="audit_log" />
           <label htmlFor="activeMonths" className="kv-field__label">{t.t('compliance.activeMonths')}</label>
           <input id="activeMonths" name="activeMonths" className="kv-input" required inputMode="numeric" placeholder="24" />

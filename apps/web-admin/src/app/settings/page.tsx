@@ -161,16 +161,16 @@ export default async function SettingsPage(
           <div className="kv-field">
             <label className="kv-field__label" htmlFor="st11-scope">{t.t('st11.define.scope')}</label>
             <select className="kv-input" id="st11-scope" name="scope" defaultValue="tenant">
-              <option value="tenant">tenant — a tenant may override it</option>
-              <option value="platform">platform — the value is the law</option>
+              <option value="tenant">{t.t('st11.define.scopeTenant')}</option>
+              <option value="platform">{t.t('st11.define.scopePlatform')}</option>
             </select>
           </div>
           <div className="kv-field">
             <label className="kv-field__label" htmlFor="st11-risk">{t.t('st11.col.risk')}</label>
             <select className="kv-input" id="st11-risk" name="riskClass" defaultValue="ordinary">
-              <option value="ordinary">ordinary</option>
-              <option value="money_path">money_path — needs two administrators</option>
-              <option value="security">security — needs two administrators</option>
+              <option value="ordinary">{t.t('st11.risk.ordinary')}</option>
+              <option value="money_path">{t.t('st11.define.riskMoneyPath')}</option>
+              <option value="security">{t.t('st11.define.riskSecurity')}</option>
             </select>
             <p className="kv-field__help">{t.t('st11.define.riskHelp')}</p>
           </div>

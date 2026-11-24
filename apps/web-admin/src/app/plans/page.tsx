@@ -71,12 +71,15 @@ export default async function PlansPage(
         <p className="kv-field__hint">{t.t('plans.createHint')}</p>
         <form action={createPlanAction} className="kv-form">
           <label htmlFor="code" className="kv-field__label">{t.t('plans.code')}</label>
+          {/* i18n-allow: example plan code, technical identifier */}
           <input id="code" name="code" className="kv-input" required placeholder="pro_in" />
           <label htmlFor="defaultName" className="kv-field__label">{t.t('plans.name')}</label>
           <input id="defaultName" name="defaultName" className="kv-input" required maxLength={100} />
           <label htmlFor="countryCode" className="kv-field__label">{t.t('plans.country')}</label>
+          {/* i18n-allow: ISO 3166 country code example */}
           <input id="countryCode" name="countryCode" className="kv-input" required placeholder="IN" />
           <label htmlFor="currencyCode" className="kv-field__label">{t.t('plans.currency')}</label>
+          {/* i18n-allow: ISO 4217 currency code example */}
           <input id="currencyCode" name="currencyCode" className="kv-input" required placeholder="INR" />
           <label htmlFor="monthlyPriceMinor" className="kv-field__label">{t.t('plans.monthlyMinor')}</label>
           <input id="monthlyPriceMinor" name="monthlyPriceMinor" className="kv-input" required inputMode="numeric" placeholder="99900" />

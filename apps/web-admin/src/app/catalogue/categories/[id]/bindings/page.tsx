@@ -140,6 +140,7 @@ export default async function BindingsPage(
           </label>
           <label htmlFor="b-cond" className="kv-field__label">{t.t('bind.condition')}</label>
           <textarea id="b-cond" name="condition" className="kv-input" rows={2} maxLength={2000}
+            /* i18n-allow: JSON condition syntax example, code not copy */
             placeholder='{"if":{"organic":true},"then":{"required":["cert_no"]}}' />
           <p className="kv-field__hint">{t.t('bind.conditionHint')}</p>
           <label htmlFor="b-sort" className="kv-field__label">{t.t('bind.sort')}</label>

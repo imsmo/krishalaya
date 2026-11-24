@@ -168,6 +168,7 @@ export default async function CropCalendarsPage(
           {/* the SOURCE is the first field, because it is the first rule */}
           <label htmlFor="c-source" className="kv-field__label">{t.t('cal.source')}</label>
           <input id="c-source" name="source" className="kv-input" required minLength={3} maxLength={120}
+            /* i18n-allow: example source-institution proper name, data not copy */
             placeholder="ICAR-DGR Junagadh" />
 
           <label htmlFor="c-crop" className="kv-field__label">{t.t('cal.crop')}</label>

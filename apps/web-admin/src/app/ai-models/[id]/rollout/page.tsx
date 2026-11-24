@@ -234,10 +234,10 @@ export default async function RolloutPage(
                 <div className="kv-field">
                   <label className="kv-field__label" htmlFor="ai-to">{t.t('ai.transition.to')}</label>
                   <select className="kv-input" id="ai-to" name="to" defaultValue="canary">
-                    <option value="canary">canary</option>
-                    <option value="production">production</option>
-                    <option value="shadow">shadow</option>
-                    <option value="retired">retired</option>
+                    <option value="canary">{t.t('aiModels.st.canary')}</option>
+                    <option value="production">{t.t('aiModels.st.production')}</option>
+                    <option value="shadow">{t.t('aiModels.st.shadow')}</option>
+                    <option value="retired">{t.t('aiModels.st.retired')}</option>
                   </select>
                 </div>
                 <div className="kv-field">

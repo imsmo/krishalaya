@@ -137,6 +137,7 @@ export default async function AttributesPage(
         <p className="kv-field__hint">{t.t('attr.newHint')}</p>
         <form action={createAttributeAction} className="kv-form">
           <label htmlFor="a-code" className="kv-field__label">{t.t('attr.code')}</label>
+          {/* i18n-allow: example attribute code value, technical identifier */}
           <input id="a-code" name="code" className="kv-input" required placeholder="moisture_pct" />
           <label htmlFor="a-name" className="kv-field__label">{t.t('attr.name')}</label>
           <input id="a-name" name="defaultName" className="kv-input" required minLength={2} maxLength={150} />

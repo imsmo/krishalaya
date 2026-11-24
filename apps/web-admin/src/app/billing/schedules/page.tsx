@@ -164,6 +164,7 @@ export default async function SchedulesPage(
           <label htmlFor="sch-hour" className="kv-field__label">{t.t('sch.hour')}</label>
           <input id="sch-hour" name="hourIst" className="kv-input" inputMode="numeric" defaultValue="7" />
           <label htmlFor="sch-recipients" className="kv-field__label">{t.t('sch.recipients')}</label>
+          {/* i18n-allow: email-address list format example, not words */}
           <input id="sch-recipients" name="recipients" className="kv-input" required placeholder="finance@…, ops@…" />
           <p className="kv-field__hint">{t.t('sch.recipientsHint')}</p>
           <label htmlFor="sch-notes" className="kv-field__label">{t.t('sch.notes')}</label>

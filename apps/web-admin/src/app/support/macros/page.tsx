@@ -150,6 +150,7 @@ export default async function MacrosPage(
         <p className="kv-field__hint">{t.t('mac.newHint', { min: String(MIN_BODY) })}</p>
         <form action={createMacroAction} className="kv-form">
           <label htmlFor="mac-slug" className="kv-field__label">{t.t('mac.shortcut')}</label>
+          {/* i18n-allow: example macro slash-shortcut slug, technical identifier */}
           <input id="mac-slug" name="slug" className="kv-input" required placeholder="/payout-verify-wait" />
           <p className="kv-field__hint">{t.t('mac.slugHint')}</p>
           <label htmlFor="mac-title" className="kv-field__label">{t.t('mac.macroTitle')}</label>

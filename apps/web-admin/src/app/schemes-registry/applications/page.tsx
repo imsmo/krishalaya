@@ -78,6 +78,7 @@ export default async function ApplicationsPage(
       header: t.t('sov.scheme'),
       cell: (r) => (
         <>
+          {/* i18n-allow: version prefix "v", kept verbatim in every catalog (cf. web-tenant templates.editor.servingVersion) */}
           {r.schemeCode} · v{r.schemeVersion}
           {/* ADMIN-4's pointer. Flagged when the rules this application was judged under are NOT retrievable. */}
           {!rulesRecoverable(r) && <> <StatusPill tone="warning" label={t.t('sov.rulesLost')} /></>}

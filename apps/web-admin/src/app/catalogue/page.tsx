@@ -71,6 +71,7 @@ export default async function CatalogueTypesPage(
         <p className="kv-field__hint">{t.t('cat.createTypeHint')}</p>
         <form action={createTypeAction} className="kv-form">
           <label htmlFor="code" className="kv-field__label">{t.t('cat.typeCode')}</label>
+          {/* i18n-allow: example lookup type code, technical identifier */}
           <input id="code" name="code" className="kv-input" required placeholder="crop_stage" />
           <label htmlFor="defaultName" className="kv-field__label">{t.t('cat.name')}</label>
           <input id="defaultName" name="defaultName" className="kv-input" required maxLength={100} />

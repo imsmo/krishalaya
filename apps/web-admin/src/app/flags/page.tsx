@@ -76,6 +76,7 @@ export default async function FlagsPage(
         <p className="kv-field__hint">{t.t('flags.createHint')}</p>
         <form action={createFlagAction} className="kv-form">
           <label htmlFor="key" className="kv-field__label">{t.t('flags.fieldKey')}</label>
+          {/* i18n-allow: example flag key, technical identifier */}
           <input id="key" name="key" className="kv-input" required placeholder="payments.upi" />
           <label htmlFor="description" className="kv-field__label">{t.t('flags.fieldDescription')}</label>
           <input id="description" name="description" className="kv-input" maxLength={500} />

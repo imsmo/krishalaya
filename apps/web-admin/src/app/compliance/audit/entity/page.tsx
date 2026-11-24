@@ -60,6 +60,7 @@ export default async function AuditEntityPage(props: { searchParams: Promise<{ r
 
       <form method="get" className="kv-form kv-filters" aria-label={t.t('aud.entityFilters')}>
         <label htmlFor="ref" className="kv-field__label">{t.t('aud.ref')}</label>
+        {/* i18n-allow: entity reference format example (type/id), technical identifier */}
         <input id="ref" name="ref" className="kv-input" defaultValue={ref ?? ''} placeholder="listing/LST-2026-084497" maxLength={200} />
         <Button type="submit">{t.t('aud.open')}</Button>
       </form>
