@@ -85,6 +85,12 @@ resource "aws_eks_cluster" "this" {
 
   enabled_cluster_log_types = ["api", "audit", "authenticator"]
 
+  # PC-56 DEPLOY-4: never drift into EXTENDED support (6x the control-plane price). With STANDARD, EKS upgrades the
+  # control plane itself when standard support ends instead of silently billing extended support.
+  upgrade_policy {
+    support_type = "STANDARD"
+  }
+
   # PC-56 DEPLOY-1: EKS access entries (API) alongside the aws-auth ConfigMap, so the GitHub deploy role can be granted
   # namespace-scoped access (modules/github-deploy). CONFIG_MAP -> API_AND_CONFIG_MAP is an in-place, one-way update;
   # existing kubeconfig access is unchanged. The cluster creator keeps admin (the API default, stated explicitly).
@@ -170,15 +176,22 @@ resource "aws_eks_node_group" "default" {
 }
 
 # ---------- Core managed addons ----------
+# PC-56 DEPLOY-4: add-on versions were pinned to 1.30-era builds (kube-proxy must match the cluster's minor). Each
+# add-on now resolves to EKS's DEFAULT version for the cluster's Kubernetes version, so a version bump carries them.
+data "aws_eks_addon_version" "this" {
+  for_each           = toset(["vpc-cni", "coredns", "kube-proxy", "aws-ebs-csi-driver"])
+  addon_name         = each.key
+  kubernetes_version = aws_eks_cluster.this.version
+}
+
 resource "aws_eks_addon" "this" {
-  for_each = {
-    vpc-cni            = "v1.18.1-eksbuild.3"
-    coredns            = "v1.11.1-eksbuild.9"
-    kube-proxy         = "v1.30.0-eksbuild.3"
-    aws-ebs-csi-driver = "v1.32.0-eksbuild.1"
-  }
-  cluster_name                = aws_eks_cluster.this.name
-  addon_name                  = each.key
+  for_each      = data.aws_eks_addon_version.this
+  cluster_name  = aws_eks_cluster.this.name
+  addon_name    = each.key
+  addon_version = each.value.version
+  # PC-56 DEPLOY-4: the EBS CSI driver had NO IAM permission (no IRSA role, and the node role lacks
+  # AmazonEBSCSIDriverPolicy) — every PersistentVolumeClaim (Prometheus's 50 GiB disk) would stay Pending.
+  service_account_role_arn    = each.key == "aws-ebs-csi-driver" ? aws_iam_role.ebs_csi.arn : null
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"
   tags                        = local.tags
@@ -243,4 +256,36 @@ resource "aws_iam_role_policy" "cluster_autoscaler" {
   name   = "cluster-autoscaler"
   role   = aws_iam_role.cluster_autoscaler.id
   policy = data.aws_iam_policy_document.cluster_autoscaler.json
+}
+
+# ---------- EBS CSI driver IAM (IRSA) — PC-56 DEPLOY-4 ----------
+data "aws_iam_policy_document" "ebs_csi_trust" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    principals {
+      type        = "Federated"
+      identifiers = [aws_iam_openid_connect_provider.this.arn]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(aws_iam_openid_connect_provider.this.url, "https://", "")}:sub"
+      values   = ["system:serviceaccount:kube-system:ebs-csi-controller-sa"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(aws_iam_openid_connect_provider.this.url, "https://", "")}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "ebs_csi" {
+  name               = "${var.name}-ebs-csi"
+  assume_role_policy = data.aws_iam_policy_document.ebs_csi_trust.json
+  tags               = local.tags
+}
+
+resource "aws_iam_role_policy_attachment" "ebs_csi" {
+  role       = aws_iam_role.ebs_csi.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
 }

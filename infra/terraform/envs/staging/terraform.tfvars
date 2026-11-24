@@ -67,5 +67,5 @@ root_domain = "staging.krishalaya.com"
 #   - single_nat_gateway = true (hardcoded in main.tf, same as prod)          -> ~₹3,200/mo (NAT is the first
 #     thing to cut further per Master Plan §5.1 if margin is needed — e.g. public subnets + SG-only for pilot)
 #   - node_disk_gib = 40 (module default)                                     -> negligible (gp3 EBS)
-#   - engine_version / kubernetes_version (module defaults, PG16 / 1.30)      -> no cost impact
+#   - engine_version / kubernetes_version (module defaults, PG16 / 1.36)      -> no cost impact
 # ---------------------------------------------------------------------------------------------------------------

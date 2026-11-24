@@ -6,9 +6,13 @@ variable "name" {
 }
 
 variable "kubernetes_version" {
+  # PC-56 DEPLOY-4: was 1.30 — past even EKS EXTENDED support (EKS no longer creates it, so apply would fail; and any
+  # version in extended support bills the control plane at 6x). 1.36: EKS GA 2026-06-02, standard support until
+  # 2027-08-02 (https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html). Upgrade one minor at a time
+  # before that date (guidebook "Keep Kubernetes current").
   description = "EKS control-plane version."
   type        = string
-  default     = "1.30"
+  default     = "1.36"
 }
 
 variable "vpc_id" {
