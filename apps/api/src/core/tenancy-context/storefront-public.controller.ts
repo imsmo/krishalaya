@@ -21,17 +21,22 @@
 //   GET /v1/storefront/platform-facts    STORE-SWEEP-a · B3 (founder D3/D7, 0223) — the eleven platform facts (legal entity, office, grievance
 //                                     officer and figures, four mailboxes); an empty value answers null ("not published yet"). No tenant, no flag
 //                                     (a grievance address has no kill-switch — the named Law 10 exception in 0223's header).
+//   GET /v1/storefront/policies/:slug?lang=xx  PC-56 LEGAL-1 (0242) — the PUBLISHED policy page of `terms` | `privacy` | `refunds` | `shipping`
+//                                     (anything else → 404 POLICY_NOT_FOUND): the context tenant's own published version, else the platform's;
+//                                     not published → 404 POLICY_NOT_PUBLISHED (the storefront then says so — never placeholder legal text).
+//                                     `lang` (else the request's resolved locale) picks a reviewed translation; otherwise `fallbackLanguage` says
+//                                     which language the words are in. No flag: 0223's named Law 10 exception (legal pages have no kill-switch).
 //
 // No money moves, nothing is written: each is a SELECT through a 0204 SECURITY DEFINER function (storefront-public.read-model.ts), or — for
 // the plans — a plain SELECT of the platform catalogue.
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { Public } from '../auth/public.decorator';
 import { RateLimit } from '../http/rate-limit.guard';
 import { DomainError } from '../../shared/errors/app-error';
 import { FlagsService } from '../feature-flags/flags.service';
 import { CurrentContext } from './current-context.decorator';
 import { RequestContext } from './request-context';
-import { StorefrontPublicReadModel, countryParam } from './storefront-public.read-model';
+import { StorefrontPublicReadModel, countryParam, isPolicySlug, policyLanguage } from './storefront-public.read-model';
 
 /** B2: the ONLY flags an anonymous storefront may ask about. Adding one is a reviewed code change, never a query parameter.
  *  PC-56 HOTFIX-4 · A8 (survey B23 / F-11 / F-16): + `online_payments` (founder D2 — the storefront honours it: OFF = no Pay step),
@@ -121,6 +126,16 @@ export class StorefrontPublicController {
   @Public() @RateLimit({ limit: 120, windowSec: 60, by: 'ip' }) @Get('platform-facts')
   async platformFacts() {
     return { data: await this.reads.platformFacts() };
+  }
+
+  /** PC-56 LEGAL-1 · the published policy page. `@Public()` + the same per-IP limit as `platform-facts`; the tenant is the request's context. */
+  @Public() @RateLimit({ limit: 120, windowSec: 60, by: 'ip' }) @Get('policies/:slug')
+  async policy(@CurrentContext() ctx: RequestContext, @Param('slug') slug: string, @Query() q: Record<string, unknown>) {
+    if (!isPolicySlug(slug)) throw new DomainError('POLICY_NOT_FOUND', 'There is no such policy page', 404);
+    const language = policyLanguage(one(q.lang)) ?? policyLanguage(ctx?.lang);
+    const page = await this.reads.policy(ctx?.tenantId ?? null, slug, language);
+    if (!page) throw new DomainError('POLICY_NOT_PUBLISHED', 'This policy has not been published yet', 404, { slug });
+    return { data: page };
   }
 
   /** STORE-1c · D2: the public plans of `?country=XX` (two letters). A missing / malformed country is refused by name, never defaulted. */

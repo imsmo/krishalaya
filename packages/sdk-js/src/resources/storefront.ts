@@ -2,7 +2,7 @@
 // page?" answered by the API from the request's own tenant context (the client's `tenantSlug` → `X-Tenant-Slug`, or a verified
 // storefront host). A 404 TENANT_NOT_FOUND means no LIVE tenant resolved — never a default one.
 import { HttpClient } from '../http';
-import { DiscoveryCard, OrganisationCard, Page, PlatformFacts, PublicAuction, PublicAuctionCard, PublicAuctionGroup, StorefrontFlags, StorefrontGroupLot, StorefrontPlans, StorefrontProfile, StorefrontStats, StorefrontTenant } from '../types';
+import { DiscoveryCard, OrganisationCard, Page, PlatformFacts, PolicyPage, PolicySlug, PublicAuction, PublicAuctionCard, PublicAuctionGroup, StorefrontFlags, StorefrontGroupLot, StorefrontPlans, StorefrontProfile, StorefrontStats, StorefrontTenant } from '../types';
 
 export class StorefrontResource {
   constructor(private readonly http: HttpClient) {}
@@ -25,6 +25,12 @@ export class StorefrontResource {
    *  published yet. Anonymous, no tenant. */
   async platformFacts(signal?: AbortSignal): Promise<PlatformFacts> {
     return (await this.http.request<PlatformFacts>('GET', 'storefront/platform-facts', { anonymous: true, signal })).data;
+  }
+  /** PC-56 LEGAL-1 — one published policy page (terms / privacy / refunds / shipping) for the context store (the client's `tenantSlug`) or the
+   *  platform; `lang` = the language asked for (the API answers a fallback language when the page is not in it). Anonymous. 404
+   *  POLICY_NOT_PUBLISHED = nothing published yet. */
+  async policy(slug: PolicySlug, lang?: string, signal?: AbortSignal): Promise<PolicyPage> {
+    return (await this.http.request<PolicyPage>('GET', `storefront/policies/${encodeURIComponent(slug)}`, { anonymous: true, signal, query: { lang } })).data;
   }
   /** D1 — one keyset page of the cross-tenant discovery feed (`after` = the previous page's nextCursor). */
   async discover(q: { after?: string; limit?: number; category?: string; q?: string } = {}, signal?: AbortSignal): Promise<Page<DiscoveryCard>> {

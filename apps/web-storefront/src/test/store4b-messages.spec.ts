@@ -122,6 +122,7 @@ describe('STORE-4b · the refusal registry', () => {
     // PC-56 STORE-SWEEP-a: + 160 (help.* 33, about.* 12, sweep.* 115 — help, the quality promise, trust, contact, the facts, the refusals) − footer.soon → 2,596
     // PC-56 STORE-SWEEP-b: + 74 (sweep.tracking.* 21 · sweep.ribbon.* 5 · sweep.language.* 8 · sweep.err.* 14 · sweep.edge.* 3 · sweep.refusal.* 21 · help.link.language · sweep.footer.language) → 2,670
     // PC-56 RTL-1c + 2 keys (lang.draft, rtl.draftBanner) → 2,672 (lead-authorised)
-    expect(Object.keys(en).length).toBe(2672);
+    // PC-56 LEGAL-1: + 20 legal.* (the four policy pages' titles and descriptions, the version line, the states, the footer column) → 2,692
+    expect(Object.keys(en).length).toBe(2692);
   });
 });

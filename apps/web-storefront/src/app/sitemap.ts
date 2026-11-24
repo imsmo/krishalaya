@@ -5,11 +5,12 @@
 // expose to the storefront). URLs are absolute when the site origin is configured, else path-relative.
 import type { MetadataRoute } from 'next';
 import { env } from '../lib/env';
+import { POLICY_PATHS } from '../features/legal/pages';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = env.siteUrl; // '' when unset → relative paths
   // PC-56 STORE-3c (founder D4): /auctions is a door to a store's own list now (no build-time switch) — not a platform page to index
-  const paths = ['/', '/about', '/blog', '/help', '/pricing', '/press', '/for-organisations', '/quality-promise', '/trust-data', '/contact'];   // + STORE-SWEEP-a
+  const paths = ['/', '/about', '/blog', '/help', '/pricing', '/press', '/for-organisations', '/quality-promise', '/trust-data', '/contact', ...POLICY_PATHS];   // + STORE-SWEEP-a; + PC-56 LEGAL-1 (the four policy pages)
   const now = new Date();
   return paths.map((p) => ({
     url: `${base}${p}`,

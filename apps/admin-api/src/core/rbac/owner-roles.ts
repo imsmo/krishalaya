@@ -281,6 +281,12 @@ export const OwnerPermissions = {
   // Set a partner's decision SLA and invite a partner's first administrator (a partner with no active admin). Both
   // routes add FIDO2 + step-up; neither can touch a partner that already runs its own team.
   PartnersManage: 'partners.manage',
+  /* ---- PC-56 LEGAL-1 · the four platform POLICY pages (terms · privacy · refunds · shipping — migration 0242). Three grants because
+     there are three different powers: reading the drafts, writing words that bind every buyer and seller (author), and putting those
+     words live (checker — a second person, also a database trigger). Taking a LIVE version down is a checker act too. ---- */
+  PlatformPagesRead: 'platform.pages.read',
+  PlatformPagesManage: 'platform.pages.manage',
+  PlatformPagesPublish: 'platform.pages.publish',
 } as const;
 export type OwnerPermission = (typeof OwnerPermissions)[keyof typeof OwnerPermissions];
 
@@ -445,6 +451,10 @@ const OWNER_ROLE_GRANTS: Readonly<Record<string, readonly string[]>> = Object.fr
   platform_partners_ops:    [OwnerPermissions.PartnersManage, OwnerPermissions.PartnersRead],
   // Read-only: which partners exist, whether each has anyone running its console, and what it has promised.
   platform_partners_viewer: [OwnerPermissions.PartnersRead],
+  /* ---- PC-56 LEGAL-1 ---- */
+  platform_legal_author:  [OwnerPermissions.PlatformPagesManage, OwnerPermissions.PlatformPagesRead],
+  platform_legal_checker: [OwnerPermissions.PlatformPagesPublish, OwnerPermissions.PlatformPagesRead],
+  platform_legal_viewer:  [OwnerPermissions.PlatformPagesRead],
 });
 
 /** Flatten a token's roles to a permission set against the static owner catalog (unknown roles grant nothing). */

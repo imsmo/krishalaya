@@ -42,6 +42,9 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
   { href: '/templates', labelKey: 'nav.templates', live: true },
   { href: '/integrations', labelKey: 'nav.integrations', live: true },
   { href: '/settings', labelKey: 'nav.settings', live: true },
+  // PC-56 LEGAL-1: the four storefront policy pages (/terms, /privacy, /refunds, /shipping). Reading needs
+  // `platform.pages.read`; like every entry here, admin-api is the gate and the page renders its restricted notice on 403.
+  { href: '/legal-pages', labelKey: 'nav.legalPages', live: true },
   { href: '/announcements', labelKey: 'nav.announcements', live: true },
   { href: '/catalogue', labelKey: 'nav.catalogue', live: true },
   { href: '/schemes-registry', labelKey: 'nav.schemes', live: true },

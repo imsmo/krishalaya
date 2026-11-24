@@ -7,6 +7,7 @@
 //   • "Grievances" → the PLATFORM's trust page on EVERY store (trust is not re-brandable — the TRUST_SURFACES precedent; never hidden with the mark):
 //     `/trust-data#grievances` on a path store, `<platform origin>/trust-data#grievances` on a store host (`platformOrigin`, set by the layout
 //     only for a host-routed request — NEXT_PUBLIC_SITE_URL);
+//   • PC-56 LEGAL-1: Terms, Privacy, Refunds and Shipping are THIS store's pages (`/<slug>/terms` … — features/legal/pages.ts);
 //   • "Powered by" is a LINK to the platform's About page the same way (PoweredByMark `href`), under the 13d visibility rule unchanged.
 import Link from 'next/link';
 import { getTranslator } from '../lib/i18n';
@@ -14,6 +15,7 @@ import { PoweredByMark } from './PoweredByMark';
 import { PLATFORM_BRAND } from '../features/branding/brand-theme';
 import { tenantChrome } from '../features/store4a/account';
 import { grievancesHref, platformAboutHref, sweepHref } from '../features/sweep/paths';
+import { POLICY_SLUGS, policyHref } from '../features/legal/pages';
 
 export function TenantFooter({ name, slug, showPoweredBy, platformOrigin = '' }: { name: string; slug: string; showPoweredBy: boolean; platformOrigin?: string }) {
   const t = getTranslator();
@@ -32,6 +34,10 @@ export function TenantFooter({ name, slug, showPoweredBy, platformOrigin = '' }:
             <a href={grievancesHref(chrome, platformOrigin)} className="kv-footer__link" data-kv-foot="grievances">{t.t('sweep.footer.grievances')}</a>
             {/* PC-56 STORE-SWEEP-b · D3: the store's own language page (W323) */}
             <Link href={sweepHref(chrome, 'language')} className="kv-footer__link" data-kv-foot="language">{t.t('sweep.footer.language')}</Link>
+          </nav>
+          {/* PC-56 LEGAL-1: THIS store's four policy pages (`/<slug>/terms` …; on its own host `/terms` is rewritten there too) */}
+          <nav className="kv-footer__col" aria-label={t.t('legal.footer.heading')} data-kv-foot-col="legal">
+            {POLICY_SLUGS.map((s) => <Link key={s} href={policyHref(chrome, s)} className="kv-footer__link" data-kv-foot={s}>{t.t(`legal.footer.${s}`)}</Link>)}
           </nav>
         </div>
         {showPoweredBy && <PoweredByMark label={PLATFORM_BRAND.poweredByMark} href={platformAboutHref(chrome, platformOrigin)} />}

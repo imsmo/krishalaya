@@ -307,6 +307,16 @@ export interface PlatformFacts {
   grievance: { officerName: string | null; address: string | null; email: string | null; ackHours: number | null; resolveDays: number | null };
   contact: { securityEmail: string | null; partnersEmail: string | null; pressEmail: string | null; generalEmail: string | null };
 }
+/** PC-56 LEGAL-1 — the four public policy pages a storefront prints (`GET /v1/storefront/policies/:slug`). */
+export type PolicySlug = 'terms' | 'privacy' | 'refunds' | 'shipping';
+/** PC-56 LEGAL-1 — one PUBLISHED policy page: the context store's own (`source: 'tenant'`) or the platform's (`'platform'`). `body` is markdown
+ *  (rendered by the storefront's safe renderer — never as HTML). `language` = the language of `title`/`body`; `fallbackLanguage` equals it when
+ *  the body is NOT in `requestedLanguage` (else null). Not published = 404 POLICY_NOT_PUBLISHED; an unknown slug = 404 POLICY_NOT_FOUND. */
+export interface PolicyPage {
+  slug: PolicySlug; source: 'tenant' | 'platform'; title: string; body: string;
+  language: string | null; requestedLanguage: string | null; fallbackLanguage: string | null;
+  version: number; publishedAt: string;
+}
 /** PC-56 STORE-1b · D1 — a discovery-feed card: names the ORGANISATION (never a seller, user or farmer); money = bigint minor string. */
 export interface DiscoveryCard {
   listingId: string; tenantSlug: string; organisation: string; title: string; priceMinor: string; currencyCode: string; unitCode: string;

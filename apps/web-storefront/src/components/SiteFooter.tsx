@@ -7,10 +7,13 @@
 //     is refused (the IVR/USSD gateway is unimplemented — STORE-1a C-2);
 //   • For farmers & organisations — "Open your organisation's storefront" → /for-organisations (canon W307's route, PC-56 STORE-1c; the old
 //     /tenants-signup answers a permanent redirect there), "How farm-to-fork trace works" → /trace.
-// Company links (about / blog / press / pricing) stay as they were.
+// Company links (about / blog / press / pricing) stay as they were. PC-56 LEGAL-1: a Legal column — Terms, Privacy, Refunds, Shipping
+// (`/terms` …, features/legal/pages.ts).
 import Link from 'next/link';
 import { getTranslator } from '../lib/i18n';
 import { PLATFORM_BRAND } from '../features/branding/brand-theme';
+import { PLATFORM_CHROME } from '../features/store4a/account';
+import { POLICY_SLUGS, policyHref } from '../features/legal/pages';
 
 export function SiteFooter() {
   const t = getTranslator();
@@ -42,6 +45,11 @@ export function SiteFooter() {
             <Link href="/blog" className="kv-footer__link">{t.t('nav.blog')}</Link>
             <Link href="/press" className="kv-footer__link">{t.t('nav.press')}</Link>
             <Link href="/pricing" className="kv-footer__link">{t.t('nav.pricing')}</Link>
+          </nav>
+          {/* PC-56 LEGAL-1: the four policy pages (the platform's) */}
+          <nav className="kv-footer__col" aria-label={t.t('legal.footer.heading')} data-kv-foot-col="legal">
+            <h2 className="kv-footer__heading">{t.t('legal.footer.heading')}</h2>
+            {POLICY_SLUGS.map((s) => <Link key={s} href={policyHref(PLATFORM_CHROME, s)} className="kv-footer__link" data-kv-foot={s}>{t.t(`legal.footer.${s}`)}</Link>)}
           </nav>
         </div>
         <p className="kv-footer__rights">{t.t('footer.rights', { year: new Date().getFullYear(), app: PLATFORM_BRAND.platformStoreName })}</p>

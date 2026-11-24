@@ -39,6 +39,8 @@ export const STATIC_TOP_SEGMENTS: readonly string[] = Object.freeze([
   'quality-promise', 'trust-data', 'contact',
   // PC-56 STORE-SWEEP-b · C2: canon W323's language page (`/language` — reserved as a tenant slug in migration 0204:149 and signup.ts:105)
   'language',
+  // PC-56 LEGAL-1: the four policy pages (`/terms`, `/privacy`, `/refunds`, `/shipping` — added to the API's reserved tenant slugs with this wave)
+  'terms', 'privacy', 'refunds', 'shipping',
 ]);
 const SLUG = /^[a-z0-9][a-z0-9-]{0,49}$/;
 

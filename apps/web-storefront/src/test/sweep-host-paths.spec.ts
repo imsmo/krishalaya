@@ -51,7 +51,7 @@ describe('STORE-SWEEP-a · the host rule', () => {
     // PC-56 STORE-SWEEP-b: + `language` (both chromes, D3); + `/for-organisations` platform-only (D5); + `/language`, `/trace` rewritten on a store host
     expect([...SWEEP_BOTH_CHROMES]).toEqual(['help', 'quality-promise', 'contact', 'language']);
     expect([...PLATFORM_ONLY_PATHS].sort()).toEqual(['/about', '/blog', '/contact', '/for-organisations', '/press', '/pricing', '/trust-data']);
-    expect([...STORE_HOST_REWRITES]).toEqual(['/help', '/quality-promise', '/contact', '/language', '/trace']);
+    expect([...STORE_HOST_REWRITES]).toEqual(['/help', '/quality-promise', '/contact', '/language', '/trace', '/terms', '/privacy', '/refunds', '/shipping']);   // + PC-56 LEGAL-1
   });
 });
 

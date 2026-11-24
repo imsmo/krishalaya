@@ -113,6 +113,8 @@ export const RESERVED_TENANT_SLUGS: readonly string[] = Object.freeze([
   'certificates',
   // PC-56 HOTFIX-8 · migration 0220: the service worker served by a route at the origin's root (`/sw.js`) — never a slug (a dot)
   'sw.js',
+  // PC-56 LEGAL-1 · migration 0242: the four platform policy pages (`/terms`, `/privacy`, `/refunds`, `/shipping` — Razorpay + DPDP)
+  'terms', 'privacy', 'refunds', 'shipping',
 ]);
 const RESERVED = new Set(RESERVED_TENANT_SLUGS);
 export function isReservedSlug(slug: string): boolean { return RESERVED.has(String(slug ?? '').trim().toLowerCase()); }

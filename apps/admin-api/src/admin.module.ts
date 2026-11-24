@@ -26,6 +26,7 @@ import { PlatformStaffModule } from './modules/platform-staff/platform-staff.mod
 import { MarketOpsModule } from './modules/market-ops/market-ops.module';
 import { PlatformApiOpsModule } from './modules/platform-api-ops/platform-api-ops.module';
 import { TemplatesOpsModule } from './modules/templates-ops/templates-ops.module';
+import { PlatformPagesModule } from './modules/platform-pages/platform-pages.module';
 import { SettingsOpsModule } from './modules/settings-ops/settings-ops.module';
 import { GlobalCatalogueOpsModule } from './modules/global-catalogue-ops/global-catalogue-ops.module';
 import { SchemesRegistryOpsModule } from './modules/schemes-registry-ops/schemes-registry-ops.module';
@@ -51,7 +52,7 @@ import { PartnerOpsModule } from './modules/partner-ops/partner-ops.module';   /
 @Module({
   imports: [AdminCoreModule, AiModelsOpsModule, TenantOpsModule, ReconMonitorModule, ComplianceOpsModule, BillingOpsModule, FlagsOpsModule, PlansOpsModule, ImpersonationModule, SupportOversightModule, PlatformReportsModule, ProvidersOpsModule, AnnouncementsModule, GlobalCatalogueOpsModule, SchemesRegistryOpsModule, SchemesOversightModule, ConsentOpsModule, CellsOpsModule, CatalogueDepthModule,
     // PC-56 ADMIN-3b: the translations plane — the first write path this table has ever had
-    TranslationsModule, TenantApplicationsOpsModule, SetupCallsOpsModule, PlatformStaffModule, SettingsOpsModule, TemplatesOpsModule, PlatformApiOpsModule, MarketOpsModule,
+    TranslationsModule, TenantApplicationsOpsModule, SetupCallsOpsModule, PlatformStaffModule, SettingsOpsModule, TemplatesOpsModule, PlatformPagesModule, PlatformApiOpsModule, MarketOpsModule,
   // PC-56 ADMIN-5d: the trust & safety plane — the first code ever to reach `platform_blocklists` / `risk_rules` /
   // `appeals`, which 0067 created for an admin realm that had no grant on them.
   TrustSafetyModule,

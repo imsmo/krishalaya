@@ -7,8 +7,9 @@ import 'server-only';
 import { env } from './env';
 import { getAdminToken } from './admin-auth';
 
+/** `details` is the parsed refusal body (e.g. PLATFORM_PAGE_REFUSED's `problems[]`) — never the request or the token. */
 export class AdminApiError extends Error {
-  constructor(public readonly code: string, public readonly status: number, message: string, public readonly requestId?: string) { super(message); this.name = 'AdminApiError'; }
+  constructor(public readonly code: string, public readonly status: number, message: string, public readonly requestId?: string, public readonly details?: unknown) { super(message); this.name = 'AdminApiError'; }
   get needsElevation() { return this.status === 403; }   // hardware-key / step-up / owner perm required
   get unauthorized() { return this.status === 401; }
 }
@@ -24,7 +25,7 @@ async function once<T>(method: string, path: string, query?: Record<string, stri
   try {
     const res = await fetch(url, { method, headers: { accept: 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) }, signal: controller.signal, cache: 'no-store' });
     const text = await res.text(); const json = text ? JSON.parse(text) : {};
-    if (!res.ok) { const e = json as any; throw new AdminApiError(e?.code ?? 'ADMIN_API_ERROR', res.status, e?.message ?? `HTTP ${res.status}`, e?.requestId); }
+    if (!res.ok) { const e = json as any; throw new AdminApiError(e?.code ?? 'ADMIN_API_ERROR', res.status, e?.message ?? `HTTP ${res.status}`, e?.requestId, e); }
     return (json && 'data' in json) ? json as Envelope<T> : { data: json as T };
   } finally { clearTimeout(timer); }
 }
@@ -65,7 +66,7 @@ async function mutate<T>(method: 'POST' | 'PATCH' | 'PUT' | 'DELETE', path: stri
       cache: 'no-store',
     });
     const text = await res.text(); const json = text ? JSON.parse(text) : {};
-    if (!res.ok) { const e = json as any; throw new AdminApiError(e?.code ?? 'ADMIN_API_ERROR', res.status, e?.message ?? `HTTP ${res.status}`, e?.requestId); }
+    if (!res.ok) { const e = json as any; throw new AdminApiError(e?.code ?? 'ADMIN_API_ERROR', res.status, e?.message ?? `HTTP ${res.status}`, e?.requestId, e); }
     return (json && 'data' in json) ? json as Envelope<T> : { data: json as T };
   } finally { clearTimeout(timer); }
 }

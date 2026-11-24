@@ -12,6 +12,7 @@
 import { PLATFORM_BRAND, PLATFORM_BRAND_COLOURS, normaliseHex, showsPoweredBy, type BrandSurface } from '@krishalaya/tokens';
 import type { PublishedBrand, TenantBranding } from '@krishalaya/sdk-js';
 import { manifestIdentity, tenantIcons } from '../store6/manifest';
+import { POLICY_PATHS } from '../legal/pages';
 
 export { PLATFORM_BRAND };
 
@@ -136,5 +137,8 @@ export function hostRewritePath(slug: string, pathname: string): string | null {
   // home's "scan a trace QR" form and the store's footer land there; `/trace/<token>` above was already the store's)
   if (pathname === '/language') return `/${slug}/language`;
   if (pathname === '/trace') return `/${slug}/trace`;
+  // PC-56 LEGAL-1: the four policy pages (`/terms`, `/privacy`, `/refunds`, `/shipping`) are the ORGANISATION's on its own host (its own published
+  // policy, or the platform's — the API decides; features/legal/pages.ts)
+  if (POLICY_PATHS.includes(pathname)) return `/${slug}${pathname}`;
   return null;
 }

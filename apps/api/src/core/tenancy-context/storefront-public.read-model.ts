@@ -99,6 +99,39 @@ export function platformFactsOf(values: ReadonlyMap<string, unknown>): PlatformF
   };
 }
 
+/**
+ * PC-56 LEGAL-1 (migration 0242) — the four PLATFORM POLICY pages the storefront shows at `/terms`, `/privacy`, `/refunds`, `/shipping` (and
+ * under `/[tenantSlug]/…`). THE ALLOW-LIST IS HERE AND IN THE SQL FUNCTION: a slug outside it never reaches the database. No flag — 0223's
+ * named Law 10 exception (legal / information pages have no kill-switch).
+ */
+export const POLICY_SLUGS = Object.freeze(['terms', 'privacy', 'refunds', 'shipping'] as const);
+export type PolicySlug = (typeof POLICY_SLUGS)[number];
+export function isPolicySlug(raw: unknown): raw is PolicySlug {
+  return typeof raw === 'string' && (POLICY_SLUGS as readonly string[]).includes(raw);
+}
+/** The language a policy is asked for: a BCP-47-ish tag reduced to its primary subtag (`hi-IN` → `hi`), lower-cased; anything else null
+ *  (null = "the version's own words", never an error — a bad `?lang=` must not hide a privacy notice). */
+export function policyLanguage(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const m = /^([A-Za-z]{2,3})(?:[-_][A-Za-z0-9]{2,8})*$/.exec(raw.trim());
+  return m ? m[1].toLowerCase() : null;
+}
+export interface PolicyPage {
+  slug: PolicySlug;
+  /** whose words: the context organisation's own published version, or the platform's */
+  source: 'tenant' | 'platform';
+  title: string;
+  /** markdown, as stored (no raw HTML; `{{platform.*}}` fact tokens are substituted by the storefront) */
+  body: string;
+  /** the language of `title` / `body` */
+  language: string | null;
+  requestedLanguage: string | null;
+  /** set when the body is NOT in the requested language: the language it is shown in instead */
+  fallbackLanguage: string | null;
+  version: number;
+  publishedAt: string;
+}
+
 /** A pg row as the driver hands it back: untyped (`any`) by the driver's own contract — every field is narrowed / converted below before it
  *  leaves this file (String(), Number(), === true), so no `any` reaches a caller. */
 type PgRow = Record<string, any>;   // eslint-disable-line @typescript-eslint/no-explicit-any -- justified above
@@ -217,6 +250,23 @@ export class StorefrontPublicReadModel {
     const r = await this.pools.replica(0).query(
       `SELECT k.key, kv_platform_setting(k.key) AS value FROM unnest($1::varchar[]) AS k(key)`, [keys]);
     return platformFactsOf(new Map((r.rows as PgRow[]).map((x) => [String(x.key), x.value as unknown])));
+  }
+
+  /** PC-56 LEGAL-1 (0242 `public_policy_page`): the PUBLISHED policy page of an allow-listed slug — the context tenant's own published version
+   *  when it has one, else the platform's — in `language` when a reviewed translation exists, else its own words (fallbackLanguage set).
+   *  null = not published (a draft, an archived version, a non-policy page are never served). On the replica (Law 12). */
+  async policy(tenantId: string | null | undefined, slug: PolicySlug, language: string | null): Promise<PolicyPage | null> {
+    if (!isPolicySlug(slug)) return null;
+    const r = await this.pools.replica(0).query(
+      `SELECT * FROM public_policy_page($1::uuid, $2::varchar, $3::varchar)`,
+      [tenantId && UUID_RE.test(tenantId) ? tenantId : null, slug, language]);
+    const x = r.rows[0] as PgRow | undefined;
+    if (!x) return null;
+    return {
+      slug, source: x.source === 'tenant' ? 'tenant' : 'platform', title: String(x.title), body: String(x.body),
+      language: x.language_code ?? null, requestedLanguage: x.requested_language ?? null, fallbackLanguage: x.fallback_language ?? null,
+      version: Number(x.version), publishedAt: new Date(x.published_at).toISOString(),
+    };
   }
 
   /** PC-56 STORE-2a (brief C2, 0207 `public_organisation_search`): verified live organisations whose DISPLAY NAME starts with `prefix`

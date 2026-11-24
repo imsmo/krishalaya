@@ -23,6 +23,7 @@ import { OperatorRegistryRepository } from './auth/operator-registry.repository'
 // exists, but the HANDLER itself refuses every request unless ADMIN_DEV_LOGIN_ENABLED is on AND NODE_ENV is not
 // 'production' AND the caller is loopback — so its mere presence in a production build is not a security hole.
 import { DevLoginController } from './auth/dev-login.controller';
+import { AdminIdempotency } from './idempotency/admin-idempotency.service';
 
 @Global()
 @Module({
@@ -34,9 +35,9 @@ import { DevLoginController } from './auth/dev-login.controller';
     // process.env explicitly, mirroring apps/api/src/core/config/config.module.ts.
     { provide: AdminConfig, useFactory: () => new AdminConfig(process.env) },
     AdminPool, AdminAuditWriter, AdminObjectStore, IpAllowlistMiddleware, OperatorRegistryRepository,
-    AdminAuthGuard, HardwareKeyGuard, StepUpReauthGuard, OwnerPermissionsGuard,
+    AdminAuthGuard, HardwareKeyGuard, StepUpReauthGuard, OwnerPermissionsGuard, AdminIdempotency,
     { provide: APP_INTERCEPTOR, useClass: AdminAuditInterceptor },
   ],
-  exports: [AdminObjectStore, AdminConfig, AdminPool, AdminAuditWriter, OperatorRegistryRepository, IpAllowlistMiddleware, AdminAuthGuard, HardwareKeyGuard, StepUpReauthGuard, OwnerPermissionsGuard],
+  exports: [AdminObjectStore, AdminConfig, AdminPool, AdminAuditWriter, OperatorRegistryRepository, IpAllowlistMiddleware, AdminAuthGuard, HardwareKeyGuard, StepUpReauthGuard, OwnerPermissionsGuard, AdminIdempotency],
 })
 export class AdminCoreModule {}

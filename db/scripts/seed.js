@@ -54,6 +54,9 @@ const ORDER = [
   'core/0027_ui_messages_team.sql',                // PC-56 TENANT-SW-c: the staff-invite SMS words and staff role names, en / hi / gu
   'core/0028_ui_messages_governance_pack.sql',     // PC-56 TENANT-SW-d: the AGM pack's methods in hi / gu (the PDF cannot draw them) + its dataset name
   'core/0029_ui_messages_insights.sql',            // PC-56 TENANT-SW-f: the insights' method + refusal sentences in en / hi / gu + the four dataset names
+  // PC-56 LEGAL-1 · the four platform policy pages (terms · privacy · refunds · shipping) as DRAFTS — GENERATED from docs/legal/*.md by
+  // db/scripts/gen-legal-drafts-seed.js (never hand-edited; db:test checks it is in sync). Inserted only when the slug has no platform row.
+  'core/0030_platform_legal_drafts.sql',
   'rules/0201_plans_limits_features.sql','rules/0202_commission_rules.sql','rules/0203_tax_rules_gst_tds.sql',
   'rules/0204_charge_definitions.sql','rules/0205_membership_tiers.sql','rules/0206_minimum_wages_gj_mh.sql',
   'rules/0207_ambassador_commission_plans.sql','rules/0208_schemes_starter_set.sql',
