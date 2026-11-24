@@ -70,10 +70,13 @@ export const reconInternalBalanceJob: Job = {
 
     // The last id in the swept page, whether or not it drifted — the watermark must advance over CLEAN accounts too,
     // or the sweep would restart from the same place for ever on a healthy platform.
+    // PC-56 PAY-9: this was `max(id)` — and Postgres has NO max(uuid) ("function max(uuid) does not exist"), so this
+    // statement failed on every tick under every role and the drift check never completed once (its spec used a fake
+    // client). The last id of the ordered page, taken by ORDER BY — the same uuid ordering the `id > $1` watermark uses.
     const swept = await client.query<{ last: string | null; n: string }>(
-      `SELECT max(id)::text AS last, count(*)::text AS n FROM (
-         SELECT id FROM wallet_accounts WHERE ($1::uuid IS NULL OR id > $1) ORDER BY id LIMIT $2
-       ) q`, [after, ACCOUNTS_PER_TICK]);
+      `WITH page AS (SELECT id FROM wallet_accounts WHERE ($1::uuid IS NULL OR id > $1) ORDER BY id LIMIT $2)
+       SELECT (SELECT id::text FROM page ORDER BY id DESC LIMIT 1) AS last, (SELECT count(*) FROM page)::text AS n`,
+      [after, ACCOUNTS_PER_TICK]);
     const last = swept.rows[0]?.last ?? null;
     const checked = Number(swept.rows[0]?.n ?? 0);
 

@@ -168,11 +168,12 @@ The money-OUT pipeline now has its batching, async-confirmation, and reconciliat
   funds returned) + `payments.payout_failed`. Same trust model as the payment webhook: unauthenticated,
   HMAC over the raw body, tenant from the signature-verified `notes`. Idempotent on the gateway event id
   AND the wallet idempotency keys (`payout-exec:` / `payout-reverse:`) — a replay can never double-move money.
-- **Monitoring + recon jobs** (worker, privileged pool) — `payout-queue-monitor` snapshots payouts stuck
-  'queued'/'processing' past SLA into `ops_job_runs` (an alert signal; moves nothing); `daily-gateway-recon`
-  runs once per UTC day (date-guarded in `ops_job_runs`) and records a `reconciliation_runs`
-  (`run_type='daily_gateway'`) row flagging payout/ledger drift (reservation_missing, settled_without_gateway,
-  stuck_processing) — complementing the whole-ledger zero-sum/internal-balance checks in `core/wallet`.
+- **Monitoring + recon jobs** — live in **apps/worker** (PC-56 PAY-9; the copies that used to sit here were never
+  scheduled by anything): `payout-queue-monitor` (every 5 min) gauges payouts the executor may claim that waited >15 min,
+  and payouts 'processing' >2 h without a gateway confirmation; `payout-gateway-recon` (once per UTC day) records a
+  `reconciliation_runs` row (`run_type='daily_gateway'`) listing reservation_missing / settled_without_gateway /
+  stuck_processing (page) and unreserved_batch_payout (ticket — the known loan/co-op gap). Alerts:
+  `ops/alerts/payout-alerts.yml`; runbook: `ops/runbooks/payout-stuck-or-mismatch.md`. Both move nothing.
 - **`PaymentsPublisher`** — typed façade writing payout events to the outbox in the SAME tx (Law 4); payloads
   carry only ids + minor-unit amounts (no PII/bank details). **`WalletBalanceReadModel`** — replica-served
   (CQRS) withdrawable balance for the payout UI, anti-IDOR (one user can't read another's balance).

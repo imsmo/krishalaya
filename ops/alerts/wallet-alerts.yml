@@ -20,6 +20,17 @@ spec:
           for: 0m
           labels: { severity: page }
           annotations: { summary: "Reconciliation hasn't run in >2h (blind to imbalance)" }
+        # PC-56 PAY-9: recon-internal-balance has exported this gauge since ADMIN-6 and NOTHING alerted on it (and the job
+        # itself could not run until 0241 + the max(uuid) fix). The job sweeps accounts a page per 15-min tick, so the gauge
+        # is non-zero only on the tick whose page holds a drifted account — hence max_over_time, not the instant value.
+        - alert: WalletBalanceDrift
+          expr: max_over_time(kv_recon_balance_drift{namespace="krishalaya"}[30m]) > 0
+          for: 0m
+          labels: { severity: page, money: "true" }
+          annotations:
+            summary: "{{ $value }} wallet balance(s) shown to users disagree with the ledger"
+            description: "cached_balance_minor ≠ Σ ledger entries. The newest internal_balance run on the reconciliation board lists each account with both figures. Freeze affected accounts; do not deploy."
+            runbook: ops/runbooks/wallet-recon-mismatch.md
         - alert: WalletRpcErrors
           expr: increase(dep_failure{namespace="krishalaya",dep="wallet"}[5m]) > 5
           for: 5m

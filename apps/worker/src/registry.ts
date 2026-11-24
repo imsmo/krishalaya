@@ -13,6 +13,8 @@ import { webhookDeliveryJob } from './jobs/webhook-delivery.job';
 import { scheduledReportsJob } from './jobs/scheduled-reports.job';
 import { supportEscalationsJob } from './jobs/support-escalations.job';
 import { pendingPlanChangeJob } from './jobs/pending-plan-change.job';
+import { payoutQueueMonitorJob } from './jobs/payout-queue-monitor.job';
+import { payoutGatewayReconJob } from './jobs/payout-gateway-recon.job';
 
 export const JOBS: Job[] = [
   reconZeroSumJob,
@@ -42,4 +44,9 @@ export const JOBS: Job[] = [
   // console still promising the change. pg-native for the reason stated in the job file: the four api-side tenancy job
   // classes are not registered anywhere, so a fifth would have been another thing that never runs.
   pendingPlanChangeJob,
+  // PC-56 PAY-9: the two payout safety checks. Both were written in apps/api, named in the payments README, and never
+  // scheduled — so a payout stuck in the queue or lost at the gateway paged nobody, and the reconciliation board's
+  // "daily gateway" row could only be empty. Read-only over money; gauges → ops/alerts/payout-alerts.yml.
+  payoutQueueMonitorJob,
+  payoutGatewayReconJob,
 ];

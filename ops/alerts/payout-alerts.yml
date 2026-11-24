@@ -1,0 +1,43 @@
+# ops/alerts/payout-alerts.yml · PC-56 PAY-9 — money OUT: a payout that waits, or that the books and the gateway
+# disagree about, pages a person. Gauges are exported by apps/worker (payout-queue-monitor every 5 min,
+# payout-gateway-recon once per UTC day). Runbook: ops/runbooks/payout-stuck-or-mismatch.md.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata: { name: krishalaya-payout-alerts, namespace: monitoring, labels: { release: kube-prometheus-stack } }
+spec:
+  groups:
+    - name: payouts.out
+      rules:
+        - alert: PayoutQueueNotDraining
+          expr: kv_payout_queued_stuck{namespace="krishalaya"} > 0
+          for: 10m          # two more monitor ticks: a single slow executor tick is not a page
+          labels: { severity: page, money: "true" }
+          annotations:
+            summary: "{{ $value }} payout(s) ready to send have waited >15 min — the payout executor is not draining"
+            runbook: ops/runbooks/payout-stuck-or-mismatch.md
+        - alert: PayoutGatewayConfirmationMissing
+          expr: kv_payout_processing_stuck{namespace="krishalaya"} > 0
+          for: 15m
+          labels: { severity: page, money: "true" }
+          annotations:
+            summary: "{{ $value }} payout(s) 'processing' >2h with no gateway confirmation (lost webhook?)"
+            runbook: ops/runbooks/payout-stuck-or-mismatch.md
+        - alert: PayoutReconMismatch
+          expr: kv_payout_recon_mismatches{namespace="krishalaya",reason=~"reservation_missing|settled_without_gateway|stuck_processing"} > 0
+          for: 0m           # page immediately — the books and the gateway disagree about money that left
+          labels: { severity: page, money: "true" }
+          annotations:
+            summary: "Daily payout reconciliation: {{ $value }} payout(s) with {{ $labels.reason }}"
+            runbook: ops/runbooks/payout-stuck-or-mismatch.md
+        - alert: PayoutUnreservedBatchPayouts
+          expr: kv_payout_recon_mismatches{namespace="krishalaya",reason="unreserved_batch_payout"} > 0
+          for: 0m
+          labels: { severity: ticket, money: "true" }
+          annotations:
+            summary: "{{ $value }} loan/co-op payout(s) queued without a balance reservation (known gap, awaiting the founder-signed money wave)"
+            runbook: ops/runbooks/payout-stuck-or-mismatch.md
+        - alert: PayoutReconStale
+          expr: kv_payout_recon_age_seconds{namespace="krishalaya"} > 108000   # 30 h: one missed daily run + slack
+          for: 0m
+          labels: { severity: page }
+          annotations: { summary: "The daily payout reconciliation has not recorded a run in >30h (blind to payout drift)", runbook: ops/runbooks/payout-stuck-or-mismatch.md }
