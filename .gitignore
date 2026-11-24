@@ -8,7 +8,10 @@
 # ----------------------------------------------------------------------------
 # Dependencies
 # ----------------------------------------------------------------------------
-node_modules/
+# No trailing slash: also ignores a node_modules SYMLINK (apps/mobile/node_modules -> ../../node_modules was
+# committed in Wave 8 because `node_modules/` only matches directories; on a fresh checkout it broke every mobile
+# package link — PC-56 CI-1).
+node_modules
 .pnp
 .pnp.*
 .yarn/*

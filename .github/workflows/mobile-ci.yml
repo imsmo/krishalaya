@@ -26,8 +26,10 @@ jobs:
         with: { node-version: '20', cache: pnpm }
       - name: Install (frozen lockfile)
         run: pnpm install --frozen-lockfile
-      - name: Build ui-native (mobile resolves it through its gitignored dist/)
-        run: pnpm --filter @krishalaya/ui-native build
+      # PC-56 CI-1: every workspace package mobile depends on (tokens, i18n, sdk-js, ui-native) in dependency order —
+      # each resolves through its gitignored dist/, and building ui-native alone failed (no @krishalaya/i18n yet).
+      - name: Build mobile's workspace packages (each resolves through its gitignored dist/)
+        run: pnpm --filter "@krishalaya/mobile^..." build
       - name: Typecheck (mobile + sdk + ui-native)
         run: pnpm --filter @krishalaya/mobile typecheck && pnpm --filter @krishalaya/sdk-js typecheck && pnpm --filter @krishalaya/ui-native typecheck
       - name: Lint
@@ -50,7 +52,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '20', cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @krishalaya/ui-native build
+      - run: pnpm --filter "@krishalaya/mobile^..." build
       - name: Build a dev-client APK for e2e (EAS local)
         run: npx eas-cli build --platform android --profile development --local --output ./app-e2e.apk
         env:

@@ -41,8 +41,8 @@ jobs:
           cache: pnpm
       - name: Install (frozen lockfile)
         run: pnpm install --frozen-lockfile
-      - name: Build ui-native (mobile resolves it through its gitignored dist/)
-        run: pnpm --filter @krishalaya/ui-native build
+      - name: Build mobile's workspace packages (each resolves through its gitignored dist/)
+        run: pnpm --filter "@krishalaya/mobile^..." build
       - name: Re-run CI gates before release (defence-in-depth)
         run: >-
           pnpm --filter @krishalaya/mobile typecheck &&
