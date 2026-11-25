@@ -31,14 +31,17 @@ export class ProductRepository {
     const v = p.toProps();
     await tx.query(
       `INSERT INTO products (id, category_id, code, default_name, brand_id, default_unit, gst_rate_pct, hsn_code, is_perishable, shelf_life_days, tenant_id, is_active, search_tsv)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12, to_tsvector('simple', $4))`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12, to_tsvector('simple', $4::varchar))`,
+      // `$4::varchar`, not `$4`: one parameter deduced as varchar (default_name) AND as to_tsvector's text is refused by Postgres
+      // ("inconsistent types deduced for parameter $4") — every tenant product create and edit failed. PC-56 TEST-1, found by the
+      // catalogue integration spec; the unit specs mock the repository.
       [v.id, v.categoryId, v.code, v.defaultName, v.brandId, v.defaultUnit, v.gstRatePct, v.hsnCode, v.isPerishable, v.shelfLifeDays, v.tenantId, v.isActive]);
   }
   async update(tx: TxContext, p: Product): Promise<void> {
     const v = p.toProps();
     await tx.query(
       `UPDATE products SET category_id=$3, default_name=$4, brand_id=$5, default_unit=$6, gst_rate_pct=$7, hsn_code=$8,
-         is_perishable=$9, shelf_life_days=$10, is_active=$11, search_tsv=to_tsvector('simple',$4), updated_at=now()
+         is_perishable=$9, shelf_life_days=$10, is_active=$11, search_tsv=to_tsvector('simple',$4::varchar), updated_at=now()
        WHERE id=$1 AND tenant_id=$2 AND deleted_at IS NULL`,
       [v.id, v.tenantId, v.categoryId, v.defaultName, v.brandId, v.defaultUnit, v.gstRatePct, v.hsnCode, v.isPerishable, v.shelfLifeDays, v.isActive]);
   }

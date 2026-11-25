@@ -79,7 +79,8 @@ run('land-soil-weather spine (integration, real Postgres + RLS)', () => {
   });
 
   it('plans → sows → harvests a kharif crop season', async () => {
-    const c = await crops.plan(tenantA, actor, `idem-${randomUUID()}`, { parcelId, productId, season: 'kharif', year: 2026, expectedYield: '30.000' } as any);
+    // PC-56 TEST-1 (F-9): an expected yield is refused without its unit (DTO + domain YIELD_UNIT_REQUIRED) — the fixture now names it.
+    const c = await crops.plan(tenantA, actor, `idem-${randomUUID()}`, { parcelId, productId, season: 'kharif', year: 2026, expectedYield: '30.000', yieldUnitCode: 'quintal' } as any);
     cropId = c.id; expect(c.status).toBe('planned');
     expect((await crops.sow(tenantA, actor, cropId, { sownOn: '2026-06-15' } as any)).status).toBe('sown');
     const harvested = await crops.harvest(tenantA, actor, cropId, { actualYield: '28.500', yieldUnitCode: 'quintal' } as any);   // F-9: with its unit

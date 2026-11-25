@@ -75,6 +75,9 @@ run('commission/tax settlement (integration, real Postgres + RLS)', () => {
     await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B');
     await makeUser(admin, sellerA); await makeUser(admin, sellerB); await makeUser(admin, buyer);
     // commission_split ON for the test DB; tenant-A override = 10% commission (KV 10% share)
+    // PC-56 TEST-1: snapshot first, restore in afterAll — this suite used to leave commission_split ON for the whole database, and
+    // orders-payments-e2e (which asserts the OFF path: full escrow release) then paid the seller net of commission in a full pass.
+    flagBefore = (await admin.query(`SELECT is_enabled, rollout_pct, rules FROM feature_flags WHERE key='commission_split'`)).rows[0];
     await admin.query(`UPDATE feature_flags SET is_enabled=true, rollout_pct=100 WHERE key='commission_split'`);
     const c = await admin.connect();
     try {
@@ -96,7 +99,12 @@ run('commission/tax settlement (integration, real Postgres + RLS)', () => {
     handler = new OrderCompletedHandler(composeOrderSettlement({ wallet: wallet, flags: flags, replica, lines: new SettlementLineRepository(), couponMoney: new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any)), uow: uow }));
   }, 30000);
 
-  afterAll(async () => { await pools?.onModuleDestroy(); await admin?.end(); });
+  let flagBefore: { is_enabled: boolean; rollout_pct: number; rules: unknown } | undefined;
+  afterAll(async () => {
+    if (flagBefore) await admin?.query(`UPDATE feature_flags SET is_enabled=$1, rollout_pct=$2, rules=$3::jsonb WHERE key='commission_split'`,
+      [flagBefore.is_enabled, flagBefore.rollout_pct, JSON.stringify(flagBefore.rules ?? {})]);
+    await pools?.onModuleDestroy(); await admin?.end();
+  });
 
   it('tenant A (10% override): escrow splits zero-sum into seller/commission/fees/GST/TDS', async () => {
     await fundEscrow(tenantA, GROSS);

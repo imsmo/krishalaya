@@ -77,7 +77,7 @@ run('PC-56 OPS-4b · upkeep and animals (integration, real AppModule over HTTP)'
     tok.F = mintToken(app, { userId: F, tenantId: T1, roles: ['farmer'], perms: ['animal.manage'] });
     tok.F2 = mintToken(app, { userId: F2, tenantId: T2, roles: ['farmer'], perms: ['animal.manage'] });
 
-    const categoryId = (await admin.query(`SELECT id FROM categories ORDER BY id LIMIT 1`)).rows[0].id;
+    const categoryId = (await admin.query(`SELECT id FROM categories ORDER BY created_at, id LIMIT 1`)).rows[0].id;
     const mk = async (t: string) => { const a = await post(t, '/v1/equipment/assets', { categoryId, hpRating: 45 }); expect(a.status).toBe(201); return a.body.data.id as string; };
     machineA = await mk(tok.A); machineB = await mk(tok.B);
     expect((await post(tok.A, `/v1/equipment/assets/${machineA}/rates`, { rateBasis: 'per_hour', rateMinor: '15000', includesOperator: true, includesFuel: false, effectiveFrom: '2026-01-01' }, null)).status).toBe(201);

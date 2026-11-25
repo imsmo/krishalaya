@@ -40,6 +40,7 @@ import { CodLedgerRepository } from '../repositories/cod-ledger.repository';
 import { PodReviewRepository } from '../repositories/pod-review.repository';
 import { OrderConfirmedHandler } from '../events/handlers/order-confirmed.handler';
 import { InvalidDeliveryOtpError } from '../domain/logistics.errors';
+import { quarantinePendingOutbox } from '../../../../test/helpers/outbox';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -66,10 +67,13 @@ run('logistics slice (integration, real Postgres + RLS + outbox relay)', () => {
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
     await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B');
     await makeUser(admin, buyer); await makeUser(admin, seller); await makeUser(admin, rider);
-    // a confirmed order (minimal header — the handlers only need the id/status)
+    // a confirmed order (minimal header — the handlers only need the id/status).
+    // PC-56 TEST-1: created_at = uuid_v7_time(id), as the product writes it (millisecond precision). It was now(), which carries
+    // MICROseconds: OrderRepository.update matches `created_at = $3` with the JS Date it read back (milliseconds), so the carrier-
+    // delivery handler's UPDATE hit 0 rows and returned silently — the order stayed `confirmed`.
     await admin.query(
       `INSERT INTO orders (id, tenant_id, order_no, buyer_user_id, seller_user_id, source, currency_code, subtotal_minor, total_minor, status, version, created_at)
-       VALUES ($1,$2,$3,$4,$5,'direct','INR',100000,100000,'confirmed',1, now())`,
+       VALUES ($1,$2,$3,$4,$5,'direct','INR',100000,100000,'confirmed',1, uuid_v7_time($1))`,
       [orderId, tenantA, `KV-${orderId.slice(0, 8)}`, buyer, seller]);
 
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
@@ -105,6 +109,7 @@ run('logistics slice (integration, real Postgres + RLS + outbox relay)', () => {
     registry.register(new OrderConfirmedHandler(shipRepo, outbox, metrics, uow));                  // orders.order_confirmed → shipment (kv_app UoW, HOTFIX-2)
     registry.register(new ShipmentDeliveredHandler(new OrderRepository(replica as any), outbox));  // logistics.shipment_delivered → order delivered
     dispatcher = new OutboxDispatcher(admin, registry, metrics);
+    await quarantinePendingOutbox(admin);   // PC-56 TEST-1: relay only this suite's events (test/helpers/outbox.ts)
 
     inspect = new Pool({ connectionString: APP_URL });
     isSuperuser = (await inspect.query(`SELECT rolsuper FROM pg_roles WHERE rolname=current_user`)).rows[0]?.rolsuper === true;

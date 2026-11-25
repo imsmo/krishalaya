@@ -40,7 +40,11 @@ run('market-intel spine (integration, real Postgres + RLS + alerts)', () => {
   beforeAll(async () => {
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
     await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B'); await makeUser(admin, ops); await makeUser(admin, farmer);
-    await admin.query(`INSERT INTO admin_regions (id, code) VALUES ($1,$2) ON CONFLICT DO NOTHING`, [region, 'GJ-TEST']);
+    // PC-56 TEST-1: admin_regions requires country_code, level, default_name and an ltree path (0002), and (country_code, code) is
+    // unique — so the code is per-run (a fixed 'GJ-TEST' would collide with the previous run's row and leave `region` absent).
+    const rtag = region.replace(/-/g, '').slice(-12);
+    await admin.query(`INSERT INTO admin_regions (id, country_code, level, code, default_name, path) VALUES ($1,'IN',3,$2,'Test district',$3::ltree)`,
+      [region, `MI-${rtag}`, `mi_${rtag}`]);
     const cat = await makeCategory(admin); productId = await makeProduct(admin, { categoryId: cat, tenantId: null });
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
     pools = new PgPoolProvider(config);

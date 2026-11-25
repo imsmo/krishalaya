@@ -212,7 +212,10 @@ run('orders slice (integration, real Postgres + RLS)', () => {
   it('checkout applies a coupon discount to the order (promotions → order.discount_minor)', async () => {
     const buyer2 = randomUUID();
     await makeUser(admin, buyer2);
+    // PC-56 TEST-1: the flag is set for this test and RESTORED to what it was (in finally — a failure must not leave it ON for later suites).
+    const promotionsBefore = (await admin.query(`SELECT is_enabled FROM feature_flags WHERE key='promotions'`)).rows[0]?.is_enabled ?? false;
     await admin.query(`UPDATE feature_flags SET is_enabled=true WHERE key='promotions'`);
+    try {
     const now = Date.now();
     // PC-56 TENANT-10b: a new promotion has a BUDGET (uncapped is refused by name), and the discount is RESERVED from the
     // tenant's wallet — so the tenant's Main is funded first, as a cooperative's would be.
@@ -238,7 +241,9 @@ run('orders slice (integration, real Postgres + RLS)', () => {
     expect(red.rowCount).toBe(1);
     expect(String(red.rows[0].amount_minor)).toBe(expectedDiscount.toString());
     expect(red.rows[0].hold_txn_id).toBeTruthy();                                            // F-2: reserved from the tenant wallet
-    await admin.query(`UPDATE feature_flags SET is_enabled=false WHERE key='promotions'`);
+    } finally {
+      await admin.query(`UPDATE feature_flags SET is_enabled=$1 WHERE key='promotions'`, [promotionsBefore]);
+    }
   });
 
 });

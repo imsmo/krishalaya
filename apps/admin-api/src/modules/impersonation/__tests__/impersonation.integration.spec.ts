@@ -16,6 +16,7 @@ import { EndImpersonationService } from '../services/end-impersonation.service';
 import { ImpersonationHistoryService } from '../services/impersonation-history.service';
 import { verifyImpersonationToken } from '../domain/impersonation-token';
 import { IllegalGrantTransitionError } from '../domain/impersonation.errors';
+import { makeTenant, makeUser } from '../../../../test/integration-fixtures';
 
 const APP_URL = process.env.DATABASE_ADMIN_URL ?? process.env.DATABASE_URL;
 const run = APP_URL ? describe : describe.skip;
@@ -36,8 +37,13 @@ run('impersonation (integration, real Postgres — act-as grant lifecycle + audi
     endSvc = new EndImpersonationService(pool, audit, repo);
     history = new ImpersonationHistoryService(pool, audit, repo);
     inspect = new Pool({ connectionString: APP_URL });
-    const m = await inspect.query(`SELECT utr.user_id, utr.tenant_id FROM user_tenant_roles utr JOIN roles r ON r.id=utr.role_id WHERE r.scope='tenant' AND utr.is_active LIMIT 1`);
-    if (m.rows[0]) { targetUserId = m.rows[0].user_id; tenantId = m.rows[0].tenant_id; }
+    // PC-56 TEST-1: its OWN tenant + member. It used to borrow the first active tenant-scoped membership in the database and,
+    // finding none on a database built from migrations + seeds, SKIPPED ITS WHOLE BODY with a console.warn — a green test that
+    // tested nothing. The target is now always there, so the body always runs.
+    tenantId = await makeTenant(inspect);
+    targetUserId = await makeUser(inspect);
+    const role = await inspect.query(`SELECT id FROM roles WHERE scope = 'tenant' AND code = 'farmer' LIMIT 1`);
+    await inspect.query(`INSERT INTO user_tenant_roles (user_id, tenant_id, role_id, is_active) VALUES ($1, $2, $3, true)`, [targetUserId, tenantId, role.rows[0].id]);
   }, 30000);
 
   afterAll(async () => {
@@ -52,7 +58,7 @@ run('impersonation (integration, real Postgres — act-as grant lifecycle + audi
   });
 
   it('start→record→end: state, time-box, actions + audit; re-end refused', async () => {
-    if (!targetUserId) { console.warn('[impersonation itest] no tenant-scoped membership seeded — skipping body'); return; }
+    expect(targetUserId).toBeTruthy();
 
     const started: any = await startSvc.start(actor, { targetTenantId: tenantId, targetUserId, reason: 'reproduce a reported issue', ttlSec: 600, scope: 'read_only' });
     grantId = started.grant.id;

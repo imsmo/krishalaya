@@ -69,6 +69,9 @@ run('PC-56 STORE-1a · storefront sign-in (integration, real AppModule over HTTP
     await admin.query(`UPDATE tenants SET status = 'pending' WHERE id = $1`, [pendingTenant]);
     pendingSlug = (await admin.query(`SELECT slug FROM tenants WHERE id = $1`, [pendingTenant])).rows[0].slug;
     app = await bootstrapE2EApp(); http = app.getHttpServer();
+    // the HOTFIX-5 pin — PC-56 TEST-1: missing here; unpinned, supertest listens per request on every interface and dials 127.0.0.1, so on a
+    // machine where another process holds that IPv4 port a request can reach the OTHER server (seen in a full pass: "Parse Error: Expected HTTP/").
+    await new Promise<void>((resolve) => http.listen(0, '127.0.0.1', () => resolve()));
     cache = app.get<CacheService>(CACHE_SERVICE); sms = app.get<SmsSender>(SMS_SENDER); twoFactor = app.get(TwoFactorService);
   }, 120_000);
   afterAll(async () => {

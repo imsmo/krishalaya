@@ -195,7 +195,10 @@ run('PC-56 PARTNER-4b · the arrears buckets, the collected window and the appli
     };
     await mkApp('ready1', 'b1', 'approved', `now() - interval '2 hours'`, `now() - interval '26 hours'`);
     await mkApp('ready2', 'b2', 'approved', `now() - interval '1 second'`, `now() - interval '25 hours'`);   // one second past: READY
-    await mkApp('cooling1', 'b1', 'approved', `now() + interval '1 second'`, `now() - interval '1 hour'`);   // one second to go: NOT ready
+    // PC-56 TEST-1: ten minutes to go, not one second — the read below happens seconds after this fixture on a loaded runner, and
+    // "now() + 1 second" had already passed by then on ~1 full pass in 4 (3 ready / 1 cooling). The READY side keeps its
+    // one-second boundary (ready2): time only moves it further past, so that edge stays exact.
+    await mkApp('cooling1', 'b1', 'approved', `now() + interval '10 minutes'`, `now() - interval '1 hour'`);   // still cooling: NOT ready
     await mkApp('cooling2', 'b2', 'approved', `now() + interval '20 hours'`, `now() - interval '4 hours'`);
     await mkApp('disbursedIn', 'b1', 'disbursed', `now() - interval '40 days'`, `now() - interval '2 days'`);
     await mkApp('noConsent', 'b2', 'approved', `now() - interval '2 hours'`, `now() - interval '26 hours'`, false);

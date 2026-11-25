@@ -42,6 +42,9 @@ import { TemplateOverrideService } from '../services/template-override.service';
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
 const run = APP_URL ? describe : describe.skip;
+// PC-56 TEST-1: the fan-out's clock is pinned to TODAY 12:00 IST (NOTIFICATION_CLOCK — the service's own seam for this). The default quiet
+// window is real (TENANT-8b F-5), so run after ~21:00 IST every push here was `suppressed · quiet_hours` and the suite failed by the hour.
+const middayIst = (): Date => { const d = new Date(Date.now() + 330 * 60_000); return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 6, 30)); };
 
 class CapturingPush implements PushSender {
   readonly providerCode = 'capture';
@@ -97,7 +100,7 @@ run('TENANT-8a · the override (integration, real Postgres + RLS as kv_app)', ()
     push = new CapturingPush();
     notifications = new NotificationService(uow, new PgOutboxWriter(), metrics, new NoopNotificationGateway(config), push, new PushDeviceRepository(replica as any),
       events, templates, new NotificationPreferenceRepository(replica as any), new QuietHoursRepository(replica as any), new NotificationRepository(replica as any),
-      new FlagsService(pools, new InMemoryCacheService()));
+      new FlagsService(pools, new InMemoryCacheService()), middayIst);
   }, 60000);
   afterAll(async () => { await pools?.onModuleDestroy(); await app?.end(); await admin?.end(); });
 

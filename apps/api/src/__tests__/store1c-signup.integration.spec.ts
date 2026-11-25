@@ -76,6 +76,9 @@ run('PC-56 STORE-1c · for organisations — signup switch, replay, plans, flags
     await plan('s1c_inactive', { active: false });
     await plan('s1c_jp', { country: 'JP', currency: 'JPY', monthly: 1500 });
     app = await bootstrapE2EApp(); http = app.getHttpServer();
+    // the HOTFIX-5 pin — PC-56 TEST-1: missing here; unpinned, supertest listens per request on every interface and dials 127.0.0.1, so on a
+    // machine where another process holds that IPv4 port a request can reach the OTHER server (seen in a full pass: "Parse Error: Expected HTTP/").
+    await new Promise<void>((resolve) => http.listen(0, '127.0.0.1', () => resolve()));
     cache = app.get<CacheService>(CACHE_SERVICE); otp = app.get<OtpService>(OTP_SERVICE);
     await setSignup(true);
   }, 180_000);

@@ -67,12 +67,14 @@ run('checkout member benefits — platform fee override (integration, real Postg
   const SUBTOTAL = PRICE * BigInt(QTY);
   let listingId = '';
 
+  let flagsBefore: Array<{ key: string; is_enabled: boolean }> = [];
   beforeAll(async () => {
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
     await makeTenant(admin, tenantA, 'A');
     await makeUser(admin, seller); await makeUser(admin, memberBuyer); await makeUser(admin, plainBuyer);
     listingId = (await makePublishedListing(admin, { tenantId: tenantA, sellerId: seller, priceMinor: PRICE, qty: 100, title: 'Wheat' })).id;
     // this suite owns its flags — buyer_charges + memberships ON; online_payments OFF (COD-style orders)
+    flagsBefore = (await admin.query(`SELECT key, is_enabled FROM feature_flags WHERE key IN ('buyer_charges','memberships')`)).rows;
     await admin.query(`UPDATE feature_flags SET is_enabled=true WHERE key IN ('buyer_charges','memberships')`);
 
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
@@ -107,7 +109,8 @@ run('checkout member benefits — platform fee override (integration, real Postg
   }, 30000);
 
   afterAll(async () => {
-    await admin.query(`UPDATE feature_flags SET is_enabled=false WHERE key IN ('buyer_charges','memberships')`).catch(() => undefined);
+    // PC-56 TEST-1: restore what this suite found, not a hard-coded OFF.
+    for (const f of flagsBefore) await admin.query(`UPDATE feature_flags SET is_enabled=$2 WHERE key=$1`, [f.key, f.is_enabled]).catch(() => undefined);
     await pools?.onModuleDestroy(); await admin?.end();
   });
 
@@ -125,7 +128,7 @@ run('checkout member benefits — platform fee override (integration, real Postg
     const tier = await tiers.create(tenantA, { userId: seller, canManage: true } as any, `idem-${randomUUID()}`, {
       code: 'plus', defaultName: 'Plus', monthlyFeeMinor: '0', platformFeeBpsOverride: 100, benefits: { freeDelivery: true },
     } as any);
-    await memberships.subscribe(tenantA, { userId: memberBuyer, tenantId: tenantA, canManage: false } as any, `idem-${randomUUID()}`, { tierId: tier.id, billingCycle: 'monthly' } as any);
+    await memberships.subscribe(tenantA, memberBuyer, `idem-${randomUUID()}`, { tierId: tier.id, billingCycle: 'monthly' } as any);
 
     await carts.addItem(tenantA, memberBuyer, { listingId, quantity: QTY } as any);
     const res = await checkout.checkout(tenantA, memberBuyer, `idem-${randomUUID()}`, {} as any);

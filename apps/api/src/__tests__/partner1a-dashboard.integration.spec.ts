@@ -159,6 +159,9 @@ run('PC-56 PARTNER-1a · the dashboard figures, the SLA writer, the first admini
 
     await admin.query(`UPDATE feature_flags SET is_enabled = true, rollout_pct = 100 WHERE key = 'partner_console'`);
     app = await bootstrapE2EApp(); http = app.getHttpServer();
+    // the HOTFIX-5 pin — PC-56 TEST-1: missing here; unpinned, supertest listens per request on every interface and dials 127.0.0.1, so on a
+    // machine where another process holds that IPv4 port a request can reach the OTHER server (seen in a full pass: "Parse Error: Expected HTTP/").
+    await new Promise<void>((resolve) => http.listen(0, '127.0.0.1', () => resolve()));
     cache = app.get<CacheService>(CACHE_SERVICE); otp = app.get<OtpService>(OTP_SERVICE);
     for (const k of ['flag:partner_console', 'flags:all', 'flagstale:partner_console']) await cache.del(k);
     await resetRates();

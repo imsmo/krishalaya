@@ -366,7 +366,7 @@ run('PC-56 TENANT-SW-d · onboarding, setup calls, AGM pack, register import (in
       const ord = async (subtotal: number, status: string, completedAt: string | null) => {
         const id = (await q1(`SELECT uuid_generate_v7() AS id`)).id as string;
         await admin.query(`INSERT INTO orders (id, tenant_id, order_no, buyer_user_id, seller_user_id, source, currency_code, subtotal_minor, delivery_fee_minor, platform_fee_minor, total_minor, status, version, created_at, completed_at)
-          VALUES ($1, $2, $3, $4, $5, 'direct', 'INR', $6, 0, 0, $6, $7, 1, uuid_v7_time($1), $8)`, [id, G, `SWD-${id.slice(0, 12)}`, buyer, m1, subtotal, status, completedAt]);
+          VALUES ($1, $2, $3, $4, $5, 'direct', 'INR', $6, 0, 0, $6, $7, 1, uuid_v7_time($1), $8)`, [id, G, `SWD-${id.slice(-12)}`, buyer, m1, subtotal, status, completedAt]);
         return id;
       };
       const o1 = await ord(400000, 'completed', at('2025-06-10T06:00:00Z')); const o2 = await ord(100000, 'completed', at('2025-12-01T06:00:00Z'));

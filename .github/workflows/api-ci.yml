@@ -1,9 +1,5 @@
 # .github/workflows/api-ci.yml
-# API CI: typecheck → unit tests → build → integration gate specs (real Postgres).
-# The integration job connects the APP as the least-privilege kv_app role (subject to RLS).
-# The test DB is built from the REAL db/migrations + db/seeds by the Jest globalSetup
-# (test/integration-global-setup.js) using the postgres superuser (DATABASE_ADMIN_URL) —
-# there is no hand-maintained schema slice, so tests can never drift from production migrations.
+# API CI: typecheck → unit tests → build. The integration suites run in integration.yml (PC-56 TEST-1).
 # PC-56 HOTFIX-3 (2026-10-13): `npm install` inside apps/api could not resolve the `workspace:*` dependencies
 # (@krishalaya/storage, @krishalaya/tokens) — the repo is a pnpm workspace. Install is now pnpm at the ROOT, and the two
 # workspace dists the api compiles against are built first. Every command below was run locally before it was written here.
@@ -15,22 +11,9 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: krishi_test
-        ports: ["5432:5432"]
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 5s --health-timeout 3s --health-retries 10
     env:
       NODE_ENV: test
       JWT_ACCESS_SECRET: ci-secret-ci-secret-ci-secret
-      DATABASE_ADMIN_URL: postgres://postgres:postgres@localhost:5432/krishi_test
-      DATABASE_URL: postgres://kv_app:kv_app_pw@localhost:5432/krishi_test
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4            # version from package.json "packageManager" (pnpm@9.15.9)
@@ -51,15 +34,6 @@ jobs:
         run: pnpm --filter @krishalaya/api test:unit
       - name: Production build
         run: pnpm --filter @krishalaya/api build
-      # The FULL integration project is baseline-red: 39 suites fail identically at 333c2f9 on fixture classes, named in
-      # Development_Program/PC56_WEB_PARITY_PROGRAM/TENANT_PANEL_CLOSE.md §5 (ledger-privilege-boundary, market-intel, requirements,
-      # identity, ekyc-cycle, saas-invoice, schemes, payments/orders/catalogue/disputes, …). This step runs the integration GATE
-      # specs that are green, so the job can go green honestly; add a spec here when its fixtures are repaired.
-      # NOT LISTED, AND WHY: src/__tests__/relay-handlers-as-kv-relay.integration.spec.ts (the HOTFIX-2 relay gate) is red at HEAD
-      # 2458617b, without HOTFIX-3's migration as well as with it — its `tenancy.setup_call_requested` fixture is refused by the
-      # TENANT-SW-d trigger (23514 SETUP_CALL_NOT_YOURS: "a setup call is requested in the requester's own session"). It belongs back
-      # here once that fixture opens a session for the requester.
-      - name: Integration gate specs (real Postgres + RLS)
-        run: >-
-          pnpm --filter @krishalaya/api exec jest --config jest.config.js --selectProjects integration --forceExit
-          src/core/database/__tests__/partition-rls-sync.integration.spec.ts
+      # PC-56 TEST-1: the integration suites (ALL of them — api, admin-api, wallet-service) run in .github/workflows/integration.yml
+      # on every push and pull request, sharded, each shard on its own Postgres built from empty. The single "gate spec" step that
+      # stood here while the rest of the project was baseline-red is gone: there is no red baseline to hide any more.

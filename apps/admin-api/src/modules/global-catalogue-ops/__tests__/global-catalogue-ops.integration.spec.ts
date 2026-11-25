@@ -12,6 +12,7 @@ import { AdminAuditWriter } from '../../../core/audit/admin-audit.writer';
 import { CatalogueRepository } from '../repositories/catalogue.repository';
 import { LookupVocabAdminService } from '../services/lookup-vocab-admin.service';
 import { CategoriesAdminService } from '../services/categories-admin.service';
+import { CategoryHasActiveChildrenError } from '../domain/catalogue.errors';
 
 const APP_URL = process.env.DATABASE_ADMIN_URL ?? process.env.DATABASE_URL;
 const run = APP_URL ? describe : describe.skip;
@@ -23,7 +24,8 @@ run('global-catalogue-ops (integration, real Postgres — vocab + tree + audit)'
   const typeCode = `itest_type_${tag}`.slice(0, 60);
   const rootSlug = `itest_root_${tag}`.slice(0, 40);
   const childSlug = `cereals_${tag}`.slice(0, 40);
-  let valueId = ''; let rootId = ''; let childId = '';
+  let valueId = ''; let rootId = ''; let childId = ''; let grandId = '';
+  const grandSlug = `grain_${tag}`.slice(0, 40);
 
   beforeAll(async () => {
     const config = new AdminConfig({ NODE_ENV: 'test', DATABASE_ADMIN_URL: APP_URL, ADMIN_JWT_SECRET: 's'.repeat(40) });
@@ -36,8 +38,9 @@ run('global-catalogue-ops (integration, real Postgres — vocab + tree + audit)'
 
   afterAll(async () => {
     if (inspect) {
-      for (const id of [childId, rootId, valueId].filter(Boolean)) await inspect.query(`DELETE FROM catalogue_changes WHERE entity_id=$1`, [id]).catch(() => undefined);
+      for (const id of [grandId, childId, rootId, valueId].filter(Boolean)) await inspect.query(`DELETE FROM catalogue_changes WHERE entity_id=$1`, [id]).catch(() => undefined);
       await inspect.query(`DELETE FROM catalogue_changes WHERE entity_id=$1`, [typeCode]).catch(() => undefined);
+      if (grandId) await inspect.query(`DELETE FROM categories WHERE id=$1`, [grandId]).catch(() => undefined);
       if (childId) await inspect.query(`DELETE FROM categories WHERE id=$1`, [childId]).catch(() => undefined);
       if (rootId) await inspect.query(`DELETE FROM categories WHERE id=$1`, [rootId]).catch(() => undefined);
       if (valueId) await inspect.query(`DELETE FROM lookup_values WHERE id=$1`, [valueId]).catch(() => undefined);
@@ -73,6 +76,12 @@ run('global-catalogue-ops (integration, real Postgres — vocab + tree + audit)'
     expect(child.depth).toBe(2);
     expect(child.code).toBe(`${rootSlug}.${childSlug}`);
 
+    // PC-56 TEST-1: a grandchild, so the move proves the SUBTREE splice too (the node's own row and a descendant take different
+    // branches of moveSubtree's UPDATE — the node's own row was the one that failed with "invalid positions").
+    const grand: any = await cats.create(actor, { parentId: childId, slug: grandSlug, defaultName: 'ITest Grandchild', commerceKind: 'goods', requiresLicense: false, requiresCertificate: false, sortOrder: 100, reason: 'grandchild' });
+    grandId = grand.id;
+    expect(grand.code).toBe(`${rootSlug}.${childSlug}.${grandSlug}`);
+
     // move the child to root: code becomes the bare slug, depth → 1
     const moved: any = await cats.move(actor, childId, { newParentId: null, reason: 'promote' });
     expect(moved.depth).toBe(1);
@@ -82,7 +91,12 @@ run('global-catalogue-ops (integration, real Postgres — vocab + tree + audit)'
     expect(row.rows[0].code).toBe(childSlug);
     expect(row.rows[0].path).toBe(childSlug);
     expect(row.rows[0].depth).toBe(1);
+    const g = await inspect.query(`SELECT parent_id, code, path::text AS path, depth FROM categories WHERE id=$1`, [grandId]);
+    expect(g.rows[0]).toEqual({ parent_id: childId, code: `${childSlug}.${grandSlug}`, path: `${childSlug}.${grandSlug}`, depth: 2 });
 
+    // an active child blocks retiring its parent (no orphaned active branch) — retire the grandchild first
+    await expect(cats.setActive(actor, childId, { isActive: false, reason: 'retire branch' })).rejects.toBeInstanceOf(CategoryHasActiveChildrenError);
+    await cats.setActive(actor, grandId, { isActive: false, reason: 'retire leaf' });
     await cats.setActive(actor, childId, { isActive: false, reason: 'retire branch' });
     const ch = await inspect.query(`SELECT count(*)::int AS c FROM catalogue_changes WHERE entity_id=$1 AND action IN ('created','moved','deactivated')`, [childId]);
     expect(ch.rows[0].c).toBe(3);

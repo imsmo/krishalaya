@@ -58,8 +58,10 @@ export async function ensureUnitCurrency(admin: Pool, unit = 'quintal', currency
 export async function makeCategory(admin: Pool, id = rnd()): Promise<string> {
   const code = ltreeLabel();
   await admin.query(
-    `INSERT INTO categories (id, code, default_name, path, depth, is_active) VALUES ($1,$2,'Test Category',$2::ltree,1,true) ON CONFLICT (id) DO NOTHING`,
-    [id, code]);
+    // $2 and $3 carry the same label: one parameter used both as varchar and as `::ltree` is refused by Postgres ("inconsistent
+    // types deduced for parameter $2") — PC-56 TEST-1, it failed every spec that made a category (orders, catalogue, …).
+    `INSERT INTO categories (id, code, default_name, path, depth, is_active) VALUES ($1,$2,'Test Category',$3::ltree,1,true) ON CONFLICT (id) DO NOTHING`,
+    [id, code, code]);
   return id;
 }
 
@@ -69,8 +71,10 @@ export async function makeProduct(admin: Pool, opts: { id?: string; categoryId: 
   await ensureUnitCurrency(admin, opts.unit ?? 'quintal');
   await admin.query(
     `INSERT INTO products (id, category_id, default_name, default_unit, tenant_id, is_active, search_tsv)
-     VALUES ($1,$2,$3,$4,$5,true, to_tsvector('simple',$3)) ON CONFLICT (id) DO NOTHING`,
-    [id, opts.categoryId, opts.name ?? 'Test Product', opts.unit ?? 'quintal', opts.tenantId ?? null]);
+     VALUES ($1,$2,$3,$4,$5,true, to_tsvector('simple',$6)) ON CONFLICT (id) DO NOTHING`,
+    // $6 repeats the name: one parameter used as varchar AND as to_tsvector's text is refused ("inconsistent types deduced for
+    // parameter $3") — PC-56 TEST-1, the same class as makeCategory.
+    [id, opts.categoryId, opts.name ?? 'Test Product', opts.unit ?? 'quintal', opts.tenantId ?? null, opts.name ?? 'Test Product']);
   return id;
 }
 
@@ -141,7 +145,7 @@ export async function makeCompletedOrder(admin: Pool, o: { tenantId: string; buy
     `INSERT INTO orders (id, tenant_id, order_no, buyer_user_id, seller_user_id, source, currency_code, subtotal_minor, total_minor, status, version, created_at,
        commission_snapshot, buyer_commission_minor)
      VALUES ($1,$2,$3,$4,$5,$6,'INR',$7,$7,'completed',1, uuid_v7_time($1), $8::jsonb, $9)`,
-    [id, o.tenantId, `KV-${id.slice(0, 8)}`, o.buyerUserId, o.sellerUserId, o.source ?? 'direct', o.totalMinor.toString(),
+    [id, o.tenantId, `KV-${id.slice(-12)}`, o.buyerUserId, o.sellerUserId, o.source ?? 'direct', o.totalMinor.toString(),
      o.commissionSnapshot ? JSON.stringify(o.commissionSnapshot) : null, (o.buyerCommissionMinor ?? 0n).toString()]);
   if (o.paid !== false) await makeCapturedPayment(admin, { tenantId: o.tenantId, buyerUserId: o.buyerUserId, orderId: id, amountMinor: o.totalMinor });
   return id;

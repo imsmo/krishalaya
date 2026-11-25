@@ -41,6 +41,7 @@ import { OfferAcceptedHandler } from '../events/handlers/offer-accepted.handler'
 import { CommissionSnapshotService } from '../../payments/services/commission-snapshot.service';
 import { CommissionRuleRepository } from '../../payments/repositories/commission-rule.repository';
 import { TaxRuleRepository } from '../../payments/repositories/tax-rule.repository';
+import { quarantinePendingOutbox } from '../../../../test/helpers/outbox';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -88,6 +89,7 @@ run('order-from-accepted-offer via outbox relay (integration, real Postgres)', (
     registry.register(new OfferAcceptedHandler(orderRepo, listings, flags, outbox, metrics, uow, { checkoutBenefits: async () => null } as any, commission, audit));   // orders consumes offers.offer_accepted
     registry.register(new OrderFromOfferCreatedHandler(offerRepo, outbox, uow));                       // offers consumes orders.order_from_offer_created (kv_app UoW, HOTFIX-2)
     dispatcher = new OutboxDispatcher(admin, registry, metrics);                                       // relay on the privileged (admin) pool
+    await quarantinePendingOutbox(admin);   // PC-56 TEST-1: relay only this suite's events (test/helpers/outbox.ts)
   }, 30000);
 
   afterAll(async () => { await pools?.onModuleDestroy(); await admin?.end(); });

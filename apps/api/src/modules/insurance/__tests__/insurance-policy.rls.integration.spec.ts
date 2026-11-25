@@ -31,8 +31,9 @@ run('insurance_policies RLS (integration, real Postgres)', () => {
     // documented in field-verifications.rls.integration.spec.ts — makeTenant() in fixtures.ts is stale).
     await admin.query(`INSERT INTO countries (code, default_name, currency_code, phone_prefix) VALUES ('IN','India','INR','+91') ON CONFLICT (code) DO NOTHING`);
     await admin.query(`INSERT INTO lookup_types (code, default_name) VALUES ('tenant_type','Tenant Type') ON CONFLICT (code) DO NOTHING`);
-    const tenantTypeId = randomUUID();
-    await admin.query(`INSERT INTO lookup_values (id, type_code, code, default_name) VALUES ($1,'tenant_type','fpo','FPO') ON CONFLICT (id) DO NOTHING`, [tenantTypeId]);
+    // PC-56 TEST-1: the SEEDED platform tenant_type/fpo — inserting one with a random id added a duplicate platform `fpo` per run
+    // (NULL tenant ids are distinct in lookup_values' unique index), shared state every later spec inherited.
+    const tenantTypeId = (await admin.query(`SELECT id FROM lookup_values WHERE type_code = 'tenant_type' AND code = 'fpo' AND tenant_id IS NULL ORDER BY created_at LIMIT 1`)).rows[0].id as string;
     const mkTenant = (id: string, slug: string) => admin.query(
       `INSERT INTO tenants (id, slug, legal_name, display_name, tenant_type_id, country_code)
        VALUES ($1,$2,$3,$3,$4,'IN') ON CONFLICT (id) DO NOTHING`,

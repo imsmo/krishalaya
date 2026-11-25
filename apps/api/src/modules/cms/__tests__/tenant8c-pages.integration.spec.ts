@@ -74,13 +74,25 @@ run('TENANT-8c · the pages (integration, real Postgres + RLS as kv_app)', () =>
     for (const [l, d] of [['gu', true], ['hi', false], ['en', false]] as const) {
       await admin.query(`INSERT INTO tenant_languages (tenant_id, language_code, is_default) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING`, [tenantA, l, d]);
     }
-    // THE PLATFORM'S `about`, v1..v5 (v5 live) — written as the owner, as the admin realm would.
-    await admin.query(`DELETE FROM cms_pages WHERE tenant_id IS NULL AND slug = 'about'`);
-    for (let v = 1; v <= 5; v++) {
-      await admin.query(
-        `INSERT INTO cms_pages (tenant_id, slug, page_kind, default_title, body, version, status, published_at, archived_at, archived_reason, language_code)
-         VALUES (NULL, 'about', 'static', $1, $2, $3, $4, $5, $6, $7, 'en')`,
-        [`About Krishalaya v${v}`, `# platform v${v}`, v, v === 5 ? 'published' : 'archived', v === 5 ? new Date() : null, v === 5 ? null : new Date(), v === 5 ? null : 'superseded']);
+    // THE PLATFORM'S `about`, v1..v5 (v5 live) — written as the owner, the way the admin realm does it.
+    // PC-56 TEST-1: since LEGAL-1 (0242 cms_pages_platform_guard) a platform version is BORN A DRAFT and then moves through the
+    // state machine with its operator named (published_by_admin_id / archived_by_admin_id), and history that left draft is never
+    // deleted. This fixture inserted v1..v5 already published/archived and began by DELETEing them, so 0242 refused it and every
+    // test in the suite failed. It now walks the real transitions — and on a database where an earlier run of this suite already
+    // left the same history (v5 the live version), it reuses it instead of trying to delete it.
+    const platformAbout = (await admin.query(`SELECT version, status FROM cms_pages WHERE tenant_id IS NULL AND slug = 'about' AND deleted_at IS NULL ORDER BY version`)).rows;
+    const reusable = platformAbout.length === 5 && platformAbout[4].status === 'published' && platformAbout.slice(0, 4).every((r) => r.status === 'archived');
+    if (!reusable) {
+      await admin.query(`DELETE FROM cms_pages WHERE tenant_id IS NULL AND slug = 'about' AND status = 'draft'`);   // a draft is not history
+      const operator = randomUUID();
+      for (let v = 1; v <= 5; v++) {
+        const id = (await admin.query(
+          `INSERT INTO cms_pages (tenant_id, slug, page_kind, default_title, body, version, status, language_code)
+           VALUES (NULL, 'about', 'static', $1, $2, $3, 'draft', 'en') RETURNING id`,
+          [`About Krishalaya v${v}`, `# platform v${v}`, v])).rows[0].id;
+        if (v === 5) await admin.query(`UPDATE cms_pages SET status = 'published', published_at = now(), published_by_admin_id = $2 WHERE id = $1`, [id, operator]);
+        else await admin.query(`UPDATE cms_pages SET status = 'archived', archived_at = now(), archived_reason = 'superseded', archived_by_admin_id = $2 WHERE id = $1`, [id, operator]);
+      }
     }
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
     pools = new PgPoolProvider(config);
@@ -260,10 +272,14 @@ run('TENANT-8c · the pages (integration, real Postgres + RLS as kv_app)', () =>
     const seen = await asApp(tenantB, agent, async (q) => ({
       seeA: (await q(`SELECT count(*)::int n FROM cms_pages WHERE tenant_id=$1`, [tenantA])).rows[0].n,
       seePlatform: (await q(`SELECT count(*)::int n FROM cms_pages WHERE tenant_id IS NULL`)).rows[0].n,
+      seePlatformAbout: (await q(`SELECT count(*)::int n FROM cms_pages WHERE tenant_id IS NULL AND slug = 'about'`)).rows[0].n,
       insertPlatform: await probe(q, `INSERT INTO cms_pages (tenant_id, slug, page_kind, default_title, body, version, status, language_code, created_by) VALUES (NULL,'about','static','x','# x',6,'draft','en',$1)`, [agent]),
       insertForA: await probe(q, `INSERT INTO cms_pages (tenant_id, slug, page_kind, default_title, body, version, status, language_code, created_by) VALUES ($1,'x','static','x','# x',1,'draft','en',$2)`, [tenantA, agent]),
     }));
-    expect(seen).toEqual({ seeA: 0, seePlatform: 5, insertPlatform: '42501', insertForA: '42501' });
+    // PC-56 TEST-1: kv_app (as tenant B) sees EVERY platform row — exactly the owner's count. This was the literal 5 (the about
+    // fixture), which stopped being the whole platform set when LEGAL-1 (0242) seeded the four legal pages' drafts.
+    const platformRows = Number((await admin.query(`SELECT count(*)::int n FROM cms_pages WHERE tenant_id IS NULL`)).rows[0].n);
+    expect(seen).toEqual({ seeA: 0, seePlatform: platformRows, seePlatformAbout: 5, insertPlatform: '42501', insertForA: '42501' });
     const upd = await asApp(tenantB, agent, async (q) => ({
       platform: (await q(`UPDATE cms_pages SET sort_order = 1 WHERE id=$1`, [platId])).rowCount,
       tenantA: (await q(`UPDATE cms_pages SET sort_order = 1 WHERE id=$1`, [aId])).rowCount,

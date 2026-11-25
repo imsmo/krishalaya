@@ -109,6 +109,9 @@ run('PC-56 STORE-2b · what\'s in the cart is real (integration, real AppModule 
     L.paused = await listing(LIVE, seller2, 'Paused later s2b');
     L.other = await listing(OTHER, otherSeller, 'Girnar groundnut s2b');
     app = await bootstrapE2EApp(); http = app.getHttpServer(); cache = app.get<CacheService>(CACHE_SERVICE);
+    // the HOTFIX-5 pin — PC-56 TEST-1: missing here; unpinned, supertest listens per request on every interface and dials 127.0.0.1, so on a
+    // machine where another process holds that IPv4 port a request can reach the OTHER server (seen in a full pass: "Parse Error: Expected HTTP/").
+    await new Promise<void>((resolve) => http.listen(0, '127.0.0.1', () => resolve()));
     token = mintToken(app, { userId: buyer, tenantId: LIVE, roles: ['customer'], perms: ['order.create'] });
     await setFlag('storefront_cart', true);
   }, 240_000);

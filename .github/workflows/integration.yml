@@ -1,0 +1,98 @@
+# .github/workflows/integration.yml · PC-56 TEST-1 — EVERY integration suite of apps/api, apps/admin-api and apps/wallet-service,
+# on every push and pull request, against a real Postgres built FROM EMPTY out of the real db/migrations + db/seeds.
+#
+# Before this wave CI ran ONE integration spec (api-ci.yml's "gate"): the rest were baseline-red on stale fixtures and leaked
+# shared state, so nobody could tell a regression from the noise. They are green now, and this workflow keeps them that way.
+#
+# SHAPE
+#   • api — 4 shards (jest --shard). Each shard is its own job with its OWN empty database: the api `integration` project's
+#     globalSetup (apps/api/test/integration-global-setup.js) DROPs/rebuilds the public schema from the migrations + seeds and gives
+#     the application roles (kv_app, kv_wallet, kv_relay, kv_admin, kv_ingest) a LOGIN (test/sql/01_app_role.sql). Suites inside
+#     a shard share that database, so they run --runInBand (one at a time) — every spec cleans up or uses unique ids.
+#   • admin-api + wallet-service — one job: the same globalSetup builds the database, then both apps' integration projects run on
+#     it. admin-api's specs connect as the owner (DATABASE_ADMIN_URL), wallet-service's as kv_wallet (DATABASE_WALLET_URL).
+#   • Postgres is the major version production runs (Aurora PostgreSQL 16 — infra/terraform/modules/aurora/variables.tf, and
+#     db-migrate.yml uses postgres:16). It is started with `docker run` rather than a `services:` container because a service
+#     container cannot take server flags: the migrations + ensure_partitions take more locks in one transaction than the default
+#     max_locks_per_transaction (64) allows once the schema is big ("out of shared memory").
+name: integration
+on:
+  pull_request: {}
+  push: {}
+
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_ENV: test
+  JWT_ACCESS_SECRET: ci-secret-ci-secret-ci-secret
+  DATABASE_ADMIN_URL: postgres://postgres:postgres@localhost:5432/krishi_test
+  DATABASE_URL: postgres://kv_app:dev@localhost:5432/krishi_test
+  DATABASE_WALLET_URL: postgres://kv_wallet:dev@localhost:5432/krishi_test
+
+jobs:
+  api:
+    name: api integration (shard ${{ matrix.shard }}/4)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start Postgres 16 (max_locks_per_transaction raised)
+        run: |
+          docker run -d --name pg -p 5432:5432 \
+            -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=krishi_test \
+            postgres:16 -c max_locks_per_transaction=512 -c max_connections=300
+          for i in $(seq 1 60); do docker exec pg pg_isready -U postgres -d krishi_test && break; sleep 1; done
+      - uses: pnpm/action-setup@v4            # version from package.json "packageManager"
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - name: Install (workspace root)
+        run: pnpm install --frozen-lockfile
+      # Tracked tsconfig*.tsbuildinfo files make a fresh `tsc` build skip outputs — see ci.yml.
+      - name: Drop tracked incremental-build state (fresh build)
+        run: git ls-files -z "*.tsbuildinfo" | xargs -0 rm -f
+      # storage + tokens are the api's workspace dependencies; sdk-js is imported by integration specs by relative path.
+      - name: Build the workspace packages the api compiles against
+        run: pnpm --filter "@krishalaya/api^..." --filter @krishalaya/sdk-js build
+      - name: api integration suites (shard ${{ matrix.shard }}/4, real Postgres + RLS)
+        working-directory: apps/api
+        run: >-
+          npx jest --config jest.config.js --selectProjects integration --runInBand --forceExit --ci
+          --shard=${{ matrix.shard }}/4
+
+  admin-wallet:
+    name: admin-api + wallet-service integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start Postgres 16 (max_locks_per_transaction raised)
+        run: |
+          docker run -d --name pg -p 5432:5432 \
+            -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=krishi_test \
+            postgres:16 -c max_locks_per_transaction=512 -c max_connections=300
+          for i in $(seq 1 60); do docker exec pg pg_isready -U postgres -d krishi_test && break; sleep 1; done
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - name: Install (workspace root)
+        run: pnpm install --frozen-lockfile
+      - name: Drop tracked incremental-build state (fresh build)
+        run: git ls-files -z "*.tsbuildinfo" | xargs -0 rm -f
+      - name: Build the workspace packages admin-api and wallet-service compile against
+        run: pnpm --filter "@krishalaya/admin-api^..." --filter "@krishalaya/wallet-service^..." build
+      # The api project's globalSetup is the ONE builder of the test database (migrations + seeds + role logins).
+      - name: Build the test database from empty (db/migrations + db/seeds)
+        working-directory: apps/api
+        run: node -e "require('./test/integration-global-setup.js')().then(() => process.exit(0), (e) => { console.error(e); process.exit(1); })"
+      - name: wallet-service integration (kv_wallet)
+        working-directory: apps/wallet-service
+        run: npx jest --config jest.config.js --selectProjects integration --runInBand --forceExit --ci
+      - name: admin-api integration
+        working-directory: apps/admin-api
+        run: npx jest --config jest.config.js --selectProjects integration --runInBand --forceExit --ci

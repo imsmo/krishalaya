@@ -12,6 +12,7 @@ import { SupportOversightRepository } from '../repositories/support-oversight.re
 import { SlaBreachMonitorService } from '../services/sla-breach-monitor.service';
 import { TenantHealthAlertsService } from '../services/tenant-health-alerts.service';
 import { TicketEscalationsService } from '../services/ticket-escalations.service';
+import { makeTenant } from '../../../../test/integration-fixtures';
 
 const APP_URL = process.env.DATABASE_ADMIN_URL ?? process.env.DATABASE_URL;
 const run = APP_URL ? describe : describe.skip;
@@ -31,8 +32,7 @@ run('support-oversight (integration, real Postgres — cross-tenant SLA breach +
     health = new TenantHealthAlertsService(repo);
     escalations = new TicketEscalationsService(pool, audit, repo);
     inspect = new Pool({ connectionString: APP_URL });
-    const t = await inspect.query(`SELECT id FROM tenants LIMIT 1`);
-    tenantId = t.rows[0].id;
+    tenantId = await makeTenant(inspect);   // PC-56 TEST-1: its own tenant (was the first tenant in the database — none on a fresh build)
     const ins = await inspect.query(
       `INSERT INTO support_tickets (tenant_id, ticket_no, channel, severity, status, subject, sla_first_response_due, sla_resolution_due)
        VALUES ($1,$2,'app','P2','open','itest breached', now() - interval '2 hours', now() + interval '1 day') RETURNING id`,

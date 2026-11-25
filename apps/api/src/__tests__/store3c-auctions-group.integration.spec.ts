@@ -340,7 +340,15 @@ run('PC-56 STORE-3c · deposits, balances and pooled lots (integration, real App
       expect(JSON.stringify(ev.payload)).not.toContain(U.b2);
       const handlers = app.get<OutboxHandlerRegistry>(OUTBOX_HANDLER_REGISTRY).handlersFor('auctions.bidder_outbid');
       expect(handlers.length).toBeGreaterThan(0);
+      // PC-56 TEST-1: the default quiet window (21:00–06:00) is REAL, so after 21:00 IST the push leg was held — `suppressed ·
+      // quiet_hours`, no template until release — and this test failed by the hour it ran. The outbid bidder gets their OWN
+      // one-minute window six hours from now, so "now" is never quiet for them and every leg is rendered from its template.
+      const ist = (ms: number) => new Date(Date.now() + 330 * 60_000 + ms).toISOString().slice(11, 16);
+      await admin.query(`INSERT INTO user_quiet_hours (user_id, starts, ends, timezone) VALUES ($1, $2, $3, 'Asia/Kolkata')
+                         ON CONFLICT (user_id) DO UPDATE SET starts = EXCLUDED.starts, ends = EXCLUDED.ends, timezone = EXCLUDED.timezone`,
+        [U.b5, ist(6 * 3_600_000), ist(6 * 3_600_000 + 60_000)]);
       for (const h of handlers) await uow.run(LIVE, (tx) => h.handle(ev, tx), { userId: 'system' });
+      await admin.query(`DELETE FROM user_quiet_hours WHERE user_id = $1`, [U.b5]);
       const n = (await admin.query(`SELECT template_id, status::text s, channel FROM notifications WHERE user_id = $1 AND event_code = 'bid.outbid'`, [U.b5])).rows;
       expect(n.length).toBeGreaterThan(0);
       expect(n.every((x: { template_id: string | null }) => x.template_id !== null)).toBe(true);

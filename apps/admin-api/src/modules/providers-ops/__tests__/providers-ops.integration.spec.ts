@@ -12,6 +12,7 @@ import { ProvidersRepository } from '../repositories/providers.repository';
 import { IntegrationProvidersAdminService } from '../services/integration-providers-admin.service';
 import { ProviderSlaMonitorService } from '../services/provider-sla-monitor.service';
 import { ProviderAlreadyInStateError } from '../domain/providers-ops.errors';
+import { makeTenant } from '../../../../test/integration-fixtures';
 
 const APP_URL = process.env.DATABASE_ADMIN_URL ?? process.env.DATABASE_URL;
 const run = APP_URL ? describe : describe.skip;
@@ -30,9 +31,10 @@ run('providers-ops (integration, real Postgres — registry toggle + credential 
     admin = new IntegrationProvidersAdminService(pool, new AdminAuditWriter(pool), repo);
     monitor = new ProviderSlaMonitorService(repo);
     inspect = new Pool({ connectionString: APP_URL });
-    await inspect.query(`INSERT INTO integration_providers (code, default_name, category, is_active) VALUES ($1,'ITest provider','sms',true) ON CONFLICT (code) DO NOTHING`, [code]);
-    const t = await inspect.query(`SELECT id FROM tenants LIMIT 1`);
-    tenantId = t.rows[0].id;
+    // tenant_ownable: 0193 (TENANT-13c) refuses a tenant credential on a platform-managed provider (INTEGRATION_PROVIDER_NOT_OWNABLE),
+    // and the credential-health read below needs a tenant to hold one; an ownable provider must name how it is verified (PC-56 TEST-1).
+    await inspect.query(`INSERT INTO integration_providers (code, default_name, category, is_active, tenant_ownable, verify_method) VALUES ($1,'ITest provider','sms',true,true,'token_check') ON CONFLICT (code) DO NOTHING`, [code]);
+    tenantId = await makeTenant(inspect);   // PC-56 TEST-1: its own tenant (was the first tenant in the database — none on a fresh build)
     const ti = await inspect.query(
       `INSERT INTO tenant_integrations (tenant_id, provider_code, secret_ref, is_active) VALUES ($1,$2,'arn:aws:secretsmanager:itest:SECRET',true)
        ON CONFLICT (tenant_id, provider_code) DO UPDATE SET secret_ref=EXCLUDED.secret_ref RETURNING id`, [tenantId, code]);
@@ -64,7 +66,7 @@ run('providers-ops (integration, real Postgres — registry toggle + credential 
 
     const ch = await inspect.query(`SELECT count(*)::int AS c FROM provider_changes WHERE provider_code=$1 AND action IN ('enabled','disabled')`, [code]);
     expect(ch.rows[0].c).toBe(2);
-    const au = await inspect.query(`SELECT count(*)::int AS c FROM audit_log WHERE entity_id=$1 AND action LIKE 'providers.%'`, [code]);
+    const au = await inspect.query(`SELECT count(*)::int AS c FROM audit_log WHERE entity_key=$1 AND entity_id IS NULL AND action LIKE 'providers.%'`, [code]);   // a code, not a uuid (0247)
     expect(au.rows[0].c).toBe(2);
   });
 

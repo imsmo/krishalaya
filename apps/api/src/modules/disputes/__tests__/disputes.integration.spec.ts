@@ -39,6 +39,7 @@ import { OrderDeliveredHandler } from '../events/handlers/order-delivered.handle
 import { NotEligibleToDisputeError, DuplicateDisputeError } from '../domain/disputes.errors';
 import { InMemoryCacheService } from '../../../core/cache/cache.service.in-memory';
 import { FlagsService } from '../../../core/feature-flags/flags.service';
+import { quarantinePendingOutbox } from '../../../../test/helpers/outbox';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -61,17 +62,24 @@ run('disputes slice (integration, real Postgres + RLS + outbox relay)', () => {
   let disputeId = '';
   const buyerActor = () => ({ userId: buyer, canModerate: false });
   const sellerActor = () => ({ userId: seller, canModerate: false });
-  const moderator = () => ({ userId: randomUUID(), canModerate: true });
+  // PC-56 TEST-1: 0139 split the refund MONEY key (order.refund) from dispute.resolve — a moderator resolving with refund_full must
+  // hold it (DisputeActor.canRefund), exactly as returns.integration.spec.ts's moderator does. A real user: the decision is recorded.
+  const moderatorId = randomUUID();
+  const moderator = () => ({ userId: moderatorId, canModerate: true, canRefund: true });
+  let refundsFlagBefore: boolean | null = null;
 
   beforeAll(async () => {
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
+    refundsFlagBefore = (await admin.query(`SELECT is_enabled FROM feature_flags WHERE key = 'dispute_refunds'`)).rows[0]?.is_enabled ?? null;
     await admin.query(`UPDATE feature_flags SET is_enabled = true WHERE key = 'dispute_refunds'`);   // PC-56 HOTFIX-7 · D2
     await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B');
-    await makeUser(admin, buyer); await makeUser(admin, seller); await makeUser(admin, stranger);
-    // a delivered order (minimal header — the handlers only need id/status/parties)
+    await makeUser(admin, buyer); await makeUser(admin, seller); await makeUser(admin, stranger); await makeUser(admin, moderatorId);
+    // a delivered order (minimal header — the handlers only need id/status/parties). created_at = uuid_v7_time(id), as the product
+    // writes it (PC-56 TEST-1): `now()` carries microseconds a JS Date cannot round-trip, so OrderRepository.update's optimistic
+    // `WHERE created_at=$3` matched nothing and the relay's 'disputed' transition never landed.
     await admin.query(
       `INSERT INTO orders (id, tenant_id, order_no, buyer_user_id, seller_user_id, source, currency_code, subtotal_minor, total_minor, status, version, created_at)
-       VALUES ($1,$2,$3,$4,$5,'direct','INR',100000,100000,'delivered',1, now())`,
+       VALUES ($1,$2,$3,$4,$5,'direct','INR',100000,100000,'delivered',1, uuid_v7_time($1))`,
       [orderId, tenantA, `KV-${orderId.slice(0, 8)}`, buyer, seller]);
 
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
@@ -98,13 +106,17 @@ run('disputes slice (integration, real Postgres + RLS + outbox relay)', () => {
     registry.register(new DisputeOpenedHandler(orderRepo, outbox));        // disputes.dispute_opened → order 'disputed'
     registry.register(new DisputeResolvedHandler(orderRepo, outbox, flags, metrics));      // disputes.dispute_resolved → order 'refunded'/... (HOTFIX-7 · D2: only with dispute_refunds ON)
     dispatcher = new OutboxDispatcher(admin, registry, metrics);
+    await quarantinePendingOutbox(admin);   // PC-56 TEST-1: relay only this suite's events (test/helpers/outbox.ts)
 
     inspect = new Pool({ connectionString: APP_URL });
     isSuperuser = (await inspect.query(`SELECT rolsuper FROM pg_roles WHERE rolname=current_user`)).rows[0]?.rolsuper === true;
   }, 30000);
 
   // PC-56 HOTFIX-7 · D2: the money switch the refund decisions here need — ON for the suite, back to its seeded OFF after (Law 10)
-  afterAll(async () => { await admin?.query(`UPDATE feature_flags SET is_enabled = false WHERE key = 'dispute_refunds'`).catch(() => undefined); await pools?.onModuleDestroy(); await inspect?.end(); await admin?.end(); });
+  afterAll(async () => {
+    await admin?.query(`UPDATE feature_flags SET is_enabled = $1 WHERE key = 'dispute_refunds'`, [refundsFlagBefore ?? false]).catch(() => undefined);
+    // this suite's own leftovers (the message/response events nothing here relays) must not reach a later suite's relay
+    await admin?.query(`UPDATE outbox_events SET status='published', published_at=now() WHERE status='pending' AND tenant_id = ANY($1::uuid[])`, [[tenantA, tenantB]]).catch(() => undefined); await pools?.onModuleDestroy(); await inspect?.end(); await admin?.end(); });
 
   it('order delivered → relay records dispute eligibility (idempotent)', async () => {
     const seed = () => admin.query(`INSERT INTO outbox_events (tenant_id, aggregate_type, aggregate_id, event_type, payload) VALUES ($1,'order',$2,'orders.order_delivered',$3::jsonb)`,
@@ -116,7 +128,9 @@ run('disputes slice (integration, real Postgres + RLS + outbox relay)', () => {
   });
 
   it('buyer raises against seller; non-party blocked; duplicate blocked; relay pauses the order', async () => {
-    const d = await disputes.raise(tenantA, buyer, `idem-${randomUUID()}`, { orderId, reasonCode: 'poor_quality', description: 'mouldy grain' } as any);
+    // PC-56 TEST-1: the buyer states the disputed figure (the order's total). TENANT-3b refuses a refund_full with no recorded amount
+    // ("the figure must exist before the gate can mean anything"), so the resolve step below needs it.
+    const d = await disputes.raise(tenantA, buyer, `idem-${randomUUID()}`, { orderId, reasonCode: 'poor_quality', description: 'mouldy grain', disputedAmountMinor: '100000' } as any);
     disputeId = d.id;
     expect(d.againstUser).toBe(seller); expect(d.status).toBe('open');
 

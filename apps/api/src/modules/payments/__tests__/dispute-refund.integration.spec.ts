@@ -47,6 +47,7 @@ import { DisputeResolvedHandler } from '../events/handlers/dispute-resolved.hand
 import { DisputeRepository } from '../../disputes/repositories/dispute.repository';
 import { DisputeRefundedHandler } from '../../disputes/events/handlers/dispute-refunded.handler';
 import { ResolutionMoneyService } from '../services/resolution-money.service';
+import { quarantinePendingOutbox } from '../../../../test/helpers/outbox';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -65,7 +66,7 @@ run('dispute refund — escrow reversal + settled clawback via relay (integratio
 
   const bal = async (kind: string, code: string, userId?: string) =>
     BigInt((await admin.query(
-      `SELECT COALESCE(cached_balance_minor,0) b FROM wallet_accounts WHERE owner_kind=$1 AND account_code=$2 AND currency_code='INR' AND ($3::uuid IS NULL OR owner_user_id=$3)`,
+      `SELECT COALESCE(SUM(cached_balance_minor),0)::text b FROM wallet_accounts WHERE owner_kind=$1 AND account_code=$2 AND currency_code='INR' AND ($3::uuid IS NULL OR owner_user_id=$3)`,
       [kind, code, userId ?? null])).rows[0]?.b ?? '0');
 
   // S6 device-test P0 fix: createIntent now validates the order reference (existence, buyer,
@@ -73,7 +74,7 @@ run('dispute refund — escrow reversal + settled clawback via relay (integratio
   // row for this orderId first (fixture fix, not a weakened check; see payment.service.ts).
   const seedOrder = (orderId: string) => admin.query(
     `INSERT INTO orders (id, tenant_id, order_no, buyer_user_id, seller_user_id, source, currency_code, subtotal_minor, total_minor, status, version, created_at)
-     VALUES ($1,$2,$3,$4,$5,'direct','INR',$6,$6,'payment_pending',1, now())`,
+     VALUES ($1,$2,$3,$4,$5,'direct','INR',$6,$6,'payment_pending',1, uuid_v7_time($1))`   /* PC-56 TEST-1: created_at = the id's time, as the app writes it — the repositories prune ±5 s around uuid_v7_time(id) (Law 8), and an id minted at describe time drifted past that under load */,
     [orderId, tenantA, `KV-${orderId.slice(0, 8)}`, buyer, seller, AMOUNT]);
 
   const captureInto = async (orderId: string) => {
@@ -127,6 +128,7 @@ run('dispute refund — escrow reversal + settled clawback via relay (integratio
     handlers.register(new DisputeResolvedHandler(flags, money, outbox, metrics));  // dispute refund (to source) / clawback / remainder
     handlers.register(new DisputeRefundedHandler(new DisputeRepository(replica as any)));                                 // stamp resolution_txn_id
     dispatcher = new OutboxDispatcher(admin, handlers, metrics);
+    await quarantinePendingOutbox(admin);   // PC-56 TEST-1: relay only this suite's events (test/helpers/outbox.ts)
   }, 30000);
 
   afterAll(async () => { await pools?.onModuleDestroy(); await admin?.end(); });

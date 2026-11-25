@@ -48,6 +48,7 @@ import { SettlementPricingService } from '../services/settlement-pricing.service
 import { CommissionRuleRepository } from '../repositories/commission-rule.repository';
 import { TaxRuleRepository } from '../repositories/tax-rule.repository';
 import { SettlementLineRepository } from '../repositories/settlement-line.repository';
+import { quarantinePendingOutbox } from '../../../../test/helpers/outbox';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -68,8 +69,8 @@ run('orders ↔ payments end-to-end via outbox relay (integration, real Postgres
   const orderId = uuidv7();
   const AMOUNT = '150000';
 
-  const escrowBal = async () => (await admin.query(`SELECT COALESCE(cached_balance_minor,0) b FROM wallet_accounts WHERE owner_kind='platform' AND account_code='escrow'`)).rows[0]?.b ?? '0';
-  const sellerBal = async () => (await admin.query(`SELECT COALESCE(cached_balance_minor,0) b FROM wallet_accounts WHERE owner_kind='user' AND owner_user_id=$1 AND account_code='main'`, [seller])).rows[0]?.b ?? '0';
+  const escrowBal = async () => (await admin.query(`SELECT COALESCE(SUM(cached_balance_minor),0)::text b FROM wallet_accounts WHERE owner_kind='platform' AND account_code='escrow'`)).rows[0]?.b ?? '0';
+  const sellerBal = async () => (await admin.query(`SELECT COALESCE(SUM(cached_balance_minor),0)::text b FROM wallet_accounts WHERE owner_kind='user' AND owner_user_id=$1 AND account_code='main'`, [seller])).rows[0]?.b ?? '0';
 
   beforeAll(async () => {
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
@@ -85,7 +86,7 @@ run('orders ↔ payments end-to-end via outbox relay (integration, real Postgres
     // an order awaiting payment (minimal row — the relay handler only needs the header)
     await admin.query(
       `INSERT INTO orders (id, tenant_id, order_no, buyer_user_id, seller_user_id, source, currency_code, subtotal_minor, total_minor, status, version, created_at)
-       VALUES ($1,$2,$3,$4,$5,'direct','INR',$6,$6,'payment_pending',1, now())`,
+       VALUES ($1,$2,$3,$4,$5,'direct','INR',$6,$6,'payment_pending',1, uuid_v7_time($1))`   /* PC-56 TEST-1: created_at = the id's time, as the app writes it — the repositories prune ±5 s around uuid_v7_time(id) (Law 8), and an id minted at describe time drifted past that under load */,
       [orderId, tenantA, `KV-${orderId.slice(0, 8)}`, buyer, seller, AMOUNT]);
 
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
@@ -118,15 +119,28 @@ run('orders ↔ payments end-to-end via outbox relay (integration, real Postgres
     const pricing = new SettlementPricingService(new CommissionRuleRepository(replica as any), new TaxRuleRepository(replica as any), new OrderRepository(replica as never));
     handlers.register(new OrderCompletedHandler(composeOrderSettlement({ wallet: wallet, flags: new FlagsService(pools, new InMemoryCacheService()), replica, lines: new SettlementLineRepository(), couponMoney: new CouponMoneyService(wallet, new CouponRedemptionRepository(replica as any)), uow: uow })));
     dispatcher = new OutboxDispatcher(admin, handlers, metrics);
+    await quarantinePendingOutbox(admin);   // PC-56 TEST-1: relay only this suite's events (test/helpers/outbox.ts)
+    // PC-56 TEST-1: this spec asserts the commission_split OFF path (full escrow release), so it sets that state and restores it —
+    // it used to rely on the seed default, and any earlier suite that left the flag ON made the seller's credit come out net.
+    splitBefore = (await admin.query(`SELECT is_enabled, rollout_pct, rules FROM feature_flags WHERE key='commission_split'`)).rows[0];
+    await admin.query(`UPDATE feature_flags SET is_enabled=false WHERE key='commission_split'`);
   }, 30000);
 
-  afterAll(async () => { await pools?.onModuleDestroy(); await admin?.end(); });
+  let splitBefore: { is_enabled: boolean; rollout_pct: number; rules: unknown } | undefined;
+  afterAll(async () => {
+    if (splitBefore) await admin?.query(`UPDATE feature_flags SET is_enabled=$1, rollout_pct=$2, rules=$3::jsonb WHERE key='commission_split'`,
+      [splitBefore.is_enabled, splitBefore.rollout_pct, JSON.stringify(splitBefore.rules ?? {})]);
+    await pools?.onModuleDestroy(); await admin?.end();
+  });
+  // PC-56 TEST-1: the platform escrow is SHARED by every suite (and striped), so the spec measures it relative to where it began.
+  let escrowAtStart = 0n;
 
   it('payment capture → relay → order becomes confirmed; escrow holds the funds', async () => {
+    escrowAtStart = BigInt(await escrowBal());
     const intent = await payments.createIntent(tenantA, buyer, `idem-${randomUUID()}`, { purpose: 'direct_order', amountMinor: AMOUNT, currencyCode: 'INR', referenceType: 'order', referenceId: orderId } as any);
     const body = JSON.stringify({ id: `evt_${randomUUID()}`, event: 'payment.captured', tenant_id: tenantA, order_id: intent.gatewayOrderId, payment_id: `pay_${randomUUID()}`, amount: Number(AMOUNT), method: 'upi' });
     await payments.handleWebhook('sandbox', body, createHmac('sha256', SECRET).update(body).digest('hex'));
-    expect(String(await escrowBal())).toBe(AMOUNT);
+    expect((BigInt(await escrowBal()) - escrowAtStart).toString()).toBe(AMOUNT);
 
     // before relay the order is still awaiting payment
     let st = await admin.query(`SELECT status FROM orders WHERE id=$1`, [orderId]);
@@ -146,7 +160,7 @@ run('orders ↔ payments end-to-end via outbox relay (integration, real Postgres
 
     await dispatcher.relayBatch();
     expect(String(await sellerBal())).toBe(AMOUNT);   // seller credited
-    expect(String(await escrowBal())).toBe('0');      // escrow released
+    expect(BigInt(await escrowBal())).toBe(escrowAtStart);   // escrow released (the shared platform escrow is back where it began)
 
     // the settlement is idempotent — replaying the same completion does not double-pay the seller
     await admin.query(

@@ -45,15 +45,20 @@ export class SettlementLineRepository {
     return r.rowCount ?? 0;
   }
 
-  /** Aggregate the seller's UN-statemented lines in [from, to) — FOR UPDATE so generation is atomic. */
+  /** Aggregate the seller's UN-statemented lines in [from, to) — the lines are locked FOR UPDATE so generation is atomic.
+   *  PC-56 TEST-1 FIX: this used to put `FOR UPDATE` on the aggregate query itself, which Postgres refuses outright
+   *  ("FOR UPDATE is not allowed with aggregate functions", 0A000) — so EVERY settlement statement generation (the cadence
+   *  job and the on-demand endpoint) failed before it allocated a number. The rows are now locked in a sub-select and
+   *  summed outside it: same rows, same lock, same totals. Found by billing-documents.integration.spec.ts. */
   async aggregateOpenForUpdate(tx: TxContext, tenantId: string, sellerUserId: string, from: string, to: string): Promise<SellerPeriodAggregate> {
     const r = await tx.query<any>(
       `SELECT COALESCE(SUM(gross_minor),0)::text gross, COALESCE(SUM(commission_minor),0)::text commission,
               COALESCE(SUM(gst_minor + tds_minor),0)::text tax, COALESCE(SUM(net_minor),0)::text net, count(*)::int n
-         FROM settlement_lines
-        WHERE tenant_id=$1 AND seller_user_id=$2 AND statement_id IS NULL
-          AND created_at >= $3::timestamptz AND created_at < $4::timestamptz
-        FOR UPDATE`,
+         FROM (SELECT gross_minor, commission_minor, gst_minor, tds_minor, net_minor
+                 FROM settlement_lines
+                WHERE tenant_id=$1 AND seller_user_id=$2 AND statement_id IS NULL
+                  AND created_at >= $3::timestamptz AND created_at < $4::timestamptz
+                FOR UPDATE) locked`,
       [tenantId, sellerUserId, from, to]);
     const row = r.rows[0];
     return { grossMinor: BigInt(row.gross), commissionMinor: BigInt(row.commission), taxMinor: BigInt(row.tax), netMinor: BigInt(row.net), lineCount: row.n };

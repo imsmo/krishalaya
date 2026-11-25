@@ -56,8 +56,19 @@ export interface AuditEntry {
 const COLS = `(tenant_id, actor_user_id, actor_role, action, entity_type, entity_id,
   old_value, new_value, reason, ip, user_agent, request_id)`;
 const VALS = `($1,$2,$3,$4,$5,$6,$7::jsonb,$8::jsonb,$9,$10,$11,$12)`;
+// [PC-56 TEST-1 · PRODUCT FIX] SEVEN call sites (payout reversal in PayoutService.execute and in the RazorpayX webhook handler,
+// the SaaS invoice issue, the subscription grace start, three insurance relay handlers) pass `actorUserId: 'system'`, and
+// `audit_log.actor_user_id` is a UUID — so each INSERT failed `invalid input syntax for type uuid: "system"` and took its
+// WHOLE business transaction down with it: a payout the bank rejected was never reversed (the farmer's money stayed in the
+// platform payouts account), no SaaS invoice could be issued, no grace period could start. Found by
+// payout-execution.integration.spec.ts and saas-invoice.integration.spec.ts. A system act has no human actor: the row
+// records NULL as the actor and `system` as the role — what `actorRoleFor` already writes for a job with no request.
+const SYSTEM_ACTOR = 'system';
 const params = (e: AuditEntry) => [
-  e.tenantId ?? null, e.actorUserId ?? null, actorRoleFor(e, tryGetRequestContext()), e.action,
+  e.tenantId ?? null,
+  e.actorUserId === SYSTEM_ACTOR ? null : (e.actorUserId ?? null),
+  e.actorUserId === SYSTEM_ACTOR && !e.actorRole ? SYSTEM_ACTOR : actorRoleFor(e, tryGetRequestContext()),
+  e.action,
   e.entityType ?? null, e.entityId ?? null,
   e.oldValue != null ? JSON.stringify(e.oldValue) : null,
   e.newValue != null ? JSON.stringify(e.newValue) : null,

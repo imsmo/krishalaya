@@ -8,7 +8,7 @@
 // Requires DATABASE_URL (kv_app). DATABASE_ADMIN_URL (superuser) loads fixtures.
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
-import { makeTenant } from '../../../../test/helpers/fixtures';
+import { makeTenant, makeUser } from '../../../../test/helpers/fixtures';
 import { AppConfig } from '../../../core/config/app-config';
 import { PgPoolProvider } from '../../../core/database/pg-pool.provider';
 import { ShardRouter } from '../../../core/sharding/shard-router';
@@ -38,11 +38,12 @@ run('catalogue certificates (integration, real Postgres + RLS)', () => {
   beforeAll(async () => {
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
     await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B');
+    await makeUser(admin, user);   // PC-56 TEST-1: certificates.owner_user_id REFERENCES users — the owner must be a real user
     // a cert_type lookup value, a shared category, a platform product on it, and a national regulated rule.
     await admin.query(`INSERT INTO lookup_types (code, default_name, is_tenant_extendable) VALUES ('cert_type','Certificate type',false) ON CONFLICT (code) DO NOTHING`);
     const lv = await admin.query(`INSERT INTO lookup_values (type_code, tenant_id, code, default_name) VALUES ('cert_type',NULL,$1,'NPOP Organic') RETURNING id`, [`npop_${tag}`]);
     certTypeId = lv.rows[0].id;
-    await admin.query(`INSERT INTO categories (id, code, default_name, path, depth, is_active) VALUES ($1,$2,'Cert Crops',$2::ltree,1,true) ON CONFLICT (id) DO NOTHING`, [categoryId, `cert_crops_${tag}`]);
+    await admin.query(`INSERT INTO categories (id, code, default_name, path, depth, is_active) VALUES ($1,$2,'Cert Crops',$3::ltree,1,true) ON CONFLICT (id) DO NOTHING`, [categoryId, `cert_crops_${tag}`, `cert_crops_${tag}`]);
     await admin.query(`INSERT INTO units (code, default_name, unit_class, is_active) VALUES ('quintal','Quintal','mass',true) ON CONFLICT (code) DO NOTHING`);
     await admin.query(`INSERT INTO products (id, category_id, default_name, default_unit, tenant_id, is_active) VALUES ($1,$2,'Pesticide X','quintal',NULL,true) ON CONFLICT (id) DO NOTHING`, [productId, categoryId]);
     await admin.query(`INSERT INTO regulated_product_rules (category_id, rule_type, payload, effective_from) VALUES ($1,'license_required','{}',CURRENT_DATE)`, [categoryId]);

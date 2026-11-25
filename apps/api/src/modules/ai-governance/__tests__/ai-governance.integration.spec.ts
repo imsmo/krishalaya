@@ -43,7 +43,13 @@ run('ai-governance spine (integration, real Postgres + RLS)', () => {
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
     await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B'); await makeUser(admin, ops); await makeUser(admin, reporter);
     // admin-api seeds a production model (ai_models is GLOBAL).
-    await admin.query(`INSERT INTO ai_models (code, version, provider, status, confidence_threshold) VALUES ($1,'itest','inhouse','production',0.8)`, [modelCode]);
+    // PC-56 TEST-1: since 0115 a production model must name the fairness audit it was promoted on
+    // (ck_ai_model_production_needs_audit) — so the fixture is the real sequence: shadow → a passing audit → production on it.
+    const modelId = (await admin.query(`INSERT INTO ai_models (code, version, provider, status, confidence_threshold) VALUES ($1,'itest','inhouse','shadow',0.8) RETURNING id`, [modelCode])).rows[0].id;
+    const auditId = (await admin.query(
+      `INSERT INTO ai_fairness_audits (model_id, window_start, window_end, sample_size, slices, max_gap_pp, verdict)
+       VALUES ($1, now() - interval '7 days', now(), 200, '{"language":{"gu":0.91,"hi":0.9}}'::jsonb, 1.0, 'pass') RETURNING id`, [modelId])).rows[0].id;
+    await admin.query(`UPDATE ai_models SET status = 'production', promoted_on_audit_id = $2 WHERE id = $1`, [modelId, auditId]);
 
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
     pools = new PgPoolProvider(config);
@@ -73,7 +79,7 @@ run('ai-governance spine (integration, real Postgres + RLS)', () => {
 
   it('a reviewer claims + rejects → the inference is marked overridden', async () => {
     await reviewSvc.claim(tenantA, reviewer, reviewId);
-    const resolved: any = await reviewSvc.resolve(tenantA, reviewer, reviewId, { decision: 'rejected', note: 'AI mis-graded' } as any);
+    const resolved: any = await reviewSvc.resolve(tenantA, reviewer, reviewId, { decision: 'rejected', note: 'AI mis-graded the tomato lot as grade A' } as any);
     expect(resolved.status).toBe('rejected');
     const inf = await new AiInferenceRepository(new PgReadReplicaProvider(pools, new ShardRouter(new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' }))) as any).getById(tenantA, inferenceId);
     expect(inf?.toProps().wasOverridden).toBe(true);

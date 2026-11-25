@@ -102,6 +102,9 @@ run('PC-56 STORE-1b · storefront home & tenant home (integration, real AppModul
     absent.trial = await listing(TRIAL, { visibility: 'cross_tenant', createdAt: '2030-01-01T00:00:02Z', title: 'Trial wheat' });
     absent.suspendedTenant = await listing(SUSP, { visibility: 'cross_tenant', createdAt: '2030-01-01T00:00:03Z', title: 'Paused wheat' });
     app = await bootstrapE2EApp(); http = app.getHttpServer(); cache = app.get<CacheService>(CACHE_SERVICE);
+    // the HOTFIX-5 pin — PC-56 TEST-1: missing here; unpinned, supertest listens per request on every interface and dials 127.0.0.1, so on a
+    // machine where another process holds that IPv4 port a request can reach the OTHER server (seen in a full pass: "Parse Error: Expected HTTP/").
+    await new Promise<void>((resolve) => http.listen(0, '127.0.0.1', () => resolve()));
   }, 180_000);
   afterAll(async () => {
     await Promise.race([app?.close().catch(() => undefined), new Promise((r) => setTimeout(r, 15_000))]);

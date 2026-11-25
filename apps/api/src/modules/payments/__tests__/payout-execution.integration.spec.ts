@@ -120,12 +120,29 @@ run('payout execution + reconciliation (integration, real Postgres)', () => {
     const bal = await recon.runInternalBalanceCheck(sysTx());
     expect(bal.ok).toBe(true);
 
-    // inject corruption: tamper one entry's amount → zero-sum must now FAIL (the net fires)
-    await admin.query(`UPDATE ledger_entries SET amount_minor = amount_minor + 1 WHERE id = (SELECT id FROM ledger_entries ORDER BY id DESC LIMIT 1)`);
-    const zs2 = await recon.runZeroSumCheck(sysTx(), 24);
-    expect(zs2.ok).toBe(false);
-    expect(zs2.mismatches.length).toBeGreaterThanOrEqual(1);
-    const persisted = await admin.query(`SELECT status FROM reconciliation_runs WHERE id=$1`, [zs2.runId]);
-    expect(persisted.rows[0].status).toBe('mismatch');
+    // inject corruption: tamper one entry's amount → zero-sum must now FAIL (the net fires).
+    // PC-56 TEST-1: ledger_entries is now append-only by TRIGGER (Golden Law 2 — every role, the owner included), so the tamper
+    // runs with triggers off for that one statement (session_replication_role = replica, superuser-only: exactly the
+    // out-of-band corruption the net exists to catch). And it is UNDONE afterwards: as written this left a permanently
+    // unbalanced transaction in the shared database, so every later "the whole ledger nets to zero" spec failed by run order.
+    const tamper = async (delta: 1 | -1, id: string) => {
+      const c = await admin.connect();
+      try {
+        await c.query(`SET session_replication_role = replica`);
+        await c.query(`UPDATE ledger_entries SET amount_minor = amount_minor + $2 WHERE id = $1`, [id, delta]);
+      } finally { await c.query(`RESET session_replication_role`).catch(() => undefined); c.release(); }
+    };
+    const victim = String((await admin.query(`SELECT id FROM ledger_entries ORDER BY id DESC LIMIT 1`)).rows[0].id);
+    await tamper(1, victim);
+    try {
+      const zs2 = await recon.runZeroSumCheck(sysTx(), 24);
+      expect(zs2.ok).toBe(false);
+      expect(zs2.mismatches.length).toBeGreaterThanOrEqual(1);
+      const persisted = await admin.query(`SELECT status FROM reconciliation_runs WHERE id=$1`, [zs2.runId]);
+      expect(persisted.rows[0].status).toBe('mismatch');
+    } finally {
+      await tamper(-1, victim);
+    }
+    expect((await recon.runZeroSumCheck(sysTx(), 24)).ok).toBe(true);   // and the ledger is whole again
   });
 });

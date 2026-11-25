@@ -124,7 +124,7 @@ run('PC-56 HOTFIX-13 · nobody spends her money or reads her animal\'s record bu
     tok.V2 = mintToken(app, { userId: V2, tenantId: T1, roles: ['vet'], perms: ['vet.manage', 'animal.manage'] });
 
     // The machine and its rate, through the real routes (₹150/hour).
-    const categoryId = (await admin.query(`SELECT id FROM categories ORDER BY id LIMIT 1`)).rows[0].id;
+    const categoryId = (await admin.query(`SELECT id FROM categories ORDER BY created_at, id LIMIT 1`)).rows[0].id;
     const a = await post(tok.O, '/v1/equipment/assets', { categoryId, hpRating: 45 });
     expect(a.status).toBe(201); assetId = a.body.data.id;
     expect((await post(tok.O, `/v1/equipment/assets/${assetId}/rates`, { rateBasis: 'per_hour', rateMinor: '15000', includesOperator: true, includesFuel: false }, null)).status).toBe(201);

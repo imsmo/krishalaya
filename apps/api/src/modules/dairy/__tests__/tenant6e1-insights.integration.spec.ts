@@ -179,6 +179,10 @@ run('PC-56 TENANT-6e-1 · the insights (integration, real Postgres)', () => {
     // RESTORE THE FLAGS. 6c-6 learned this the hard way: a suite that leaves a global flag ON breaks every other
     // suite's kill-switch assertion, and the failure then looks like a defect in whichever wave reads it next.
     await admin?.query(`UPDATE feature_flags SET is_enabled=false WHERE key=$1`, [INSIGHTS_FLAG]).catch(() => undefined);
+    // PC-56 TEST-1: the two made-up countries (currencies with no scale on file) go again — left behind, the suite's own
+    // "a currency scale for every seeded country" check fails the next time it runs on this database.
+    await admin?.query(`UPDATE tenants SET country_code = 'IN' WHERE country_code IN ('XT', 'XU')`).catch(() => undefined);
+    await admin?.query(`DELETE FROM countries WHERE code IN ('XT', 'XU')`).catch(() => undefined);
     await pools?.onModuleDestroy(); await admin?.end();
   });
 

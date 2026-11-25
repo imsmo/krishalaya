@@ -49,8 +49,10 @@ run('tenancy SaaS invoicing (integration, real Postgres + RLS + relay)', () => {
   let invoiceId = '';
 
   async function provisionTenant(id: string, slug: string) {
-    await admin.query(`INSERT INTO lookup_types (code, default_name, is_tenant_extendable) VALUES ('tenant_type','Tenant Type', false) ON CONFLICT (code) DO NOTHING`);
-    const lt = await admin.query(`INSERT INTO lookup_values (type_code, tenant_id, code, default_name) VALUES ('tenant_type', NULL, 'fpo', 'FPO') ON CONFLICT (type_code, tenant_id, code) DO UPDATE SET default_name=EXCLUDED.default_name RETURNING id`);
+    // PC-56 TEST-1: the SEEDED platform `tenant_type`/`fpo` row. This used to INSERT one with `ON CONFLICT (type_code, tenant_id,
+    // code)` — which can never fire for a platform row (tenant_id NULL; the unique index treats NULLs as distinct), so every run
+    // added another platform `fpo` to the shared vocabulary.
+    const lt = await admin.query(`SELECT id FROM lookup_values WHERE type_code = 'tenant_type' AND code = 'fpo' AND tenant_id IS NULL ORDER BY created_at LIMIT 1`);
     // [PC-56 TENANT-6d-7] **THIS SUITE HAS BEEN RED SINCE `countries.currency_code` WAS MADE NOT NULL (0001).**
     // `INSERT ... ON CONFLICT DO NOTHING` still checks NOT NULL on the proposed tuple BEFORE it looks for a conflict, so
     // this fixture threw on every run whether or not 'IN' already existed — and 'IN' always does, because core/0002
@@ -143,9 +145,13 @@ run('tenancy SaaS invoicing (integration, real Postgres + RLS + relay)', () => {
 
   it('payment_succeeded (saas_invoice) RECORDS a receipt, re-sums paid_minor and settles the invoice; re-delivery is a no-op', async () => {
     const relay = async (paymentId: string, amountMinor: string) => {
-      const c = await pools.writer(0).connect();
+      // PC-56 TEST-1: AS kv_relay — the role the outbox relay runs this handler on in production (core/outbox/outbox.dispatcher.ts;
+      // 0146 §146.6 grants it exactly SELECT+UPDATE on saas_invoices and SELECT+INSERT on saas_invoice_payments). This ran on the
+      // kv_app pool, which by design (0146) may never record a receipt — so it failed `permission denied` for the right reason.
+      const c = await admin.connect();
       try {
         await c.query('BEGIN');
+        await c.query('SET LOCAL ROLE kv_relay');
         await c.query(`SELECT set_config('app.tenant_id',$1,true)`, [tenantA]);
         const tx: TxContext = { query: (sql, params) => c.query(sql, params as any) as any, tenantId: tenantA, userId: 'system' };
         await payHandler.handle({ tenantId: tenantA, aggregateType: 'payment', aggregateId: randomUUID(), eventType: 'payments.payment_succeeded', payload: {
@@ -194,9 +200,13 @@ run('tenancy SaaS invoicing (integration, real Postgres + RLS + relay)', () => {
       [id, tenantA, `SINV-999999-${Math.floor(Math.random() * 1e6)}`]);
 
     const half = async (paymentId: string) => {
-      const c = await pools.writer(0).connect();
+      // PC-56 TEST-1: AS kv_relay — the role the outbox relay runs this handler on in production (core/outbox/outbox.dispatcher.ts;
+      // 0146 §146.6 grants it exactly SELECT+UPDATE on saas_invoices and SELECT+INSERT on saas_invoice_payments). This ran on the
+      // kv_app pool, which by design (0146) may never record a receipt — so it failed `permission denied` for the right reason.
+      const c = await admin.connect();
       try {
         await c.query('BEGIN');
+        await c.query('SET LOCAL ROLE kv_relay');
         await c.query(`SELECT set_config('app.tenant_id',$1,true)`, [tenantA]);
         const tx: TxContext = { query: (sql, params) => c.query(sql, params as any) as any, tenantId: tenantA, userId: 'system' };
         await payHandler.handle({ tenantId: tenantA, aggregateType: 'payment', aggregateId: randomUUID(), eventType: 'payments.payment_succeeded', payload: {

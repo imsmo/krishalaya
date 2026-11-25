@@ -268,8 +268,8 @@ run('ADMIN-AUTH-1 · end-to-end over HTTP through the real AdminModule', () => {
     base = `http://127.0.0.1:${app.getHttpServer().address().port}`;
     const pool = app.get(AdminPool) as AdminPool;
     await pool.query(`UPDATE platform_operator_credentials SET revoked_at = now(), revoked_by_admin_id = admin_user_id, revoke_reason = 'integration reset' WHERE revoked_at IS NULL`);
-  });
-  afterAll(async () => { await app?.close(); process.env = saved; });
+  }, 60_000);   // PC-56 TEST-1: booting the whole AdminModule exceeds jest's default 5 s hook budget on a loaded CI runner
+  afterAll(async () => { await app?.close(); process.env = saved; }, 30_000);
 
   const post = (path: string, body: unknown, bearer?: string) => fetch(`${base}${path}`, {
     method: 'POST', headers: { 'content-type': 'application/json', ...(bearer ? { authorization: `Bearer ${bearer}` } : {}) }, body: JSON.stringify(body),

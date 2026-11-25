@@ -11,7 +11,7 @@
 // Requires DATABASE_URL (kv_app). DATABASE_ADMIN_URL (superuser) loads the slice.
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
-import { makeTenant } from '../../../../test/helpers/fixtures';
+import { makeTenant, makeUser } from '../../../../test/helpers/fixtures';
 
 import { AppConfig } from '../../../core/config/app-config';
 import { PgPoolProvider } from '../../../core/database/pg-pool.provider';
@@ -54,6 +54,7 @@ run('catalogue slice (integration, real Postgres + RLS)', () => {
   beforeAll(async () => {
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
     await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B');
+    await makeUser(admin, user);   // PC-56 TEST-1: product_batches.seller_user_id REFERENCES users — the actor must be a real user
     // a tenant-shared 'crops' category (fixed id the tests reference) + a PLATFORM-master product
     // (tenant_id NULL → visible to every tenant). Categories/units already come from the real seeds.
     await admin.query(`INSERT INTO categories (id, code, default_name, path, depth, is_active)
@@ -108,8 +109,8 @@ run('catalogue slice (integration, real Postgres + RLS)', () => {
 
   it('is idempotent — same key returns the same product id', async () => {
     const key = `idem-${randomUUID()}`;
-    const a = await products.create(tenantA, user, key, { categoryId: CROPS, defaultName: 'Dup', defaultUnit: 'quintal' } as any);
-    const b = await products.create(tenantA, user, key, { categoryId: CROPS, defaultName: 'Dup', defaultUnit: 'quintal' } as any);
+    const a = await products.create(tenantA, user, key, { categoryId: CROPS, defaultName: 'Dup', defaultUnit: 'quintal', isPerishable: false } as any);
+    const b = await products.create(tenantA, user, key, { categoryId: CROPS, defaultName: 'Dup', defaultUnit: 'quintal', isPerishable: false } as any);
     expect(a.id).toEqual(b.id);
   });
 
@@ -130,7 +131,9 @@ run('catalogue slice (integration, real Postgres + RLS)', () => {
       } finally { c.release(); }
     };
     if (isSuperuser) { console.warn('[catalogue] superuser bypasses RLS; use kv_app for the strict check'); return; }
-    expect(await countAs(tenantB, 'id = $2', [tenantB, createdId])).toBe(0);          // A's private product hidden from B
-    expect(await countAs(tenantB, 'id = $2', [tenantB, PLATFORM_PRODUCT])).toBe(1);   // platform master visible to B
+    // PC-56 TEST-1: the tenant is the session GUC set above, not a query parameter — an unused `$1` is refused by Postgres
+    // ("could not determine data type of parameter $1"), so this proof had never executed.
+    expect(await countAs(tenantB, 'id = $1', [createdId])).toBe(0);          // A's private product hidden from B
+    expect(await countAs(tenantB, 'id = $1', [PLATFORM_PRODUCT])).toBe(1);   // platform master visible to B
   });
 });

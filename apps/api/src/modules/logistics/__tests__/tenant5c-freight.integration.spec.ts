@@ -19,8 +19,10 @@ import { Pool, PoolClient } from 'pg';
 import { FreightInvoice } from '../domain/freight-invoice.entity';
 import { FreightInvoiceRepository } from '../repositories/freight-invoice.repository';
 
-const URL = process.env.DATABASE_URL;
-const run = URL ? describe : describe.skip;
+// PC-56 TEST-1: the pool is the OWNER (DATABASE_ADMIN_URL) — fixtures as the owner, probes after `SET ROLE kv_app`. It was
+// DATABASE_URL, which in the integration project IS kv_app, so the first fixture insert failed `permission denied`.
+const URL = process.env.DATABASE_ADMIN_URL;
+const run = URL && process.env.DATABASE_URL ? describe : describe.skip;
 
 run('PC-56 TENANT-5c · freight recon against real Postgres', () => {
   let pool: Pool;
@@ -37,6 +39,16 @@ run('PC-56 TENANT-5c · freight recon against real Postgres', () => {
   const AWB_MATCHED = `AWBM-${tenantId.slice(0, 8)}`;
   const AWB_PHANTOM = `AWBX-${tenantId.slice(0, 8)}`;
 
+  // PC-56 TEST-1: the billing periods are THIS month and the next (they were the literals July/August 2026, and the shipment is created
+  // `now()`: `evidenceFor` looks ±31 days around the period, so from September 2026 the matched shipment fell outside it and the
+  // recon read every line as unmatched).
+  const monthOf = (offset: number): [string, string] => {
+    const d = new Date(); const y = d.getUTCFullYear(); const m = d.getUTCMonth() + offset;
+    return [new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 10), new Date(Date.UTC(y, m + 1, 0)).toISOString().slice(0, 10)];
+  };
+  const [P_FROM, P_TO] = monthOf(0);
+  const [P2_FROM, P2_TO] = monthOf(1);
+
   /** The app-role connection: RLS on, tenant context set, exactly as `core/tenancy-context` runs it. */
   const tx = () => ({ tenantId, query: (sql: string, params?: unknown[]) => app.query(sql, params as never) });
 
@@ -45,9 +57,9 @@ run('PC-56 TENANT-5c · freight recon against real Postgres', () => {
     const admin = await pool.connect();
     // fixtures as the owner; the probes below all run as kv_app
     await admin.query(`INSERT INTO countries (code, default_name, currency_code, phone_prefix) VALUES ('IN','India','INR','+91') ON CONFLICT (code) DO NOTHING`);
-    await admin.query(`INSERT INTO lookup_types (code, default_name) VALUES ('tenant_type','Tenant Type') ON CONFLICT (code) DO NOTHING`);
-    const ttype = randomUUID();
-    await admin.query(`INSERT INTO lookup_values (id, type_code, code, default_name) VALUES ($1,'tenant_type','fpo','FPO') ON CONFLICT DO NOTHING`, [ttype]);
+    // The SEEDED platform `tenant_type`/`fpo` row — never a new one (a NULL-tenant `ON CONFLICT DO NOTHING` insert adds a duplicate
+    // platform `fpo` on every run: lookup_values' unique index treats NULL tenant ids as distinct).
+    const ttype = (await admin.query(`SELECT id FROM lookup_values WHERE type_code = 'tenant_type' AND code = 'fpo' AND tenant_id IS NULL ORDER BY created_at LIMIT 1`)).rows[0].id as string;
     for (const [id, slug] of [[tenantId, 'a'], [otherTenantId, 'b']] as const) {
       await admin.query(
         `INSERT INTO tenants (id, slug, legal_name, display_name, tenant_type_id, country_code)
@@ -100,7 +112,7 @@ run('PC-56 TENANT-5c · freight recon against real Postgres', () => {
     const inv = invoice(invA, `5C-A-${invA.slice(0, 8)}`, [
       { awbNo: AWB_MATCHED, billedMinor: 168000n, billedAttempts: 2 },
       { awbNo: AWB_PHANTOM, billedMinor: 94000n },
-    ], ['2026-07-01', '2026-07-31']);
+    ], [P_FROM, P_TO]);
     await repo.insert(tx() as never, inv);
     const back = await repo.getById(tenantId, invA);
     expect(back).not.toBeNull();
@@ -114,20 +126,20 @@ run('PC-56 TENANT-5c · freight recon against real Postgres', () => {
     // node-pg hands back a JS Date at LOCAL midnight. Under TZ=Asia/Kolkata, `toISOString().slice(0,10)` on that
     // Date reports 2026-06-30 for a July 1 period start. The mapper reads the local components instead.
     const back = await repo.getById(tenantId, invA);
-    expect(back!.toProps().periodStart).toBe('2026-07-01');
-    expect(back!.toProps().periodEnd).toBe('2026-07-31');
+    expect(back!.toProps().periodStart).toBe(P_FROM);
+    expect(back!.toProps().periodEnd).toBe(P_TO);
     const raw = await app.query(`SELECT period_start FROM freight_invoices WHERE id=$1`, [invA]);
     const asDate = raw.rows[0].period_start as Date;
     expect(asDate instanceof Date).toBe(true);
     // The offset is only visible off UTC; when it IS visible, the mapper must not have followed it.
-    if (asDate.toISOString().slice(0, 10) !== '2026-07-01') {
+    if (asDate.toISOString().slice(0, 10) !== P_FROM) {
       expect(back!.toProps().periodStart).not.toBe(asDate.toISOString().slice(0, 10));
     }
   });
 
   it('matches a carrier line to our own shipment by AWB, and reports the phantom as unmatched', async () => {
     const rows = await repo.evidenceFor(tenantId, { awbNos: [AWB_MATCHED, AWB_PHANTOM], shipmentIds: [] },
-      { from: '2026-07-01', to: '2026-07-31' });
+      { from: P_FROM, to: P_TO });
     expect(rows.map((r) => r.awbNo)).toEqual([AWB_MATCHED]);
     expect(rows[0]).toMatchObject({ id: shipmentId, status: 'delivered', chargeMinor: 114000n, deliveryAttempts: 1 });
   });
@@ -138,7 +150,7 @@ run('PC-56 TENANT-5c · freight recon against real Postgres', () => {
       `EXPLAIN (COSTS OFF) SELECT id FROM shipments
         WHERE tenant_id=$1 AND awb_no = ANY($2::varchar[])
           AND created_at >= ($3::date - interval '31 days') AND created_at <= ($4::date + interval '31 days')`,
-      [tenantId, [AWB_MATCHED], '2026-07-01', '2026-07-31']);
+      [tenantId, [AWB_MATCHED], P_FROM, P_TO]);
     const text = plan.rows.map((r) => String((r as Record<string, unknown>)['QUERY PLAN'])).join('\n');
     expect(text).toMatch(/idx_shipments_tenant_awb|Index Scan|Bitmap Index Scan/);
     expect(text).toMatch(/Subplans Removed|shipments_/);
@@ -146,7 +158,7 @@ run('PC-56 TENANT-5c · freight recon against real Postgres', () => {
 
   it('runs the whole recon through the entity and persists every verdict', async () => {
     const inv = await repo.getForUpdate(tx() as never, tenantId, invA);
-    const ev = await repo.evidenceFor(tenantId, { awbNos: [AWB_MATCHED, AWB_PHANTOM], shipmentIds: [] }, { from: '2026-07-01', to: '2026-07-31' });
+    const ev = await repo.evidenceFor(tenantId, { awbNos: [AWB_MATCHED, AWB_PHANTOM], shipmentIds: [] }, { from: P_FROM, to: P_TO });
     const byAwb = new Map(ev.filter((r) => r.awbNo).map((r) => [r.awbNo as string, r]));
     const out = inv!.reconcile((l) => {
       const hit = l.awbNo ? byAwb.get(l.awbNo) : undefined;
@@ -206,18 +218,18 @@ run('PC-56 TENANT-5c · freight recon against real Postgres', () => {
   it('finds the SAME consignment billed on a second invoice — the row neither canon screen draws', async () => {
     // A real shipment, billed correctly, billed twice: the carrier's next cycle carries the same AWB. Every
     // per-line check passes on both invoices, so only a cross-invoice question can see it.
-    const inv2 = invoice(invB, `5C-B-${invB.slice(0, 8)}`, [{ awbNo: AWB_MATCHED, billedMinor: 114000n }], ['2026-08-01', '2026-08-31']);
+    const inv2 = invoice(invB, `5C-B-${invB.slice(0, 8)}`, [{ awbNo: AWB_MATCHED, billedMinor: 114000n }], [P2_FROM, P2_TO]);
     await repo.insert(tx() as never, inv2);
     const dups = await repo.duplicateAwbsFor(tenantId, invA);
     expect(dups).toHaveLength(1);
-    expect(dups[0]).toMatchObject({ awbNo: AWB_MATCHED, otherInvoiceId: invB, billedMinor: '114000', periodStart: '2026-08-01' });
+    expect(dups[0]).toMatchObject({ awbNo: AWB_MATCHED, otherInvoiceId: invB, billedMinor: '114000', periodStart: P2_FROM });
     // and the question is symmetric: opening the second invoice finds the first
     const back = await repo.duplicateAwbsFor(tenantId, invB);
     expect(back.map((d) => d.otherInvoiceId)).toEqual([invA]);
   });
 
   it('refuses the same invoice number twice for one tenant, as a typed refusal', async () => {
-    const again = invoice(randomUUID(), `5C-A-${invA.slice(0, 8)}`, [{ awbNo: AWB_MATCHED, billedMinor: 1n }], ['2026-07-01', '2026-07-31']);
+    const again = invoice(randomUUID(), `5C-A-${invA.slice(0, 8)}`, [{ awbNo: AWB_MATCHED, billedMinor: 1n }], [P_FROM, P_TO]);
     await expect(repo.insert(tx() as never, again)).rejects.toMatchObject({ code: 'FREIGHT_INVOICE_EXISTS' });
   });
 

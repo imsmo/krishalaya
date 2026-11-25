@@ -1,0 +1,22 @@
+-- ==================================================================================================================
+-- MIGRATION 0249 — PC-56 TEST-1 · A REVIEWER'S REJECTION CAN MARK THE INFERENCE IT OVERRIDES.
+-- Runner: db/scripts/migrate.js wraps this file in ONE transaction and records it in schema_migrations.
+-- NEVER edit an applied migration — add a new numbered one. NOT MONEY.
+-- ==================================================================================================================
+--
+-- WHAT WAS TRUE: the tenant AI review queue's "reject" (AiReviewService.resolve, decision 'rejected') marks the linked inference
+-- as overridden — `AiInferenceRepository.markOverridden`: `SELECT … FOR UPDATE` then
+--     UPDATE ai_inferences SET was_overridden = true, override_by = $4, override_reason = $5 WHERE id = … AND tenant_id = …
+-- inside the same unit of work as the review row. But 0014 made `ai_inferences` append-only for kv_app ("history is physics":
+-- REVOKE UPDATE, DELETE) and nothing ever granted the override columns back — while 0190 (§190.9) gave the table an
+-- `ai_inferences_update_own` RLS policy, i.e. it expected kv_app to update its own tenant's rows. Result on a real database:
+--     error: permission denied for table ai_inferences
+-- and the whole rejection rolled back — a reviewer could not reject an AI decision at all. Found by
+-- modules/ai-governance/__tests__/ai-governance.integration.spec.ts on a database built from the real migrations (it had never run
+-- green); the unit spec mocks the repository.
+--
+-- WHAT IS TRUE NOW: kv_app may UPDATE exactly the three override columns — the human-override record — and nothing else. The
+-- inference itself (model, input, output, confidence, subject, tenant, time) stays append-only, which is 0014's intent; RLS
+-- (0190's update_own policy) still limits the write to the session tenant's rows. The same column-level shape 0014 uses for
+-- outbox_events / notifications status columns.
+GRANT UPDATE (was_overridden, override_by, override_reason) ON ai_inferences TO kv_app;

@@ -12,6 +12,8 @@ import { ComplianceRepository } from '../repositories/compliance.repository';
 import { DataSubjectRequestsQueueService } from '../services/data-subject-requests-queue.service';
 import { TenantExportApprovalsService } from '../services/tenant-export-approvals.service';
 import { BreachResponseConsoleService } from '../services/breach-response-console.service';
+import { makeUser } from '../../../../test/integration-fixtures';
+import { BreachNotificationIncompleteError, BreachSignOffRequiredError } from '../domain/compliance-ops.errors';
 
 const APP_URL = process.env.DATABASE_ADMIN_URL ?? process.env.DATABASE_URL;
 const run = APP_URL ? describe : describe.skip;
@@ -20,6 +22,7 @@ run('compliance-ops (integration, real Postgres — DPDP ops + audit)', () => {
   let pool: AdminPool; let inspect: Pool;
   let dsrSvc: DataSubjectRequestsQueueService; let exportSvc: TenantExportApprovalsService; let breachSvc: BreachResponseConsoleService;
   const actor = { userId: randomUUID(), roles: ['platform_compliance_ops'], amr: ['hwk'], authTimeSec: Math.floor(Date.now() / 1000), sessionId: '', permissions: new Set(['compliance.manage']), ip: '10.0.0.1', requestId: 'itest' } as any;
+  const dpo = { ...actor, userId: randomUUID(), requestId: 'itest-dpo' };   // the second person (0109: sign-off ≠ opener)
   let userId = ''; let dsrId = ''; let exportId = ''; let breachId = '';
 
   beforeAll(async () => {
@@ -31,8 +34,7 @@ run('compliance-ops (integration, real Postgres — DPDP ops + audit)', () => {
     exportSvc = new TenantExportApprovalsService(pool, audit, repo);
     breachSvc = new BreachResponseConsoleService(pool, audit, repo);
     inspect = new Pool({ connectionString: APP_URL });
-    const u = await inspect.query(`SELECT id FROM users LIMIT 1`);
-    userId = u.rows[0].id;
+    userId = await makeUser(inspect);   // PC-56 TEST-1: its own user (was the first user in the database — none on a fresh build)
     const d = await inspect.query(`INSERT INTO data_subject_requests (user_id, request_type, status) VALUES ($1,'access','open') RETURNING id`, [userId]);
     dsrId = d.rows[0].id;
     const e = await inspect.query(`INSERT INTO data_export_jobs (user_id, job_kind, status) VALUES ($1,'user_dpdp_export','queued') RETURNING id`, [userId]);
@@ -69,13 +71,25 @@ run('compliance-ops (integration, real Postgres — DPDP ops + audit)', () => {
     const opened: any = await breachSvc.open(actor, { severity: 'high', title: 'creds exposed', description: 'a subset of contact rows were exposed', affectedData: 'phone,email', affectedCount: 1200, detectedAt: new Date().toISOString() });
     breachId = opened.id;
     await breachSvc.update(actor, breachId, { action: 'contain', note: 'rotated keys, revoked access' });
-    await breachSvc.update(actor, breachId, { action: 'notify', note: 'DPB + principals notified', regulatorNotifiedAt: new Date().toISOString(), principalsNotifiedAt: new Date().toISOString() });
+    // PC-56 TEST-1 · since 0109 (W043: "moving to notified requires all three ticked + DPO sign-off") `notify` is no longer two
+    // typed timestamps. This used to notify straight after containment; the service now refuses that BY NAME, and the test
+    // proves it before walking the evidenced path: the three steps, each with its evidence, then a DPO who is NOT the person
+    // who declared the breach signs off, then notify.
+    const notifyDto = { action: 'notify', note: 'DPB + principals notified', regulatorNotifiedAt: new Date().toISOString(), principalsNotifiedAt: new Date().toISOString() } as const;
+    await expect(breachSvc.update(actor, breachId, notifyDto)).rejects.toBeInstanceOf(BreachNotificationIncompleteError);
+    await breachSvc.recordStep(actor, breachId, { step: 'board_filing', outcome: 'done', evidenceRef: 'DPB-ACK-ITEST' });
+    await breachSvc.recordStep(actor, breachId, { step: 'principals_notified', outcome: 'done', evidenceRef: 'sms broadcast batch ITEST', reachedCount: 1200, channel: 'sms' });
+    await breachSvc.recordStep(actor, breachId, { step: 'tenant_briefed', outcome: 'not_applicable', note: 'platform-wide incident, no single tenant affected' });
+    await expect(breachSvc.update(actor, breachId, notifyDto)).rejects.toBeInstanceOf(BreachSignOffRequiredError);
+    await expect(breachSvc.signOff(actor, breachId, 'self-certify')).rejects.toBeTruthy();   // the declarer cannot certify
+    await breachSvc.signOff(dpo, breachId, 'evidence read, notification adequate');
+    await breachSvc.update(actor, breachId, notifyDto);
     const closed: any = await breachSvc.update(actor, breachId, { action: 'close', note: 'incident closed' });
     expect(closed.status).toBe('closed');
     const row = await inspect.query(`SELECT affected_data, regulator_notified_at, principals_notified_at FROM data_breaches WHERE id=$1`, [breachId]);
     expect(row.rows[0].affected_data).toBe('phone,email');               // categories, not values
     expect(row.rows[0].regulator_notified_at).not.toBeNull();
     const au = await inspect.query(`SELECT count(*)::int AS c FROM audit_log WHERE entity_id=$1 AND action LIKE 'dpdp.breach_%'`, [breachId]);
-    expect(au.rows[0].c).toBe(4);   // opened + contained + notified + closed
+    expect(au.rows[0].c).toBe(8);   // opened + contained + 3 steps recorded + signed off + notified + closed
   });
 });

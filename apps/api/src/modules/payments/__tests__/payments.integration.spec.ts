@@ -60,7 +60,10 @@ run('payments + wallet (integration, real Postgres + RLS)', () => {
     return { body, sig };
   };
   const escrowBalance = async (): Promise<string> => {
-    const r = await admin.query(`SELECT COALESCE(cached_balance_minor,0)::bigint b FROM wallet_accounts WHERE owner_kind='platform' AND account_code='escrow'`);
+    // PC-56 TEST-1: the SUM over every stripe (the platform escrow is striped by shard_no — the engine may post to any stripe),
+    // and every caller measures a DELTA. This read `rows[0]` of an unordered multi-row result and the tests compared it to an
+    // absolute figure, so the suite only passed on a database where nothing else had ever touched escrow.
+    const r = await admin.query(`SELECT COALESCE(SUM(cached_balance_minor),0)::bigint b FROM wallet_accounts WHERE owner_kind='platform' AND account_code='escrow'`);
     return String(r.rows[0]?.b ?? '0');
   };
   // S6 device-test P0 fix: createIntent now validates the order reference (existence, buyer,
@@ -68,7 +71,7 @@ run('payments + wallet (integration, real Postgres + RLS)', () => {
   // for each intent (fixture fix, not a weakened check; see payment.service.ts).
   const seedOrder = (orderId: string, amountMinor = AMOUNT) => admin.query(
     `INSERT INTO orders (id, tenant_id, order_no, buyer_user_id, seller_user_id, source, currency_code, subtotal_minor, total_minor, status, version, created_at)
-     VALUES ($1,$2,$3,$4,$5,'direct','INR',$6,$6,'payment_pending',1, now())`,
+     VALUES ($1,$2,$3,$4,$5,'direct','INR',$6,$6,'payment_pending',1, uuid_v7_time($1))`   /* PC-56 TEST-1: created_at = the id's time, as the app writes it — the repositories prune ±5 s around uuid_v7_time(id) (Law 8), and an id minted at describe time drifted past that under load */,
     [orderId, tenantA, `KV-${orderId.slice(0, 8)}`, buyer, seller, amountMinor]);
 
   beforeAll(async () => {
@@ -116,6 +119,7 @@ run('payments + wallet (integration, real Postgres + RLS)', () => {
   });
 
   it('captured webhook → success + ZERO-SUM ledger (escrow credited) + payment_succeeded', async () => {
+    const escrowBefore = BigInt(await escrowBalance());
     const { body, sig } = webhook('payment.captured', { order_id: gatewayOrderId, payment_id: `pay_${randomUUID()}`, amount: Number(AMOUNT), method: 'upi' });
     await payments.handleWebhook('sandbox', body, sig);
 
@@ -128,8 +132,7 @@ run('payments + wallet (integration, real Postgres + RLS)', () => {
     const sum = await admin.query(`SELECT COALESCE(SUM(amount_minor),0)::bigint s FROM ledger_entries WHERE txn_id=$1`, [txnId]);
     expect(String(sum.rows[0].s)).toBe('0');
     // platform escrow holds the captured amount
-    const esc = await admin.query(`SELECT cached_balance_minor FROM wallet_accounts WHERE owner_kind='platform' AND account_code='escrow'`);
-    expect(String(esc.rows[0].cached_balance_minor)).toBe(AMOUNT);
+    expect((BigInt(await escrowBalance()) - escrowBefore).toString()).toBe(AMOUNT);
 
     const ev = await admin.query(`SELECT 1 FROM outbox_events WHERE aggregate_id=$1 AND event_type='payments.payment_succeeded'`, [paymentId]);
     expect(ev.rowCount).toBe(1);
@@ -139,10 +142,10 @@ run('payments + wallet (integration, real Postgres + RLS)', () => {
     const evt = `evt_dup_${randomUUID()}`;
     const body = JSON.stringify({ id: evt, event: 'payment.captured', tenant_id: tenantA, order_id: gatewayOrderId, payment_id: `pay_${randomUUID()}`, amount: Number(AMOUNT), method: 'upi' });
     const sig = createHmac('sha256', SECRET).update(body).digest('hex');
+    const escrowBefore = await escrowBalance();   // the payment was captured by the previous test
     await payments.handleWebhook('sandbox', body, sig);
     await payments.handleWebhook('sandbox', body, sig);   // replay
-    const esc = await admin.query(`SELECT cached_balance_minor FROM wallet_accounts WHERE owner_kind='platform' AND account_code='escrow'`);
-    expect(String(esc.rows[0].cached_balance_minor)).toBe(AMOUNT); // unchanged — captured exactly once
+    expect(await escrowBalance()).toBe(escrowBefore); // unchanged — captured exactly once
   });
 
   it('rejects a forged webhook (bad signature) — fail closed', async () => {

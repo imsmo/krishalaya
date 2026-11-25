@@ -138,6 +138,9 @@ run('PC-56 PARTNER-0 · a partner is an organisation (integration, real AppModul
     fintechBackup = (await admin.query(`SELECT is_enabled, rollout_pct, rules FROM feature_flags WHERE key = 'fintech'`)).rows[0] ?? null;
     await admin.query(`UPDATE feature_flags SET is_enabled = true, rollout_pct = 0, rules = $1::jsonb WHERE key = 'fintech'`, [JSON.stringify({ tenant_ids: [T1] })]);
     app = await bootstrapE2EApp(); http = app.getHttpServer();
+    // the HOTFIX-5 pin — PC-56 TEST-1: missing here; unpinned, supertest listens per request on every interface and dials 127.0.0.1, so on a
+    // machine where another process holds that IPv4 port a request can reach the OTHER server (seen in a full pass: "Parse Error: Expected HTTP/").
+    await new Promise<void>((resolve) => http.listen(0, '127.0.0.1', () => resolve()));
     cache = app.get<CacheService>(CACHE_SERVICE); otp = app.get<OtpService>(OTP_SERVICE); config = app.get(AppConfig);
     for (const k of [...flagKeys('partner_console'), ...flagKeys('fintech')]) await cache.del(k);
   }, 180_000);

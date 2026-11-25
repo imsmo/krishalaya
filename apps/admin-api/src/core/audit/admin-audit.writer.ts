@@ -19,13 +19,19 @@ export interface AdminAuditEntry {
   ip?: string | null;
   requestId?: string | null;
 }
-const COLS = `(tenant_id, actor_user_id, actor_role, action, entity_type, entity_id, old_value, new_value, reason, ip, request_id)`;
-const VALS = `(NULL,$1,$2,$3,$4,$5,$6::jsonb,$7::jsonb,$8,$9,$10)`;
+const COLS = `(tenant_id, actor_user_id, actor_role, action, entity_type, entity_id, old_value, new_value, reason, ip, request_id, entity_key)`;
+const VALS = `(NULL,$1,$2,$3,$4,$5,$6::jsonb,$7::jsonb,$8,$9,$10,$11)`;
+// PC-56 TEST-1 · audit_log.entity_id is a uuid. A flag, a provider, a lookup type, a country is named by a CODE, and writing
+// that code into entity_id failed the INSERT — and, because the audit row commits with the action, rolled the action back (a
+// kill-switch could not be pulled). A uuid goes to entity_id; any other key goes to entity_key (migration 0247).
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isUuid = (v: string | null | undefined): v is string => typeof v === 'string' && UUID_RE.test(v);
 const params = (e: AdminAuditEntry) => [
-  e.actorUserId, e.actorRole ?? null, e.action, e.entityType ?? null, e.entityId ?? null,
+  e.actorUserId, e.actorRole ?? null, e.action, e.entityType ?? null, isUuid(e.entityId) ? e.entityId : null,
   e.oldValue != null ? JSON.stringify(e.oldValue) : null,
   e.newValue != null ? JSON.stringify(e.newValue) : null,
   e.reason ?? null, e.ip ?? null, e.requestId ?? null,
+  e.entityId != null && !isUuid(e.entityId) ? String(e.entityId).slice(0, 200) : null,
 ];
 
 @Injectable()

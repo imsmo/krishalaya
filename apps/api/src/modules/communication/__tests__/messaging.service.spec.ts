@@ -66,7 +66,9 @@ describe('MaskedCallService.initiate', () => {
     const out = await h.svc.initiate('t1', { userId: 'a', isModerator: false }, 'idem-1', { calleeUserId: 'b' } as any);
     expect(h.repo.insert).toHaveBeenCalledTimes(1);
     expect(out.callerUserId).toBe('a'); expect(out.calleeUserId).toBe('b');
-    expect(JSON.stringify(out)).not.toMatch(/\+?\d{10}/);   // no phone numbers leaked
+    // no phone numbers leaked. PC-56 TEST-1: uuids are blanked first — a v7 id's 12-hex tail is all decimal digits often enough
+    // (~3% of runs) that this assertion failed at random on a perfectly clean output.
+    expect(JSON.stringify(out).replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '<uuid>')).not.toMatch(/\+?\d{10}/);
   });
   it('degrades to a typed error and records NOTHING when the provider is down', async () => {
     const h = callHarness(false);

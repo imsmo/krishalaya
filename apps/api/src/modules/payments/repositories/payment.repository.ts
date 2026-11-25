@@ -83,11 +83,15 @@ export class PaymentRepository {
   async insert(tx: TxContext, p: Payment): Promise<void> {
     const v = p.toProps();
     await tx.query(
+      // PC-56 TEST-1: created_at is the ENTITY's clock, written explicitly. It used to take the column default (the transaction's
+      // now()), while createIntent told the buyer `expiresAt = entity.createdAt + ttl` — so the expiry in the 201 and the expiry
+      // every later read and the PAYMENT_ATTEMPT_LIVE refusal compute from the stored row disagreed (by 1 ms on an idle machine,
+      // by the transaction's age under load). One attempt now has one expiry.
       `INSERT INTO payments (id, tenant_id, user_id, purpose_id, reference_type, reference_id, amount_minor, refunded_minor,
-        currency_code, status, provider_code, gateway_order_id, idempotency_key)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+        currency_code, status, provider_code, gateway_order_id, idempotency_key, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
       [v.id, v.tenantId, v.userId, v.purposeId, v.referenceType, v.referenceId, v.amountMinor.toString(), v.refundedMinor.toString(),
-       v.currencyCode, v.status, v.providerCode, v.gatewayOrderId, v.idempotencyKey]);
+       v.currencyCode, v.status, v.providerCode, v.gatewayOrderId, v.idempotencyKey, v.createdAt]);
   }
 
   /** Webhook path: lock the payment row for the gateway order (FOR UPDATE) within the tx. */

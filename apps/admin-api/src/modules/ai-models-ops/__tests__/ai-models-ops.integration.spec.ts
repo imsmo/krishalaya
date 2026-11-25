@@ -48,12 +48,21 @@ run('ai-models-ops (integration, real Postgres — god-mode model lifecycle + au
     expect(audit.rows.length).toBe(1);
   });
 
-  it('promotes shadow→canary→production (state machine) + audits each', async () => {
-    await registry.promote(actor, modelId, { to: 'canary', reason: 'shadow looked good' } as any);
-    const prod: any = await registry.promote(actor, modelId, { to: 'production', reason: 'canary stable' } as any);
-    expect(prod.status).toBe('production');
+  // PC-56 TEST-1 · THIS USED TO ASSERT THE OPPOSITE. It promoted shadow→canary→production through the single-operator
+  // `promote()` and expected both to succeed. Migration 0115 (ADMIN-7, the fairness gate) made exactly that unrepresentable, on
+  // purpose — its DEFECT 1 quotes this very service: "one person with ai.model.manage can put a model into production that has
+  // never been audited". Since 0115 a serving status needs the gate's evidence: canary needs `canary_percent`
+  // (ck_ai_model_canary_percent), production needs `promoted_on_audit_id` (ck_ai_model_production_needs_audit), and the
+  // propose → approve path (FairnessGateService) is the only writer of either. So the test now proves the decision: the legacy
+  // path is refused BY THE DATABASE, the status does not move, and no "promoted" audit row is left behind (the audit is written
+  // in the same transaction, so a refused move cannot claim to have happened).
+  it('the single-operator promote can no longer put a model into canary or production (0115 fairness gate) — refused, nothing audited', async () => {
+    await expect(registry.promote(actor, modelId, { to: 'canary', reason: 'shadow looked good' } as any)).rejects.toMatchObject({ code: '23514', constraint: 'ck_ai_model_canary_percent' });
+    await expect(registry.promote(actor, modelId, { to: 'production', reason: 'skip the gate' } as any)).rejects.toMatchObject({ code: '23514', constraint: 'ck_ai_model_production_needs_audit' });
+    const row = await inspect.query(`SELECT status FROM ai_models WHERE id=$1`, [modelId]);
+    expect(row.rows[0].status).toBe('shadow');
     const n = await inspect.query(`SELECT count(*)::int AS c FROM audit_log WHERE entity_id=$1 AND action='ai.model.promoted'`, [modelId]);
-    expect(n.rows[0].c).toBe(2);
+    expect(n.rows[0].c).toBe(0);
   });
 
   it('tunes the confidence threshold + audits old→new', async () => {

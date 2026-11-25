@@ -1,0 +1,24 @@
+-- ==================================================================================================================
+-- MIGRATION 0246 — PC-56 TEST-1 · THE STANDALONE WALLET-SERVICE CAN RESOLVE A LEDGER TRANSACTION TYPE.
+-- Runner: db/scripts/migrate.js wraps this file in ONE transaction and records it in schema_migrations.
+-- NEVER edit an applied migration — add a new numbered one. MONEY-ADJACENT (wallet role grant): CODEOWNERS review.
+-- ==================================================================================================================
+--
+-- WHAT WAS TRUE: apps/wallet-service connects as `kv_wallet` (DATABASE_WALLET_URL; env.validation.ts: "connects as kv_wallet
+-- (the ONLY role that writes the ledger)"). Its posting path (ledger/post-transaction.service.ts → ledger/txn-types.registry.ts)
+-- resolves the transaction-type code with `SELECT id FROM lookup_values WHERE type_code='ledger_txn_type' ...` BEFORE it writes
+-- anything. `kv_wallet` has never held SELECT on `lookup_values` (0014 gave it ledger_entries / ledger_transactions /
+-- wallet_accounts / reconciliation_runs / payments / payouts / payout_batches only, and 0077 deliberately keeps it off the
+-- default privileges). So EVERY post through the deployed wallet-service failed with
+--     error: permission denied for table lookup_values
+-- — which is every money movement admin-api makes over gRPC (core/wallet/wallet-grpc.client.ts: manual billing adjustments,
+-- refunds, write-offs). Found by the wallet-service integration spec (src/test/wallet.integration.spec.ts), which had never run
+-- in CI and fails its first `post` on a database built from the real migrations.
+--
+-- (apps/api's in-process client is not affected: wallet.client.inprocess.ts resolves the type as kv_app BEFORE `SET LOCAL ROLE
+-- kv_wallet` — a workaround for exactly this gap, which the standalone service never had.)
+--
+-- WHAT IS TRUE NOW: kv_wallet may READ lookup_values — a reference vocabulary with no money in it. RLS on lookup_values
+-- (tenant_isolation_lookup_values: tenant_id IS NULL OR the session tenant) already limits a no-tenant session to the platform
+-- rows, which are the only ones the registry asks for. Nothing else changes: no write, no other table.
+GRANT SELECT ON lookup_values TO kv_wallet;

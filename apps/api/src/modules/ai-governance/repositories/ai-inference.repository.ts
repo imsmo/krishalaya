@@ -29,10 +29,15 @@ export class AiInferenceRepository {
       [p.tenantId, p.modelId, p.subjectType, p.subjectId, JSON.stringify(p.inputRef), JSON.stringify(p.output), p.confidence, p.wasOverridden]);
     return { id: String(r.rows[0].id), createdAt: r.rows[0].created_at };
   }
+  // PC-56 TEST-1 · THE PARTITION BOUND IS A ONE-MILLISECOND WINDOW, NOT AN EQUALITY. `created_at` is stored to the microsecond, but the
+  // value callers hold (`ai_review_queue.inference_created_at`, written from the JS Date RETURNING gave back) is truncated to the
+  // millisecond — so `created_at = $2` matched NOTHING: a rejection's `markOverridden` updated zero rows (the inference was never
+  // marked overridden, silently) and the resolved event carried no subject. The window keeps partition pruning (a range on the
+  // partition key) and the bigint id keeps the match exact. Found by the ai-governance integration spec.
   /** Just the subject of a linked inference (for the review-resolved event), bounded by the partition key. In-tx. */
   async subjectInTx(tx: TxContext, tenantId: string, id: string, createdAt: Date | null): Promise<{ subjectType: string; subjectId: string } | null> {
     const r = createdAt
-      ? await tx.query(`SELECT subject_type, subject_id FROM ai_inferences WHERE id=$1 AND created_at=$2 AND tenant_id=$3`, [id, createdAt, tenantId])
+      ? await tx.query(`SELECT subject_type, subject_id FROM ai_inferences WHERE id=$1 AND created_at >= $2::timestamptz AND created_at < $2::timestamptz + interval '1 millisecond' AND tenant_id=$3`, [id, createdAt, tenantId])
       : await tx.query(`SELECT subject_type, subject_id FROM ai_inferences WHERE id=$1 AND tenant_id=$2`, [id, tenantId]);
     return r.rows[0] ? { subjectType: r.rows[0].subject_type, subjectId: r.rows[0].subject_id } : null;
   }
@@ -42,11 +47,11 @@ export class AiInferenceRepository {
   }
   /** Lock an inference row for an override write (composite PK; created_at bounds the partition). */
   async getForUpdate(tx: TxContext, tenantId: string, id: string, createdAt: Date): Promise<AiInference | null> {
-    const r = await tx.query(`SELECT ${COLS} FROM ai_inferences WHERE id=$1 AND created_at=$2 AND tenant_id=$3 FOR UPDATE`, [id, createdAt, tenantId]);
+    const r = await tx.query(`SELECT ${COLS} FROM ai_inferences WHERE id=$1 AND created_at >= $2::timestamptz AND created_at < $2::timestamptz + interval '1 millisecond' AND tenant_id=$3 FOR UPDATE`, [id, createdAt, tenantId]);
     return r.rows[0] ? toDomain(r.rows[0]) : null;
   }
   async markOverridden(tx: TxContext, tenantId: string, id: string, createdAt: Date, by: string, reason: string): Promise<void> {
-    await tx.query(`UPDATE ai_inferences SET was_overridden=true, override_by=$4, override_reason=$5 WHERE id=$1 AND created_at=$2 AND tenant_id=$3`,
+    await tx.query(`UPDATE ai_inferences SET was_overridden=true, override_by=$4, override_reason=$5 WHERE id=$1 AND created_at >= $2::timestamptz AND created_at < $2::timestamptz + interval '1 millisecond' AND tenant_id=$3`,
       [id, createdAt, tenantId, by, reason]);
   }
   async listFor(tenantId: string, q: InferenceListQuery): Promise<AiInference[]> {

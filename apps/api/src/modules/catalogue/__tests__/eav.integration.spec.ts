@@ -37,7 +37,7 @@ run('catalogue-eav read engine (integration, real Postgres + RLS shared-read)', 
   beforeAll(async () => {
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
     await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B');
-    await admin.query(`INSERT INTO categories (id, code, default_name, path, depth, is_active) VALUES ($1,$2,'EAV Crops',$2::ltree,1,true) ON CONFLICT (id) DO NOTHING`, [categoryId, `eav_crops_${tag}`]);
+    await admin.query(`INSERT INTO categories (id, code, default_name, path, depth, is_active) VALUES ($1,$2,'EAV Crops',$3::ltree,1,true) ON CONFLICT (id) DO NOTHING`, [categoryId, `eav_crops_${tag}`, `eav_crops_${tag}`]);
     await admin.query(`INSERT INTO brands (id, default_name, manufacturer, is_verified) VALUES ($1,'Mahindra ITest','M&M',true) ON CONFLICT (id) DO NOTHING`, [brandId]);
     await admin.query(`INSERT INTO attribute_definitions (id, code, default_name, data_type, validation, is_active) VALUES ($1,$2,'Variety','option','{}',true) ON CONFLICT (id) DO NOTHING`, [attrId, `variety_${tag}`]);
     const opt = await admin.query(`INSERT INTO attribute_options (attribute_id, code, default_name, sort_order, is_active) VALUES ($1,'hd2967','HD-2967',10,true) RETURNING id`, [attrId]);

@@ -54,7 +54,9 @@ run('tenancy self-serve (integration, real Postgres + RLS + Law 11)', () => {
   // provision a full tenants profile row for `id` (god-mode in real life; done directly here for the test)
   async function provisionTenant(id: string, slug: string) {
     await admin.query(`INSERT INTO lookup_types (code, default_name, is_tenant_extendable) VALUES ('tenant_type','Tenant Type', false) ON CONFLICT (code) DO NOTHING`);
-    const lt = await admin.query(`INSERT INTO lookup_values (type_code, tenant_id, code, default_name) VALUES ('tenant_type', NULL, 'fpo', 'FPO') ON CONFLICT (type_code, tenant_id, code) DO UPDATE SET default_name=EXCLUDED.default_name RETURNING id`);
+    // PC-56 TEST-1: the SEEDED platform tenant_type/fpo. `ON CONFLICT (type_code, tenant_id, code)` never fires for a NULL tenant
+    // (NULLs are distinct in that unique index), so this used to add a duplicate platform `fpo` on every call.
+    const lt = await admin.query(`SELECT id FROM lookup_values WHERE type_code = 'tenant_type' AND code = 'fpo' AND tenant_id IS NULL ORDER BY created_at LIMIT 1`);
     const typeId = lt.rows[0].id;
     // [PC-56 TENANT-6d-7] **THIS SUITE HAS BEEN RED SINCE `countries.currency_code` WAS MADE NOT NULL (0001).**
     // `INSERT ... ON CONFLICT DO NOTHING` still checks NOT NULL on the proposed tuple BEFORE it looks for a conflict, so

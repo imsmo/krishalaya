@@ -214,15 +214,22 @@ run('PC-56 TENANT-7a · the course record & the desk (integration, real Postgres
 
   it('a tenant whose currency this platform holds no scale for cannot price a course — refused, not guessed', async () => {
     const tZ = randomUUID(); const uZ = randomUUID();
-    await admin.query(`INSERT INTO countries (code, default_name, currency_code, phone_prefix, timezone, is_active) VALUES ('ZZ','Nowhere','ZZZ','+999','UTC',true) ON CONFLICT (code) DO NOTHING`);
-    await admin.query(`INSERT INTO tenants (id, slug, legal_name, display_name, tenant_type_id, country_code, status) SELECT $1, $2, 'Z', 'Z', lv.id, 'ZZ', 'active' FROM lookup_values lv WHERE lv.type_code='tenant_type' AND lv.code='fpo' AND lv.tenant_id IS NULL LIMIT 1`, [tZ, 't' + tZ.replace(/-/g, '').slice(0, 20)]);
-    await makeUser(admin, uZ);
-    const Z = { userId: uZ, canAuthor: true, canPublish: true, isAdmin: true, canHost: false, canModerate: false };
-    await instructors.become(tZ, Z, null);
-    const r = await courses.preview(tZ, Z, form({ priceMajor: '10' }));
-    expect(r.ready).toBe(false);
-    expect(r.refusals).toEqual([{ field: null, code: 'CURRENCY_UNKNOWN' }]);
-    expect(r.fields.find((f) => f.name === 'currencyCode')?.stored).toBeNull();
-    await expect(courses.create(tZ, Z, key(), form({ priceMajor: '10' }), null)).rejects.toBeInstanceOf(CourseFormRefusedError);
+    try {
+      await admin.query(`INSERT INTO countries (code, default_name, currency_code, phone_prefix, timezone, is_active) VALUES ('ZZ','Nowhere','ZZZ','+999','UTC',true) ON CONFLICT (code) DO NOTHING`);
+      await admin.query(`INSERT INTO tenants (id, slug, legal_name, display_name, tenant_type_id, country_code, status) SELECT $1, $2, 'Z', 'Z', lv.id, 'ZZ', 'active' FROM lookup_values lv WHERE lv.type_code='tenant_type' AND lv.code='fpo' AND lv.tenant_id IS NULL LIMIT 1`, [tZ, 't' + tZ.replace(/-/g, '').slice(0, 20)]);
+      await makeUser(admin, uZ);
+      const Z = { userId: uZ, canAuthor: true, canPublish: true, isAdmin: true, canHost: false, canModerate: false };
+      await instructors.become(tZ, Z, null);
+      const r = await courses.preview(tZ, Z, form({ priceMajor: '10' }));
+      expect(r.ready).toBe(false);
+      expect(r.refusals).toEqual([{ field: null, code: 'CURRENCY_UNKNOWN' }]);
+      expect(r.fields.find((f) => f.name === 'currencyCode')?.stored).toBeNull();
+      await expect(courses.create(tZ, Z, key(), form({ priceMajor: '10' }), null)).rejects.toBeInstanceOf(CourseFormRefusedError);
+    } finally {
+      // PC-56 TEST-1: the made-up country (currency ZZZ, no scale on file) is removed again — left behind, it is a standing
+      // "country whose currency has no scale" that fails tenant6e1-insights' seed-integrity check in every later run.
+      await admin.query(`UPDATE tenants SET country_code = 'IN' WHERE id = $1`, [tZ]);
+      await admin.query(`DELETE FROM countries WHERE code = 'ZZ'`);
+    }
   });
 });

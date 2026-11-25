@@ -29,6 +29,7 @@ import { ReviewRepository } from '../repositories/review.repository';
 import { ReviewService } from '../services/review.service';
 import { OrderCompletedHandler } from '../events/handlers/order-completed.handler';
 import { NotEligibleToReviewError, DuplicateReviewError } from '../domain/reviews.errors';
+import { quarantinePendingOutbox } from '../../../../test/helpers/outbox';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -74,6 +75,7 @@ run('reviews slice (integration, real Postgres + RLS + outbox relay)', () => {
     const registry = new OutboxHandlerRegistry();
     registry.register(new OrderCompletedHandler(repo));   // orders.order_completed → review_eligibility
     dispatcher = new OutboxDispatcher(admin, registry, metrics);
+    await quarantinePendingOutbox(admin);   // PC-56 TEST-1: relay only this suite's events (test/helpers/outbox.ts)
 
     inspect = new Pool({ connectionString: APP_URL });
     isSuperuser = (await inspect.query(`SELECT rolsuper FROM pg_roles WHERE rolname=current_user`)).rows[0]?.rolsuper === true;

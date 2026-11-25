@@ -38,6 +38,7 @@ import { RequirementResponseRepository } from '../repositories/requirement-respo
 import { ResponseGroupRepository } from '../repositories/response-group.repository';
 import { RequirementService } from '../services/requirement.service';
 import { RequirementResponseService } from '../services/requirement-response.service';
+import { quarantinePendingOutbox } from '../../../../test/helpers/outbox';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -84,6 +85,7 @@ run('order-from-accepted-quote via outbox relay (integration, real Postgres)', (
     const registry = new OutboxHandlerRegistry();
     registry.register(new QuoteAcceptedHandler(orderRepo, listings, flags, outbox, metrics, uow, new RequirementOrderService(respRepo)));   // 11d: one order per accepted response, in kv_app's UoW   // orders consumes requirements.quote_accepted
     dispatcher = new OutboxDispatcher(admin, registry, metrics);
+    await quarantinePendingOutbox(admin);   // PC-56 TEST-1: relay only this suite's events (test/helpers/outbox.ts)
   }, 30000);
 
   afterAll(async () => { await pools?.onModuleDestroy(); await admin?.end(); });

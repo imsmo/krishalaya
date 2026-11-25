@@ -46,6 +46,8 @@ function deepKeys(v: unknown, out: string[] = []): string[] {
   return out;
 }
 const flagKeys = (k: string) => [`flag:${k}`, 'flags:all', `flagstale:${k}`];
+/** The Indian financial year the clock is in (Apr 1 IST start), as its first calendar year. */
+const istFy = (): number => { const d = new Date(Date.now() + 330 * 60_000); return d.getUTCMonth() >= 3 ? d.getUTCFullYear() : d.getUTCFullYear() - 1; };
 const NOTE = 'Surveyor note: the animal was found near the canal; owner distraught';
 const DESC = 'My buffalo died after the storm, please help';
 
@@ -145,7 +147,9 @@ run('PC-56 PARTNER-3a · an insurer reads the claim facts on its own products �
     };
     const ago = (min: number) => new Date(Date.now() - min * 60_000).toISOString();
     // A's claims, one per status (oldest first = the order below), across two tenants; the old one before the FY start
-    await claim('old', T1, 'p1', 'h1', 'closed', ev.death, '2025-12-01T06:00:00Z');
+    // PC-56 TEST-1: the old claim sits a fortnight before the CURRENT FY's start (it was the literal 2025-12-01 — and (6)'s "wide"
+    // window the literal 2025-11-01 → 2026-11-01, which stopped holding the fixture's fresh claims the day the calendar passed it).
+    await claim('old', T1, 'p1', 'h1', 'closed', ev.death, `${istFy()}-03-20T06:00:00Z`);
     await claim('c1', T1, 'p1', 'h1', 'intimated', ev.death, ago(90), { within: false });
     await claim('c2', T2, 'p2', 'h2', 'docs_pending', foreignLookup, ago(80));
     await claim('c3', T1, 'p1', 'h1', 'survey_scheduled', ev.flood, ago(70), { surveyor: true });
@@ -326,7 +330,7 @@ run('PC-56 PARTNER-3a · an insurer reads the claim facts on its own products �
     });
     expect(JSON.stringify(r.body)).not.toMatch(/Minor|ratio|rate|median|percent|paid_minor|settle/i);
     // an explicit window that holds the old claim counts it (a window is the caller's, the FY the default)
-    const wide = await get('aViewer', '/v1/partner/insurance/claims/counts', { from: '2025-11-01', to: '2026-11-01' });
+    const wide = await get('aViewer', '/v1/partner/insurance/claims/counts', { from: `${fy}-03-15`, to: `${fy + 1}-04-01` });   // ≤ 400 days, holds all ten
     expect(wide.body.data).toMatchObject({ total: 10, fy: null, byStatus: { closed: 2 } });
     expect((await get('aViewer', '/v1/partner/insurance/claims/counts', { from: '2026-04-01' })).status).toBe(422);
     expect((await get('aViewer', '/v1/partner/insurance/claims/counts', { from: '2027-04-01', to: '2026-04-01' })).status).toBe(422);

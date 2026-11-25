@@ -29,6 +29,16 @@ module.exports = async function integrationGlobalSetup() {
   const admin = new Pool({ connectionString: adminUrl });
   const t0 = Date.now();
   try {
+    // PC-56 TEST-1 · INTEGRATION_DB_REUSE=1 keeps an already-built database (a developer iterating on one spec; also how CI's
+    // admin-api / wallet-service suites run on the database the api pass built). It never skips the build of an EMPTY database.
+    if (process.env.INTEGRATION_DB_REUSE === '1') {
+      const built = await admin.query(`SELECT to_regclass('public.schema_migrations') IS NOT NULL OR to_regclass('public.tenants') IS NOT NULL AS built`);
+      if (built.rows[0].built) {
+        // eslint-disable-next-line no-console
+        console.log('[integration] INTEGRATION_DB_REUSE=1 — reusing the already-built test DB');
+        return;
+      }
+    }
     // 1) Reset to a clean schema so the run is deterministic and repeatable.
     await admin.query(`DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;
       GRANT ALL ON SCHEMA public TO public; GRANT ALL ON SCHEMA public TO CURRENT_USER;`);

@@ -9,7 +9,7 @@
 //   3. cross-tenant: tenant B sees neither tenant A's statement nor its settlement lines (RLS).
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
-import { makeTenant, makeUser } from '../../../../test/helpers/fixtures';
+import { makeTenant, makeUser, makeCategory } from '../../../../test/helpers/fixtures';
 
 import { AppConfig } from '../../../core/config/app-config';
 import { PgPoolProvider } from '../../../core/database/pg-pool.provider';
@@ -122,15 +122,32 @@ run('billing documents: statements + GST invoices (integration, real Postgres + 
 
   it('generates one GST invoice per order with a CGST/SGST breakup; idempotent', async () => {
     const orderId = randomUUID();
-    await uow.run(tenantA, async (tx) => invoices.generateForOrder(tx, { tenantId: tenantA, orderId, buyerUserId: buyer, sellerUserId: seller, totalMinor: 1_000_000n }), { userId: 'system' });
-    await uow.run(tenantA, async (tx) => invoices.generateForOrder(tx, { tenantId: tenantA, orderId, buyerUserId: buyer, sellerUserId: seller, totalMinor: 1_000_000n }), { userId: 'system' });   // replay
+    // PC-56 TEST-1 · the invoice is computed the way TENANT-3c-1 / 0140 decided, so the fixture now carries what that needs:
+    //  • a CATEGORY — with none, the goods rate is `not_recorded` (0140 DEFECT 1c: "a null rate is NOT 0%"), no tax is invented,
+    //    and the old "5% of the total" figure could only come from a guess the product no longer makes;
+    //  • an INTRA-STATE supply — the seller organisation's GSTIN state (24, Gujarat) and the delivery address's state (in.gj)
+    //    agree, which is what makes the split CGST + SGST rather than IGST or `unallocated`.
+    // The seeded platform rule (db/seeds/rules/0203: IN · gst · 500 bp) applies to the goods line, and the total is TAX-INCLUSIVE
+    // (basis `fee_inclusive_extraction`): tax = 1,000,000 × 500 / 10,500 = 47,619.04… → 47,619, taxable 952,381.
+    const categoryId = await makeCategory(admin);
+    await admin.query(`UPDATE tenants SET gstin = '24AAACT2727Q1ZW' WHERE id = $1`, [tenantA]);
+    const addressId = (await admin.query(
+      `INSERT INTO addresses (tenant_id, user_id, line1, village, region_id, pincode, country_code)
+       SELECT $1, $2, 'billing-docs', 'Vadal', id, '362001', 'IN' FROM admin_regions WHERE path = 'in.gj.junagadh'::ltree LIMIT 1 RETURNING id`,
+      [tenantA, buyer])).rows[0].id as string;
+    const gen = () => uow.run(tenantA, async (tx) => invoices.generateForOrder(tx, { tenantId: tenantA, orderId, buyerUserId: buyer, sellerUserId: seller, totalMinor: 1_000_000n, categoryId, deliveryAddressId: addressId }), { userId: 'system' });
+    await gen();
+    await gen();   // replay
 
     const rows = await admin.query(`SELECT invoice_no, total_minor, tax_breakup FROM trade_invoices WHERE tenant_id=$1 AND order_id=$2`, [tenantA, orderId]);
     expect(rows.rowCount).toBe(1);                      // exactly one invoice per order
-    expect(rows.rows[0].invoice_no).toMatch(/^INV-\d{4}-\d{6}$/);
+    expect(rows.rows[0].invoice_no).toMatch(/^INV-\d{4}-\d{2}-\d{6}$/);   // PC-56 TEST-1: TENANT-3c-1 numbers per MONTH (`period` = YYYY-MM, trade-invoice.service.ts) — this pin predated it
     expect(String(rows.rows[0].total_minor)).toBe('1000000');
     const bk = rows.rows[0].tax_breakup;
-    expect(BigInt(bk.cgstMinor) + BigInt(bk.sgstMinor)).toBe(25000n);   // 5% GST split, exact
+    expect(bk.supplyType).toBe('intra');
+    expect(BigInt(bk.cgstMinor) + BigInt(bk.sgstMinor)).toBe(47_619n);   // 5% GST extracted from the inclusive total, CGST+SGST, exact
+    expect(BigInt(bk.igstMinor)).toBe(0n);
+    expect(BigInt(bk.taxableMinor)).toBe(952_381n);
 
     // the buyer can read it; a stranger cannot (404 → null)
     const seen = await invoices.getByOrder(tenantA, { userId: buyer, canModerate: false }, orderId);

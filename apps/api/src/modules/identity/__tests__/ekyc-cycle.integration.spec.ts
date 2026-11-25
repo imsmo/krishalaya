@@ -56,7 +56,9 @@ run('eKYC cycle (integration, real Postgres + RLS, sandbox provider)', () => {
       new EkycSessionRepository(replica as any), new UserRepository(replica as any),
       new KycDocumentRepository(replica as any), new UserTenantRoleRepository(replica as any),
     );
-    inspect = new Pool({ connectionString: APP_URL });
+    // PC-56 TEST-1: the assertion reads run as the OWNER. As kv_app with no `app.tenant_id` they were hidden by RLS — the session and
+    // KYC rows read back as nothing, and "the raw Aadhaar appears in no table" passed vacuously because no row was visible to search.
+    inspect = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
   }, 30000);
 
   afterAll(async () => { await pools?.onModuleDestroy(); await inspect?.end(); });

@@ -15,6 +15,7 @@ import { DunningService } from '../services/dunning.service';
 import { ManualAdjustmentService } from '../services/manual-adjustment.service';
 import { InvoicePaymentsService } from '../services/invoice-payments.service';
 import { WalletAdminPort, PostAdjustmentInput } from '../../../core/wallet/wallet-admin.port';
+import { makeTenant, makeUser } from '../../../../test/integration-fixtures';
 
 const APP_URL = process.env.DATABASE_ADMIN_URL ?? process.env.DATABASE_URL;
 const run = APP_URL ? describe : describe.skip;
@@ -53,12 +54,11 @@ run('billing-ops (integration, real Postgres — invoices + dunning + adjustment
     adjustSvc = new ManualAdjustmentService(pool, audit, repo, wallet);
     paymentSvc = new InvoicePaymentsService(pool, audit, repo);
     inspect = new Pool({ connectionString: APP_URL });
-    const t = await inspect.query(`SELECT id FROM tenants LIMIT 1`);
-    tenantId = t.rows[0].id;
-    // two distinct real users: the requester (actor) and the approver
-    const us = await inspect.query(`SELECT id FROM users ORDER BY created_at LIMIT 2`);
-    actor.userId = us.rows[0].id;
-    CHECKER_ID = us.rows[1]?.id ?? us.rows[0].id;
+    // PC-56 TEST-1: its OWN tenant and two distinct real users (the requester and the approver) — it used to borrow the first
+    // tenant / the two oldest users in the database, which do not exist on one built from migrations + seeds.
+    tenantId = await makeTenant(inspect);
+    actor.userId = await makeUser(inspect);
+    CHECKER_ID = await makeUser(inspect);
     const inv = await inspect.query(
       `INSERT INTO saas_invoices (tenant_id, invoice_no, status, currency_code, subtotal_minor, tax_minor, total_minor, due_date, line_items)
        VALUES ($1,$2,'draft','INR',100000,18000,118000, CURRENT_DATE - 1, '[]'::jsonb) RETURNING id`,

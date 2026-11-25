@@ -20,8 +20,11 @@ import { Shipment } from '../domain/shipment.entity';
 import { uuidv7 } from '../../../core/database/uuid.util';
 import { failureBreakdown, firstAttemptVerdict, historyVerdict, laneShares, transitVerdict } from '../domain/logistics-desk';
 
-const URL = process.env.DATABASE_URL;
-const run = URL ? describe : describe.skip;
+// PC-56 TEST-1: the pool is the OWNER (DATABASE_ADMIN_URL) — the fixtures are inserted as the owner and the reads run after
+// `SET ROLE kv_app`. It used to be DATABASE_URL, which in the integration project IS kv_app (written against a developer database
+// whose DATABASE_URL was a superuser), so the first fixture insert failed `permission denied`.
+const URL = process.env.DATABASE_ADMIN_URL;
+const run = URL && process.env.DATABASE_URL ? describe : describe.skip;
 
 run('PC-56 TENANT-5d · the logistics desk against real Postgres', () => {
   let pool: Pool;
@@ -70,9 +73,10 @@ run('PC-56 TENANT-5d · the logistics desk against real Postgres', () => {
     pool = new Pool({ connectionString: URL });
     const admin = await pool.connect();
     await admin.query(`INSERT INTO countries (code, default_name, currency_code, phone_prefix) VALUES ('IN','India','INR','+91') ON CONFLICT (code) DO NOTHING`);
-    await admin.query(`INSERT INTO lookup_types (code, default_name) VALUES ('tenant_type','Tenant Type') ON CONFLICT (code) DO NOTHING`);
-    const ttype = randomUUID();
-    await admin.query(`INSERT INTO lookup_values (id, type_code, code, default_name) VALUES ($1,'tenant_type','fpo','FPO') ON CONFLICT DO NOTHING`, [ttype]);
+    // The SEEDED platform `tenant_type`/`fpo` row — never a new one: `lookup_values`' unique index treats NULL tenant ids as
+    // distinct, so `INSERT … ON CONFLICT DO NOTHING` here used to add a SECOND platform `fpo` on every run (shared state that
+    // made test/helpers/fixtures.ts `makeTenant` insert a tenant per duplicate in every spec that ran after this one).
+    const ttype = (await admin.query(`SELECT id FROM lookup_values WHERE type_code = 'tenant_type' AND code = 'fpo' AND tenant_id IS NULL ORDER BY created_at LIMIT 1`)).rows[0].id as string;
     for (const [id, slug] of [[tenantId, 'a'], [otherTenantId, 'b']] as const) {
       await admin.query(
         `INSERT INTO tenants (id, slug, legal_name, display_name, tenant_type_id, country_code)
@@ -330,7 +334,13 @@ run('PC-56 TENANT-5d · the logistics desk against real Postgres', () => {
        VALUES (uuid_generate_v7(),$1,$2,'in_transit',true,$3,$4, now()) RETURNING id`,
       [tenantId, orderId, addrA, addrB]);
     const reeferShipment = reeferIns.rows[0].id as string;
-    await app.query(
+    // The readings are a FIXTURE, written as the owner: since TENANT-SW-e (0201) kv_app may not write `is_breach` (only the reading's
+    // own columns; the device ingest is kv_ingest) — PC-56 TEST-1, this insert ran as kv_app and was refused. The READ below is kv_app.
+    // And 0201 DERIVES `is_breach` from the subject's recorded band (cold_chain_thresholds) at insert, whatever the writer says — so
+    // the reefer gets its 2–8 °C band first, and 9.9 °C is the breach because it is outside it.
+    await pool.query(`INSERT INTO cold_chain_thresholds (tenant_id, subject_type, subject_id, min_c, max_c, set_by, reason) VALUES ($1,'shipment',$2,2,8,$3,'reefer band per the consignment')`,
+      [tenantId, reeferShipment, userId]);
+    await pool.query(
       `INSERT INTO cold_chain_logs (tenant_id, subject_type, subject_id, temp_c, recorded_at, is_breach)
        VALUES ($1,'shipment',$2, 4.2, now() - interval '2 hours', false),
               ($1,'shipment',$2, 9.9, now() - interval '1 hour', true)`,

@@ -112,14 +112,26 @@ run('logistics zones-routing (integration, real Postgres + RLS + jobs)', () => {
   });
 
   it('village-run job emits one due-event per scheduled route and is idempotent per date', async () => {
-    const today = new Date();
-    const r = await routes.create(tenantA, manager(), key(), { defaultName: 'Run X', runWeekday: today.getUTCDay(), villageRegionIds: [] } as any, null);
+    // PC-56 TEST-1, two fixes. (1) A route is born `proposed` since the routes desk got its maker ≠ checker approval; only an ACTIVE
+    // route is due, so the route is approved by a second manager (the real path) before the job runs. (2) The job is cross-tenant and
+    // date-guarded (ops_job_runs, one completed run per calendar date), so "today" made this spec depend on whether anything had run
+    // the job today on this database. It runs for a date of its own instead (a random day far in the future; the job takes `now`).
+    const today = new Date(Date.UTC(2100 + Math.floor(Math.random() * 400), Math.floor(Math.random() * 12), 1 + Math.floor(Math.random() * 28), 6));
+    // what an approvable route carries (route-plan.approvalVerdict): a village, a vehicle and a consolidation person
+    const village = randomUUID();
+    await admin.query(`INSERT INTO admin_regions (id, country_code, level, code, default_name, path) VALUES ($1,'IN',4,$2,'Vanthali',$3::ltree)`,
+      [village, `zr-${village.slice(0, 8)}`, `zr_${village.slice(0, 8)}`]);
+    const carrier = (await admin.query(`INSERT INTO logistics_partners (tenant_id, partner_kind, default_name) VALUES ($1,'3pl','ZR Carrier') RETURNING id`, [tenantA])).rows[0].id;
+    const vehicle = (await admin.query(`INSERT INTO vehicles (partner_id, tenant_id, reg_no) VALUES ($1,$2,$3) RETURNING id`, [carrier, tenantA, `GJ${village.slice(0, 6)}`])).rows[0].id;
+    const r = await routes.create(tenantA, manager(), key(), { defaultName: 'Run X', runWeekday: today.getUTCDay(), villageRegionIds: [village] } as any, null);
+    await routes.approve(tenantA, { userId: checker, canManage: true }, key(), r.id, { vehicleId: vehicle, consolidationUserId: lead }, null);
     const first = await villageJob.run(1000, today);
     expect(first.emitted).toBeGreaterThanOrEqual(1);
     const again = await villageJob.run(1000, today);   // same date → skipped
     expect(again.skipped).toBe(true);
     const ev = await admin.query(`SELECT count(*)::int c FROM outbox_events WHERE aggregate_id=$1 AND event_type='logistics.village_run_due'`, [r.id]);
     expect(ev.rows[0].c).toBe(1);
+    await admin.query(`DELETE FROM ops_job_runs WHERE job_code = 'village_run_consolidation' AND detail->>'runDate' = $1`, [today.toISOString().slice(0, 10)]);
   });
 
   it('RLS: tenant B cannot see tenant A\'s zone', async () => {

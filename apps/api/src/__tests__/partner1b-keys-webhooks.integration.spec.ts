@@ -164,6 +164,9 @@ run('PC-56 PARTNER-1b · the partner\'s own keys (read + revoke), endpoints and 
 
     await setFlag('partner_console', true);
     app = await bootstrapE2EApp(); http = app.getHttpServer();
+    // the HOTFIX-5 pin — PC-56 TEST-1: missing here; unpinned, supertest listens per request on every interface and dials 127.0.0.1, so on a
+    // machine where another process holds that IPv4 port a request can reach the OTHER server (seen in a full pass: "Parse Error: Expected HTTP/").
+    await new Promise<void>((resolve) => http.listen(0, '127.0.0.1', () => resolve()));
     cache = app.get<CacheService>(CACHE_SERVICE); otp = app.get<OtpService>(OTP_SERVICE);
     for (const k of [...flagKeys('partner_console'), ...flagKeys('partner_api')]) await cache.del(k);
     for (const k of ['aAdmin', 'aViewer', 'bAdmin', 'bViewer']) await signIn(k);

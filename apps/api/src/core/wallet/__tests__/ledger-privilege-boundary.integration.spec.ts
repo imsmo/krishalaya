@@ -442,8 +442,12 @@ run('ledger/wallet privilege boundary — permanent P0 regression (migration 007
   // The 16 DEV-48 named-residue tables (as they exist in the live schema; "settlement_statement
   // lines" is `settlement_lines`) with ZERO proven kv_relay need, code-verified this batch —
   // plus `loan_repayments` handled separately below as its own append-only special case.
+  // PC-56 TEST-1: `saas_invoices` LEFT this list for NARROW_LEGITIMATE below. Migration 0146 §146.6 proved 0079's grep wrong
+  // for it ("kv_relay loses everything (zero code reference, grep-confirmed)" — the reference exists:
+  // SaasInvoicePaymentHandler runs inside the relay transaction, on kv_relay) and re-granted exactly SELECT + UPDATE
+  // (0146_saas_invoice_truth.sql lines 244-251). The other eleven keep their zero-need verdict.
   const RESIDUE_ZERO_RELAY_NEED = ['loans', 'loan_applications', 'bnpl_limits', 'trade_invoices',
-    'freight_invoices', 'freight_invoice_lines', 'saas_invoices', 'saas_invoice_dunning_attempts',
+    'freight_invoices', 'freight_invoice_lines', 'saas_invoice_dunning_attempts',
     'milk_bills', 'contract_input_advances', 'upi_mandates', 'worker_insurance_enrolments'];
 
   // Proven narrow kv_relay need (code-verified: SELECT/UPDATE/INSERT only where a real
@@ -454,6 +458,8 @@ run('ledger/wallet privilege boundary — permanent P0 regression (migration 007
     insurance_claims: { select: true, insert: false, update: true },
     settlement_statements: { select: true, insert: true, update: true },
     payout_batches: { select: true, insert: true, update: true },
+    // 0146 §146.6: SaasInvoicePaymentHandler (relay tx, kv_relay) — getForUpdate/findOwingPastDue read, status/paid_* update.
+    saas_invoices: { select: true, insert: false, update: true },
   };
 
   run48('structural money-signal privilege sweep — permanent P0 regression (migration 0079, DEV-48)', () => {
@@ -465,7 +471,7 @@ run('ledger/wallet privilege boundary — permanent P0 regression (migration 007
 
     afterAll(async () => {
       await admin48?.end();
-    });
+    }, 60000);
 
     describe('static grant enumeration — the 16 named residue relations', () => {
       it('kv_relay holds ZERO write/read grants on the 12 zero-legitimate-need residue tables', async () => {
@@ -477,11 +483,15 @@ run('ledger/wallet privilege boundary — permanent P0 regression (migration 007
         expect(res.rows).toEqual([]);
       });
 
+      // PC-56 TEST-1: SELECT is excluded too. As shipped this filtered only INSERT/UPDATE, so kv_app's SELECT on every one
+      // of these tables (0014's default privileges; the app READS its own invoices, bills, mandates and loans — 0079 revoked
+      // DELETE only and never claimed to revoke SELECT) failed it on any real database. Same defect and same correction as
+      // the loan_repayments QA-FIX below. What it guards — no DELETE, TRUNCATE, REFERENCES or TRIGGER for kv_app — stays.
       it('kv_app holds INSERT+UPDATE (no DELETE) on the 12 zero-legitimate-need residue tables', async () => {
         const res = await admin48.query(
           `SELECT table_name, privilege_type FROM information_schema.role_table_grants
            WHERE table_schema = 'public' AND grantee = 'kv_app' AND table_name = ANY($1)
-             AND privilege_type NOT IN ('INSERT','UPDATE')`,
+             AND privilege_type NOT IN ('SELECT','INSERT','UPDATE')`,
           [RESIDUE_ZERO_RELAY_NEED],
         );
         expect(res.rows).toEqual([]);
@@ -545,7 +555,10 @@ run('ledger/wallet privilege boundary — permanent P0 regression (migration 007
         );
         expect(relayOnFresh.rows[0].ins).toBe(false);
         expect(before.rows[0].n).toBeGreaterThanOrEqual(0); // sanity, never negative
-      }, 20000);
+      }, 180000); // PC-56 TEST-1: was 20 s — the same `CALL ensure_partitions(1)` cost TENANT-10a measured below (~66 s on a loaded
+                  // host). Timing out did not stop the CALL: it kept running on this pool while the DEV-54 block's own
+                  // ensure_partitions started, and the two collided on the same new partition's grants ("tuple concurrently
+                  // updated") — the "flaky" failure here was this timeout, not a race in the product.
     });
 
     describe('proven narrow kv_relay grants remain exactly as evidenced — over-revoking regression guard', () => {
@@ -613,6 +626,16 @@ run('ledger/wallet privilege boundary — permanent P0 regression (migration 007
         'requirements',             // 0079 Category D: match-notifications/expire-requirements jobs
         'disputes',                 // 0079 Category D: sla-escalation/seller-response-timeout jobs
         'auctions',                 // 0079 Category D: open-scheduled/release-losing-emd/close-ended jobs
+        // PC-56 TEST-1 — added after a code check of every relay-run writer (core/outbox handlers, */jobs/*, apps/worker):
+        'saas_invoices',            // 0146 §146.6: SELECT+UPDATE, SaasInvoicePaymentHandler inside the relay tx
+        'saas_invoice_payments',    // 0146 §146.6: SELECT+INSERT (append-only receipt), SaasInvoicePaymentHandler
+        'settlement_runs',          // 0114 §4: an EXPLICIT, reasoned GRANT SELECT+INSERT+UPDATE "written by the JOB" — note no such
+                                    // relay job exists in code yet (only admin-api's kv_admin plane writes it); a decision, kept
+        'returns',                  // 0248: UPDATE only (refund_txn_id), ReturnRefundedStampHandler (payments.return_refunded)
+        // and the other NINE the sweep named (cod_remittance_shipments, cod_remittances, dbt_bounces,
+        // loan_disbursement_run_items, loan_disbursement_runs, mgnrega_musters, mgnrega_works, rider_payout_terms,
+        // settlement_cycles) have NO relay-run writer — every writer is a request-tier service on kv_app — so migration 0248
+        // REVOKES kv_relay's write grants on them instead of listing them here.
       ];
       // Roll every partition up to its PARENT's name before comparing against the allow-list —
       // a partition like `orders_2026_07` must be judged as `orders`, not as its own unlisted
@@ -693,7 +716,7 @@ run('ledger/wallet privilege boundary — permanent P0 regression (migration 007
 
     afterAll(async () => {
       await admin54?.end();
-    });
+    }, 60000);
 
     async function withRole54<T>(role: string, fn: (c: Pool) => Promise<T>): Promise<T> {
       const client = await admin54.connect();

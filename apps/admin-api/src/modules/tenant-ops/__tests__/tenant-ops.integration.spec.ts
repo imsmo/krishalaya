@@ -37,7 +37,8 @@ run('tenant-ops (integration, real Postgres — god-mode tenant lifecycle + audi
     limits = new OverrideLimitsService(pool, audit, repo);
     inspect = new Pool({ connectionString: APP_URL });
     // Seed a pending tenant against the real FK graph (reuse an existing tenant_type lookup + country).
-    const tt = await inspect.query(`SELECT id FROM lookup_values WHERE lookup_type_id=(SELECT id FROM lookup_types WHERE code='tenant_type') LIMIT 1`);
+    // PC-56 TEST-1: lookup_values has no `lookup_type_id` column (it is keyed by `type_code`, 0001) — the seeded platform `fpo` type.
+    const tt = await inspect.query(`SELECT id FROM lookup_values WHERE type_code = 'tenant_type' AND code = 'fpo' AND tenant_id IS NULL ORDER BY created_at LIMIT 1`);
     const country = await inspect.query(`SELECT code FROM countries LIMIT 1`);
     const r = await inspect.query(
       `INSERT INTO tenants (slug, legal_name, display_name, tenant_type_id, country_code, status)

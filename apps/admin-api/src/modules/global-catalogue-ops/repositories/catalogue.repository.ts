@@ -123,8 +123,11 @@ export class CatalogueRepository {
   async insertCategory(client: PoolClient, v: { parentId: string | null; code: string; defaultName: string; depth: number; commerceKind: string; requiresLicense: boolean; requiresCertificate: boolean; minAge: number | null; sortOrder: number; iconMediaId: string | null; actorUserId: string }): Promise<{ id: string; createdAt: Date; path: string }> {
     const r = await client.query(
       `INSERT INTO categories (parent_id, code, default_name, path, depth, commerce_kind, requires_license, requires_certificate, min_age, is_active, sort_order, icon_media_id, created_by, updated_by)
-       VALUES ($1,$2,$3,$2::ltree,$4,$5,$6,$7,$8,true,$9,$10,$11,$11) RETURNING id, created_at, path::text AS path`,
-      [v.parentId, v.code, v.defaultName, v.depth, v.commerceKind, v.requiresLicense, v.requiresCertificate, v.minAge, v.sortOrder, v.iconMediaId, v.actorUserId]);
+       VALUES ($1,$2,$3,$12::ltree,$4,$5,$6,$7,$8,true,$9,$10,$11,$11) RETURNING id, created_at, path::text AS path`,
+      // PC-56 TEST-1: the path is its OWN parameter ($12, the same value as the code). `$2` used both as the varchar `code` and as
+      // `$2::ltree` is refused by Postgres — "inconsistent types deduced for parameter $2" — so creating a category in the owner
+      // console failed on every real database (the integration spec, never run in CI, was the only caller that reached Postgres).
+      [v.parentId, v.code, v.defaultName, v.depth, v.commerceKind, v.requiresLicense, v.requiresCertificate, v.minAge, v.sortOrder, v.iconMediaId, v.actorUserId, v.code]);
     return { id: r.rows[0].id, createdAt: r.rows[0].created_at, path: r.rows[0].path };
   }
   async updateCategory(client: PoolClient, id: string, v: { defaultName: string; commerceKind: string; requiresLicense: boolean; requiresCertificate: boolean; minAge: number | null; sortOrder: number; iconMediaId: string | null; actorUserId: string }): Promise<void> {
@@ -147,9 +150,12 @@ export class CatalogueRepository {
    */
   async moveSubtree(client: PoolClient, v: { oldPath: string; newPath: string; depthDelta: number; nodeId: string; newParentId: string | null; actorUserId: string }): Promise<void> {
     await client.query(
+      // PC-56 TEST-1: the moved node's OWN row has path = oldPath, and `subpath(path, nlevel(path))` (an offset equal to the
+      // length) is an ERROR in Postgres ("invalid positions"), not an empty ltree — so every move of every category failed. The
+      // node itself takes newPath; only its descendants splice their remainder on.
       `UPDATE categories
-          SET path  = ($2::ltree || subpath(path, nlevel($1::ltree))),
-              code  = ($2::ltree || subpath(path, nlevel($1::ltree)))::text,
+          SET path  = CASE WHEN nlevel(path) = nlevel($1::ltree) THEN $2::ltree ELSE ($2::ltree || subpath(path, nlevel($1::ltree))) END,
+              code  = (CASE WHEN nlevel(path) = nlevel($1::ltree) THEN $2::ltree ELSE ($2::ltree || subpath(path, nlevel($1::ltree))) END)::text,
               depth = depth + $3,
               updated_by = $4, updated_at = now()
         WHERE path <@ $1::ltree AND deleted_at IS NULL`,

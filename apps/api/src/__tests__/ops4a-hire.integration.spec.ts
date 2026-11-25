@@ -69,7 +69,7 @@ run('PC-56 OPS-4a · the hire (integration, real AppModule over HTTP)', () => {
     tok.R = mintToken(app, { userId: R, tenantId: T1, roles: ['farmer'], perms: ['equipment.rent'] });
     tok.R2 = mintToken(app, { userId: R2, tenantId: T1, roles: ['farmer'], perms: ['equipment.rent'] });
 
-    const categoryId = (await admin.query(`SELECT id FROM categories ORDER BY id LIMIT 1`)).rows[0].id;
+    const categoryId = (await admin.query(`SELECT id FROM categories ORDER BY created_at, id LIMIT 1`)).rows[0].id;
     const mk = async (t: string) => { const a = await post(t, '/v1/equipment/assets', { categoryId, hpRating: 45 }); expect(a.status).toBe(201); return a.body.data.id as string; };
     asset1 = await mk(tok.O); asset2 = await mk(tok.O2); asset3 = await mk(tok.O);
     // asset1: one line from long ago, ₹150/h; asset2 (another owner's): the same.

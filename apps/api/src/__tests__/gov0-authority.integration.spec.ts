@@ -43,7 +43,13 @@ const pgCode = (p: Promise<unknown>) => p.then(() => 'ok', (e: { code?: string; 
   return m ? m[1] : (e?.code ?? String(e));
 });
 /** The RLS gate after migrate + seeds (HOTFIX-15 1,989 + GOV-0's four parent policies), before any partition sweep. */
-const RLS_POLICIES_AFTER_GOV0 = 1993;
+const RLS_POLICIES_AFTER_GOV0 = 697;
+// PC-56 TEST-1: the pin counts policies on NON-PARTITION relations. It used to count every policy in the schema (1,993 on a fresh
+// build), which includes the policies cloned onto each monthly partition — so any earlier spec that ran `CALL ensure_partitions(n)`
+// (a dozen do) moved it (2,021 in a full pass) and this spec failed or passed by run order. A new or dropped policy on any real
+// table still moves this number; a partition created by the sweep does not.
+const NON_PARTITION_POLICY_COUNT = `SELECT count(*)::int AS n FROM pg_policies p JOIN pg_class c ON c.relname = p.tablename AND c.relnamespace = 'public'::regnamespace
+  WHERE p.schemaname = 'public' AND NOT c.relispartition`;
 const NEW_POLICIES = ['am_admin_realm_read', 'am_admin_realm_insert', 'gov_own_schemes_scheme_applications', 'al_insert_gov_realm'];
 
 run('PC-56 GOV-0 · a government authority is an organisation (integration, real AppModule over HTTP, kv_app + kv_gov + kv_admin)', () => {
@@ -184,8 +190,8 @@ run('PC-56 GOV-0 · a government authority is an organisation (integration, real
     expect(grants).toEqual([]);
     expect((await admin.query(`SELECT relrowsecurity AND relforcerowsecurity AS forced FROM pg_class WHERE relname = 'authority_memberships'`)).rows[0].forced).toBe(true);
     // the RLS gate: exactly the four named policies are new, and the count is asserted
-    expect((await admin.query(`SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND policyname = ANY($1) ORDER BY 1`, [NEW_POLICIES])).rows.map((r) => r.policyname)).toEqual([...NEW_POLICIES].sort());
-    expect(Number((await admin.query(`SELECT count(*)::int AS n FROM pg_policies WHERE schemaname = 'public'`)).rows[0].n)).toBe(RLS_POLICIES_AFTER_GOV0);
+    expect((await admin.query(`SELECT p.policyname FROM pg_policies p JOIN pg_class c ON c.relname = p.tablename AND c.relnamespace = 'public'::regnamespace WHERE p.schemaname = 'public' AND NOT c.relispartition AND p.policyname = ANY($1) ORDER BY 1`, [NEW_POLICIES])).rows.map((r) => r.policyname)).toEqual([...NEW_POLICIES].sort());
+    expect(Number((await admin.query(NON_PARTITION_POLICY_COUNT)).rows[0].n)).toBe(RLS_POLICIES_AFTER_GOV0);
     // an authority role is never a tenant role
     expect(await pgCode(admin.query(`INSERT INTO user_tenant_roles (user_id, tenant_id, role_id, is_active) SELECT $1, $2, id, false FROM roles WHERE code = 'authority_head'`, [people.C.id, X]))).toBe('GOV_ROLE_NOT_TENANT');
     // the second head and two officers are written BY HAND (the founder question: a lone head has no second person — see the report)

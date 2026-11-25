@@ -38,8 +38,14 @@ const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
 const run = APP_URL ? describe : describe.skip;
 class AllowAllQuota extends QuotaService { async assertWithinLimit(): Promise<void> {} async increment(): Promise<void> {} }
 
-const PM_KISAN = '33333333-0000-7000-8000-000000000101';   // seeded (db/seeds/rules/0209)
-const SMAM = '33333333-0000-7000-8000-000000000102';       // seeded, ₹50 processing fee
+// PC-56 TEST-1: these were the ids of db/seeds/rules/0209_scheme_catalogue.sql — a seed that is deliberately NOT wired into the seed
+// runner (db/scripts/seed.js names why: it duplicates 0208's `pm_kisan` code and wiring it is an escalated schemes-module decision), so
+// on a database built from the real seeds neither id exists and every test here failed SCHEME_NOT_FOUND. The suite now inserts the two
+// schemes it proves things about, with 0209's exact rules (PM-KISAN: farmer, ≤ 5 acres; SMAM: ₹50 processing fee), under fresh ids
+// and codes, and retires them afterwards.
+const PM_KISAN = randomUUID();
+const SMAM = randomUUID();
+const SCHEME_AUTHORITY = '33333333-0000-7000-8000-000000000001';   // seeded by rules/0208 (the listed starter set)
 
 run('schemes spine (integration, real Postgres + RLS + eligibility + processing fee)', () => {
   let pools: PgPoolProvider; let admin: Pool; let inspect: Pool; let uow: PgUnitOfWork; let wallet: InProcessWalletClient;
@@ -59,6 +65,15 @@ run('schemes spine (integration, real Postgres + RLS + eligibility + processing 
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
     await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B');
     await makeUser(admin, applicant); await makeUser(admin, officer);
+    const tag = randomUUID().replace(/-/g, '').slice(0, 10);
+    const scheme = (id: string, code: string, name: string, category: string, benefit: string, rules: string, feeMinor: number) => admin.query(
+      `INSERT INTO schemes (id, code, default_name, authority_id, category_id, benefit_summary, eligibility_rules, required_doc_type_ids, application_window, applicable_region_ids, processing_fee_minor, version, is_active)
+       SELECT $1, $2, $3, $4, (SELECT id FROM lookup_values WHERE type_code='scheme_category' AND code=$5 AND tenant_id IS NULL ORDER BY created_at, id LIMIT 1),
+              $6::jsonb, $7::jsonb, '[]', NULL, '[]', $8, 1, true`,
+      [id, code, name, SCHEME_AUTHORITY, category, benefit, rules, feeMinor]);
+    await scheme(PM_KISAN, `pm_kisan_t${tag}`, 'PM-KISAN Income Support (itest)', 'income_support',
+      '{"type":"dbt_annual","amount_minor":600000,"instalments":3}', '{"roles":["farmer","pashupalak"],"landholding_max_acres":5}', 0);
+    await scheme(SMAM, `smam_t${tag}`, 'SMAM Farm Mechanisation Subsidy (itest)', 'mechanisation', '{"type":"subsidy_pct","pct":50}', '{"roles":["farmer"]}', 5000);
 
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
     pools = new PgPoolProvider(config);
@@ -78,7 +93,10 @@ run('schemes spine (integration, real Postgres + RLS + eligibility + processing 
     inspect = new Pool({ connectionString: APP_URL });
   }, 30000);
 
-  afterAll(async () => { await pools?.onModuleDestroy(); await inspect?.end(); await admin?.end(); });
+  afterAll(async () => {
+    await admin?.query(`UPDATE schemes SET is_active = false WHERE id = ANY($1::uuid[])`, [[PM_KISAN, SMAM]]).catch(() => undefined);
+    await pools?.onModuleDestroy(); await inspect?.end(); await admin?.end();
+  });
 
   it('eligibility check explains pass/fail against PM-KISAN rules', async () => {
     const ok = await schemes.checkEligibility(tenantA, PM_KISAN, { roles: ['farmer'], landholdingAcres: 2 });
@@ -115,9 +133,13 @@ run('schemes spine (integration, real Postgres + RLS + eligibility + processing 
   });
 
   it('RLS: tenant B cannot see tenant A\'s application', async () => {
-    await inspect.query(`SELECT set_config('app.tenant_id',$1,false)`, [tenantB]);
-    expect((await inspect.query(`SELECT id FROM scheme_applications WHERE id=$1`, [appId])).rows.length).toBe(0);
-    await inspect.query(`SELECT set_config('app.tenant_id',$1,false)`, [tenantA]);
-    expect((await inspect.query(`SELECT id FROM scheme_applications WHERE id=$1`, [appId])).rows.length).toBe(1);
+    expect(appId).not.toBe('');
+    const c = await inspect.connect();   // one connection: a session GUC set on one pooled client says nothing about the next query's
+    try {
+      await c.query(`SELECT set_config('app.tenant_id',$1,false)`, [tenantB]);
+      expect((await c.query(`SELECT id FROM scheme_applications WHERE id=$1`, [appId])).rows.length).toBe(0);
+      await c.query(`SELECT set_config('app.tenant_id',$1,false)`, [tenantA]);
+      expect((await c.query(`SELECT id FROM scheme_applications WHERE id=$1`, [appId])).rows.length).toBe(1);
+    } finally { c.release(true); }
   });
 });

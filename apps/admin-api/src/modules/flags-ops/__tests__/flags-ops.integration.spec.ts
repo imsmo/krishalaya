@@ -63,7 +63,7 @@ run('flags-ops (integration, real Postgres — flag lifecycle + kill-switch + hi
 
     const changes = await inspect.query(`SELECT count(*)::int AS c FROM feature_flag_changes WHERE flag_key=$1 AND action IN ('created','enabled','rollout_changed','killed')`, [key]);
     expect(changes.rows[0].c).toBe(4);
-    const audits = await inspect.query(`SELECT count(*)::int AS c FROM audit_log WHERE entity_id=$1 AND action LIKE 'flags.%'`, [key]);
+    const audits = await inspect.query(`SELECT count(*)::int AS c FROM audit_log WHERE entity_key=$1 AND entity_id IS NULL AND action LIKE 'flags.%'`, [key]);   // a flag key, not a uuid (0247)
     expect(audits.rows[0].c).toBe(4);   // created + enabled + rollout_changed + killed (the failed re-enable wrote nothing)
   });
 });

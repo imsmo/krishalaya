@@ -46,6 +46,9 @@ import { qualityOpenedVars, qualityDecidedVars, billPreviewedVars } from '../dom
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
 const run = APP_URL ? describe : describe.skip;
+// PC-56 TEST-1: the fan-out's clock is pinned to TODAY 12:00 IST (NOTIFICATION_CLOCK — the service's own seam for this). The default quiet
+// window is real (TENANT-8b F-5), so run after ~21:00 IST every push here was `suppressed · quiet_hours` and the suite failed by the hour.
+const middayIst = (): Date => { const d = new Date(Date.now() + 330 * 60_000); return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 6, 30)); };
 
 run('PC-56 TENANT-6d-7 · the words that never arrived (integration, real Postgres)', () => {
   let pools: PgPoolProvider; let admin: Pool; let uow: PgUnitOfWork;
@@ -78,7 +81,7 @@ run('PC-56 TENANT-6d-7 · the words that never arrived (integration, real Postgr
       new PushDeviceRepository(replica as never), new NotificationEventRepository(replica as never),
       new NotificationTemplateRepository(replica as never), new NotificationPreferenceRepository(replica as never),
       new QuietHoursRepository(replica as never), new NotificationRepository(replica as never),
-      new FlagsService(pools, new InMemoryCacheService()));
+      new FlagsService(pools, new InMemoryCacheService()), middayIst);
     ui = new UiMessageRepository(replica as never);
   });
 

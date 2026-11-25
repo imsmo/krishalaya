@@ -117,6 +117,9 @@ run('PC-56 HOTFIX-4 · storefront money and privacy truth (integration, real App
     addressId = (await admin.query(`INSERT INTO addresses (user_id, tenant_id, line1, village, pincode, country_code, contact_name, is_default)
       VALUES ($1, $2, 'Plot 4, GIDC', 'Vanthali', '362001', 'IN', 'Buyer hf4', true) RETURNING id`, [buyer, LIVE])).rows[0].id;
     app = await bootstrapE2EApp(); http = app.getHttpServer(); cache = app.get<CacheService>(CACHE_SERVICE);
+    // the HOTFIX-5 pin — PC-56 TEST-1: missing here; unpinned, supertest listens per request on every interface and dials 127.0.0.1, so on a
+    // machine where another process holds that IPv4 port a request can reach the OTHER server (seen in a full pass: "Parse Error: Expected HTTP/").
+    await new Promise<void>((resolve) => http.listen(0, '127.0.0.1', () => resolve()));
     buyerToken = mintToken(app, { userId: buyer, tenantId: LIVE, roles: ['customer'], perms: ['order.create'] });
     sellerToken = mintToken(app, { userId: seller, tenantId: LIVE, roles: ['farmer'], perms: ['listing.create', 'listing.update', 'order.manage'] });
     // the real Razorpay adapter (signature + parseEvent), with an order creation that stays on this machine

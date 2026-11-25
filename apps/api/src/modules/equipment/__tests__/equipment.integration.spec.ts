@@ -60,7 +60,7 @@ run('equipment CHC rental spine (integration, real Postgres + RLS + escrow settl
     // [PC-56 HOTFIX-13 · NAMED UPDATE — found on the way] `makeCategory` (test/helpers/fixtures.ts:58-63) binds $2 as both varchar and
     // ltree ("inconsistent types deduced for parameter $2"), so this whole spec was RED at d0ec6717 before any assertion ran (the
     // known fixture trap). It now uses a seeded category, as the newer specs do; no assertion changed for it.
-    categoryId = (await admin.query(`SELECT id FROM categories ORDER BY id LIMIT 1`)).rows[0].id;
+    categoryId = (await admin.query(`SELECT id FROM categories ORDER BY created_at, id LIMIT 1`)).rows[0].id;
 
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
     pools = new PgPoolProvider(config);

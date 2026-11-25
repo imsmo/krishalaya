@@ -32,6 +32,7 @@ import { WalletInsightsReadModel } from '../read-models/wallet-insights.read-mod
 import { GatewayRegistry } from '../gateway/gateway.registry';
 import { SandboxGateway } from '../gateway/sandbox.gateway';
 import { MandateNotFoundError } from '../domain/payments.errors';
+import { RegisterMandateSchema } from '../dto/create-mandate.dto';
 
 const APP_URL = process.env.DATABASE_URL;
 const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
@@ -131,8 +132,10 @@ run('wallet insights + autopay (integration, real Postgres + RLS)', () => {
 
   it('anti-IDOR: a non-owner cancel fails closed with 404 (no enumeration)', async () => {
     const m = await mandates.register(tenantA, earner, `idem-${randomUUID()}`, {
-      vpa: 'second.handle@ybl', purpose: 'loan_emi', maxAmountMinor: '10000',
-    } as any, null);
+    // PC-56 TEST-1: through the controller's own schema, so its defaults (currency, frequency) apply as they do over HTTP —
+    // the raw object `as any` reached the INSERT with NULLs the DTO never lets through.
+    ...RegisterMandateSchema.parse({ vpa: 'second.handle@ybl', purpose: 'loan_emi', maxAmountMinor: '10000' }),
+    }, null);
     await expect(mandates.cancel(tenantA, { userId: other, canModerate: false }, m.id, {}, null))
       .rejects.toBeInstanceOf(MandateNotFoundError);
     const row = await admin.query(`SELECT status FROM upi_mandates WHERE id=$1`, [m.id]);
@@ -141,8 +144,8 @@ run('wallet insights + autopay (integration, real Postgres + RLS)', () => {
 
   it('RLS: tenant B cannot see tenant A\'s mandate row', async () => {
     const m = await mandates.register(tenantA, earner, `idem-${randomUUID()}`, {
-      vpa: 'third.handle@ybl', purpose: 'general', maxAmountMinor: '20000',
-    } as any, null);
+    ...RegisterMandateSchema.parse({ vpa: 'third.handle@ybl', purpose: 'general', maxAmountMinor: '20000' }),
+    }, null);
     const inspect = new Pool({ connectionString: APP_URL });
     try {
       const countAs = async (t: string) => {

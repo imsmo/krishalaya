@@ -128,6 +128,9 @@ run('PC-56 STORE-2c · the money wave (integration, real AppModule over HTTP)', 
     L.usdInLive = await listing(LIVE, seller3, 'Imported lentils s2c', { total: '40', price: 9_000, currency: 'USD' });
     L.usd = await listing(USDT, usdSeller, 'Kisumu maize s2c', { total: '40', price: 3_500, currency: 'USD' });
     app = await bootstrapE2EApp(); http = app.getHttpServer(); cache = app.get<CacheService>(CACHE_SERVICE);
+    // the HOTFIX-5 pin — PC-56 TEST-1: missing here; unpinned, supertest listens per request on every interface and dials 127.0.0.1, so on a
+    // machine where another process holds that IPv4 port a request can reach the OTHER server (seen in a full pass: "Parse Error: Expected HTTP/").
+    await new Promise<void>((resolve) => http.listen(0, '127.0.0.1', () => resolve()));
     sandbox = app.get(GatewayRegistry).get('sandbox') as SandboxGateway;
     for (const [k, u, t] of [['buyer', buyer, LIVE], ['buyer2', buyer2, LIVE], ['buyer3', buyer3, LIVE], ['usdBuyer', usdBuyer, USDT]] as const) T[k] = mintToken(app, { userId: u, tenantId: t, roles: ['customer'], perms: ['order.create'] });
     T.seller = mintToken(app, { userId: seller, tenantId: LIVE, roles: ['farmer'], perms: ['order.manage', 'listing.create'] });
@@ -202,6 +205,11 @@ run('PC-56 STORE-2c · the money wave (integration, real AppModule over HTTP)', 
       expect(c.status).toBe(201);
       expect(c.body.data.orders).toHaveLength(2);
       [o1, o2] = await Promise.all(c.body.data.orders.map((o: { id: string }) => order(T.buyer, o.id)));
+      // PC-56 TEST-1: o2 is SELLER 2's order (test (3) has seller 2 decline it). The checkout does not promise its orders in cart
+      // order, so the pair is put in seller order here — it used to be taken as returned, and seller 2 got a 403 on ~1 run in 6.
+      const sellerOf = async (id: string) => (await admin.query(`SELECT seller_user_id FROM orders WHERE id = $1`, [id])).rows[0].seller_user_id as string;
+      if ((await sellerOf(o2.id)) !== seller2) [o1, o2] = [o2, o1];
+      expect([await sellerOf(o1.id), await sellerOf(o2.id)]).toEqual([seller, seller2]);
       for (const o of [o1, o2]) expect([o.paymentState, o.currencyCode]).toEqual(['pending', 'INR']);
       const i1 = await intent(T.buyer, o1, 1); const i2 = await intent(T.buyer, o2, 1);
       expect([i1.status, i2.status, i1.body.data.attempt, i2.body.data.attempt]).toEqual([201, 201, 1, 1]);
@@ -274,7 +282,7 @@ run('PC-56 STORE-2c · the money wave (integration, real AppModule over HTTP)', 
         expect(r2.body.error.details).toEqual({ paymentId: a1.paymentId, expiresAt: a1.expiresAt });
       });
       it('(9) the gateway fails the attempt → the payment read carries the reason as a CODE, whether nothing was charged, the attempt and its expiry', async () => {
-        const f = await sandboxHook({ id: `evt_${randomUUID()}`, event: 'payment.failed', order_id: a1.gatewayOrderId, payment_id: 'pay_fail_s2c', error_code: 'BAD_REQUEST_ERROR', error_reason: 'payment_timed_out' });
+        const f = await sandboxHook({ id: `evt_${randomUUID()}`, event: 'payment.failed', order_id: a1.gatewayOrderId, payment_id: `pay_fail_s2c_${randomUUID().slice(0, 8)}`, error_code: 'BAD_REQUEST_ERROR', error_reason: 'payment_timed_out' });
         expect(f.status).toBe(200);
         const p = (await request(http).get(`/v1/payments/${a1.paymentId}`).set(H(T.buyer))).body.data;
         expect([p.status, p.failureCode, p.failureReason, p.chargedNothing, p.attempt, p.expiresAt]).toEqual(['failed', 'BAD_REQUEST_ERROR', 'timed_out', true, 1, a1.expiresAt]);
@@ -292,10 +300,11 @@ run('PC-56 STORE-2c · the money wave (integration, real AppModule over HTTP)', 
         const r3 = await intent(T.buyer, oc, 3);
         expect([r3.status, r3.body.data.attempt]).toEqual([201, 3]);
         expect((await admin.query(`SELECT status FROM payments WHERE id = $1`, [a2.paymentId])).rows[0].status).toBe('expired');
-        const late = await captureVia(a2.gatewayOrderId, 'pay_late_s2c', oc.totalMinor);
+        const payLate = `pay_late_s2c_${randomUUID().slice(0, 8)}`;   // PC-56 TEST-1: per run — a fixed gateway id collides on a re-used DB
+        const late = await captureVia(a2.gatewayOrderId, payLate, oc.totalMinor);
         expect([late.status, late.body.data]).toEqual([200, { ok: true }]);
         expect(await count(`SELECT count(*)::int n FROM ledger_transactions WHERE reference_type = 'payment' AND reference_id = $1`, [a2.paymentId])).toBe(1);
-        const replay = await captureVia(a2.gatewayOrderId, 'pay_late_s2c', oc.totalMinor);
+        const replay = await captureVia(a2.gatewayOrderId, payLate, oc.totalMinor);
         expect([replay.status, replay.body.data]).toEqual([200, { ok: true, duplicate: true }]);
         expect(await count(`SELECT count(*)::int n FROM ledger_transactions WHERE reference_type = 'payment' AND reference_id = $1`, [a2.paymentId])).toBe(1);
         await confirmPaid(a2.paymentId);

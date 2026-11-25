@@ -51,7 +51,10 @@ run('PC-56 TENANT-10a · ambassador truth (integration, real Postgres + RLS as k
 
   const bal = async (u: string) => BigInt((await admin.query(`SELECT COALESCE(cached_balance_minor,0) b FROM wallet_accounts WHERE owner_kind='user' AND account_code='main' AND owner_user_id=$1`, [u])).rows[0]?.b ?? '0');
   const plan = async (code: string) => (await admin.query(`SELECT id FROM commission_plans_ambassador WHERE tenant_id IS NULL AND event_code=$1 AND deleted_at IS NULL LIMIT 1`, [code])).rows[0].id as string;
-  const earn = async (ambId: string, amount: number, createdAtSql = 'now()') =>
+  // PC-56 TEST-1: a second in the past by default. A run's period ends at the service's JS `new Date()` (millisecond precision) and
+  // takes earnings with created_at <= that; an earning stamped by the DB's now() inside the SAME millisecond carries microseconds past
+  // it, so on a fast machine ~1 run in N found "nobody is owed anything" (correctly: that earning rolls into the next run).
+  const earn = async (ambId: string, amount: number, createdAtSql = "now() - interval '1 second'") =>
     (await admin.query(`INSERT INTO ambassador_earnings (tenant_id, ambassador_id, plan_id, event_code, reference_type, reference_id, amount_minor, created_at)
        VALUES ($1,$2,$3,'farmer_onboarded','referral',gen_random_uuid(),$4, ${createdAtSql}) RETURNING id, created_at::text AS raw`, [tenantA, ambId, await plan('farmer_onboarded'), amount])).rows[0] as { id: string; raw: string };
   async function asRole<T>(role: string, tenantId: string, fn: (c: PoolClient) => Promise<T>): Promise<T> {

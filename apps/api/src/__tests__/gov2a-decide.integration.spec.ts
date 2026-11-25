@@ -29,7 +29,13 @@ const ADMIN_URL = process.env.DATABASE_ADMIN_URL;
 const run = APP_URL && ADMIN_URL ? describe : describe.skip;
 const phoneOf = () => `+9197${Math.floor(10_000_000 + Math.random() * 89_999_999)}`;
 /** The RLS gate after migrate + seeds at GOV-0 (1,993): 0240 drops one policy and recreates the same name — the count does not move. */
-const RLS_POLICIES_AFTER_GOV2A = 1993;
+const RLS_POLICIES_AFTER_GOV2A = 697;
+// PC-56 TEST-1: the pin counts policies on NON-PARTITION relations. It used to count every policy in the schema (1,993 on a fresh
+// build), which includes the policies cloned onto each monthly partition — so any earlier spec that ran `CALL ensure_partitions(n)`
+// (a dozen do) moved it (2,021 in a full pass) and this spec failed or passed by run order. A new or dropped policy on any real
+// table still moves this number; a partition created by the sweep does not.
+const NON_PARTITION_POLICY_COUNT = `SELECT count(*)::int AS n FROM pg_policies p JOIN pg_class c ON c.relname = p.tablename AND c.relnamespace = 'public'::regnamespace
+  WHERE p.schemaname = 'public' AND NOT c.relispartition`;
 const AMOUNT = 2471113; const AMOUNT_V1 = 1111113; const FEE = 39917;           // must never reach the gov realm (Q1-A)
 const SENTENCE = 'The land record page is missing from the upload.';
 
@@ -457,7 +463,7 @@ run('PC-56 GOV-2a · the authority decides, on declared fields (integration, rea
   });
 
   it('(RLS) the gate count does not move: 1,993 (one policy dropped and recreated by name, with the draft clause)', async () => {
-    expect(Number((await admin.query(`SELECT count(*)::int AS n FROM pg_policies WHERE schemaname = 'public'`)).rows[0].n)).toBe(RLS_POLICIES_AFTER_GOV2A);
+    expect(Number((await admin.query(NON_PARTITION_POLICY_COUNT)).rows[0].n)).toBe(RLS_POLICIES_AFTER_GOV2A);
     const pol = (await admin.query(`SELECT roles::text AS r, cmd, qual FROM pg_policies WHERE policyname = 'gov_own_schemes_scheme_applications'`)).rows;
     expect(pol.length).toBe(1);
     expect([pol[0].r, pol[0].cmd, /status <> 'draft'/.test(pol[0].qual)]).toEqual(['{kv_gov}', 'SELECT', true]);

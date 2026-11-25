@@ -137,14 +137,35 @@ run('PC-56 TENANT-6e-2 · the export plane (integration, real Postgres)', () => 
     svc = new ExportPlaneService(uow, outbox, idem, metrics, registry, store as unknown as ObjectStore, audit, flags, jobsRepo, downloads, config);
     worker = new ExportWorker(uow, outbox, replica as never, metrics, registry, store as unknown as ObjectStore, jobsRepo);
 
+    flagsBefore = (await admin.query(`SELECT key, is_enabled, rollout_pct FROM feature_flags WHERE key = ANY($1)`, [[EXPORT_PLANE_FLAG, INSIGHTS_FLAG]])).rows;
+    // PC-56 TEST-1 · THE PLANE IS ONE CROSS-TENANT QUEUE, and its ETA is the median of the platform's last finished runs. This suite
+    // asserts the plane as a fresh platform sees it ("position 1", "the platform has never finished an export"), which was only true
+    // when it ran before every other suite that exports (store4a, tenant-swd's AGM pack, the dairy/insights exports …). It now takes
+    // that state: the plane is emptied before (earlier suites are finished — the project runs in band) and its own jobs after.
+    await emptyExportPlane();
     await setFlag(EXPORT_PLANE_FLAG, true);
     await setFlag(INSIGHTS_FLAG, false);
   }, 240000);
 
   afterAll(async () => {
-    await admin?.query(`UPDATE feature_flags SET is_enabled=false WHERE key IN ($1,$2)`, [EXPORT_PLANE_FLAG, INSIGHTS_FLAG]).catch(() => undefined);
+    await emptyExportPlane([tenantA, tenantB]).catch(() => undefined);
+    // the flags go back to exactly what they were (a row this suite created is removed)
+    for (const key of [EXPORT_PLANE_FLAG, INSIGHTS_FLAG]) {
+      const was = flagsBefore.find((r) => r.key === key);
+      if (was) await admin?.query(`UPDATE feature_flags SET is_enabled=$2, rollout_pct=$3 WHERE key=$1`, [key, was.is_enabled, was.rollout_pct]).catch(() => undefined);
+      else await admin?.query(`DELETE FROM feature_flags WHERE key=$1`, [key]).catch(() => undefined);
+    }
     await pools?.onModuleDestroy(); await admin?.end();
   });
+  let flagsBefore: Array<{ key: string; is_enabled: boolean; rollout_pct: number }> = [];
+  /** Remove export jobs (all, or only `tenants`'), with the rows that point at them. */
+  async function emptyExportPlane(tenants?: string[]): Promise<void> {
+    const where = tenants ? `WHERE tenant_id = ANY($1::uuid[])` : '';
+    const args = tenants ? [tenants] : [];
+    await admin.query(`UPDATE data_subject_requests SET export_job_id = NULL WHERE export_job_id IN (SELECT id FROM tenant_export_jobs ${where})`, args);
+    await admin.query(`DELETE FROM tenant_export_downloads WHERE job_id IN (SELECT id FROM tenant_export_jobs ${where})`, args);
+    await admin.query(`DELETE FROM tenant_export_jobs ${where}`, args);
+  }
 
   let first = ''; let second = ''; let bytes: Buffer;
 

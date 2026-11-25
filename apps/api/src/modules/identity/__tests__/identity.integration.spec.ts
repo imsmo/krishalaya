@@ -15,7 +15,7 @@
 // test tenants it needs (roles/permissions come from the real seeds).
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
-import { makeTenant } from '../../../../test/helpers/fixtures';
+import { makeTenant, makeUser } from '../../../../test/helpers/fixtures';
 
 import { AppConfig } from '../../../core/config/app-config';
 import { PgPoolProvider } from '../../../core/database/pg-pool.provider';
@@ -58,15 +58,19 @@ run('identity slice (integration, real Postgres + RLS)', () => {
   const tenantA = randomUUID();
   const tenantB = randomUUID();
   const admin = randomUUID();
+  const approver = randomUUID();
   const phone = '+9198' + Math.floor(10000000 + Math.random() * 89999999);
 
   beforeAll(async () => {
     {
       const a = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
       await makeTenant(a, tenantA, 'A'); await makeTenant(a, tenantB, 'B');
+      await makeUser(a, admin); await makeUser(a, approver);   // real users: the assigner and the approver are recorded on the role row
       await a.end();
     }
-    const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
+    // PC-56 TEST-1: the same phone signs in three times within a second, so the per-phone resend cooldown (default 30 s, added after
+    // this spec was written) is switched off for the suite — it is a separate control with its own unit spec, not what this proves.
+    const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1', OTP_RESEND_COOLDOWN_SEC: '0' });
     pools = new PgPoolProvider(config);
     const shards = new ShardRouter(config);
     const uow = new PgUnitOfWork(pools, shards);
@@ -112,7 +116,10 @@ run('identity slice (integration, real Postgres + RLS)', () => {
   it('assigning the farmer role makes the next token carry listing.create (DB-resolved RBAC)', async () => {
     const u = await inspect.query(`SELECT id FROM users WHERE phone=$1`, [phone]);
     const userId = u.rows[0].id;
-    await rbac.assign(tenantA, admin, { userId, roleCode: 'farmer' }, '127.0.0.1');
+    const { id: utrId } = await rbac.assign(tenantA, admin, { userId, roleCode: 'farmer' }, '127.0.0.1');
+    // PC-56 TEST-1: `farmer` is seeded requires_approval = true (core/0004), so an assignment is born INACTIVE and resolves no
+    // permission until a SECOND person approves it — the spec predates that rule. The approval is the real service call.
+    await rbac.approve(tenantA, approver, utrId, '127.0.0.1');
 
     // a fresh login resolves permissions from the DB via RoleCache
     const { devCode } = await auth.requestOtp(phone, 'sms');

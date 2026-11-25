@@ -81,6 +81,7 @@ run('PC-56 TENANT-13c · tenant API keys & integrations (integration, real Postg
     } finally { await c.query('ROLLBACK').catch(() => undefined); await c.query('RESET SESSION AUTHORIZATION').catch(() => undefined); c.release(); }
   }
 
+  let flagBefore: { is_enabled: boolean; rollout_pct: number; rules: unknown } | undefined;
   beforeAll(async () => {
     admin = new Pool({ connectionString: ADMIN_URL });
     await makeTenant(admin, A, 'Anand FPO'); await makeTenant(admin, B, 'Other FPO'); await makeTenant(admin, C, 'Solo FPO');
@@ -89,6 +90,12 @@ run('PC-56 TENANT-13c · tenant API keys & integrations (integration, real Postg
     await admin.query(`UPDATE users SET full_name = 'Bhavna Other' WHERE id = $1`, [memberB]);
     await addRole(a1, 'tenant_admin', A); await addRole(a1, 'farmer', A);          // an FPO admin who also sells
     await addRole(a2, 'tenant_admin', A); await addRole(staff, 'tenant_staff', A);
+    // PC-56 TEST-1: the order console's read (`orders.read`'s first route) rides `dispute.resolve` (canModerateOrder), which HOTFIX-7
+    // (0217) took away from tenant_admin and left with support_agent. A key acts with its creator's CURRENT permissions, so the two key
+    // creators here also hold support_agent — the role that reads the console today (a per-person override of dispute.resolve needs a
+    // confirmed second-admin proposal since TENANT-SW-c). Without it the key is correctly refused 403. The audit's `on_behalf_of`
+    // names the creator's roles, so it now lists support_agent too.
+    await addRole(a1, 'support_agent', A); await addRole(a2, 'support_agent', A);
     await addRole(bAdmin, 'tenant_admin', B); await addRole(cAdmin, 'tenant_admin', C);
     await addRole(memberA, 'farmer', A); await addRole(memberB, 'farmer', B);
     // A: a plan that INCLUDES api_access (read for real); B: a plan without it
@@ -96,6 +103,7 @@ run('PC-56 TENANT-13c · tenant API keys & integrations (integration, real Postg
     const without = await makePlan(admin);
     await activateSubscription(admin, A, withApi); await activateSubscription(admin, B, without);
     // the flag ON for these tenants only (allow-list) — before the app boots, so no cached OFF
+    flagBefore = (await admin.query(`SELECT is_enabled, rollout_pct, rules FROM feature_flags WHERE key = 'tenant_api'`)).rows[0];
     await admin.query(`UPDATE feature_flags SET is_enabled = true, rollout_pct = 0, rules = jsonb_build_object('tenant_ids', to_jsonb(ARRAY[$1, $2, $3]::text[])) WHERE key = 'tenant_api'`, [A, B, C]);
     // (the shared makeCategory / makeProduct fixtures carry the known '$2 inconsistent types' bug — named, not fixed; the category is made here)
     const cat = randomUUID(); const code = `c${randomUUID().replace(/-/g, '').slice(0, 12)}`;
@@ -109,6 +117,9 @@ run('PC-56 TENANT-13c · tenant API keys & integrations (integration, real Postg
       `INSERT INTO listings (id, tenant_id, seller_user_id, product_id, category_id, title, quantity_total, quantity_available, min_order_qty, unit_code, price_minor, currency_code, status, visibility)
        VALUES ($1, $2, $3, $4, $5, 'Wheat', 100, 100, 1, 'quintal', 50000, 'INR', 'published', 'public')`, [listingId, A, a1, product, cat]);
     app = await bootstrapE2EApp(); http = app.getHttpServer();
+    // the HOTFIX-5 pin — PC-56 TEST-1: missing here; unpinned, supertest listens per request on every interface and dials 127.0.0.1, so on a
+    // machine where another process holds that IPv4 port a request can reach the OTHER server (seen in a full pass: "Parse Error: Expected HTTP/").
+    await new Promise<void>((resolve) => http.listen(0, '127.0.0.1', () => resolve()));
     const adminPerms = await permsOf('tenant_admin');
     tokA1 = mintToken(app, { userId: a1, tenantId: A, perms: adminPerms, roles: ['tenant_admin'] });
     tokA2 = mintToken(app, { userId: a2, tenantId: A, perms: adminPerms, roles: ['tenant_admin'] });
@@ -116,7 +127,9 @@ run('PC-56 TENANT-13c · tenant API keys & integrations (integration, real Postg
     tokB = mintToken(app, { userId: bAdmin, tenantId: B, perms: adminPerms, roles: ['tenant_admin'] });
   }, 120_000);
   afterAll(async () => {
-    await admin.query(`UPDATE feature_flags SET is_enabled = false, rollout_pct = 100, rules = '{}'::jsonb WHERE key = 'tenant_api'`).catch(() => undefined);
+    // PC-56 TEST-1: the flag goes back to exactly what it was (this used to write a fixed OFF state).
+    if (flagBefore) await admin.query(`UPDATE feature_flags SET is_enabled = $1, rollout_pct = $2, rules = $3::jsonb WHERE key = 'tenant_api'`,
+      [flagBefore.is_enabled, flagBefore.rollout_pct, JSON.stringify(flagBefore.rules ?? {})]).catch(() => undefined);
     await app?.close(); await admin?.end();
   });
 
@@ -263,7 +276,7 @@ run('PC-56 TENANT-13c · tenant API keys & integrations (integration, real Postg
     // the reveal is recorded as the synthetic principal, on behalf of the key's creator
     const aud = (await admin.query(`SELECT actor_user_id, actor_role, reason FROM audit_log WHERE tenant_id = $1 AND action = 'member.pii_revealed' ORDER BY created_at DESC LIMIT 1`, [A])).rows[0];
     expect(aud.actor_user_id).toBe(a1);
-    expect(aud.actor_role).toBe(`api_key:${piiKeyId} on_behalf_of:farmer+tenant_admin`);
+    expect(aud.actor_role).toBe(`api_key:${piiKeyId} on_behalf_of:farmer+support_agent+tenant_admin`);
     // the PII answer is never written into the idempotency store (a reveal is a read)
     expect(Number((await admin.query(`SELECT count(*) FROM idempotency_keys WHERE key LIKE $1`, [`k:${piiKeyId.replace(/-/g, '')}%`])).rows[0].count)).toBe(0);
   });

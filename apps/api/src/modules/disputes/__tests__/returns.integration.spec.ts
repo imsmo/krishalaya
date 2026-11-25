@@ -53,15 +53,22 @@ run('returns + SLA jobs (integration, real Postgres + RLS)', () => {
   const buyerActor = () => ({ userId: buyer, canModerate: false });
   const sellerActor = () => ({ userId: seller, canModerate: false });
   const strangerActor = () => ({ userId: stranger, canModerate: false });
-  const moderator = () => ({ userId: randomUUID(), canModerate: true, canRefund: true });
+  // PC-56 TEST-1: each moderator / decider is a fresh, REAL user (a distinct person per call, as before). They were bare random
+  // uuids, and 0139 made `returns.inspected_by` (and the decision columns) REFERENCES users(id) — so `inspect` failed on the FK.
+  const staff = Array.from({ length: 16 }, () => randomUUID()); let nextStaff = 0;
+  const person = () => staff[nextStaff++ % staff.length];
+  const moderator = () => ({ userId: person(), canModerate: true, canRefund: true });
   /** Holds dispute.resolve but NOT order.refund — the split 0139 introduced. */
-  const decider = () => ({ userId: randomUUID(), canModerate: true, canRefund: false });
+  const decider = () => ({ userId: person(), canModerate: true, canRefund: false });
+  let refundsFlagBefore: boolean | null = null;
 
   beforeAll(async () => {
     admin = new Pool({ connectionString: ADMIN_URL ?? APP_URL });
+    refundsFlagBefore = (await admin.query(`SELECT is_enabled FROM feature_flags WHERE key = 'dispute_refunds'`)).rows[0]?.is_enabled ?? null;
     await admin.query(`UPDATE feature_flags SET is_enabled = true WHERE key = 'dispute_refunds'`);   // PC-56 HOTFIX-7 · D2
     await makeTenant(admin, tenantA, 'A'); await makeTenant(admin, tenantB, 'B');
     await makeUser(admin, buyer); await makeUser(admin, seller); await makeUser(admin, stranger);
+    for (const id of staff) await makeUser(admin, id);
     await admin.query(`INSERT INTO dispute_eligibility (tenant_id, order_id, buyer_user_id, seller_user_id) VALUES ($1,$2,$3,$4) ON CONFLICT (order_id) DO NOTHING`, [tenantA, orderId, buyer, seller]);
 
     const config = new AppConfig({ NODE_ENV: 'test', DATABASE_URL: APP_URL, JWT_ACCESS_SECRET: 'itest-secret-itest-secret', AUTH_HASH_PEPPER: 'itest-pepper-itest-pepper-32x!!', SHARD_COUNT: '1' });
@@ -82,7 +89,7 @@ run('returns + SLA jobs (integration, real Postgres + RLS)', () => {
   }, 30000);
 
   // PC-56 HOTFIX-7 · D2: the money switch the refund decisions here need — ON for the suite, back to its seeded OFF after (Law 10)
-  afterAll(async () => { await admin?.query(`UPDATE feature_flags SET is_enabled = false WHERE key = 'dispute_refunds'`).catch(() => undefined); await pools?.onModuleDestroy(); await inspect?.end(); await admin?.end(); });
+  afterAll(async () => { await admin?.query(`UPDATE feature_flags SET is_enabled = $1 WHERE key = 'dispute_refunds'`, [refundsFlagBefore ?? false]).catch(() => undefined); await pools?.onModuleDestroy(); await inspect?.end(); await admin?.end(); });
 
   it('buyer requests a return; non-buyer blocked; duplicate blocked', async () => {
     const r = await returns.request(tenantA, buyer, `idem-${randomUUID()}`, { orderId, reasonCode: 'damaged' } as any);

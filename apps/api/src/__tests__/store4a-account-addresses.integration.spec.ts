@@ -114,6 +114,10 @@ run('PC-56 STORE-4a · account, addresses, data rights (integration, real AppMod
     await admin?.query(`UPDATE data_subject_requests SET export_job_id = NULL WHERE user_id = ANY($1::uuid[])`, [Object.values(U)]).catch(() => undefined);
     await admin?.query(`DELETE FROM tenant_export_downloads WHERE tenant_id = ANY($1::uuid[])`, [[LIVE, OTHER]]).catch(() => undefined);
     await admin?.query(`DELETE FROM tenant_export_jobs WHERE tenant_id = ANY($1::uuid[])`, [[LIVE, OTHER]]).catch(() => undefined);
+    // PC-56 TEST-1: the wallet-balance case seeds a cached balance with NO ledger entries behind it (a fixture, not money). Left in
+    // place it is a standing internal-balance mismatch that fails the wallet-service reconciliation spec run after this one.
+    await admin?.query(`DELETE FROM wallet_accounts a WHERE a.owner_kind = 'user' AND a.owner_user_id = ANY($1::uuid[])
+                          AND NOT EXISTS (SELECT 1 FROM ledger_entries e WHERE e.account_id = a.id)`, [Object.values(U)]);
     await Promise.race([app?.close().catch(() => undefined), new Promise((r) => setTimeout(r, 15_000))]);
     await relayPool?.end().catch(() => undefined); await admin?.end();
   }, 40_000);
